@@ -68,6 +68,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write suggested next versionCode (= max + 1) to the properties output",
     )
+    p.add_argument(
+        "--apply-to-app-versions",
+        action="store_true",
+        help="Apply resolved versionCode values to app-versions.properties",
+    )
+    p.add_argument(
+        "--app-versions-file",
+        default="app-versions.properties",
+        help="Path to app-versions.properties (default: app-versions.properties)",
+    )
     return p.parse_args()
 
 
@@ -181,6 +191,55 @@ def ensure_parent(path: pathlib.Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def apply_codes_to_app_versions(
+    app_versions_file: pathlib.Path,
+    selected: list[FlavorInfo],
+    out_apps: dict,
+    use_next: bool,
+) -> tuple[list[str], list[str]]:
+    """
+    Updates <flavor>.versionCode in app-versions.properties.
+    Returns (updated_flavors, skipped_flavors).
+    """
+    if not app_versions_file.exists():
+        raise RuntimeError(f"app-versions.properties not found: {app_versions_file}")
+
+    lines = app_versions_file.read_text(encoding="utf-8").splitlines()
+    updated: list[str] = []
+    skipped: list[str] = []
+
+    for fi in selected:
+        app = out_apps.get(fi.name) or {}
+        if "error" in app:
+            skipped.append(f"{fi.name} (error)")
+            continue
+
+        max_code = app.get("maxVersionCode")
+        if max_code is None:
+            skipped.append(f"{fi.name} (no-version-on-track)")
+            continue
+
+        target_code = int(max_code) + 1 if use_next else int(max_code)
+        key = f"{fi.name}.versionCode"
+        prefix = f"{key}="
+        replaced = False
+        for idx, raw in enumerate(lines):
+            stripped = raw.strip()
+            if stripped.startswith("#") or "=" not in stripped:
+                continue
+            if stripped.startswith(prefix):
+                lines[idx] = f"{key}={target_code}"
+                replaced = True
+                break
+        if replaced:
+            updated.append(fi.name)
+        else:
+            skipped.append(f"{fi.name} (missing-key)")
+
+    app_versions_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return updated, skipped
+
+
 def main() -> int:
     args = parse_args()
 
@@ -256,9 +315,22 @@ def main() -> int:
 
     print(f"Wrote: {out_json}")
     print(f"Wrote: {out_props}")
+
+    if args.apply_to_app_versions:
+        app_versions_file = (repo_root / args.app_versions_file).resolve()
+        updated, skipped = apply_codes_to_app_versions(
+            app_versions_file=app_versions_file,
+            selected=selected,
+            out_apps=out["apps"],
+            use_next=args.suggest_next,
+        )
+        print(f"Updated app-versions file: {app_versions_file}")
+        print(f"Updated flavors: {', '.join(updated) if updated else '(none)'}")
+        if skipped:
+            print(f"Skipped flavors: {', '.join(skipped)}")
+
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

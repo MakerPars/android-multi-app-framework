@@ -32,8 +32,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - uses: android-actions/setup-android@v3
-        with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -140,8 +138,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - uses: android-actions/setup-android@v3
-        with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -172,8 +168,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - uses: android-actions/setup-android@v3
-        with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -208,8 +202,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - uses: android-actions/setup-android@v3
-        with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
 
       - uses: gradle/actions/setup-gradle@v4
 
