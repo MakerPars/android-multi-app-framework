@@ -1,0 +1,45 @@
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_dark_mode">Dark mode</string>
+    <string name="settings_font_size">Font size</string>
+    <string name="settings_font_size_value">Font size: %d</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_desc">Enable/disable app notifications</string>
+    <string name="settings_share_app">Share this app</string>
+    <string name="settings_share_app_desc">Share the app via WhatsApp</string>
+    <string name="settings_share_app_button">Share with WhatsApp</string>
+    <string name="settings_share_app_message">Try this app: %1$s</string>
+    <string name="settings_whatsapp_not_found">WhatsApp is not installed.</string>
+    <string name="settings_device_id_title">Device ID</string>
+    <string name="settings_device_id_desc">Use this identifier for test notifications</string>
+    <string name="settings_device_id_copy">Copy Device ID</string>
+    <string name="settings_device_id_copied">Device ID copied</string>
+    <string name="settings_fcm_debug_title">Debug FCM Token</string>
+    <string name="settings_fcm_debug_desc">Visible only in debug builds. Fetch token for test notifications.</string>
+    <string name="settings_fcm_debug_empty">Token not fetched yet.</string>
+    <string name="settings_fcm_debug_refresh">Fetch / Refresh Token</string>
+    <string name="settings_fcm_debug_fetching">Fetching token…</string>
+    <string name="settings_fcm_debug_copy">Copy FCM Token</string>
+    <string name="settings_fcm_debug_copied">FCM token copied</string>
+    <string name="settings_fcm_debug_refreshed">FCM token refreshed</string>
+    <string name="settings_fcm_debug_error">Failed to fetch FCM token</string>
+
+    <string name="settings_crash_debug_title">Crashlytics Test</string>
+    <string name="settings_crash_debug_desc">Visible only in debug builds. Test Crashlytics reporting.</string>
+    <string name="settings_crash_debug_fatal">💥 Test Crash (Fatal)</string>
+    <string name="settings_crash_debug_non_fatal">⚠️ Send Non-Fatal Error</string>
+    <string name="settings_crash_debug_non_fatal_sent">Non-fatal error sent to Crashlytics</string>
+
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_language_tr">Turkish</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_de">German</string>
+    <string name="settings_language_changed">Language changed</string>
+
+    <string name="settings_privacy_options">Privacy options</string>
+    <string name="settings_privacy_options_desc">Manage ad consent preferences</string>
+    <string name="settings_privacy_options_button">Manage</string>
+    <string name="settings_privacy_options_unavailable">This action is currently unavailable</string>
+    <string name="settings_privacy_options_error">Could not open privacy options</string>
+</resources>

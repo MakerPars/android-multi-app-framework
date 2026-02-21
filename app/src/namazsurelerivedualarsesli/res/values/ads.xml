@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="admob_app_id" translatable="false">ca-app-pub-3312485084079132~9767231692</string>
+    <string name="ad_unit_banner" translatable="false">ca-app-pub-3312485084079132/7065557480</string>
+    <string name="ad_unit_interstitial" translatable="false">ca-app-pub-3312485084079132/7079268847</string>
+    <string name="ad_unit_native" translatable="false">ca-app-pub-3312485084079132/4652971236</string>
+    <string name="ad_unit_rewarded" translatable="false">ca-app-pub-3312485084079132/4049511590</string>
+    <string name="ad_unit_rewarded_interstitial" translatable="false">ca-app-pub-3312485084079132/9267840991</string>
+    <string name="ad_unit_open_app" translatable="false">ca-app-pub-3312485084079132/7222469849</string>
+</resources>

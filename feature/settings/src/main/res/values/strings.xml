@@ -1,0 +1,46 @@
+<resources>
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_dark_mode">Karanlık Mod</string>
+    <string name="settings_font_size">Yazı Boyutu</string>
+    <string name="settings_font_size_value">Yazı Boyutu: %d</string>
+    <string name="settings_notifications">Bildirimler</string>
+    <string name="settings_notifications_desc">Uygulama bildirimlerini aç/kapat</string>
+    <string name="settings_share_app">Bu uygulamayı paylaş</string>
+    <string name="settings_share_app_desc">Uygulamayı WhatsApp üzerinden paylaşın</string>
+    <string name="settings_share_app_button">WhatsApp ile Paylaş</string>
+    <string name="settings_share_app_message">Bu uygulamayı dene: %1$s</string>
+    <string name="settings_whatsapp_not_found">WhatsApp yüklü değil.</string>
+    <string name="settings_device_id_title">Cihaz Kimliği</string>
+    <string name="settings_device_id_desc">Test bildirimi için bu kimliği kullanın</string>
+    <string name="settings_device_id_copy">Kimliği Kopyala</string>
+    <string name="settings_device_id_copied">Cihaz kimliği kopyalandı</string>
+    <string name="settings_fcm_debug_title">Debug FCM Token</string>
+    <string name="settings_fcm_debug_desc">Sadece debug derlemelerde görünür. Test bildirimi için token alın.</string>
+    <string name="settings_fcm_debug_empty">Henüz token alınmadı.</string>
+    <string name="settings_fcm_debug_refresh">Token Al / Yenile</string>
+    <string name="settings_fcm_debug_fetching">Token alınıyor…</string>
+    <string name="settings_fcm_debug_copy">FCM Token Kopyala</string>
+    <string name="settings_fcm_debug_copied">FCM token kopyalandı</string>
+    <string name="settings_fcm_debug_refreshed">FCM token güncellendi</string>
+    <string name="settings_fcm_debug_error">FCM token alınamadı</string>
+
+    <string name="settings_crash_debug_title">Crashlytics Test</string>
+    <string name="settings_crash_debug_desc">Sadece debug derlemelerde görünür. Crashlytics raporlamasını test edin.</string>
+    <string name="settings_crash_debug_fatal">💥 Test Crash (Fatal)</string>
+    <string name="settings_crash_debug_non_fatal">⚠️ Non-Fatal Hata Gönder</string>
+    <string name="settings_crash_debug_non_fatal_sent">Non-fatal hata Crashlytics’e gönderildi</string>
+
+    <string name="settings_language">Dil</string>
+    <string name="settings_language_system">Sistem</string>
+    <string name="settings_language_tr">Türkçe</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_changed">Dil değiştirildi</string>
+
+    <string name="settings_privacy_options">Gizlilik seçenekleri</string>
+    <string name="settings_privacy_options_desc">Reklam onay tercihlerini yönet</string>
+    <string name="settings_privacy_options_button">Yönet</string>
+    <string name="settings_privacy_options_unavailable">Bu işlem şu anda kullanılamıyor</string>
+    <string name="settings_privacy_options_error">Gizlilik seçenekleri açılamadı</string>
+</resources>
+

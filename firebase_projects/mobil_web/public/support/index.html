@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Mobil Uygulama Geliştirici Sayfası</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3312485084079132"
+        crossorigin="anonymous"></script>
+
+    <!-- reCAPTCHA Enterprise (v3) -->
+    <script defer
+        src="https://www.google.com/recaptcha/enterprise.js?render=6LdRYXEsAAAAANIMT89AjKOgMguNDW6qB4_1dRSL"></script>
+</head>
+
+<body>
+
+    <h1>Mobil Uygulama Geliştirici Sayfası</h1>
+
+    <p>Bu web sitesi, mobil uygulamalar için gerekli yasal ve teknik bilgilendirme sayfalarını barındırır.</p>
+
+    <ul>
+        <li><a href="/privacy">Gizlilik Politikası</a></li>
+        <li><a href="/terms">Kullanım Şartları</a></li>
+        <li><a href="/support">Destek</a></li>
+    </ul>
+
+    <!-- reCAPTCHA Token Request -->
+    <script>
+        (function () {
+            const SITE_KEY = "6LdRYXEsAAAAANIMT89AjKOgMguNDW6qB4_1dRSL";
+
+            function runRecaptcha() {
+                if (!window.grecaptcha || !grecaptcha.enterprise) {
+                    console.warn("reCAPTCHA script yüklenmedi (grecaptcha.enterprise yok).");
+                    return;
+                }
+
+                grecaptcha.enterprise.ready(function () {
+                    grecaptcha.enterprise.execute(SITE_KEY, { action: "homepage" })
+                        .then(function (token) {
+                            console.log("recaptcha token:", token);
+                        })
+                        .catch(function (err) {
+                            console.error("reCAPTCHA execute hata:", err);
+                        });
+                });
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", runRecaptcha);
+            } else {
+                runRecaptcha();
+            }
+        })();
+    </script>
+
+</body>
+
+</html>

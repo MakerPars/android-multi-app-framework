@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/privacy.html",
+        "destination": "/privacy",
+        "type": 301
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/api/other-apps",
+        "function": {
+          "functionId": "otherAppsFeed",
+          "region": "europe-west1"
+        }
+      }
+    ]
+  }
+}

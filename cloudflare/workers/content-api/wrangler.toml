@@ -1,0 +1,12 @@
+name = "contentapp-content-api"
+main = "src/index.ts"
+compatibility_date = "2026-02-21"
+workers_dev = true
+
+[vars]
+OTHER_APPS_JSON_URL = "https://mobildev.site/other_apps.json"
+
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "contentapp-audio"
+preview_bucket_name = "contentapp-audio-preview"

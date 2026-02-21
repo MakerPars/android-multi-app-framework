@@ -1,0 +1,552 @@
+# ─────────────────────────────────────────────────────────────
+# GitLab CI/CD for android-multi-app-framework
+#
+# Equivalent to the Azure Pipelines setup:
+#   • quality-gate  → merge_request pipeline  (impact → tests → detekt → lint)
+#   • release       → manual "release" pipeline (build AAB → publish Play Console)
+#   • manual-ops    → manual "manual" pipeline  (selective build/quality/publish)
+#
+# Required CI/CD Variables (Settings → CI/CD → Variables):
+#   KEYSTORE_BASE64              – base64-encoded release.jks
+#   KEYSTORE_PASSWORD            – keystore password
+#   KEY_ALIAS                    – signing key alias
+#   KEY_PASSWORD                 – signing key password
+#   PLAY_SERVICE_ACCOUNT_JSON_BASE64 – base64-encoded Play Console service account
+#   FIREBASE_CONFIGS_ZIP_BASE64  – (optional) base64-encoded firebase configs zip
+# ─────────────────────────────────────────────────────────────
+
+variables:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
+  ANDROID_API_LEVEL: "36"
+
+image: eclipse-temurin:21-jdk
+
+# ── Cache ──
+.gradle-cache: &gradle-cache
+  cache:
+    key:
+      files:
+        - gradle/wrapper/gradle-wrapper.properties
+        - gradle/libs.versions.toml
+    paths:
+      - .gradle/
+      - build/
+      - "*/build/"
+    policy: pull-push
+
+# ── Base setup ──
+.setup-android: &setup-android
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq unzip wget python3 > /dev/null
+    - |
+      if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools" ]; then
+        mkdir -p "$ANDROID_SDK_ROOT"
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
+        unzip -q /tmp/cmdtools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+        mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+        rm /tmp/cmdtools.zip
+      fi
+    - export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$CI_PROJECT_DIR/.android-sdk}"
+    - export ANDROID_HOME="$ANDROID_SDK_ROOT"
+    - export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+    - yes | sdkmanager --licenses > /dev/null 2>&1 || true
+    - sdkmanager "platform-tools" "platforms;android-${ANDROID_API_LEVEL}" "build-tools;${ANDROID_API_LEVEL}.0.0" > /dev/null
+    - chmod +x ./gradlew
+
+# ─────────────────────────────────────────────────────────────
+# STAGES
+# ─────────────────────────────────────────────────────────────
+stages:
+  - analyze
+  - quality
+  - build
+  - publish
+
+# ═════════════════════════════════════════════════════════════
+# QUALITY GATE (Merge Request pipelines)
+# ═════════════════════════════════════════════════════════════
+
+analyze-impact:
+  stage: analyze
+  <<: *setup-android
+  <<: *gradle-cache
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - |
+      set -euo pipefail
+
+      CHANGED_FILES="$(git diff --name-only "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"...HEAD || true)"
+      echo "Changed files:"
+      echo "$CHANGED_FILES"
+
+      HAS_CODE="false"
+      while IFS= read -r file; do
+        [ -z "$file" ] && continue
+        case "$file" in
+          *.kt|*.kts|*.java|*.xml|*.gradle|*.properties|*"/src/"*|buildSrc/*|gradle/*)
+            HAS_CODE="true"
+            break
+            ;;
+        esac
+      done <<< "$CHANGED_FILES"
+
+      ALL_FLAVOURS_JSON="$(./gradlew -q printFlavors | tr -d '\r')"
+
+      if [ "$HAS_CODE" != "true" ]; then
+        echo "HAS_CODE=false" >> impact.env
+        echo "FLAVOURS_JSON=[]" >> impact.env
+        echo "ALL_FLAVOURS_JSON=$ALL_FLAVOURS_JSON" >> impact.env
+        exit 0
+      fi
+
+      mapfile -t ALL_FLAVOURS < <(
+        echo "$ALL_FLAVOURS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+      )
+
+      COMMON_CHANGED="false"
+      while IFS= read -r file; do
+        [ -z "$file" ] && continue
+        case "$file" in
+          buildSrc/*|core/*|feature/*|gradle/*|app/build.gradle.kts|app/src/main/*|build.gradle.kts|settings.gradle.kts|gradle.properties)
+            COMMON_CHANGED="true"
+            break
+            ;;
+        esac
+      done <<< "$CHANGED_FILES"
+
+      build_json_array() {
+        local -a arr=("$@")
+        if [ "${#arr[@]}" -eq 0 ]; then echo "[]"; return; fi
+        local out="["
+        local first=true
+        for item in "${arr[@]}"; do
+          [ -z "$item" ] && continue
+          if [ "$first" = false ]; then out+=","; fi
+          out+="\"$item\""
+          first=false
+        done
+        out+="]"
+        echo "$out"
+      }
+
+      SELECTED=()
+      if [ "$COMMON_CHANGED" = "true" ]; then
+        SELECTED=("${ALL_FLAVOURS[@]}")
+      else
+        for flavour in "${ALL_FLAVOURS[@]}"; do
+          if grep -q "^app/src/${flavour}/" <<< "$CHANGED_FILES"; then
+            SELECTED+=("$flavour")
+          fi
+        done
+      fi
+
+      SELECTED_JSON="$(build_json_array "${SELECTED[@]}")"
+      echo "Detected flavours: $SELECTED_JSON"
+
+      echo "HAS_CODE=true" >> impact.env
+      echo "FLAVOURS_JSON=$SELECTED_JSON" >> impact.env
+      echo "ALL_FLAVOURS_JSON=$ALL_FLAVOURS_JSON" >> impact.env
+  artifacts:
+    reports:
+      dotenv: impact.env
+
+unit-tests:
+  stage: quality
+  <<: *setup-android
+  <<: *gradle-cache
+  needs:
+    - job: analyze-impact
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - |
+      if [ "${HAS_CODE:-false}" != "true" ]; then
+        echo "No code changes. Skipping."
+        exit 0
+      fi
+      ./gradlew testDebugUnitTest --stacktrace --no-daemon --max-workers=2
+  artifacts:
+    when: always
+    reports:
+      junit: "**/build/test-results/test**/TEST-*.xml"
+
+static-analysis:
+  stage: quality
+  <<: *setup-android
+  <<: *gradle-cache
+  needs:
+    - job: analyze-impact
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - |
+      if [ "${HAS_CODE:-false}" != "true" ]; then
+        echo "No code changes. Skipping."
+        exit 0
+      fi
+      ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+  artifacts:
+    when: always
+    paths:
+      - "**/build/reports/detekt/**"
+    expire_in: 14 days
+
+android-lint:
+  stage: quality
+  <<: *setup-android
+  <<: *gradle-cache
+  needs:
+    - job: analyze-impact
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - |
+      set -euo pipefail
+
+      if [ "${HAS_CODE:-false}" != "true" ] || [ "${FLAVOURS_JSON:-[]}" = "[]" ]; then
+        echo "No code changes or no flavours. Skipping."
+        exit 0
+      fi
+
+      # Firebase config override
+      if [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+        echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+        unzip -o firebase_configs.zip
+        rm -f firebase_configs.zip
+      fi
+
+      mapfile -t FLAVOURS < <(
+        echo "$FLAVOURS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+      )
+
+      TASKS=()
+      for flavour in "${FLAVOURS[@]}"; do
+        [ -z "$flavour" ] && continue
+        FLAVOUR_CAP="$(tr '[:lower:]' '[:upper:]' <<< "${flavour:0:1}")${flavour:1}"
+        TASKS+=("lint${FLAVOUR_CAP}Debug")
+      done
+
+      if [ "${#TASKS[@]}" -eq 0 ]; then
+        echo "No lint task detected."
+        exit 0
+      fi
+
+      echo "Running lint tasks: ${TASKS[*]}"
+      ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+  artifacts:
+    when: always
+    paths:
+      - "app/build/reports/**"
+    expire_in: 14 days
+
+# ═════════════════════════════════════════════════════════════
+# RELEASE PIPELINE (manual trigger)
+# ═════════════════════════════════════════════════════════════
+
+.resolve-flavors-script: &resolve-flavors-script
+  - |
+    set -euo pipefail
+    chmod +x ./gradlew
+
+    ALL_JSON="$(./gradlew -q printFlavors | tr -d '\r')"
+    mapfile -t ALL < <(
+      echo "$ALL_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+    )
+
+    INPUT="${TARGET_FLAVORS:-all}"
+    INPUT="$(echo "${INPUT:-}" | tr -d '\r' | sed 's/[[:space:]]//g')"
+
+    RESOLVED=()
+    if [ "$INPUT" = "all" ]; then
+      RESOLVED=("${ALL[@]}")
+    elif [[ "$INPUT" == *","* ]]; then
+      IFS=',' read -ra REQ <<< "$INPUT"
+      for r in "${REQ[@]}"; do
+        [ -z "$r" ] && continue
+        ok="false"
+        for f in "${ALL[@]}"; do
+          if [ "$f" = "$r" ]; then ok="true"; break; fi
+        done
+        if [ "$ok" != "true" ]; then
+          echo "Invalid flavor '$r'. Allowed: ${ALL[*]}"
+          exit 1
+        fi
+        RESOLVED+=("$r")
+      done
+    else
+      ok="false"
+      for f in "${ALL[@]}"; do
+        if [ "$f" = "$INPUT" ]; then ok="true"; break; fi
+      done
+      if [ "$ok" != "true" ]; then
+        echo "Invalid flavor '$INPUT'. Allowed: all, ${ALL[*]}"
+        exit 1
+      fi
+      RESOLVED+=("$INPUT")
+    fi
+
+    out="["
+    first=true
+    for f in "${RESOLVED[@]}"; do
+      if [ "$first" = false ]; then out+=","; fi
+      out+="\"$f\""
+      first=false
+    done
+    out+="]"
+
+    csv="$(IFS=,; echo "${RESOLVED[*]}")"
+    echo "RESOLVED_FLAVORS_JSON=$out" >> resolve.env
+    echo "RESOLVED_FLAVORS_CSV=$csv" >> resolve.env
+    export RESOLVED_FLAVORS_JSON="$out"
+    export RESOLVED_FLAVORS_CSV="$csv"
+
+build-release:
+  stage: build
+  <<: *setup-android
+  <<: *gradle-cache
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $PIPELINE_TYPE == "release"
+      when: manual
+  variables:
+    TARGET_FLAVORS: "all"
+  script:
+    - *resolve-flavors-script
+    - source resolve.env
+    - |
+      # Firebase config override
+      if [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+        echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+        unzip -o firebase_configs.zip
+        rm -f firebase_configs.zip
+      fi
+    - python3 ./scripts/ci/verify_google_signin_config.py --flavors "$RESOLVED_FLAVORS_CSV"
+    - |
+      # Decode keystore
+      echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
+      export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+    - |
+      set -euo pipefail
+      mapfile -t FLAVORS < <(
+        echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+      )
+
+      TASKS=()
+      for flavor in "${FLAVORS[@]}"; do
+        [ -z "$flavor" ] && continue
+        cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+        TASKS+=("bundle${cap}Release")
+      done
+
+      echo "Running: ${TASKS[*]}"
+      ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+  after_script:
+    - rm -f "$CI_PROJECT_DIR/release.jks"
+  artifacts:
+    paths:
+      - app/build/outputs/bundle/
+    reports:
+      dotenv: resolve.env
+    expire_in: 30 days
+
+publish-production:
+  stage: publish
+  <<: *setup-android
+  <<: *gradle-cache
+  needs:
+    - job: build-release
+      artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $PIPELINE_TYPE == "release" && $PUBLISH_TO_PLAY == "true"
+      when: manual
+  environment:
+    name: production
+  script:
+    - |
+      # Decode secrets
+      echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
+      export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+      echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "$CI_PROJECT_DIR/service-account.json"
+      export PLAY_SERVICE_ACCOUNT_JSON="$CI_PROJECT_DIR/service-account.json"
+    - |
+      set -euo pipefail
+      mapfile -t FLAVORS < <(
+        echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+      )
+
+      UPDATE_LISTING="${UPDATE_PLAY_LISTING:-false}"
+      TASKS=()
+      for flavor in "${FLAVORS[@]}"; do
+        [ -z "$flavor" ] && continue
+        cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+
+        if [ "$UPDATE_LISTING" = "true" ]; then
+          if [ ! -d "app/src/${flavor}/play" ]; then
+            echo "updatePlayListing=true but missing: app/src/${flavor}/play"
+            exit 1
+          fi
+          TASKS+=("publish${cap}ReleaseListing")
+        fi
+
+        TASKS+=("publish${cap}ReleaseBundle")
+      done
+
+      echo "Publishing: ${TASKS[*]}"
+      ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
+  after_script:
+    - rm -f "$CI_PROJECT_DIR/release.jks" "$CI_PROJECT_DIR/service-account.json"
+
+# ═════════════════════════════════════════════════════════════
+# MANUAL OPS PIPELINE
+# ═════════════════════════════════════════════════════════════
+# Trigger via web UI with variables:
+#   PIPELINE_TYPE=manual
+#   TARGET_FLAVOR=all|<flavor>|<csv>
+#   BUILD_TYPE=Debug|Release
+#   DO_QUALITY=true|false
+#   DO_BUILD=true|false
+#   DO_INTERNAL_TEST=true|false
+#   DO_PUBLISH=true|false
+#   UPDATE_PLAY_LISTING=true|false
+
+manual-ops:
+  stage: build
+  <<: *setup-android
+  <<: *gradle-cache
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $PIPELINE_TYPE == "manual"
+      when: manual
+  variables:
+    TARGET_FLAVOR: "all"
+    BUILD_TYPE: "Debug"
+    DO_QUALITY: "false"
+    DO_BUILD: "true"
+    DO_INTERNAL_TEST: "false"
+    DO_PUBLISH: "false"
+    UPDATE_PLAY_LISTING: "false"
+  script:
+    # Preflight
+    - |
+      if [ "$DO_INTERNAL_TEST" = "true" ] || [ "$DO_PUBLISH" = "true" ]; then
+        if [ "$BUILD_TYPE" != "Release" ]; then
+          echo "buildType must be Release when publishing."
+          exit 1
+        fi
+      fi
+
+    # Resolve
+    - export TARGET_FLAVORS="$TARGET_FLAVOR"
+    - *resolve-flavors-script
+    - source resolve.env
+
+    # Firebase config
+    - |
+      if [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+        echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+        unzip -o firebase_configs.zip
+        rm -f firebase_configs.zip
+      fi
+
+    - python3 ./scripts/ci/verify_google_signin_config.py --flavors "$RESOLVED_FLAVORS_CSV"
+
+    # Quality
+    - |
+      if [ "$DO_QUALITY" = "true" ]; then
+        ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+
+        mapfile -t FLAVORS < <(
+          echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+        )
+        TASKS=()
+        for flavor in "${FLAVORS[@]}"; do
+          [ -z "$flavor" ] && continue
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+          TASKS+=("lint${cap}Debug")
+        done
+        if [ "${#TASKS[@]}" -gt 0 ]; then
+          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+        fi
+      fi
+
+    # Secrets
+    - |
+      if [ "$BUILD_TYPE" = "Release" ]; then
+        echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
+        export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+      fi
+      if [ "$DO_INTERNAL_TEST" = "true" ] || [ "$DO_PUBLISH" = "true" ]; then
+        echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "$CI_PROJECT_DIR/service-account.json"
+        export PLAY_SERVICE_ACCOUNT_JSON="$CI_PROJECT_DIR/service-account.json"
+      fi
+
+    # Build
+    - |
+      if [ "$DO_BUILD" = "true" ]; then
+        mapfile -t FLAVORS < <(
+          echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+        )
+
+        TASKS=()
+        for flavor in "${FLAVORS[@]}"; do
+          [ -z "$flavor" ] && continue
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+          TASKS+=("assemble${cap}${BUILD_TYPE}")
+
+          if [ "$BUILD_TYPE" = "Release" ]; then
+            PUBLISH="${DO_INTERNAL_TEST}${DO_PUBLISH}"
+            if [[ "$PUBLISH" == *"true"* ]]; then
+              TASKS+=("bundle${cap}Release")
+            fi
+          fi
+        done
+
+        echo "Running: ${TASKS[*]}"
+        ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+      fi
+
+    # Publish Internal
+    - |
+      if [ "$DO_INTERNAL_TEST" = "true" ]; then
+        mapfile -t FLAVORS < <(
+          echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+        )
+        TASKS=()
+        for flavor in "${FLAVORS[@]}"; do
+          [ -z "$flavor" ] && continue
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+          if [ "$UPDATE_PLAY_LISTING" = "true" ]; then
+            TASKS+=("publish${cap}ReleaseListing")
+          fi
+          TASKS+=("publish${cap}ReleaseBundle")
+        done
+        echo "Publishing (internal): ${TASKS[*]}"
+        ./gradlew "${TASKS[@]}" -PPLAY_TRACK=internal --stacktrace --no-daemon --max-workers=2
+      fi
+
+    # Publish Production
+    - |
+      if [ "$DO_PUBLISH" = "true" ]; then
+        mapfile -t FLAVORS < <(
+          echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+        )
+        TASKS=()
+        for flavor in "${FLAVORS[@]}"; do
+          [ -z "$flavor" ] && continue
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+          if [ "$UPDATE_PLAY_LISTING" = "true" ]; then
+            TASKS+=("publish${cap}ReleaseListing")
+          fi
+          TASKS+=("publish${cap}ReleaseBundle")
+        done
+        echo "Publishing (production): ${TASKS[*]}"
+        ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
+      fi
+  after_script:
+    - rm -f "$CI_PROJECT_DIR/release.jks" "$CI_PROJECT_DIR/service-account.json" firebase_configs.zip
+  artifacts:
+    paths:
+      - app/build/outputs/
+    expire_in: 14 days

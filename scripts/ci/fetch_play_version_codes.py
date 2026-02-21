@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""
+Fetch current versionCodes from Google Play Console (Android Publisher API) per flavor/package.
+
+Why:
+- Each applicationId (each flavor) must have monotonically increasing versionCode on Play.
+- This script helps you discover the current max versionCode per app so you can set per-flavor
+  values in app-versions.properties safely.
+
+Notes:
+- The Android Publisher API exposes versionCodes; it does not reliably expose the Android
+  "versionName" displayed in Play Console. This script focuses on versionCode.
+
+Usage:
+  python scripts/ci/fetch_play_version_codes.py --flavors all
+  python scripts/ci/fetch_play_version_codes.py --flavors amenerrasulu,ayetelkursi --tracks production,internal
+
+Auth:
+  Reads PLAY_SERVICE_ACCOUNT_JSON from env (path or inline JSON). If missing, tries repo .env.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import pathlib
+import re
+import sys
+from dataclasses import dataclass
+
+
+FLAVOR_PATTERN = re.compile(
+    r'FlavorConfig\(\s*"(?P<name>[^"]+)"\s*,\s*"[^"]*"\s*,\s*"(?P<pkg>[^"]+)"'
+)
+
+
+@dataclass(frozen=True)
+class FlavorInfo:
+    name: str
+    package_name: str
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="Fetch Play Console versionCodes per flavor/package")
+    p.add_argument(
+        "--flavors",
+        default="all",
+        help="Comma-separated flavor list or 'all' (default: all)",
+    )
+    p.add_argument(
+        "--tracks",
+        default="production,internal,beta,alpha",
+        help="Comma-separated tracks to consider (default: production,internal,beta,alpha)",
+    )
+    p.add_argument(
+        "--out-json",
+        default="TEMP_OUT/play_version_codes.json",
+        help="Output JSON file path (default: TEMP_OUT/play_version_codes.json)",
+    )
+    p.add_argument(
+        "--out-props",
+        default="TEMP_OUT/app-versions.properties.suggested",
+        help="Output suggested properties file path (default: TEMP_OUT/app-versions.properties.suggested)",
+    )
+    p.add_argument(
+        "--suggest-next",
+        action="store_true",
+        help="Write suggested next versionCode (= max + 1) to the properties output",
+    )
+    return p.parse_args()
+
+
+def read_flavors(flavor_file: pathlib.Path) -> dict[str, FlavorInfo]:
+    text = flavor_file.read_text(encoding="utf-8")
+    result: dict[str, FlavorInfo] = {}
+    for m in FLAVOR_PATTERN.finditer(text):
+        name = m.group("name").strip()
+        pkg = m.group("pkg").strip()
+        result[name] = FlavorInfo(name=name, package_name=pkg)
+    if not result:
+        raise RuntimeError(f"No flavors parsed from {flavor_file}")
+    return result
+
+
+def try_read_from_dotenv(repo_root: pathlib.Path) -> str:
+    env_path = repo_root / ".env"
+    if not env_path.exists():
+        return ""
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.strip() != "PLAY_SERVICE_ACCOUNT_JSON":
+            continue
+        v = value.strip()
+        if len(v) >= 2 and v[0] == '"' and v[-1] == '"':
+            v = v[1:-1]
+        return v.strip()
+    return ""
+
+
+def load_service_account_value(raw: str) -> dict:
+    raw = (raw or "").strip()
+    if not raw:
+        raise RuntimeError("PLAY_SERVICE_ACCOUNT_JSON is missing/empty")
+
+    p = pathlib.Path(raw)
+    if p.exists() and p.is_file():
+        return json.loads(p.read_text(encoding="utf-8"))
+
+    if raw.startswith("{") and raw.endswith("}"):
+        return json.loads(raw)
+
+    raise RuntimeError("PLAY_SERVICE_ACCOUNT_JSON must be a file path or inline JSON content")
+
+
+def build_android_publisher(service_account_info: dict):
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            "Missing deps. Install: python -m pip install google-api-python-client google-auth"
+        ) from exc
+
+    creds = service_account.Credentials.from_service_account_info(
+        service_account_info,
+        scopes=["https://www.googleapis.com/auth/androidpublisher"],
+    )
+    return build("androidpublisher", "v3", credentials=creds, cache_discovery=False)
+
+
+def to_int_list(values) -> list[int]:
+    out: list[int] = []
+    for v in values or []:
+        try:
+            out.append(int(v))
+        except Exception:
+            continue
+    return out
+
+
+def fetch_tracks_version_codes(service, package_name: str) -> dict[str, list[int]]:
+    """
+    Returns mapping: track -> sorted versionCodes (unique) found in track releases.
+    Uses an edit to access edits.tracks.list.
+    """
+    resp = service.edits().insert(packageName=package_name, body={}).execute()
+    edit_id = str(resp.get("id") or "").strip()
+    if not edit_id:
+        raise RuntimeError("Missing edit id in response")
+
+    try:
+        tracks_resp = service.edits().tracks().list(packageName=package_name, editId=edit_id).execute()
+        tracks = tracks_resp.get("tracks") or []
+        result: dict[str, list[int]] = {}
+        for t in tracks:
+            track_name = str(t.get("track") or "").strip()
+            releases = t.get("releases") or []
+            codes: list[int] = []
+            for r in releases:
+                codes.extend(to_int_list(r.get("versionCodes")))
+            codes = sorted(set(codes))
+            if track_name:
+                result[track_name] = codes
+        return result
+    finally:
+        # Cleanup edit to avoid leaving uncommitted edits around.
+        try:
+            service.edits().delete(packageName=package_name, editId=edit_id).execute()
+        except Exception:
+            pass
+
+
+def ensure_parent(path: pathlib.Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def main() -> int:
+    args = parse_args()
+
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    flavor_file = repo_root / "buildSrc" / "src" / "main" / "kotlin" / "FlavorConfig.kt"
+    flavors = read_flavors(flavor_file)
+
+    want_tracks = [t.strip() for t in (args.tracks or "").split(",") if t.strip()]
+    if not want_tracks:
+        raise RuntimeError("--tracks resolved to empty list")
+
+    wanted = args.flavors.strip()
+    if wanted.lower() == "all":
+        selected = list(flavors.values())
+    else:
+        names = [x.strip() for x in wanted.split(",") if x.strip()]
+        missing = [n for n in names if n not in flavors]
+        if missing:
+            raise RuntimeError(f"Unknown flavors: {', '.join(missing)}")
+        selected = [flavors[n] for n in names]
+
+    raw_sa = os.environ.get("PLAY_SERVICE_ACCOUNT_JSON", "").strip()
+    if not raw_sa:
+        raw_sa = try_read_from_dotenv(repo_root)
+
+    service_account_info = load_service_account_value(raw_sa)
+    service = build_android_publisher(service_account_info)
+
+    out: dict[str, dict] = {"tracks": want_tracks, "apps": {}}
+
+    for fi in selected:
+        pkg = fi.package_name
+        try:
+            track_map = fetch_tracks_version_codes(service, pkg)
+            filtered = {t: track_map.get(t, []) for t in want_tracks}
+            max_code = max((c for codes in filtered.values() for c in codes), default=None)
+            out["apps"][fi.name] = {
+                "package": pkg,
+                "tracks": filtered,
+                "maxVersionCode": max_code,
+            }
+        except Exception as exc:  # noqa: BLE001
+            out["apps"][fi.name] = {
+                "package": pkg,
+                "error": str(exc).splitlines()[0][:240],
+            }
+
+    out_json = pathlib.Path(args.out_json)
+    ensure_parent(out_json)
+    out_json.write_text(json.dumps(out, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+
+    # Suggested properties file (versionCode only).
+    out_props = pathlib.Path(args.out_props)
+    ensure_parent(out_props)
+    lines: list[str] = []
+    lines.append("# Generated by scripts/ci/fetch_play_version_codes.py")
+    lines.append("# Populate app-versions.properties with per-flavor versionCode values.")
+    lines.append("#")
+    for fi in selected:
+        app = out["apps"].get(fi.name) or {}
+        if "error" in app:
+            lines.append(f"# {fi.name}: ERROR: {app['error']}")
+            continue
+        max_code = app.get("maxVersionCode")
+        if max_code is None:
+            lines.append(f"# {fi.name}: No versionCodes found on selected tracks ({','.join(want_tracks)})")
+            continue
+        code = int(max_code) + 1 if args.suggest_next else int(max_code)
+        suffix = " # next" if args.suggest_next else " # current-max"
+        lines.append(f"{fi.name}.versionCode={code}{suffix}")
+
+    out_props.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    print(f"Wrote: {out_json}")
+    print(f"Wrote: {out_props}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

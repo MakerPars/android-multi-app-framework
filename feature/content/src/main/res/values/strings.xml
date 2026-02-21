@@ -1,0 +1,10 @@
+<resources>
+    <string name="content_error">Hata: %s</string>
+    <string name="content_bismillah">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</string>
+    <string name="content_empty_title">İçerik Hazırlanıyor</string>
+    <string name="content_empty_subtitle">Bu uygulama için özel içerik yakında eklenecektir.</string>
+
+    <string name="content_mode_arabic">Arapça</string>
+    <string name="content_mode_latin">Latince</string>
+    <string name="content_mode_turkish">Meal</string>
+</resources>

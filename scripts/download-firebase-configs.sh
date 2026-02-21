@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# ══════════════════════════════════════════════════════════════
+# Firebase Config Downloader
+# Downloads google-services.json for all product flavours
+# ══════════════════════════════════════════════════════════════
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_SRC_DIR="$PROJECT_ROOT/app/src"
+
+# Color output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Firebase Config Downloader"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Check if firebase CLI is installed
+if ! command -v firebase &> /dev/null; then
+    echo -e "${RED}❌ Firebase CLI not found${NC}"
+    echo "Install: npm install -g firebase-tools"
+    exit 1
+fi
+
+# Check if logged in
+if ! firebase projects:list &> /dev/null; then
+    echo -e "${YELLOW}⚠️  Not logged in to Firebase${NC}"
+    echo "Run: firebase login"
+    exit 1
+fi
+
+# Flavours array (Dynamic)
+echo "Fetching flavors from Gradle..."
+FLAVOURS_JSON=$(./gradlew -q printFlavors)
+FLAVOURS_STR=$(echo $FLAVOURS_JSON | tr -d '[]",')
+FLAVOURS=($FLAVOURS_STR)
+
+download_config() {
+    local flavour=$1
+    local package_name="com.parsfilo.${flavour}"
+    local output_dir="$APP_SRC_DIR/$flavour"
+    
+    echo -e "\n${YELLOW}▸ Processing: $flavour${NC}"
+    
+    # Create directory if not exists
+    mkdir -p "$output_dir"
+    
+    # Download google-services.json
+    # Project ID is constant for all flavors (see config/firebase-apps.json)
+    local project_id="mobil-oaslananka-firebase"
+    
+    if firebase apps:sdkconfig ANDROID "$package_name" \
+        --project="$project_id" \
+        --out="$output_dir/google-services.json" 2>/dev/null; then
+        echo -e "${GREEN}✓ Downloaded: $output_dir/google-services.json${NC}"
+    else
+        echo -e "${RED}✗ Failed: Check Firebase project and package name${NC}"
+    fi
+}
+
+# Download for all flavours
+for flavour in "${FLAVOURS[@]}"; do
+    download_config "$flavour"
+done
+
+echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✓ Config download complete${NC}"
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

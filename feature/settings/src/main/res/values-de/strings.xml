@@ -1,0 +1,45 @@
+<resources>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_dark_mode">Dunkelmodus</string>
+    <string name="settings_font_size">Schriftgröße</string>
+    <string name="settings_font_size_value">Schriftgröße: %d</string>
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_notifications_desc">App-Benachrichtigungen ein/aus</string>
+    <string name="settings_share_app">Diese App teilen</string>
+    <string name="settings_share_app_desc">Teile die App über WhatsApp</string>
+    <string name="settings_share_app_button">Mit WhatsApp teilen</string>
+    <string name="settings_share_app_message">Probier diese App aus: %1$s</string>
+    <string name="settings_whatsapp_not_found">WhatsApp ist nicht installiert.</string>
+    <string name="settings_device_id_title">Geräte-ID</string>
+    <string name="settings_device_id_desc">Nutze diese Kennung für Test-Benachrichtigungen</string>
+    <string name="settings_device_id_copy">Geräte-ID kopieren</string>
+    <string name="settings_device_id_copied">Geräte-ID kopiert</string>
+    <string name="settings_fcm_debug_title">Debug FCM-Token</string>
+    <string name="settings_fcm_debug_desc">Nur in Debug-Builds sichtbar. Token für Test-Benachrichtigungen abrufen.</string>
+    <string name="settings_fcm_debug_empty">Token wurde noch nicht abgerufen.</string>
+    <string name="settings_fcm_debug_refresh">Token abrufen / erneuern</string>
+    <string name="settings_fcm_debug_fetching">Token wird abgerufen…</string>
+    <string name="settings_fcm_debug_copy">FCM-Token kopieren</string>
+    <string name="settings_fcm_debug_copied">FCM-Token kopiert</string>
+    <string name="settings_fcm_debug_refreshed">FCM-Token aktualisiert</string>
+    <string name="settings_fcm_debug_error">FCM-Token konnte nicht abgerufen werden</string>
+
+    <string name="settings_crash_debug_title">Crashlytics-Test</string>
+    <string name="settings_crash_debug_desc">Nur in Debug-Builds sichtbar. Crashlytics-Berichterstattung testen.</string>
+    <string name="settings_crash_debug_fatal">💥 Test-Crash (Fatal)</string>
+    <string name="settings_crash_debug_non_fatal">⚠️ Non-Fatal-Fehler senden</string>
+    <string name="settings_crash_debug_non_fatal_sent">Non-Fatal-Fehler an Crashlytics gesendet</string>
+
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_language_tr">Türkisch</string>
+    <string name="settings_language_en">Englisch</string>
+    <string name="settings_language_de">Deutsch</string>
+    <string name="settings_language_changed">Sprache geändert</string>
+
+    <string name="settings_privacy_options">Datenschutzoptionen</string>
+    <string name="settings_privacy_options_desc">Einwilligung für Werbung verwalten</string>
+    <string name="settings_privacy_options_button">Verwalten</string>
+    <string name="settings_privacy_options_unavailable">Diese Aktion ist derzeit nicht verfügbar</string>
+    <string name="settings_privacy_options_error">Datenschutzoptionen konnten nicht geöffnet werden</string>
+</resources>

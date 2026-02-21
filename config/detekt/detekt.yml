@@ -1,0 +1,42 @@
+# ═══════════════════════════════════════════════════════════════
+# Detekt Configuration — Standard/Balanced CI
+# ═══════════════════════════════════════════════════════════════
+
+build:
+    maxIssues: -1
+
+# ───────────────────────────────────────────────────────────────
+# Critical bug-oriented rules
+# ───────────────────────────────────────────────────────────────
+potential-bugs:
+    active: true
+    Deprecation:
+        active: true
+    UnsafeCallOnNullableType:
+        active: true
+    UnsafeCast:
+        active: true
+    UselessPostfixExpression:
+        active: true
+
+# ───────────────────────────────────────────────────────────────
+# Keep CI practical: disable noisy style/complexity gates
+# Lint + ktlint continue to cover formatting/basic hygiene.
+# ───────────────────────────────────────────────────────────────
+complexity:
+    active: false
+
+naming:
+    active: false
+
+performance:
+    active: false
+
+coroutines:
+    active: false
+
+exceptions:
+    active: false
+
+style:
+    active: false

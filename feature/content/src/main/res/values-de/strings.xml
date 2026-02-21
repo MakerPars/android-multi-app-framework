@@ -1,0 +1,10 @@
+<resources>
+    <string name="content_error">Fehler: %s</string>
+    <string name="content_bismillah">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</string>
+    <string name="content_empty_title">Inhalt wird vorbereitet</string>
+    <string name="content_empty_subtitle">Spezielle Inhalte für diese App werden bald hinzugefügt.</string>
+
+    <string name="content_mode_arabic">Arabisch</string>
+    <string name="content_mode_latin">Latein</string>
+    <string name="content_mode_turkish">Übersetzung</string>
+</resources>

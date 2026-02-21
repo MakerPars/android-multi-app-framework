@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /user_messages/{messageId} {
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // devices/ — Yazma: Sadece Cloud Functions (Admin SDK kuralları bypass eder).
+    // Client'tan doğrudan okuma/yazma gerekmez.
+    match /devices/{deviceId} {
+      allow read, write: if false;
+    }
+
+    // scheduled_events/ — Yönetim: Firebase Console veya Admin SDK ile.
+    // Client'tan erişim gerekmez.
+    match /scheduled_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Default deny for all other collections.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

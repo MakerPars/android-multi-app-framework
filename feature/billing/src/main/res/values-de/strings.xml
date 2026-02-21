@@ -1,0 +1,27 @@
+<resources>
+    <string name="billing_subscription_title">Abonnement</string>
+    <string name="billing_subscription_description">Wähle einen Plan für ein werbefreies Erlebnis</string>
+
+    <string name="billing_active_title">Dein Abonnement ist aktiv</string>
+    <string name="billing_active_subtitle">Genieße ein werbefreies Erlebnis</string>
+
+    <string name="billing_error_prefix">Fehler: %s</string>
+    <string name="billing_plans_loading">Pläne werden geladen...</string>
+    <string name="billing_selected_badge">Ausgewählt</string>
+    <string name="billing_subscribe">Abonnieren</string>
+
+    <string name="billing_feature_no_ads">Alle Anzeigen werden entfernt</string>
+    <string name="billing_feature_continuous">Ununterbrochenes Hörerlebnis</string>
+    <string name="billing_feature_no_open_ad">Keine App-Startanzeigen</string>
+    <string name="billing_feature_cancel_anytime">Jederzeit kündigen</string>
+
+    <string name="billing_plan_daily">Täglich</string>
+    <string name="billing_plan_weekly">Wöchentlich</string>
+    <string name="billing_plan_monthly">Monatlich</string>
+    <string name="billing_plan_2_months">2 Monate</string>
+    <string name="billing_plan_3_months">3 Monate</string>
+    <string name="billing_plan_6_months">6 Monate</string>
+    <string name="billing_plan_yearly">Jährlich</string>
+    <string name="billing_plan_generic">Plan</string>
+</resources>
+

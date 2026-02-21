@@ -1,0 +1,295 @@
+name: Manual Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_flavor:
+        description: 'Target flavor or "all"'
+        required: true
+        default: 'all'
+        type: string
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'Debug'
+        type: choice
+        options:
+          - Debug
+          - Release
+      do_quality:
+        description: 'Run quality checks (detekt/ktlint/lint)'
+        required: false
+        default: false
+        type: boolean
+      do_build:
+        description: 'Build APK/AAB'
+        required: false
+        default: true
+        type: boolean
+      do_internal_test:
+        description: 'Publish to Play Internal testing track (Release only)'
+        required: false
+        default: false
+        type: boolean
+      do_publish:
+        description: 'Publish to Play Production track (Release only)'
+        required: false
+        default: false
+        type: boolean
+      update_play_listing:
+        description: 'Update Play listing/metadata from repo'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false
+  JAVA_VERSION: '21'
+  ANDROID_API_LEVEL: 36
+
+jobs:
+  manual-ops:
+    name: Manual Ops
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.do_publish == 'true' && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          api-level: ${{ env.ANDROID_API_LEVEL }}
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Preflight Inputs
+        run: |
+          if [ "${{ github.event.inputs.do_internal_test }}" = "true" ] || [ "${{ github.event.inputs.do_publish }}" = "true" ]; then
+            if [ "${{ github.event.inputs.build_type }}" != "Release" ]; then
+              echo "buildType must be Release when publishing."
+              exit 1
+            fi
+          fi
+
+      - name: Resolve Flavors
+        id: resolve
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+
+          ALL_JSON="$(./gradlew -q printFlavors | tr -d '\r')"
+          mapfile -t ALL < <(
+            echo "$ALL_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+
+          INPUT="${{ github.event.inputs.target_flavor }}"
+          INPUT="$(echo "${INPUT:-}" | tr -d '\r' | sed 's/[[:space:]]//g')"
+
+          RESOLVED=()
+          if [ "$INPUT" = "all" ]; then
+            RESOLVED=("${ALL[@]}")
+          elif [[ "$INPUT" == *","* ]]; then
+            IFS=',' read -ra REQ <<< "$INPUT"
+            for r in "${REQ[@]}"; do
+              [ -z "$r" ] && continue
+              ok="false"
+              for f in "${ALL[@]}"; do
+                if [ "$f" = "$r" ]; then ok="true"; break; fi
+              done
+              if [ "$ok" != "true" ]; then
+                echo "Invalid flavor '$r'. Allowed: ${ALL[*]}"
+                exit 1
+              fi
+              RESOLVED+=("$r")
+            done
+          else
+            ok="false"
+            for f in "${ALL[@]}"; do
+              if [ "$f" = "$INPUT" ]; then ok="true"; break; fi
+            done
+            if [ "$ok" != "true" ]; then
+              echo "Invalid flavor '$INPUT'. Allowed: all, ${ALL[*]}"
+              exit 1
+            fi
+            RESOLVED+=("$INPUT")
+          fi
+
+          out="["
+          first=true
+          for f in "${RESOLVED[@]}"; do
+            if [ "$first" = false ]; then out+=","; fi
+            out+="\"$f\""
+            first=false
+          done
+          out+="]"
+
+          csv="$(IFS=,; echo "${RESOLVED[*]}")"
+          echo "resolved_json=$out" >> "$GITHUB_OUTPUT"
+          echo "resolved_csv=$csv" >> "$GITHUB_OUTPUT"
+          echo "RESOLVED_FLAVORS_JSON=$out" >> "$GITHUB_ENV"
+          echo "RESOLVED_FLAVORS_CSV=$csv" >> "$GITHUB_ENV"
+
+      - name: Firebase Config Override (R2 preferred, Base64 fallback)
+        env:
+          FIREBASE_CONFIGS_ZIP_BASE64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          CF_R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+          CF_R2_FIREBASE_OBJECT: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
+            export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
+            export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+            npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config cloudflare/workers/content-api/wrangler.toml
+            unzip -o firebase_configs.zip
+            rm -f firebase_configs.zip
+            echo "Firebase configs restored from R2."
+          elif [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+            echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+            unzip -o firebase_configs.zip
+            rm -f firebase_configs.zip
+            echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
+          else
+            echo "No Firebase override secret found. Using repository defaults."
+          fi
+      - name: Validate Google Sign-In Config
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
+
+      # ── Quality Checks ──
+      - name: Run Quality Checks
+        if: github.event.inputs.do_quality == 'true'
+        run: |
+          set -euo pipefail
+          ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            TASKS+=("lint${cap}Debug")
+          done
+          if [ "${#TASKS[@]}" -gt 0 ]; then
+            ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+          fi
+
+      # ── Secrets Setup ──
+      - name: Decode Keystore
+        if: >-
+          github.event.inputs.build_type == 'Release' &&
+          (github.event.inputs.do_build == 'true' || github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
+          echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
+
+      - name: Decode Play Service Account
+        if: github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      # ── Build ──
+      - name: Build
+        if: github.event.inputs.do_build == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BUILD_TYPE="${{ github.event.inputs.build_type }}"
+
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            TASKS+=("assemble${cap}${BUILD_TYPE}")
+
+            if [ "$BUILD_TYPE" = "Release" ]; then
+              PUBLISH="${{ github.event.inputs.do_internal_test }}${{ github.event.inputs.do_publish }}"
+              if [[ "$PUBLISH" == *"true"* ]]; then
+                TASKS+=("bundle${cap}Release")
+              fi
+            fi
+          done
+
+          echo "Running: ${TASKS[*]}"
+          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+
+      - name: Upload Build Outputs
+        if: github.event.inputs.do_build == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-${{ github.event.inputs.target_flavor }}-${{ github.event.inputs.build_type }}
+          path: app/build/outputs/
+          retention-days: 14
+
+      # ── Play Console Publishing ──
+      - name: Publish to Internal Track
+        if: github.event.inputs.do_internal_test == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            if [ "${{ github.event.inputs.update_play_listing }}" = "true" ]; then
+              TASKS+=("publish${cap}ReleaseListing")
+            fi
+            TASKS+=("publish${cap}ReleaseBundle")
+          done
+          echo "Publishing (internal): ${TASKS[*]}"
+          ./gradlew "${TASKS[@]}" -PPLAY_TRACK=internal --stacktrace --no-daemon --max-workers=2
+
+      - name: Publish to Production Track
+        if: github.event.inputs.do_publish == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            if [ "${{ github.event.inputs.update_play_listing }}" = "true" ]; then
+              TASKS+=("publish${cap}ReleaseListing")
+            fi
+            TASKS+=("publish${cap}ReleaseBundle")
+          done
+          echo "Publishing (production): ${TASKS[*]}"
+          ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
+
+      - name: Cleanup Secrets
+        if: always()
+        run: |
+          rm -f "${{ runner.temp }}/release.jks" "${{ runner.temp }}/service-account.json"

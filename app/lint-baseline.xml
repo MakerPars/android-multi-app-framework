@@ -1,0 +1,1580 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.0.1" type="baseline" client="gradle" dependencies="true" name="AGP (9.0.1)" variant="all" version="9.0.1">
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="    val timeText = String.format(&quot;%02d:%02d&quot;, minutes, seconds)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/ui/RewardsScreen.kt"
+            line="337"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_APP_NOTIFICATION_SETTINGS`"
+        errorLine1="                                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/notifications/ui/NotificationsScreen.kt"
+            line="209"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#EXTRA_APP_PACKAGE`"
+        errorLine1="                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
+        errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/notifications/ui/NotificationsScreen.kt"
+            line="210"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_APP_NOTIFICATION_SETTINGS`"
+        errorLine1="    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="505"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.provider.Settings#EXTRA_APP_PACKAGE`"
+        errorLine1="        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="506"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="InvalidPackage"
+        message="Invalid package reference in library; not included in Android: `javax.naming.directory`. Referenced from `io.grpc.internal.JndiResourceResolverFactory.JndiRecordFetcher`.">
+        <location
+            file="../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
+    </issue>
+
+    <issue
+        id="InvalidPackage"
+        message="Invalid package reference in library; not included in Android: `javax.naming`. Referenced from `io.grpc.internal.JndiResourceResolverFactory.JndiRecordFetcher`.">
+        <location
+            file="../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
+    </issue>
+
+    <issue
+        id="MemberExtensionConflict"
+        message="`isActive` is defined both as a member in class `kotlinx.coroutines.Job` and an extension in package `kotlinx.coroutines`. The defined behavior for this is to use the member, but since the extension is explicitly imported into this file, there&apos;s a chance that this was not expected. (One common way this happens is for members to be added to a class after code was already written to use an extension)."
+        errorLine1="        if (positionTrackingJob?.isActive == true) return"
+        errorLine2="                                 ~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="342"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="NoOp"
+        message="This call result is unused: valueOf"
+        errorLine1="                com.parsfilo.contentapp.core.model.DisplayMode.valueOf(mode)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/datastore/PreferencesDataSource.kt"
+            line="50"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="RestrictedApi"
+        message="NavDestination.getDisplayName can only be called from within the same library group (referenced groupId=`androidx.navigation` from groupId=`ContentApp`)"
+        errorLine1="            .map { entry -> entry.destination.route ?: entry.destination.displayName }"
+        errorLine2="                                                                         ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/ui/AppNavigation.kt"
+            line="76"
+            column="74"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="    val screenWidthDp = configuration.screenWidthDp"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/ui/BannerAd.kt"
+            line="28"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                        context.getString(R.string.settings_device_id_copied),"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="370"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                                            context.getString(R.string.settings_fcm_debug_refreshed),"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="440"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                                        ?: context.getString(R.string.settings_fcm_debug_error)"
+        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="446"
+            column="60"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                            context.getString(R.string.settings_fcm_debug_copied),"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="473"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier,"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/designsystem/component/AppTopBar.kt"
+            line="25"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/MiniAudioPlayer.kt"
+            line="49"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;admob_app_id&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;admob_app_id&quot;>ca-app-pub-3312485084079132~4012562548&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="3"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;admob_app_id&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;admob_app_id&quot;>ca-app-pub-3940256099942544~3347511713&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="3"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_banner&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3312485084079132/5773559718&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_banner&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3940256099942544/6300978111&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_interstitial&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3312485084079132/9095252852&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="5"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_interstitial&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3940256099942544/1033173712&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="5"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_native&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3312485084079132/8502830681&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_native&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3940256099942544/2247696110&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_rewarded&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3312485084079132/1834314703&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_rewarded&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3940256099942544/5224354917&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_open_app&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3312485084079132/5170924485&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="8"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;ad_unit_open_app&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3940256099942544/3419835294&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/debug/res/values/ads.xml"
+            line="8"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;app_name&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;app_name&quot;>Placeholder amenerrasulu&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/strings.xml"
+            line="2"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_action_mark_all_read&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_action_mark_all_read&quot;>Tümünü oku&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="9"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_action_delete_all&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_action_delete_all&quot;>Tümünü sil&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="10"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_dialog_close&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_dialog_close&quot;>Kapat&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="11"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_dialog_mark_unread&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_dialog_mark_unread&quot;>Okunmadı yap&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="12"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_dialog_delete&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_dialog_delete&quot;>Sil&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_state_unread&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_state_unread&quot;>Okunmadı&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="14"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;notifications_state_read&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
+        errorLine1="    &lt;string name=&quot;notifications_state_read&quot;>Okundu&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.ad_unit_banner` appears to be unused"
+        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3312485084079132/5773559718&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.ad_unit_interstitial` appears to be unused"
+        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3312485084079132/9095252852&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="5"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.ad_unit_native` appears to be unused"
+        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3312485084079132/8502830681&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.ad_unit_rewarded` appears to be unused"
+        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3312485084079132/1834314703&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.ad_unit_open_app` appears to be unused"
+        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3312485084079132/5170924485&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/ads.xml"
+            line="8"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.purple_200` appears to be unused"
+        errorLine1="    &lt;color name=&quot;purple_200&quot;>#FFBB86FC&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="3"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.purple_500` appears to be unused"
+        errorLine1="    &lt;color name=&quot;purple_500&quot;>#FF6200EE&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="4"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.purple_700` appears to be unused"
+        errorLine1="    &lt;color name=&quot;purple_700&quot;>#FF3700B3&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="5"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.teal_200` appears to be unused"
+        errorLine1="    &lt;color name=&quot;teal_200&quot;>#FF03DAC5&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="6"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.teal_700` appears to be unused"
+        errorLine1="    &lt;color name=&quot;teal_700&quot;>#FF018786&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="7"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.black` appears to be unused"
+        errorLine1="    &lt;color name=&quot;black&quot;>#FF000000&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="8"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.white` appears to be unused"
+        errorLine1="    &lt;color name=&quot;white&quot;>#FFFFFFFF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="9"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.dark_green_bg` appears to be unused"
+        errorLine1="    &lt;color name=&quot;dark_green_bg&quot;>#FF1F4435&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="10"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.gold_accent` appears to be unused"
+        errorLine1="    &lt;color name=&quot;gold_accent&quot;>#FFCDA434&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="11"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.cream_white` appears to be unused"
+        errorLine1="    &lt;color name=&quot;cream_white&quot;>#FFFFF8E7&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="12"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.dark_green_card` appears to be unused"
+        errorLine1="    &lt;color name=&quot;dark_green_card&quot;>#FF2D5A3F&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="13"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.nav_bar_dark_green` appears to be unused"
+        errorLine1="    &lt;color name=&quot;nav_bar_dark_green&quot;>#FF1B3D2F&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="14"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_forward_10` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="../feature/audio/src/main/res/drawable/ic_forward_10.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_replay_10` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="../feature/audio/src/main/res/drawable/ic_replay_10.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.ic_launcher_background` appears to be unused"
+        errorLine1="    &lt;color name=&quot;ic_launcher_background&quot;>#A7B333&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/amenerrasulu/res/values/launcher_colors.xml"
+            line="3"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.content_bismillah` appears to be unused"
+        errorLine1="    &lt;string name=&quot;content_bismillah&quot;>بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/content/src/main/res/values/strings.xml"
+            line="3"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_font_size` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_font_size&quot;>Yazı Boyutu&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/settings/src/main/res/values/strings.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.auth_sign_in_failed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;auth_sign_in_failed&quot;>Giriş başarısız oldu. Lütfen tekrar deneyin.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/auth/src/main/res/values/strings.xml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.bismillah` appears to be unused"
+        errorLine1="    &lt;string name=&quot;bismillah&quot;>بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="12"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.loading` appears to be unused"
+        errorLine1="    &lt;string name=&quot;loading&quot;>Yükleniyor…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_generic` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_generic&quot;>Bir hata oluştu&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="14"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_network` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_network&quot;>İnternet bağlantısı yok&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.error_retry` appears to be unused"
+        errorLine1="    &lt;string name=&quot;error_retry&quot;>Tekrar dene&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="16"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.share_app_message` appears to be unused"
+        errorLine1="    &lt;string name=&quot;share_app_message&quot;>📖 %1$s uygulamasını kullanıyorum, çok beğendim!\n\nSen de indir: %2$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="19"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.share_chooser_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;share_chooser_title&quot;>Uygulamayı Paylaş&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="20"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.whatsapp_not_installed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;whatsapp_not_installed&quot;>WhatsApp yüklü değil&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="21"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.audio_loading` appears to be unused"
+        errorLine1="    &lt;string name=&quot;audio_loading&quot;>Ses yükleniyor…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="24"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.audio_play` appears to be unused"
+        errorLine1="    &lt;string name=&quot;audio_play&quot;>Oynat&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="25"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.audio_pause` appears to be unused"
+        errorLine1="    &lt;string name=&quot;audio_pause&quot;>Duraklat&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="26"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.audio_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;audio_error&quot;>Ses yüklenemedi&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="27"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.display_mode_arabic` appears to be unused"
+        errorLine1="    &lt;string name=&quot;display_mode_arabic&quot;>Arapça&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="30"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.display_mode_turkish` appears to be unused"
+        errorLine1="    &lt;string name=&quot;display_mode_turkish&quot;>Türkçe&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="31"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.display_mode_latin` appears to be unused"
+        errorLine1="    &lt;string name=&quot;display_mode_latin&quot;>Latin&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="32"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_font_size` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_font_size&quot;>Yazı Boyutu&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="36"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sign_in_google` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sign_in_google&quot;>Google ile Giriş Yap&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="39"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sign_in_description` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sign_in_description&quot;>Mesaj göndermek ve yanıtları görmek için Google hesabınızla giriş yapın.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="40"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.sign_in_failed` appears to be unused"
+        errorLine1="    &lt;string name=&quot;sign_in_failed&quot;>Giriş başarısız oldu. Lütfen tekrar deneyin.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="41"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.subscription_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;subscription_title&quot;>Abonelik&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="60"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.subscription_description` appears to be unused"
+        errorLine1="    &lt;string name=&quot;subscription_description&quot;>Reklamsız deneyim için bir plan seçin.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="61"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.subscription_coming_soon` appears to be unused"
+        errorLine1="    &lt;string name=&quot;subscription_coming_soon&quot;>Yakında aktif olacak&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="62"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.billing_unavailable` appears to be unused"
+        errorLine1="    &lt;string name=&quot;billing_unavailable&quot;>Satın alma hizmeti kullanılamıyor&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="63"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.rewards_description` appears to be unused"
+        errorLine1="    &lt;string name=&quot;rewards_description&quot;>Reklam izleyerek geçici olarak reklamsız kullanım kazanın.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="67"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.message_detail_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;message_detail_title&quot;>Mesaj Detayı&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="70"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.notification_detail_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;notification_detail_title&quot;>Bildirim Detayı&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="71"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `updateState` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                updateState()"
+        errorLine2="                ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="301"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `startPositionTracking` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                    startPositionTracking()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="303"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `stopPositionTracking` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                    stopPositionTracking()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="306"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `updateState` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                updateState()"
+        errorLine2="                ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="311"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `startPositionTracking` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                    startPositionTracking()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="313"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `stopPositionTracking` of class `AudioPlayerViewModel` requires synthetic accessor"
+        errorLine1="                    stopPositionTracking()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="315"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `queryProductDetails` of class `BillingManager` requires synthetic accessor"
+        errorLine1="                    queryProductDetails()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
+            line="83"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `queryPurchases` of class `BillingManager` requires synthetic accessor"
+        errorLine1="                    queryPurchases()"
+        errorLine2="                    ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
+            line="84"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `setError` of class `BillingManager` requires synthetic accessor"
+        errorLine1="                    setError(&quot;Billing setup failed: ${billingResult.debugMessage}&quot;)"
+        errorLine2="                    ~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
+            line="86"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `useConnection` of class `HttpPushRegistrationSenderKt` requires synthetic accessor"
+        errorLine1="            connection.useConnection {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/HttpPushRegistrationSender.kt"
+            line="37"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toJson` of class `HttpPushRegistrationSenderKt` requires synthetic accessor"
+        errorLine1="                val body = payload.toJson().toString()"
+        errorLine2="                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/HttpPushRegistrationSender.kt"
+            line="38"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
+        errorLine1="                    maybeReload()"
+        errorLine2="                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
+            line="76"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
+        errorLine1="                    maybeReload()"
+        errorLine2="                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
+            line="76"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
+        errorLine1="                    maybeReload()"
+        errorLine2="                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
+            line="82"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
+        errorLine1="                    maybeReload()"
+        errorLine2="                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
+            line="82"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `useConnection` of class `NetworkCachedOtherAppsRepositoryKt` requires synthetic accessor"
+        errorLine1="            connection.useConnection { conn ->"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/data/NetworkCachedOtherAppsRepository.kt"
+            line="129"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `readAppVersion` of class `PushRegistrationManagerKt` requires synthetic accessor"
+        errorLine1="                    appVersion = readAppVersion(context),"
+        errorLine2="                                 ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/PushRegistrationManager.kt"
+            line="43"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `fetchTokenSuspend` of class `PushRegistrationManagerKt` requires synthetic accessor"
+        errorLine1="        return runCatching { firebaseMessaging.fetchTokenSuspend() }"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/PushRegistrationManager.kt"
+            line="63"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Mesaj Gönder`, used in `messages_empty_cta` and `messages_send`"
+        errorLine1="    &lt;string name=&quot;messages_send&quot;>Mesaj Gönder&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="3"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="6"
+            column="5"
+            message="Duplicates value in `messages_send`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Nachricht senden`, used in `messages_empty_cta` and `messages_send`"
+        errorLine1="    &lt;string name=&quot;messages_send&quot;>Nachricht senden&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="3"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="6"
+            column="5"
+            message="Duplicates value in `messages_send`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Send Message`, used in `messages_empty_cta` and `messages_send`"
+        errorLine1="    &lt;string name=&quot;messages_send&quot;>Send Message&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="3"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="6"
+            column="5"
+            message="Duplicates value in `messages_send`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Subscription`, used in `nav_premium` and `subscription_title`"
+        errorLine1="    &lt;string name=&quot;nav_premium&quot;>Subscription&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="3"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="48"
+            column="5"
+            message="Duplicates value in `nav_premium`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Messages`, used in `messages_title` and `nav_messages`"
+        errorLine1="    &lt;string name=&quot;nav_messages&quot;>Messages&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="5"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="34"
+            column="5"
+            message="Duplicates value in `nav_messages`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Nachrichten`, used in `messages_title` and `nav_messages`"
+        errorLine1="    &lt;string name=&quot;nav_messages&quot;>Nachrichten&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="5"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="34"
+            column="5"
+            message="Duplicates value in `nav_messages`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Abonelik`, used in `nav_premium` and `subscription_title`"
+        errorLine1="    &lt;string name=&quot;nav_premium&quot;>Abonelik&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="6"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="60"
+            column="5"
+            message="Duplicates value in `nav_premium`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Benachrichtigungen`, used in `nav_alerts` and `notifications_title`"
+        errorLine1="    &lt;string name=&quot;nav_alerts&quot;>Benachrichtigungen&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="6"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="44"
+            column="5"
+            message="Duplicates value in `nav_alerts`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Notifications`, used in `nav_alerts` and `notifications_title`"
+        errorLine1="    &lt;string name=&quot;nav_alerts&quot;>Notifications&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="6"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="44"
+            column="5"
+            message="Duplicates value in `nav_alerts`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Mesajlar`, used in `messages_title` and `nav_messages`"
+        errorLine1="    &lt;string name=&quot;nav_messages&quot;>Mesajlar&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="8"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="44"
+            column="5"
+            message="Duplicates value in `nav_messages`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Bildirimler`, used in `nav_alerts` and `notifications_title`"
+        errorLine1="    &lt;string name=&quot;nav_alerts&quot;>Bildirimler&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="9"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="55"
+            column="5"
+            message="Duplicates value in `nav_alerts`"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Token wird abgerufen...&lt;/string>"
+        errorLine2="                                               ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="21"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Fetching token...&lt;/string>"
+        errorLine2="                                               ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="21"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Token alınıyor...&lt;/string>"
+        errorLine2="                                               ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="21"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="ConvertToWebp"
+        message="One or more images in this project can be converted to the WebP format which typically results in smaller file sizes, even for lossless conversion">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-hdpi/ic_launcher_monochrome.png`: expected 72x72, but was 162x162">
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-mdpi/ic_launcher_monochrome.png`: expected 48x48, but was 108x108">
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xhdpi/ic_launcher_monochrome.png`: expected 96x96, but was 216x216">
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xxhdpi/ic_launcher_monochrome.png`: expected 144x144, but was 324x324">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xxxhdpi/ic_launcher_monochrome.png`: expected 192x192, but was 432x432">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-hdpi/ic_launcher_round_monochrome.png`: expected 72x72, but was 162x162">
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-mdpi/ic_launcher_round_monochrome.png`: expected 48x48, but was 108x108">
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xhdpi/ic_launcher_round_monochrome.png`: expected 96x96, but was 216x216">
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xxhdpi/ic_launcher_round_monochrome.png`: expected 144x144, but was 324x324">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconExpectedSize"
+        message="Incorrect icon size for `mipmap-xxxhdpi/ic_launcher_round_monochrome.png`: expected 192x192, but was 432x432">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_background.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_background.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_background.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_background.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_background.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_background.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_background.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_background.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_background.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_background.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_foreground.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_foreground.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_foreground.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_foreground.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_foreground.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
+        <location
+            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                            Intent(Intent.ACTION_VIEW, Uri.parse(&quot;market://details?id=${app.packageName}&quot;))"
+        errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
+            line="104"
+            column="56"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                Uri.parse(&quot;https://play.google.com/store/apps/details?id=${app.packageName}&quot;)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
+            line="110"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            Uri.parse(&quot;https://wa.me/?text=$encodedText&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="521"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                Uri.parse(&quot;market://details?id=com.whatsapp&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
+            line="545"
+            column="17"/>
+    </issue>
+
+</issues>

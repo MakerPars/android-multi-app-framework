@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Mobil Uygulama Geliştirici Sayfası</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3312485084079132"
+    crossorigin="anonymous"></script>
+  <script>
+    grecaptcha.ready(function () {
+      grecaptcha.execute('6LeNf3EsAAAAAHXRN7j8aITS9wH5cLliGJbrdd7_', {
+        action: 'homepage'
+      }).then(function (token) {
+        console.log("recaptcha token:", token);
+      });
+    });
+  </script>
+</head>
+
+<body>
+
+  <h1>Mobil Uygulama Geliştirici Sayfası</h1>
+
+  <p>Bu web sitesi, mobil uygulamalar için gerekli yasal ve teknik bilgilendirme sayfalarını barındırır.</p>
+
+  <ul>
+    <li><a href="/privacy">Gizlilik Politikası</a></li>
+    <li><a href="/terms">Kullanım Şartları</a></li>
+    <li><a href="/support">Destek</a></li>
+  </ul>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      // Inject with scripts/firebase/render_web_index.py before deploy.
+      apiKey: "__FIREBASE_WEB_API_KEY__",
+      authDomain: "mobil-oaslananka-firebase.firebaseapp.com",
+      databaseURL: "https://mobil-oaslananka-firebase-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "mobil-oaslananka-firebase",
+      storageBucket: "mobil-oaslananka-firebase.firebasestorage.app",
+      messagingSenderId: "949743839540",
+      appId: "1:949743839540:web:969bcc5fc39f46b158dd61",
+      measurementId: "G-DRBPTCR577"
+    };
+
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "__FIREBASE_WEB_API_KEY__") {
+      const app = initializeApp(firebaseConfig);
+      getAnalytics(app);
+    } else {
+      console.warn("Firebase analytics disabled: FIREBASE_WEB_API_KEY is not injected.");
+    }
+  </script>
+
+</body>
+
+</html>

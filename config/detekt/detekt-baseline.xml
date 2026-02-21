@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:AdGateChecker.kt$AdGateChecker$1000L</ID>
+    <ID>MagicNumber:AdGateChecker.kt$AdGateChecker$60</ID>
+    <ID>MagicNumber:AdGateChecker.kt$AdGateChecker.Companion$30</ID>
+    <ID>MagicNumber:AdGateChecker.kt$AdGateChecker.Companion$90</ID>
+    <ID>MagicNumber:AdOrchestrator.kt$AdOrchestrator$3</ID>
+    <ID>MagicNumber:AppBottomBar.kt$9</ID>
+    <ID>MagicNumber:AppOpenAdManager.kt$AppOpenAdManager$3600000</ID>
+    <ID>MagicNumber:AppOpenAdManager.kt$AppOpenAdManager$4</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt$AudioPlayerViewModel$10</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt$AudioPlayerViewModel$100</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt$AudioPlayerViewModel$10_000</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt$AudioPlayerViewModel$120</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt$AudioPlayerViewModel$500</ID>
+    <ID>MagicNumber:BillingCatalog.kt$BillingCatalog$99</ID>
+    <ID>MagicNumber:ContentApp.kt$9</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.15f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.25f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.35f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.5f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.75f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$0.95f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$1.50f</ID>
+    <ID>MagicNumber:CurvedBottomNavigation.kt$1.75f</ID>
+    <ID>MagicNumber:HttpPushRegistrationSender.kt$HttpPushRegistrationSender$10_000</ID>
+    <ID>MagicNumber:HttpPushRegistrationSender.kt$HttpPushRegistrationSender$200</ID>
+    <ID>MagicNumber:HttpPushRegistrationSender.kt$HttpPushRegistrationSender$299</ID>
+    <ID>MagicNumber:MiniAudioPlayer.kt$1000</ID>
+    <ID>MagicNumber:MiniAudioPlayer.kt$60</ID>
+    <ID>MagicNumber:Motion.kt$AppMotion$0.2f</ID>
+    <ID>MagicNumber:NativeAdInsertionPolicy.kt$5</ID>
+    <ID>MagicNumber:NativeAdManager.kt$NativeAdManager$5</ID>
+    <ID>MagicNumber:NetworkCachedOtherAppsRepository.kt$NetworkCachedOtherAppsRepository$200</ID>
+    <ID>MagicNumber:NetworkCachedOtherAppsRepository.kt$NetworkCachedOtherAppsRepository$299</ID>
+    <ID>MagicNumber:RewardsViewModel.kt$RewardsViewModel$1000</ID>
+    <ID>MagicNumber:RewardsViewModel.kt$RewardsViewModel$1000L</ID>
+    <ID>MagicNumber:RewardsViewModel.kt$RewardsViewModel$20</ID>
+    <ID>MagicNumber:RewardsViewModel.kt$RewardsViewModel$500L</ID>
+    <ID>MaxLineLength:AppBottomBar.kt$BottomDestination("messages_graph", AppRoute.MessagesGraph, stringResource(R.string.nav_messages), R.drawable.ic_email)</ID>
+    <ID>MaxLineLength:AppBottomBar.kt$BottomDestination("notifications_graph", AppRoute.NotificationsGraph, stringResource(R.string.nav_alerts), R.drawable.ic_notifications)</ID>
+    <ID>MaxLineLength:AppBottomBar.kt$BottomDestination("subscription", AppRoute.Subscription, stringResource(R.string.nav_premium), R.drawable.ic_star)</ID>
+    <ID>MaxLineLength:ContentScreen.kt$elevation = if (isSelected) ButtonDefaults.buttonElevation(defaultElevation = dimens.space4) else ButtonDefaults.buttonElevation(defaultElevation = dimens.elevationNone)</ID>
+    <ID>MaxLineLength:MiraclesListScreen.kt$contentPadding = PaddingValues(start = dimens.space12, top = dimens.space16, end = dimens.space12, bottom = dimens.space8)</ID>
+    <ID>MaxLineLength:NativeAdCompose.kt$*</ID>
+    <ID>MaxLineLength:NotificationsScreen.kt$val containerColor = if (unread) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f)</ID>
+    <ID>MaxLineLength:PrayerDetailScreen.kt$elevation = if (isSelected) ButtonDefaults.buttonElevation(defaultElevation = dimens.space4) else ButtonDefaults.buttonElevation(defaultElevation = dimens.elevationNone)</ID>
+    <ID>MaxLineLength:PrayerListScreen.kt$contentPadding = PaddingValues(start = dimens.space12, top = dimens.space16, end = dimens.space12, bottom = dimens.space8)</ID>
+    <ID>MaxLineLength:VerseItem.kt$val badgeBg = if (isLightTheme) colorScheme.primary.copy(alpha = 0.82f) else colorScheme.primaryContainer.copy(alpha = 0.85f)</ID>
+    <ID>UnusedImports:AudioModule.kt$import androidx.media3.exoplayer.ExoPlayer</ID>
+    <ID>UnusedImports:AudioService.kt$import javax.inject.Inject</ID>
+    <ID>UnusedImports:AuthScreen.kt$import androidx.compose.ui.unit.dp</ID>
+    <ID>UnusedImports:ContentApp.kt$import androidx.compose.ui.graphics.Color</ID>
+    <ID>UnusedImports:CurvedBottomNavigation.kt$import androidx.compose.ui.unit.dp</ID>
+    <ID>UnusedImports:MessagesScreen.kt$import androidx.compose.ui.unit.dp</ID>
+    <ID>UnusedImports:NativeAdItem.kt$import androidx.compose.ui.graphics.Color</ID>
+    <ID>UnusedImports:NotificationsScreen.kt$import androidx.compose.ui.unit.sp</ID>
+    <ID>UnusedImports:NotificationsScreen.kt$import com.parsfilo.contentapp.core.designsystem.theme.app_success</ID>
+    <ID>UnusedPrivateProperty:AuthManager.kt$AuthManager$@ApplicationContext private val context: Context</ID>
+    <ID>UnusedPrivateProperty:MessagesViewModel.kt$MessagesViewModel$private val authManager: AuthManager</ID>
+    <ID>UnusedPrivateProperty:NativeAdManager.kt$NativeAdManager$i</ID>
+    <ID>WildcardImport:CurvedBottomNavigation.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:CurvedBottomNavigation.kt$import androidx.compose.runtime.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
