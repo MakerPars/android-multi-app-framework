@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.component.AppTextButton
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
@@ -94,9 +95,9 @@ fun InlineAudioPlayer(
                 color = accent.copy(alpha = 0.7f),
                 shape = RoundedCornerShape(dimens.radiusPill)
             )
-            .padding(horizontal = dimens.space4, vertical = dimens.elevationNone),
+            .padding(horizontal = dimens.space4, vertical = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimens.elevationNone)
+        horizontalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         // Play/Pause toggle
         IconButton(

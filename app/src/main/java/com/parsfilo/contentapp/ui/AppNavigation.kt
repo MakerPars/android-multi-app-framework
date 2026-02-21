@@ -381,7 +381,7 @@ fun AppNavHost(
 
         // Subscription Tab
         composable(AppRoute.Subscription.route) {
-            SubscriptionRoute()
+            SubscriptionRoute(onBackClick = { navController.popBackStack() })
         }
 
         // Other Apps Tab
@@ -434,3 +434,4 @@ fun AppNavHost(
         }
     }
 }
+

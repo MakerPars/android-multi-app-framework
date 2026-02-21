@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,16 +37,19 @@ class MiraclesListViewModel @Inject constructor(
 
     private fun loadPrayers() {
         viewModelScope.launch {
-            try {
-                val prayers = prayerRepository.getPrayers()
-                adGateChecker.shouldShowAds.collect { shouldShowAds ->
-                    _uiState.value = MiraclesListUiState.Success(
-                        prayers = prayers,
-                        shouldShowAds = shouldShowAds
-                    )
+            val prayers = runCatching { prayerRepository.getPrayers() }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    _uiState.value = MiraclesListUiState.Error(error)
                 }
-            } catch (e: Exception) {
-                _uiState.value = MiraclesListUiState.Error(e)
+                .getOrNull()
+                ?: return@launch
+
+            adGateChecker.shouldShowAds.collect { shouldShowAds ->
+                _uiState.value = MiraclesListUiState.Success(
+                    prayers = prayers,
+                    shouldShowAds = shouldShowAds
+                )
             }
         }
     }

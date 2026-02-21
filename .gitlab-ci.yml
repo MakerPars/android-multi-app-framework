@@ -326,8 +326,8 @@ build-release:
     - python3 ./scripts/ci/verify_google_signin_config.py --flavors "$RESOLVED_FLAVORS_CSV"
     - |
       # Decode keystore
-      echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
-      export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+      echo "$KEYSTORE_BASE64" | base64 -d > "/tmp/release.jks"
+      export KEYSTORE_FILE="/tmp/release.jks"
     - |
       set -euo pipefail
       mapfile -t FLAVORS < <(
@@ -344,7 +344,7 @@ build-release:
       echo "Running: ${TASKS[*]}"
       ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
   after_script:
-    - rm -f "$CI_PROJECT_DIR/release.jks"
+    - rm -f "/tmp/release.jks"
   artifacts:
     paths:
       - app/build/outputs/bundle/
@@ -367,8 +367,8 @@ publish-production:
   script:
     - |
       # Decode secrets
-      echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
-      export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+      echo "$KEYSTORE_BASE64" | base64 -d > "/tmp/release.jks"
+      export KEYSTORE_FILE="/tmp/release.jks"
       echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "$CI_PROJECT_DIR/service-account.json"
       export PLAY_SERVICE_ACCOUNT_JSON="$CI_PROJECT_DIR/service-account.json"
     - |
@@ -397,7 +397,7 @@ publish-production:
       echo "Publishing: ${TASKS[*]}"
       ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
   after_script:
-    - rm -f "$CI_PROJECT_DIR/release.jks" "$CI_PROJECT_DIR/service-account.json"
+    - rm -f "/tmp/release.jks" "$CI_PROJECT_DIR/service-account.json"
 
 # ═════════════════════════════════════════════════════════════
 # MANUAL OPS PIPELINE
@@ -474,8 +474,8 @@ manual-ops:
     # Secrets
     - |
       if [ "$BUILD_TYPE" = "Release" ]; then
-        echo "$KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.jks"
-        export KEYSTORE_FILE="$CI_PROJECT_DIR/release.jks"
+        echo "$KEYSTORE_BASE64" | base64 -d > "/tmp/release.jks"
+        export KEYSTORE_FILE="/tmp/release.jks"
       fi
       if [ "$DO_INTERNAL_TEST" = "true" ] || [ "$DO_PUBLISH" = "true" ]; then
         echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "$CI_PROJECT_DIR/service-account.json"
@@ -545,7 +545,7 @@ manual-ops:
         ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
       fi
   after_script:
-    - rm -f "$CI_PROJECT_DIR/release.jks" "$CI_PROJECT_DIR/service-account.json" firebase_configs.zip
+    - rm -f "/tmp/release.jks" "$CI_PROJECT_DIR/service-account.json" firebase_configs.zip
   artifacts:
     paths:
       - app/build/outputs/

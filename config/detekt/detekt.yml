@@ -33,10 +33,18 @@ performance:
     active: false
 
 coroutines:
-    active: false
+    active: true
+    GlobalCoroutineUsage:
+        active: true
+    RedundantSuspendModifier:
+        active: true
 
 exceptions:
-    active: false
+    active: true
+    TooGenericExceptionCaught:
+        active: true
+    SwallowedException:
+        active: true
 
 style:
     active: false

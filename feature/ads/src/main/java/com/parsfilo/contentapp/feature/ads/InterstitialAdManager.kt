@@ -9,7 +9,6 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
-import com.parsfilo.contentapp.feature.ads.InterstitialAdManager.Companion.FREQUENCY_CAP_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -101,3 +100,4 @@ class InterstitialAdManager @Inject constructor(
         }
     }
 }
+

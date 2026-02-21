@@ -11,15 +11,17 @@ import com.parsfilo.contentapp.feature.billing.BillingManager
 import com.parsfilo.contentapp.feature.billing.model.BillingProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @HiltViewModel
@@ -74,22 +76,17 @@ class RewardsViewModel @Inject constructor(
     fun watchRewardedAd(activity: Activity, adUnitId: String) {
         _isAdLoading.value = true
 
-        // Callback-based loading — reklam yüklenince hemen göster
         rewardedAdManager.loadAd(adUnitId)
 
         viewModelScope.launch {
-            // Reklam yüklenmesi için maximum 10 saniye bekle, ama erken çıkabilir
-            var attempts = 0
-            while (attempts < 20) {
-                delay(500L)
-                attempts++
-                // Reklam yüklendiyse döngüden erken çık
-                if (rewardedAdManager.isAdReady()) break
-            }
+            val adReady = withTimeoutOrNull(10_000L) {
+                rewardedAdManager.isAdReady
+                    .filter { it }
+                    .first()
+            } != null
             _isAdLoading.value = false
 
-            // Sadece reklam yüklendiyse göster
-            if (rewardedAdManager.isAdReady()) {
+            if (adReady) {
                 rewardedAdManager.showAd(
                     activity = activity,
                     onUserEarnedReward = {

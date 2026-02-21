@@ -11,7 +11,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONException
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 
 interface ContentRepository {
@@ -55,7 +57,10 @@ class AssetContentRepository @Inject constructor(
                     }
                     cachedVerses = verses
                     Result.Success(verses)
-                } catch (e: Exception) {
+                } catch (e: IOException) {
+                    Timber.e(e, "data.json read error")
+                    Result.Error(e)
+                } catch (e: JSONException) {
                     Timber.e(e, "data.json parse hatası")
                     Result.Error(e)
                 }

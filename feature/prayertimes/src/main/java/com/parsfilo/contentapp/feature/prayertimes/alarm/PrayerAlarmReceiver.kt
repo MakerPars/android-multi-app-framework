@@ -9,6 +9,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -38,26 +39,29 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
         receiverScope.launch {
             try {
-                val variant = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_VARIANT)
-                    ?.let { runCatching { PrayerAppVariant.valueOf(it) }.getOrNull() }
-                    ?: context?.let { PrayerVariantResolver.resolve(it) }
-                    ?: PrayerAppVariant.NAMAZ_VAKITLERI
+                runCatching {
+                    val variant = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_VARIANT)
+                        ?.let { runCatching { PrayerAppVariant.valueOf(it) }.getOrNull() }
+                        ?: context?.let { PrayerVariantResolver.resolve(it) }
+                        ?: PrayerAppVariant.NAMAZ_VAKITLERI
 
-                val payload = PrayerAlarmPayload(
-                    prayerKey = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_KEY).orEmpty(),
-                    timeHm = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_TIME_HM).orEmpty(),
-                    localDate = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_LOCAL_DATE).orEmpty(),
-                    triggerAtMillis = intent.getLongExtra(
-                        PrayerAlarmScheduler.EXTRA_TRIGGER_AT,
-                        System.currentTimeMillis(),
-                    ),
-                )
+                    val payload = PrayerAlarmPayload(
+                        prayerKey = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_KEY).orEmpty(),
+                        timeHm = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_TIME_HM).orEmpty(),
+                        localDate = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_LOCAL_DATE).orEmpty(),
+                        triggerAtMillis = intent.getLongExtra(
+                            PrayerAlarmScheduler.EXTRA_TRIGGER_AT,
+                            System.currentTimeMillis(),
+                        ),
+                    )
 
-                val soundUri = prayerPreferencesDataSource.preferences.first().alarmSoundUri
-                prayerAlarmNotifier.show(payload = payload, variant = variant, soundUri = soundUri)
-                prayerAlarmScheduler.scheduleNext(variant)
-            } catch (t: Throwable) {
-                Timber.w(t, "Prayer alarm receiver failed")
+                    val soundUri = prayerPreferencesDataSource.preferences.first().alarmSoundUri
+                    prayerAlarmNotifier.show(payload = payload, variant = variant, soundUri = soundUri)
+                    prayerAlarmScheduler.scheduleNext(variant)
+                }.onFailure { error ->
+                    if (error is CancellationException) throw error
+                    Timber.w(error, "Prayer alarm receiver failed")
+                }
             } finally {
                 receiverJob.cancel()
                 pendingResult.finish()

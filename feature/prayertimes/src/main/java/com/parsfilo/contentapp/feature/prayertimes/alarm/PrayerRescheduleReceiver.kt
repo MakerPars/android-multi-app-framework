@@ -7,6 +7,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -30,9 +31,11 @@ class PrayerRescheduleReceiver : BroadcastReceiver() {
 
         receiverScope.launch {
             try {
-                prayerAlarmScheduler.scheduleNextForCurrentFlavor()
-            } catch (t: Throwable) {
-                Timber.w(t, "Prayer alarm reschedule failed for action=%s", action)
+                runCatching { prayerAlarmScheduler.scheduleNextForCurrentFlavor() }
+                    .onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Timber.w(error, "Prayer alarm reschedule failed for action=%s", action)
+                    }
             } finally {
                 receiverJob.cancel()
                 pendingResult.finish()

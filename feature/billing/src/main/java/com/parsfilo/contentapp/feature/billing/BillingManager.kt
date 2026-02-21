@@ -20,11 +20,13 @@ import com.parsfilo.contentapp.feature.billing.model.BillingProduct
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -36,7 +38,7 @@ class BillingManager @Inject constructor(
     private val preferencesDataSource: PreferencesDataSource
 ) {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope = createScope()
 
     private val _subscriptionState = MutableStateFlow<SubscriptionState>(SubscriptionState.Loading)
     val subscriptionState: StateFlow<SubscriptionState> = _subscriptionState.asStateFlow()
@@ -52,6 +54,14 @@ class BillingManager @Inject constructor(
 
     private val isConnecting = AtomicBoolean(false)
 
+    private fun createScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private fun ensureScope() {
+        if (scope.coroutineContext[Job]?.isActive != true) {
+            scope = createScope()
+        }
+    }
+
     private fun createBillingClient(): BillingClient {
         val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
             .enableOneTimeProducts()
@@ -66,7 +76,7 @@ class BillingManager @Inject constructor(
     fun startConnection() {
         if (billingClient.isReady) {
             queryProductDetails()
-            queryPurchases()
+            refreshPurchaseState()
             return
         }
         if (!isConnecting.compareAndSet(false, true)) return
@@ -75,7 +85,7 @@ class BillingManager @Inject constructor(
                 isConnecting.set(false)
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProductDetails()
-                    queryPurchases()
+                    refreshPurchaseState()
                 } else {
                     setError("Billing setup failed: ${billingResult.debugMessage}")
                 }
@@ -84,6 +94,7 @@ class BillingManager @Inject constructor(
             override fun onBillingServiceDisconnected() {
                 isConnecting.set(false)
                 Timber.w("Billing service disconnected")
+                endConnection()
             }
         })
     }
@@ -92,6 +103,8 @@ class BillingManager @Inject constructor(
         if (billingClient.isReady) {
             billingClient.endConnection()
         }
+        scope.coroutineContext[Job]?.cancel()
+        scope = createScope()
     }
 
     fun launchBillingFlow(activity: Activity, billingProduct: BillingProduct) {
@@ -121,6 +134,14 @@ class BillingManager @Inject constructor(
     }
 
     fun restorePurchases() {
+        refreshPurchaseState()
+    }
+
+    fun refreshPurchaseState() {
+        if (!billingClient.isReady) {
+            startConnection()
+            return
+        }
         queryPurchases()
     }
 
@@ -279,6 +300,7 @@ class BillingManager @Inject constructor(
         isPremium: Boolean,
         isAutoRenewing: Boolean
     ) {
+        ensureScope()
         scope.launch {
             preferencesDataSource.setPremium(isPremium)
         }
@@ -298,4 +320,5 @@ class BillingManager @Inject constructor(
         Timber.w(message)
     }
 }
+
 

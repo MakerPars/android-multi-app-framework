@@ -10,7 +10,9 @@ service cloud.firestore {
     }
 
     match /user_messages/{messageId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 

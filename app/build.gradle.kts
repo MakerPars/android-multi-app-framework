@@ -134,6 +134,16 @@ android {
         buildConfigField("boolean", "USE_ASSET_PACK_AUDIO", "false")
         buildConfigField(
             "String",
+            "AUDIO_BASE_URL",
+            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio\"",
+        )
+        buildConfigField(
+            "String",
+            "AUDIO_MANIFEST_URL",
+            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest\"",
+        )
+        buildConfigField(
+            "String",
             "PUSH_REGISTRATION_URL",
             asBuildConfigString(pick("PUSH_REGISTRATION_URL") ?: ""),
         )
@@ -283,7 +293,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.material3)
     implementation(libs.play.services.ads)
 
     implementation(libs.hilt.android)
@@ -307,3 +316,4 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+

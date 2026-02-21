@@ -16,6 +16,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import timber.log.Timber
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
@@ -103,7 +104,10 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
                 if (age > CACHE_TTL_MILLIS) return null
             }
             cacheFile.readText()
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Failed to read other apps cache")
+            null
+        } catch (e: SecurityException) {
             Timber.w(e, "Failed to read other apps cache")
             null
         }
@@ -112,7 +116,9 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
     private fun writeCache(json: String) {
         try {
             cacheFile.writeText(json)
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Failed to write other apps cache")
+        } catch (e: SecurityException) {
             Timber.w(e, "Failed to write other apps cache")
         }
     }
@@ -138,7 +144,10 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
                     conn.inputStream.bufferedReader().use { it.readText() }
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Other apps remote fetch failed for $url")
+            null
+        } catch (e: SecurityException) {
             Timber.w(e, "Other apps remote fetch failed for $url")
             null
         }

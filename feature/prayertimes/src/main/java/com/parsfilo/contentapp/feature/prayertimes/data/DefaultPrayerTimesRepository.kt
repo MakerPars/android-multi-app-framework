@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -154,25 +155,14 @@ class DefaultPrayerTimesRepository @Inject constructor(
             runCatching { prayerAlarmScheduler.scheduleNextForCurrentFlavor() }
                 .onFailure { Timber.w(it, "Unable to reschedule prayer alarm after refresh") }
             RefreshResult.Refreshed
-        } catch (t: Throwable) {
-            Timber.w(t, "Prayer times refresh failed for district=%s", districtId)
-            val httpStatusCode = (t as? EzanVaktiHttpException)?.statusCode
-            appAnalytics.logEvent(
-                "prayer_api_error",
-                buildApiErrorBundle(
-                    districtId = districtId,
-                    httpStatusCode = httpStatusCode,
-                    errorName = t::class.java.simpleName,
-                )
-            )
-            if (httpStatusCode == INVALID_SELECTION_HTTP_STATUS) {
-                return@withContext RefreshResult.InvalidSelection
-            }
-            if (hasToday) {
-                RefreshResult.ServedFromCache
-            } else {
-                RefreshResult.Failed(t)
-            }
+        } catch (e: IOException) {
+            handleRefreshFailure(error = e, districtId = districtId, hasToday = hasToday)
+        } catch (e: SecurityException) {
+            handleRefreshFailure(error = e, districtId = districtId, hasToday = hasToday)
+        } catch (e: IllegalStateException) {
+            handleRefreshFailure(error = e, districtId = districtId, hasToday = hasToday)
+        } catch (e: IllegalArgumentException) {
+            handleRefreshFailure(error = e, districtId = districtId, hasToday = hasToday)
         }
     }
 
@@ -255,10 +245,14 @@ class DefaultPrayerTimesRepository @Inject constructor(
                 Bundle().apply { putInt("district_id", district.id) }
             )
             ResolveResult.Success(selection)
-        } catch (t: Throwable) {
-            Timber.w(t, "resolveAndSelectByDeviceLocation failed")
-            appAnalytics.logEvent("prayer_resolve_fallback")
-            ResolveResult.Failed(t)
+        } catch (e: IOException) {
+            logResolveFailure(error = e)
+        } catch (e: SecurityException) {
+            logResolveFailure(error = e)
+        } catch (e: IllegalStateException) {
+            logResolveFailure(error = e)
+        } catch (e: IllegalArgumentException) {
+            logResolveFailure(error = e)
         }
     }
 
@@ -483,6 +477,37 @@ class DefaultPrayerTimesRepository @Inject constructor(
                 putString("error", errorName)
             }
         }.getOrNull()
+    }
+
+    private fun handleRefreshFailure(
+        error: Throwable,
+        districtId: Int,
+        hasToday: Boolean,
+    ): RefreshResult {
+        Timber.w(error, "Prayer times refresh failed for district=%s", districtId)
+        val httpStatusCode = (error as? EzanVaktiHttpException)?.statusCode
+        appAnalytics.logEvent(
+            "prayer_api_error",
+            buildApiErrorBundle(
+                districtId = districtId,
+                httpStatusCode = httpStatusCode,
+                errorName = error::class.java.simpleName,
+            )
+        )
+        if (httpStatusCode == INVALID_SELECTION_HTTP_STATUS) {
+            return RefreshResult.InvalidSelection
+        }
+        return if (hasToday) {
+            RefreshResult.ServedFromCache
+        } else {
+            RefreshResult.Failed(error)
+        }
+    }
+
+    private fun logResolveFailure(error: Throwable): ResolveResult {
+        Timber.w(error, "resolveAndSelectByDeviceLocation failed")
+        appAnalytics.logEvent("prayer_resolve_fallback")
+        return ResolveResult.Failed(error)
     }
 
     private companion object {

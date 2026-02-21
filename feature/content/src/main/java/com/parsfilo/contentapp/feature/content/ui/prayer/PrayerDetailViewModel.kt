@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,34 +47,33 @@ class PrayerDetailViewModel @Inject constructor(
 
      private fun loadPrayerDetail() {
         viewModelScope.launch {
-            try {
-                val prayer = prayerRepository.getPrayerById(prayerId)
-                if (prayer == null) {
-                    _uiState.value = PrayerDetailUiState.Error(Exception("Namaz/Dua bulunamadı"))
+            val prayer = runCatching { prayerRepository.getPrayerById(prayerId) }
+                .getOrElse { error ->
+                    if (error is CancellationException) throw error
+                    _uiState.value = PrayerDetailUiState.Error(error)
                     return@launch
                 }
 
-                combine(
-                    preferencesDataSource.userData,
-                    adGateChecker.shouldShowAds
-                ) { userData, shouldShowAds ->
-                    val displayMode = try {
-                        DisplayMode.valueOf(userData.displayMode)
-                    } catch (e: Exception) {
-                        DisplayMode.ARABIC
-                    }
-                    
-                    PrayerDetailUiState.Success(
-                        prayer = prayer,
-                        displayMode = displayMode,
-                        fontSize = userData.fontSize,
-                        shouldShowAds = shouldShowAds
-                    )
-                }.collect { state ->
-                    _uiState.value = state
-                }
-            } catch (e: Exception) {
-                _uiState.value = PrayerDetailUiState.Error(e)
+            if (prayer == null) {
+                _uiState.value = PrayerDetailUiState.Error(IllegalStateException("Namaz/Dua bulunamadı"))
+                return@launch
+            }
+
+            combine(
+                preferencesDataSource.userData,
+                adGateChecker.shouldShowAds
+            ) { userData, shouldShowAds ->
+                val displayMode = runCatching { DisplayMode.valueOf(userData.displayMode) }
+                    .getOrDefault(DisplayMode.ARABIC)
+
+                PrayerDetailUiState.Success(
+                    prayer = prayer,
+                    displayMode = displayMode,
+                    fontSize = userData.fontSize,
+                    shouldShowAds = shouldShowAds
+                )
+            }.collect { state ->
+                _uiState.value = state
             }
         }
     }

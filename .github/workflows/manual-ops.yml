@@ -79,86 +79,23 @@ jobs:
 
       - name: Resolve Flavors
         id: resolve
+        uses: ./.github/actions/resolve-flavors
+        with:
+          target_flavors: ${{ github.event.inputs.target_flavor }}
+
+      - name: Export resolved flavors env
         run: |
-          set -euo pipefail
-          chmod +x ./gradlew
-
-          ALL_JSON="$(./gradlew -q printFlavors | tr -d '\r')"
-          mapfile -t ALL < <(
-            echo "$ALL_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
-          )
-
-          INPUT="${{ github.event.inputs.target_flavor }}"
-          INPUT="$(echo "${INPUT:-}" | tr -d '\r' | sed 's/[[:space:]]//g')"
-
-          RESOLVED=()
-          if [ "$INPUT" = "all" ]; then
-            RESOLVED=("${ALL[@]}")
-          elif [[ "$INPUT" == *","* ]]; then
-            IFS=',' read -ra REQ <<< "$INPUT"
-            for r in "${REQ[@]}"; do
-              [ -z "$r" ] && continue
-              ok="false"
-              for f in "${ALL[@]}"; do
-                if [ "$f" = "$r" ]; then ok="true"; break; fi
-              done
-              if [ "$ok" != "true" ]; then
-                echo "Invalid flavor '$r'. Allowed: ${ALL[*]}"
-                exit 1
-              fi
-              RESOLVED+=("$r")
-            done
-          else
-            ok="false"
-            for f in "${ALL[@]}"; do
-              if [ "$f" = "$INPUT" ]; then ok="true"; break; fi
-            done
-            if [ "$ok" != "true" ]; then
-              echo "Invalid flavor '$INPUT'. Allowed: all, ${ALL[*]}"
-              exit 1
-            fi
-            RESOLVED+=("$INPUT")
-          fi
-
-          out="["
-          first=true
-          for f in "${RESOLVED[@]}"; do
-            if [ "$first" = false ]; then out+=","; fi
-            out+="\"$f\""
-            first=false
-          done
-          out+="]"
-
-          csv="$(IFS=,; echo "${RESOLVED[*]}")"
-          echo "resolved_json=$out" >> "$GITHUB_OUTPUT"
-          echo "resolved_csv=$csv" >> "$GITHUB_OUTPUT"
-          echo "RESOLVED_FLAVORS_JSON=$out" >> "$GITHUB_ENV"
-          echo "RESOLVED_FLAVORS_CSV=$csv" >> "$GITHUB_ENV"
+          echo "RESOLVED_FLAVORS_JSON=${{ steps.resolve.outputs.resolved_json }}" >> "$GITHUB_ENV"
+          echo "RESOLVED_FLAVORS_CSV=${{ steps.resolve.outputs.resolved_csv }}" >> "$GITHUB_ENV"
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
-        env:
-          FIREBASE_CONFIGS_ZIP_BASE64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          CF_R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
-          CF_R2_FIREBASE_OBJECT: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
-        run: |
-          set -euo pipefail
-          if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
-            export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
-            export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
-            npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config cloudflare/workers/content-api/wrangler.toml
-            unzip -o firebase_configs.zip
-            rm -f firebase_configs.zip
-            echo "Firebase configs restored from R2."
-          elif [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
-            echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
-            unzip -o firebase_configs.zip
-            rm -f firebase_configs.zip
-            echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
-          else
-            echo "No Firebase override secret found. Using repository defaults."
-          fi
+        uses: ./.github/actions/firebase-config
+        with:
+          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
       - name: Validate Google Sign-In Config
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
@@ -221,13 +158,13 @@ jobs:
           for flavor in "${FLAVORS[@]}"; do
             [ -z "$flavor" ] && continue
             cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
-            TASKS+=("assemble${cap}${BUILD_TYPE}")
+            DO_INTERNAL_TEST="${{ github.event.inputs.do_internal_test }}"
+            DO_PUBLISH="${{ github.event.inputs.do_publish }}"
 
-            if [ "$BUILD_TYPE" = "Release" ]; then
-              PUBLISH="${{ github.event.inputs.do_internal_test }}${{ github.event.inputs.do_publish }}"
-              if [[ "$PUBLISH" == *"true"* ]]; then
-                TASKS+=("bundle${cap}Release")
-              fi
+            if [ "$BUILD_TYPE" = "Release" ] && { [ "$DO_INTERNAL_TEST" = "true" ] || [ "$DO_PUBLISH" = "true" ]; }; then
+              TASKS+=("bundle${cap}Release")
+            else
+              TASKS+=("assemble${cap}${BUILD_TYPE}")
             fi
           done
 

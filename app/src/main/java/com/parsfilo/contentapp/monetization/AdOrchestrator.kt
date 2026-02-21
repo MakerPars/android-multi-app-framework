@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,6 +70,7 @@ class AdOrchestrator @Inject constructor(
 
     fun destroy() {
         nativeAdManager.destroyAds()
+        orchestratorScope.cancel()
     }
 
     suspend fun showInterstitialIfEligible(activity: Activity, onAdDismissed: () -> Unit = {}) {
@@ -146,3 +148,4 @@ class AdOrchestrator @Inject constructor(
         )
     }
 }
+

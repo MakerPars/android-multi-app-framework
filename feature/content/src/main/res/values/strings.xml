@@ -7,4 +7,8 @@
     <string name="content_mode_arabic">Arapça</string>
     <string name="content_mode_latin">Latince</string>
     <string name="content_mode_turkish">Meal</string>
+    <string name="content_error_friendly">İçerik yüklenemedi. Lütfen tekrar deneyin.</string>
+    <string name="content_retry">Tekrar dene</string>
+    <string name="content_verse_copied">Ayet panoya kopyalandı</string>
+    <string name="content_share_verse_title">Ayeti paylaş</string>
 </resources>

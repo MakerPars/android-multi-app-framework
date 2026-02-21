@@ -84,13 +84,22 @@ class PrayerLocationResolver @Inject constructor(
                 lastException = io
                 Timber.w(io, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
                 if (attempt < GEOCODER_MAX_RETRIES - 1) {
-                    Thread.sleep(GEOCODER_RETRY_DELAY_MS)
+                    try {
+                        Thread.sleep(GEOCODER_RETRY_DELAY_MS)
+                    } catch (ie: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        Timber.w(ie, "Geocoder retry sleep interrupted")
+                        return null
+                    }
                 }
             } catch (se: SecurityException) {
                 Timber.w(se, "Location permission was revoked while resolving geocoder")
                 return null
-            } catch (t: Throwable) {
-                Timber.w(t, "Unexpected geocoder failure")
+            } catch (e: IllegalStateException) {
+                Timber.w(e, "Unexpected geocoder failure")
+                return null
+            } catch (e: IllegalArgumentException) {
+                Timber.w(e, "Unexpected geocoder failure")
                 return null
             }
         }
@@ -110,4 +119,3 @@ private const val MAX_GEOCODER_RESULTS = 1
 private const val LOCATION_TIMEOUT_MS = 8_000L
 private const val GEOCODER_MAX_RETRIES = 2
 private const val GEOCODER_RETRY_DELAY_MS = 500L
-

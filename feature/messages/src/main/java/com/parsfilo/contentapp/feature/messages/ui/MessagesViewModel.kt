@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,10 +39,10 @@ class MessagesViewModel @Inject constructor(
 
     fun sendMessage(subject: String, message: String, category: String) {
         viewModelScope.launch {
-            try {
+            runCatching {
                 messageRepository.sendMessage(subject, message, category)
-            } catch (e: Exception) {
-                // Handle error
+            }.onFailure { error ->
+                Timber.w(error, "Message send failed")
             }
         }
     }

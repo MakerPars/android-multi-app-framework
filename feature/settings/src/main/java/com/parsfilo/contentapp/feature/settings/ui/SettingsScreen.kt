@@ -1,7 +1,6 @@
 package com.parsfilo.contentapp.feature.settings.ui
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.ContextWrapper
@@ -12,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
@@ -44,6 +42,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -115,6 +115,10 @@ fun SettingsScreen(
     val activity = remember(context) { context.findActivity() }
     val clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val showMessage: (String) -> Unit = { message ->
+        coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     var systemNotificationsEnabled by remember {
         mutableStateOf(isNotificationPermissionEnabled(context))
@@ -182,101 +186,98 @@ fun SettingsScreen(
             status == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // Top Bar
-        AppTopBar(
-            title = stringResource(R.string.settings_title),
-            navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-            navigationIconContentDescription = "Geri",
-            onNavigationClick = onBackClick,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = app_transparent
-            ),
-            titleStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Normal),
-            actions = {
-                Box {
-                    TextButton(
-                        onClick = { languageMenuExpanded = true },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Translate,
-                            contentDescription = stringResource(R.string.settings_language),
-                            tint = colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.width(dimens.space6))
-                        Text(
-                            text = effectiveLanguageTag.uppercase(Locale.ROOT).take(2),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colorScheme.onSurface,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = languageMenuExpanded,
-                        onDismissRequest = { languageMenuExpanded = false },
-                    ) {
-                        languageOptions.forEach { option ->
-                            val isSelected = option.matches(appLocaleTags)
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = stringResource(option.labelRes),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                        )
-                                        if (isSelected) {
-                                            Text(
-                                                text = "✓",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                            )
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    if (Build.VERSION.SDK_INT >= 33) {
-                                        val localeManager = (activity ?: context)
-                                            .getSystemService(android.app.LocaleManager::class.java)
-                                        val list = if (option.tag.isBlank()) {
-                                            LocaleList.getEmptyLocaleList()
-                                        } else {
-                                            LocaleList.forLanguageTags(option.tag)
-                                        }
-                                        localeManager?.applicationLocales = list
-                                    } else {
-                                        val locales =
-                                            if (option.tag.isBlank()) {
-                                                LocaleListCompat.getEmptyLocaleList()
-                                            } else {
-                                                LocaleListCompat.forLanguageTags(option.tag)
-                                            }
-                                        AppCompatDelegate.setApplicationLocales(locales)
-                                    }
-                                    languageMenuExpanded = false
-                                    Toast.makeText(
-                                        context,
-                                        languageChangedText,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    // Ensure resources are reloaded immediately on this screen.
-                                    activity?.recreate()
-                                },
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top Bar
+            AppTopBar(
+                title = stringResource(R.string.settings_title),
+                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
+                navigationIconContentDescription = stringResource(R.string.settings_back),
+                onNavigationClick = onBackClick,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = app_transparent
+                ),
+                titleStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Normal),
+                actions = {
+                    Box {
+                        TextButton(
+                            onClick = { languageMenuExpanded = true },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Translate,
+                                contentDescription = stringResource(R.string.settings_language),
+                                tint = colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.width(dimens.space6))
+                            Text(
+                                text = effectiveLanguageTag.uppercase(Locale.ROOT).take(2),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
+
+                        DropdownMenu(
+                            expanded = languageMenuExpanded,
+                            onDismissRequest = { languageMenuExpanded = false },
+                        ) {
+                            languageOptions.forEach { option ->
+                                val isSelected = option.matches(appLocaleTags)
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                text = stringResource(option.labelRes),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                            )
+                                            if (isSelected) {
+                                                Text(
+                                                    text = "✓",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        if (Build.VERSION.SDK_INT >= 33) {
+                                            val localeManager = (activity ?: context)
+                                                .getSystemService(android.app.LocaleManager::class.java)
+                                            val list = if (option.tag.isBlank()) {
+                                                LocaleList.getEmptyLocaleList()
+                                            } else {
+                                                LocaleList.forLanguageTags(option.tag)
+                                            }
+                                            localeManager?.applicationLocales = list
+                                        } else {
+                                            val locales =
+                                                if (option.tag.isBlank()) {
+                                                    LocaleListCompat.getEmptyLocaleList()
+                                                } else {
+                                                    LocaleListCompat.forLanguageTags(option.tag)
+                                                }
+                                            AppCompatDelegate.setApplicationLocales(locales)
+                                        }
+                                        languageMenuExpanded = false
+                                        showMessage(languageChangedText)
+
+                                        // Ensure resources are reloaded immediately on this screen.
+                                        activity?.recreate()
+                                    },
+                                )
+                            }
+                        }
                     }
-                }
-            },
-        )
+                },
+            )
 
         HorizontalDivider(
             thickness = dimens.stroke,
@@ -388,20 +389,12 @@ fun SettingsScreen(
                                     onClick = {
                                         val hostActivity = activity
                                         if (hostActivity == null) {
-                                            Toast.makeText(
-                                                context,
-                                                privacyOptionsUnavailableText,
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            showMessage(privacyOptionsUnavailableText)
                                             return@TextButton
                                         }
                                         UserMessagingPlatform.showPrivacyOptionsForm(hostActivity) { formError ->
                                             if (formError != null) {
-                                                Toast.makeText(
-                                                    context,
-                                                    privacyOptionsErrorText,
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                                showMessage(privacyOptionsErrorText)
                                             }
                                             val status = UserMessagingPlatform
                                                 .getConsentInformation(context)
@@ -495,8 +488,8 @@ fun SettingsScreen(
                             AppButton(
                                 text = stringResource(R.string.settings_share_app_button),
                                 onClick = {
-                                    onShareApp("whatsapp")
-                                    shareAppViaWhatsApp(context)
+                                    onShareApp("system_share")
+                                    shareApp(context)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -551,11 +544,7 @@ fun SettingsScreen(
                                             )
                                         )
                                     }
-                                    Toast.makeText(
-                                        context,
-                                        deviceIdCopiedText,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    showMessage(deviceIdCopiedText)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -621,11 +610,7 @@ fun SettingsScreen(
                                                 if (task.isSuccessful) {
                                                     debugFcmToken = task.result.orEmpty()
                                                     if (debugFcmToken.isNotBlank()) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            fcmDebugRefreshedText,
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
+                                                        showMessage(fcmDebugRefreshedText)
                                                     }
                                                 } else {
                                                     debugFcmTokenError = task.exception?.localizedMessage
@@ -654,11 +639,7 @@ fun SettingsScreen(
                                                 )
                                             )
                                         }
-                                        Toast.makeText(
-                                            context,
-                                            fcmDebugCopiedText,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        showMessage(fcmDebugCopiedText)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -714,11 +695,7 @@ fun SettingsScreen(
                                             .recordException(
                                                 RuntimeException("Crashlytics non-fatal test — debug button")
                                             )
-                                        Toast.makeText(
-                                            context,
-                                            nonFatalSentMessage,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        showMessage(nonFatalSentMessage)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -734,6 +711,15 @@ fun SettingsScreen(
                 }
             }
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(dimens.space16)
+        )
     }
 }
 
@@ -782,48 +768,17 @@ private fun openAppNotificationSettings(context: Context) {
     context.startActivity(intent)
 }
 
-private fun shareAppViaWhatsApp(context: Context) {
+private fun shareApp(context: Context) {
     val playUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
     val shareText = context.getString(R.string.settings_share_app_message, playUrl)
-    val encodedText = Uri.encode(shareText)
-    val packageManager = context.packageManager
-
-    val candidates = listOf("com.whatsapp", "com.whatsapp.w4b")
-    for (pkg in candidates) {
-        val deepLinkIntent = Intent(
-            Intent.ACTION_VIEW,
-            "https://wa.me/?text=$encodedText".toUri()
-        ).apply {
-            setPackage(pkg)
-        }
-        if (deepLinkIntent.resolveActivity(packageManager) != null) {
-            context.startActivity(deepLinkIntent)
-            return
-        }
-
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-            setPackage(pkg)
-        }
-        if (shareIntent.resolveActivity(packageManager) != null) {
-            context.startActivity(shareIntent)
-            return
-        }
-    }
-
-    try {
-        context.startActivity(
-            Intent(
-                Intent.ACTION_VIEW,
-                "market://details?id=com.whatsapp".toUri()
-            )
+    context.startActivity(
+        Intent.createChooser(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            },
+            null
         )
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.settings_whatsapp_not_found),
-            Toast.LENGTH_SHORT
-        ).show()
-    }
+    )
 }
+

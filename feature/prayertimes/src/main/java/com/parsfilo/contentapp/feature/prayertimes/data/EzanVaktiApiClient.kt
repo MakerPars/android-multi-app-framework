@@ -127,10 +127,9 @@ data class ApiPrayerTime(
 
 internal inline fun <T : HttpURLConnection, R> T.useConnection(block: (T) -> R): R {
     return try {
-        block(this)
-    } catch (t: Throwable) {
-        Timber.w(t, "EzanVaktiApiClient connection error")
-        throw t
+        runCatching { block(this) }
+            .onFailure { Timber.w(it, "EzanVaktiApiClient connection error") }
+            .getOrThrow()
     } finally {
         disconnect()
     }

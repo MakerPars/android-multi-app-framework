@@ -10,9 +10,6 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
@@ -34,7 +31,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -57,7 +56,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var prayerPreferencesDataSource: PrayerPreferencesDataSource
 
-    private var openNotificationsSignal by mutableLongStateOf(0L)
+    private val openNotificationsEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -136,7 +135,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (shouldOpenNotifications) {
-            openNotificationsSignal = System.currentTimeMillis()
+            openNotificationsEvents.tryEmit(Unit)
         }
     }
 
@@ -179,12 +178,11 @@ class MainActivity : ComponentActivity() {
                 "tap_${signature.hashCode()}"
             }
 
-        val payloadJson = extras.keySet().sorted()
-            .joinToString(prefix = "{", postfix = "}", separator = ", ") { key ->
-                val raw = extras.getValueAsString(key)
-                val escaped = raw.jsonEscape()
-                "\"$key\":\"$escaped\""
+        val payloadJson = JSONObject().apply {
+            extras.keySet().sorted().forEach { key ->
+                put(key, extras.getValueAsString(key) ?: JSONObject.NULL)
             }
+        }.toString()
 
         notificationDao.insertNotification(
             NotificationEntity(
@@ -204,7 +202,7 @@ class MainActivity : ComponentActivity() {
         try {
             setContent {
                 ContentApp(
-                    openNotificationsSignal = openNotificationsSignal,
+                    openNotificationsEvents = openNotificationsEvents,
                     appAnalytics = appAnalytics,
                 )
             }
@@ -213,7 +211,7 @@ class MainActivity : ComponentActivity() {
             val composeView = ComposeView(this).apply {
                 setContent {
                     ContentApp(
-                        openNotificationsSignal = openNotificationsSignal,
+                        openNotificationsEvents = openNotificationsEvents,
                         appAnalytics = appAnalytics,
                     )
                 }
@@ -358,9 +356,5 @@ private fun Bundle.getValueAsString(key: String): String? {
     return resolved
 }
 
-/** Basit JSON string escape (quote + backslash + newline vs.) */
-private fun String?.jsonEscape(): String {
-    if (this == null) return "null"
-    return this.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
-        .replace("\r", "\\r").replace("\t", "\\t")
-}
+
+

@@ -67,6 +67,7 @@ fun ContentRoute(
     audioPlayerContent: @Composable () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     bannerAdUnitId: String,
+    onRetry: () -> Unit = {},
     viewModel: ContentViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
@@ -88,7 +89,11 @@ fun ContentRoute(
         onRewardsClick = onRewardsClick,
         audioPlayerContent = audioPlayerContent,
         nativeAdContent = nativeAdContent,
-        bannerAdUnitId = bannerAdUnitId
+        bannerAdUnitId = bannerAdUnitId,
+        onRetry = {
+            viewModel.reload()
+            onRetry()
+        }
     )
 }
 
@@ -101,7 +106,8 @@ fun ContentScreen(
     onRewardsClick: () -> Unit = {},
     audioPlayerContent: @Composable () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
-    bannerAdUnitId: String
+    bannerAdUnitId: String,
+    onRetry: () -> Unit = {}
 ) {
     val dimens = LocalDimens.current
     val motion = LocalMotion.current
@@ -111,13 +117,23 @@ fun ContentScreen(
             ContentLoadingSkeleton(appName = appName)
         }
         is ContentUiState.Error -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(dimens.space24),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = stringResource(R.string.content_error, uiState.throwable.message ?: ""),
-                    color = MaterialTheme.colorScheme.error
+                    text = stringResource(R.string.content_error_friendly),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(dimens.space12))
+                AppButton(
+                    text = stringResource(R.string.content_retry),
+                    onClick = onRetry
                 )
             }
         }
@@ -182,46 +198,46 @@ fun ContentScreen(
                             )
                         }
                     }
-                } else {
-                if (uiState.shouldShowAds) {
-                    BannerAd(
-                        adUnitId = bannerAdUnitId,
-                        modifier = Modifier.padding(horizontal = dimens.space6, vertical = dimens.space4)
-                    )
-                }
+                                } else {
+                    // Audio Player
+                    audioPlayerContent()
 
-                // Audio Player
-                audioPlayerContent()
+                    Spacer(modifier = Modifier.height(dimens.space4))
 
-                Spacer(modifier = Modifier.height(dimens.space4))
+                    // Verse Cards + Native Ads (her 5 ayetten sonra)
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = dimens.space6, vertical = dimens.space2)
+                    ) {
+                        val verses = uiState.verses
+                        verses.forEachIndexed { index, verse ->
+                            item(key = "verse_${verse.id}") {
+                                VerseItem(
+                                    verse = verse,
+                                    displayMode = uiState.displayMode,
+                                    fontSize = uiState.fontSize
+                                )
+                            }
 
-                // Verse Cards + Native Ads (her 5 ayetten sonra)
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = dimens.space6, vertical = dimens.space2)
-                ) {
-                    val verses = uiState.verses
-                    verses.forEachIndexed { index, verse ->
-                        item(key = "verse_${verse.id}") {
-                            VerseItem(
-                                verse = verse,
-                                displayMode = uiState.displayMode,
-                                fontSize = uiState.fontSize
-                            )
-                        }
-
-                        // Kısa içerikte (<=5) ilk ayetten sonra, uzun içerikte her 5 ayette bir reklam
-                        if (uiState.shouldShowAds && shouldInsertNativeAdAfterVerse(index, verses.size)) {
-                            item(key = "native_ad_$index") {
-                                nativeAdContent()
+                            // Kısa içerikte (<=5) ilk ayetten sonra, uzun içerikte her 5 ayette bir reklam
+                            if (uiState.shouldShowAds && shouldInsertNativeAdAfterVerse(index, verses.size)) {
+                                item(key = "native_ad_$index") {
+                                    nativeAdContent()
+                                }
                             }
                         }
                     }
-                }
 
-                // Bottom Mode Selector
+                    if (uiState.shouldShowAds) {
+                        BannerAd(
+                            adUnitId = bannerAdUnitId,
+                            modifier = Modifier.padding(horizontal = dimens.space6, vertical = dimens.space4)
+                        )
+                    }
+
+                    // Bottom Mode Selector
                     BottomModeSelector(
                         currentMode = uiState.displayMode,
                         onModeSelected = onModeSelected
@@ -285,7 +301,6 @@ fun AppHeader(
                 text = appName,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontFamily = FontFamily.Serif,
-                    fontSize = 25.sp,
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = colorScheme.onPrimaryContainer,

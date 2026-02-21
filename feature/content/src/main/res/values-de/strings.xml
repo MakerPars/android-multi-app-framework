@@ -7,4 +7,8 @@
     <string name="content_mode_arabic">Arabisch</string>
     <string name="content_mode_latin">Latein</string>
     <string name="content_mode_turkish">Übersetzung</string>
+    <string name="content_error_friendly">Inhalt konnte nicht geladen werden. Bitte erneut versuchen.</string>
+    <string name="content_retry">Erneut versuchen</string>
+    <string name="content_verse_copied">Vers in die Zwischenablage kopiert</string>
+    <string name="content_share_verse_title">Vers teilen</string>
 </resources>

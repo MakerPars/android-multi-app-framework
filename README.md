@@ -1,13 +1,13 @@
 # ContentApp
 
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg)](https://kotlinlang.org)
-[![Android](https://img.shields.io/badge/android-SDK%2035-green.svg)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.10-blue.svg)](https://kotlinlang.org)
+[![Android](https://img.shields.io/badge/android-SDK%2036-green.svg)](https://developer.android.com)
 [![Gradle](https://img.shields.io/badge/gradle-8.10-blue.svg)](https://gradle.org)
 
-> Professional multi-flavour Android framework for managing 16+ apps from a single codebase. Built with Kotlin, Jetpack Compose, and modern Android best practices.
+> Professional multi-flavour Android framework for managing 18 apps from a single codebase. Built with Kotlin, Jetpack Compose, and modern Android best practices.
 
-A multi-flavour Android application for delivering rich content experiences. This project supports 16 distinct product flavours, each tailored for specific content delivery.
+A multi-flavour Android application for delivering rich content experiences. This project supports 18 distinct product flavours, each tailored for specific content delivery.
 
 ## Project Structure
 
@@ -16,8 +16,7 @@ A multi-flavour Android application for delivering rich content experiences. Thi
    - **common**: Shared extensions and helper classes.
    - **model**: Data models used throughout the app.
    - **database**: Room database implementation including schemas.
-   - **network**: Retrofit and OkHttp configuration.
-   - **ui**: Reusable UI components and theme.
+   - **designsystem**: Reusable UI components and theme.
 
 - **feature**: Feature-specific modules.
    - **content**: Main content display logic.
@@ -33,6 +32,8 @@ A multi-flavour Android application for delivering rich content experiences. Thi
 - JDK 21+
 - Android Studio Ladybug or newer
 - CMake (for NDK support if needed)
+- Kotlin 2.3.10
+- Android Gradle Plugin 9.0.1
 
 ### Environment Variables
 

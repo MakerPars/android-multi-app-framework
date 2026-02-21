@@ -8,7 +8,6 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
-import com.parsfilo.contentapp.feature.ads.AppOpenAdManager.Companion.COOLDOWN_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.util.Date
@@ -109,3 +108,4 @@ class AppOpenAdManager @Inject constructor(
         return dateDifference < numMilliSecondsPerHour * numHours
     }
 }
+

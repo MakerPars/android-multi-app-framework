@@ -14,32 +14,33 @@ import androidx.media3.session.SessionToken
 import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 import com.google.common.util.concurrent.ListenableFuture
+import com.parsfilo.contentapp.feature.audio.BuildConfig
 import com.parsfilo.contentapp.feature.audio.service.AudioService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 
 private const val ASSET_PACK_NAME = "audioassets"
 private const val STATE_KEY_POSITION = "playback_position"
-private const val CLOUDFLARE_AUDIO_BASE_URL =
-    "https://contentapp-content-api.oaslananka.workers.dev/api/audio"
-private const val CLOUDFLARE_AUDIO_MANIFEST_URL =
-    "https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest"
 private const val REMOTE_MANIFEST_TIMEOUT_MS = 5_000
 private const val REMOTE_AUDIO_TIMEOUT_MS = 15_000
 private const val AUDIO_CACHE_DIR = "audio_cache"
@@ -84,7 +85,14 @@ class AudioPlayerViewModel @Inject constructor(
             try {
                 player = controllerFuture.get()
                 checkAndLoadAudio()
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                Timber.w(e, "AudioService controller init cancelled")
+            } catch (e: ExecutionException) {
+                Timber.e(e, "Failed to connect to AudioService")
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                Timber.e(e, "AudioService controller init interrupted")
+            } catch (e: IllegalStateException) {
                 Timber.e(e, "Failed to connect to AudioService")
             }
         }, ContextCompat.getMainExecutor(context))
@@ -275,7 +283,8 @@ class AudioPlayerViewModel @Inject constructor(
     private fun hasAssetInAssets(fileName: String): Boolean {
         return try {
             context.assets.open(fileName).use { true }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.d(e, "Asset bulunamadı: %s", fileName)
             false
         }
     }
@@ -326,21 +335,21 @@ class AudioPlayerViewModel @Inject constructor(
         if (manifest.availableKeys.contains(normalizedKey)) {
             return RemoteAudioSource(
                 key = normalizedKey,
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/${Uri.encode(normalizedKey)}"
+                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(normalizedKey)}"
             )
         }
 
         if (manifest.availableKeys.contains(effectiveAudioFileName)) {
             return RemoteAudioSource(
                 key = effectiveAudioFileName,
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/${Uri.encode(effectiveAudioFileName)}"
+                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(effectiveAudioFileName)}"
             )
         }
 
         if (manifest.availableKeys.contains("audio.mp3")) {
             return RemoteAudioSource(
                 key = "audio.mp3",
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/audio.mp3"
+                url = "${BuildConfig.AUDIO_BASE_URL}/audio.mp3"
             )
         }
 
@@ -429,7 +438,11 @@ class AudioPlayerViewModel @Inject constructor(
 
             Timber.i("✅ Uzak ses kalıcı cache'e kaydedildi: ${target.absolutePath}")
             return target.absolutePath
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Uzak ses indirme hatası. key=${source.key}")
+            temp.delete()
+            return null
+        } catch (e: SecurityException) {
             Timber.w(e, "Uzak ses indirme hatası. key=${source.key}")
             temp.delete()
             return null
@@ -446,7 +459,7 @@ class AudioPlayerViewModel @Inject constructor(
     private fun fetchRemoteAudioManifest(): RemoteAudioManifest? {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(CLOUDFLARE_AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
+            connection = (URL(BuildConfig.AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
                 connectTimeout = REMOTE_MANIFEST_TIMEOUT_MS
                 readTimeout = REMOTE_MANIFEST_TIMEOUT_MS
                 requestMethod = "GET"
@@ -495,7 +508,13 @@ class AudioPlayerViewModel @Inject constructor(
                 packageAudio = packageAudio,
                 availableKeys = availableKeys
             )
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Cloudflare manifest okunamadı")
+            null
+        } catch (e: JSONException) {
+            Timber.w(e, "Cloudflare manifest parse edilemedi")
+            null
+        } catch (e: SecurityException) {
             Timber.w(e, "Cloudflare manifest okunamadı")
             null
         } finally {

@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: ['*']
 
+concurrency:
+  group: quality-gate-${{ github.head_ref }}
+  cancel-in-progress: true
+
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
   JAVA_VERSION: '21'
@@ -210,29 +214,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
-        env:
-          FIREBASE_CONFIGS_ZIP_BASE64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          CF_R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
-          CF_R2_FIREBASE_OBJECT: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
-        run: |
-          set -euo pipefail
-          if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
-            export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
-            export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
-            npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config cloudflare/workers/content-api/wrangler.toml
-            unzip -o firebase_configs.zip
-            rm -f firebase_configs.zip
-            echo "Firebase configs restored from R2."
-          elif [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
-            echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
-            unzip -o firebase_configs.zip
-            rm -f firebase_configs.zip
-            echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
-          else
-            echo "No Firebase override secret found. Using repository defaults."
-          fi
+        uses: ./.github/actions/firebase-config
+        with:
+          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
       - name: Run Dynamic Lint Tasks
         env:
           FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}

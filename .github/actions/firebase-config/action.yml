@@ -1,0 +1,52 @@
+name: Firebase Config Override
+description: Restores firebase configs from Cloudflare R2 or base64 fallback
+
+inputs:
+  firebase_configs_zip_base64:
+    description: Base64 encoded firebase config archive
+    required: false
+    default: ''
+  cf_r2_account_id:
+    description: Cloudflare account ID
+    required: false
+    default: ''
+  cf_api_token:
+    description: Cloudflare API token
+    required: false
+    default: ''
+  cf_r2_bucket:
+    description: Cloudflare R2 bucket name
+    required: false
+    default: ''
+  cf_r2_firebase_object:
+    description: R2 object key for firebase zip
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        FIREBASE_CONFIGS_ZIP_BASE64='${{ inputs.firebase_configs_zip_base64 }}'
+        CF_R2_ACCOUNT_ID='${{ inputs.cf_r2_account_id }}'
+        CF_API_TOKEN='${{ inputs.cf_api_token }}'
+        CF_R2_BUCKET='${{ inputs.cf_r2_bucket }}'
+        CF_R2_FIREBASE_OBJECT='${{ inputs.cf_r2_firebase_object }}'
+
+        if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
+          export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+          npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config cloudflare/workers/content-api/wrangler.toml
+          unzip -o firebase_configs.zip
+          rm -f firebase_configs.zip
+          echo "Firebase configs restored from R2."
+        elif [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+          echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+          unzip -o firebase_configs.zip
+          rm -f firebase_configs.zip
+          echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
+        else
+          echo "No Firebase override secret found. Using repository defaults."
+        fi

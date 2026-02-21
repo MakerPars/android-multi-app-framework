@@ -9,7 +9,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONException
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 
 interface PrayerRepository {
@@ -61,7 +63,10 @@ class AssetPrayerRepository @Inject constructor(
                 )
             }
             prayers
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.e(e, "data.json (prayers) read error")
+            emptyList()
+        } catch (e: JSONException) {
             Timber.e(e, "data.json (prayers) parse hatası")
             emptyList()
         }

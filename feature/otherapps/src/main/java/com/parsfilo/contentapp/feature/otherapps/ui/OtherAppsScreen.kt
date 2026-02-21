@@ -34,17 +34,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
+import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
+import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.otherapps.R
 import com.parsfilo.contentapp.feature.otherapps.model.OtherApp
@@ -53,12 +53,18 @@ import com.parsfilo.contentapp.feature.otherapps.model.OtherApp
 fun OtherAppsRoute(
     viewModel: OtherAppsViewModel = hiltViewModel()
 ) {
-    val apps by viewModel.apps.collectAsStateWithLifecycle()
-    OtherAppsScreen(apps)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    OtherAppsScreen(
+        uiState = uiState,
+        onRetry = viewModel::refresh
+    )
 }
 
 @Composable
-fun OtherAppsScreen(apps: List<OtherApp>) {
+fun OtherAppsScreen(
+    uiState: OtherAppsUiState,
+    onRetry: () -> Unit = {}
+) {
     val context = LocalContext.current
     val dimens = LocalDimens.current
     val colorScheme = MaterialTheme.colorScheme
@@ -68,21 +74,13 @@ fun OtherAppsScreen(apps: List<OtherApp>) {
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // Başlık
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.space16, bottom = dimens.space8),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.other_apps_title),
-                color = colorScheme.onBackground,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 22.sp
-            )
-        }
+        AppTopBar(
+            title = stringResource(R.string.other_apps_title),
+            colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                containerColor = app_transparent
+            ),
+            titleStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+        )
 
         HorizontalDivider(
             thickness = dimens.stroke,
@@ -90,33 +88,84 @@ fun OtherAppsScreen(apps: List<OtherApp>) {
             modifier = Modifier.padding(horizontal = dimens.space24, vertical = dimens.space4)
         )
 
-        Spacer(modifier = Modifier.height(dimens.space8))
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = colorScheme.primary)
+                }
+            }
 
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = dimens.space12, vertical = dimens.space8),
-            verticalArrangement = Arrangement.spacedBy(dimens.space14),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(
-                items = apps,
-                key = { index, app -> "${app.packageName}_$index" },
-            ) { _, app ->
-                AppItem(
-                    app = app,
-                    onClick = {
-                    try {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
+            uiState.errorMessage != null && uiState.apps.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimens.space24),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.other_apps_error),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
                         )
-                    } catch (_: Exception) {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}")
-                            )
+                        Spacer(modifier = Modifier.height(dimens.space12))
+                        AppButton(
+                            text = stringResource(R.string.other_apps_retry),
+                            onClick = onRetry
                         )
                     }
-                })
+                }
+            }
+
+            uiState.apps.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimens.space24),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.other_apps_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = dimens.space12, vertical = dimens.space8),
+                    verticalArrangement = Arrangement.spacedBy(dimens.space14),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(
+                        items = uiState.apps,
+                        key = { index, app -> "${app.packageName}_$index" },
+                    ) { _, app ->
+                        AppItem(
+                            app = app,
+                            onClick = {
+                                try {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
+                                    )
+                                } catch (_: Exception) {
+                                    context.startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}")
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
     }

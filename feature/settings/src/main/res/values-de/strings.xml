@@ -1,13 +1,14 @@
 <resources>
     <string name="settings_title">Einstellungen</string>
+    <string name="settings_back">Zuruck</string>
     <string name="settings_dark_mode">Dunkelmodus</string>
     <string name="settings_font_size">Schriftgröße</string>
     <string name="settings_font_size_value">Schriftgröße: %d</string>
     <string name="settings_notifications">Benachrichtigungen</string>
     <string name="settings_notifications_desc">App-Benachrichtigungen ein/aus</string>
     <string name="settings_share_app">Diese App teilen</string>
-    <string name="settings_share_app_desc">Teile die App über WhatsApp</string>
-    <string name="settings_share_app_button">Mit WhatsApp teilen</string>
+    <string name="settings_share_app_desc">Teile die App über das System-Freigabemenü</string>
+    <string name="settings_share_app_button">App teilen</string>
     <string name="settings_share_app_message">Probier diese App aus: %1$s</string>
     <string name="settings_whatsapp_not_found">WhatsApp ist nicht installiert.</string>
     <string name="settings_device_id_title">Geräte-ID</string>

@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,21 +41,23 @@ class MiraclesDetailViewModel @Inject constructor(
 
     private fun loadPrayerDetail() {
         viewModelScope.launch {
-            try {
-                val prayer = prayerRepository.getPrayerByIndex(prayerIndex)
-                if (prayer == null) {
-                    _uiState.value = MiraclesDetailUiState.Error(Exception("Dua bulunamadı"))
+            val prayer = runCatching { prayerRepository.getPrayerByIndex(prayerIndex) }
+                .getOrElse { error ->
+                    if (error is CancellationException) throw error
+                    _uiState.value = MiraclesDetailUiState.Error(error)
                     return@launch
                 }
 
-                adGateChecker.shouldShowAds.collect { shouldShowAds ->
-                    _uiState.value = MiraclesDetailUiState.Success(
-                        prayer = prayer,
-                        shouldShowAds = shouldShowAds
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = MiraclesDetailUiState.Error(e)
+            if (prayer == null) {
+                _uiState.value = MiraclesDetailUiState.Error(IllegalStateException("Dua bulunamadı"))
+                return@launch
+            }
+
+            adGateChecker.shouldShowAds.collect { shouldShowAds ->
+                _uiState.value = MiraclesDetailUiState.Success(
+                    prayer = prayer,
+                    shouldShowAds = shouldShowAds
+                )
             }
         }
     }

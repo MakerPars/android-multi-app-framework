@@ -6,11 +6,13 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import com.google.firebase.FirebaseException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
+import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -262,7 +265,29 @@ class AuthManager @Inject constructor(
                 e.message
             )
             SignInResult.Failure
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            Timber.e(e, "[Auth][$attemptId] Invalid sign-in credential payload. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: IllegalStateException) {
+            Timber.e(e, "[Auth][$attemptId] Illegal auth state during sign-in. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: FirebaseException) {
+            Timber.e(e, "[Auth][$attemptId] Firebase sign-in failed. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: SecurityException) {
+            Timber.e(e, "[Auth][$attemptId] Security exception during sign-in. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: CancellationException) {
+            Timber.w(e, "[Auth][$attemptId] Sign-in coroutine cancelled")
+            SignInResult.Cancelled
+        } catch (e: java.util.concurrent.ExecutionException) {
+            Timber.e(e, "[Auth][$attemptId] Credential execution failed. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Timber.e(e, "[Auth][$attemptId] Sign-in interrupted")
+            SignInResult.Failure
+        } catch (e: UnsupportedOperationException) {
             Timber.e(e, "[Auth][$attemptId] Unexpected exception during sign-in. msg=%s", e.message)
             SignInResult.Failure
         }
@@ -362,7 +387,29 @@ class AuthManager @Inject constructor(
                 e.message
             )
             SignInResult.Failure
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            Timber.e(e, "[Auth][$attemptId] Button flow invalid credential payload. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: IllegalStateException) {
+            Timber.e(e, "[Auth][$attemptId] Button flow illegal state. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: FirebaseException) {
+            Timber.e(e, "[Auth][$attemptId] Button flow Firebase sign-in failed. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: SecurityException) {
+            Timber.e(e, "[Auth][$attemptId] Button flow security exception. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: CancellationException) {
+            Timber.w(e, "[Auth][$attemptId] Button flow coroutine cancelled")
+            SignInResult.Cancelled
+        } catch (e: java.util.concurrent.ExecutionException) {
+            Timber.e(e, "[Auth][$attemptId] Button flow credential execution failed. msg=%s", e.message)
+            SignInResult.Failure
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Timber.e(e, "[Auth][$attemptId] Button flow interrupted")
+            SignInResult.Failure
+        } catch (e: UnsupportedOperationException) {
             Timber.e(e, "[Auth][$attemptId] Button flow unexpected exception. msg=%s", e.message)
             SignInResult.Failure
         }
@@ -382,7 +429,12 @@ class AuthManager @Inject constructor(
         try {
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
             Timber.i("[Auth][$attemptId] Credential state CLEARED after reauth failure")
-        } catch (e: Exception) {
+        } catch (e: ClearCredentialException) {
+            // Sen istedin: warning değil ERROR
+            Timber.e(e, "[Auth][$attemptId] Failed to clear credential state")
+        } catch (e: IllegalStateException) {
+            Timber.e(e, "[Auth][$attemptId] Failed to clear credential state")
+        } catch (e: SecurityException) {
             // Sen istedin: warning değil ERROR
             Timber.e(e, "[Auth][$attemptId] Failed to clear credential state")
         }

@@ -23,5 +23,6 @@
     <string name="billing_plan_6_months">6 months</string>
     <string name="billing_plan_yearly">Yearly</string>
     <string name="billing_plan_generic">Plan</string>
+    <string name="billing_back">Back</string>
 </resources>
 

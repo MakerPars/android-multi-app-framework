@@ -10,6 +10,8 @@ import com.parsfilo.contentapp.core.common.network.Dispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,6 +51,8 @@ class AdManager @Inject constructor(
     private val isMobileAdsInitializeCalled = AtomicBoolean(false)
     @Volatile
     private var onAdsInitialized: (() -> Unit)? = null
+
+    private val initScope = CoroutineScope(SupervisorJob() + ioDispatcher)
 
     private val _consentStatus = MutableStateFlow<ConsentStatus>(ConsentStatus.Unknown)
     val consentStatus: StateFlow<ConsentStatus> = _consentStatus.asStateFlow()
@@ -110,14 +114,16 @@ class AdManager @Inject constructor(
         }
 
         // Main thread blocking issues fixed by moving to IO dispatcher
-        CoroutineScope(ioDispatcher).launch {
+        initScope.launch {
             MobileAds.initialize(context) { initStatus ->
                 Timber.d("MobileAds initialized: ${initStatus.adapterStatusMap}")
                 _isSdkReady.value = true
                 // Invoke and immediately null out to prevent Activity leak
                 onAdsInitialized?.invoke()
                 onAdsInitialized = null
+                initScope.cancel()
             }
         }
     }
 }
+

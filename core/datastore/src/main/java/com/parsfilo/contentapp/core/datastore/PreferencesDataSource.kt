@@ -45,11 +45,9 @@ class PreferencesDataSource @Inject constructor(
 
     suspend fun setDisplayMode(mode: String) {
         userPreferences.edit { preferences ->
-            // Validate the mode string matches an enum value
-            val validMode = try {
-                com.parsfilo.contentapp.core.model.DisplayMode.valueOf(mode)
+            val validMode = if (com.parsfilo.contentapp.core.model.DisplayMode.entries.any { it.name == mode }) {
                 mode
-            } catch (e: IllegalArgumentException) {
+            } else {
                 "ARABIC"
             }
             preferences[PreferencesKeys.DISPLAY_MODE] = validMode

@@ -3,21 +3,20 @@ package com.parsfilo.contentapp.feature.audio.data
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.parsfilo.contentapp.feature.audio.BuildConfig
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val CLOUDFLARE_AUDIO_MANIFEST_URL =
-    "https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest"
-private const val CLOUDFLARE_AUDIO_BASE_URL =
-    "https://contentapp-content-api.oaslananka.workers.dev/api/audio"
 private const val AUDIO_CACHE_DIR = "audio_cache"
 private const val MANIFEST_TIMEOUT_MS = 5_000
 private const val AUDIO_TIMEOUT_MS = 15_000
@@ -100,7 +99,7 @@ class AudioCachePrefetcher @Inject constructor(
         if (normalizedPackageKey != null && manifest.availableKeys.contains(normalizedPackageKey)) {
             return RemoteAudioSource(
                 key = normalizedPackageKey,
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/${Uri.encode(normalizedPackageKey)}",
+                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(normalizedPackageKey)}",
             )
         }
 
@@ -108,7 +107,7 @@ class AudioCachePrefetcher @Inject constructor(
         if (fallback != null && manifest.availableKeys.contains(fallback)) {
             return RemoteAudioSource(
                 key = fallback,
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/${Uri.encode(fallback)}",
+                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(fallback)}",
             )
         }
         return null
@@ -130,7 +129,7 @@ class AudioCachePrefetcher @Inject constructor(
         return orderedKeys.map { key ->
             RemoteAudioSource(
                 key = key,
-                url = "$CLOUDFLARE_AUDIO_BASE_URL/${Uri.encode(key)}",
+                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(key)}",
             )
         }
     }
@@ -160,7 +159,7 @@ class AudioCachePrefetcher @Inject constructor(
     private fun fetchManifest(): RemoteAudioManifest? {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(CLOUDFLARE_AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
+            connection = (URL(BuildConfig.AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
                 connectTimeout = MANIFEST_TIMEOUT_MS
                 readTimeout = MANIFEST_TIMEOUT_MS
                 requestMethod = "GET"
@@ -192,7 +191,13 @@ class AudioCachePrefetcher @Inject constructor(
             }
 
             if (availableKeys.isEmpty()) null else RemoteAudioManifest(packageAudio, availableKeys)
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Audio manifest fetch failed")
+            null
+        } catch (e: JSONException) {
+            Timber.w(e, "Audio manifest parse failed")
+            null
+        } catch (e: SecurityException) {
             Timber.w(e, "Audio manifest fetch failed")
             null
         } finally {
@@ -237,7 +242,11 @@ class AudioCachePrefetcher @Inject constructor(
                 temp.delete()
             }
             true
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Timber.w(e, "Audio download failed for key=${source.key}")
+            temp.delete()
+            false
+        } catch (e: SecurityException) {
             Timber.w(e, "Audio download failed for key=${source.key}")
             temp.delete()
             false

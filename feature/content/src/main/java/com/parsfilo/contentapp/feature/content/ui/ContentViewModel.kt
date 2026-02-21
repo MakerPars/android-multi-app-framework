@@ -11,12 +11,15 @@ import com.parsfilo.contentapp.core.model.Verse
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.content.data.ContentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,21 +31,26 @@ class ContentViewModel @Inject constructor(
     private val appAnalytics: AppAnalytics,
 ) : ViewModel() {
     private var defaultModeApplied = false
+    private val reloadSignal = MutableStateFlow(0)
 
-    val uiState: StateFlow<ContentUiState> = combine(
+    private val versesFlow = reloadSignal.flatMapLatest {
         flow {
             when (val result = contentRepository.getVerses()) {
                 is Result.Success -> emit(result.data)
                 is Result.Error -> throw result.exception
-                is Result.Loading -> { /* no-op */ }
+                is Result.Loading -> emit(emptyList())
             }
-        },
+        }
+    }
+
+    val uiState: StateFlow<ContentUiState> = combine(
+        versesFlow,
         preferencesDataSource.userData,
         adGateChecker.shouldShowAds
     ) { verses, userData, shouldShowAds ->
         val mode = try {
             DisplayMode.valueOf(userData.displayMode)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             DisplayMode.ARABIC
         }
 
@@ -53,12 +61,16 @@ class ContentViewModel @Inject constructor(
             shouldShowAds = shouldShowAds
         ) as ContentUiState
     }
-    .catch { emit(ContentUiState.Error(it)) }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = ContentUiState.Loading
-    )
+        .catch { emit(ContentUiState.Error(it)) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ContentUiState.Loading
+        )
+
+    fun reload() {
+        reloadSignal.update { it + 1 }
+    }
 
     fun updateDisplayMode(mode: DisplayMode) {
         val oldMode = (uiState.value as? ContentUiState.Success)?.displayMode
@@ -91,5 +103,6 @@ sealed interface ContentUiState {
         val fontSize: Int,
         val shouldShowAds: Boolean = true
     ) : ContentUiState
+
     data class Error(val throwable: Throwable) : ContentUiState
 }

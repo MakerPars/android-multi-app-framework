@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ButtonDefaults
@@ -54,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parsfilo.contentapp.core.designsystem.AppTheme
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
+import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalMotion
@@ -63,6 +65,7 @@ import com.parsfilo.contentapp.feature.billing.model.BillingProduct
 
 @Composable
 fun SubscriptionRoute(
+    onBackClick: () -> Unit = {},
     viewModel: SubscriptionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,7 +73,9 @@ fun SubscriptionRoute(
     val activity = context as? Activity
 
     SubscriptionScreen(
-        uiState = uiState, onPlanSelected = { productPackage ->
+        uiState = uiState,
+        onBackClick = onBackClick,
+        onPlanSelected = { productPackage ->
             activity?.let { act ->
                 viewModel.billingManager.launchBillingFlow(act, productPackage)
             }
@@ -80,6 +85,7 @@ fun SubscriptionRoute(
 @Composable
 fun SubscriptionScreen(
     uiState: SubscriptionUiState,
+    onBackClick: () -> Unit = {},
     onPlanSelected: (BillingProduct) -> Unit
 ) {
     val dimens = LocalDimens.current
@@ -98,10 +104,20 @@ fun SubscriptionScreen(
                 )
             )
             .verticalScroll(scrollState)
-            .padding(dimens.space16),
+            .padding(horizontal = dimens.space16),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(dimens.space24))
+        AppTopBar(
+            title = stringResource(R.string.billing_subscription_title),
+            navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
+            navigationIconContentDescription = stringResource(R.string.billing_back),
+            onNavigationClick = onBackClick,
+            colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                containerColor = com.parsfilo.contentapp.core.designsystem.theme.app_transparent,
+            ),
+        )
+
+        Spacer(modifier = Modifier.height(dimens.space12))
 
         // Header
         Icon(
