@@ -26,6 +26,8 @@
     <string name="quran_bookmarks_empty">Henüz yer imi yok.</string>
     <string name="quran_ayah_label">Ayet %d</string>
     <string name="quran_open_bookmarks">Yer imleri</string>
+    <string name="quran_open_settings">Ayarlar</string>
+    <string name="quran_open_rewards">Ödüller</string>
     <string name="quran_error_load_suras">Sure listesi yüklenemedi.</string>
     <string name="quran_error_load_sura">Sure içeriği yüklenemedi.</string>
     <string name="quran_audio_download_progress">İndiriliyor %% %d</string>

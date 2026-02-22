@@ -2,20 +2,27 @@ package com.parsfilo.contentapp.feature.quran.ui.suradetail
 
 import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -34,11 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
-import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.model.QuranAyah
 import com.parsfilo.contentapp.core.model.QuranDisplayMode
 import com.parsfilo.contentapp.feature.quran.R
@@ -51,8 +60,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun QuranSuraDetailRoute(
     onBack: () -> Unit,
+    onBookmarksClick: () -> Unit = {},
     onPlayAudioUrl: (String) -> Unit,
     onPauseAudio: () -> Unit,
+    bannerAdContent: (@Composable () -> Unit)? = null,
+    nativeAdContent: (@Composable () -> Unit)? = null,
     viewModel: QuranSuraDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +72,7 @@ fun QuranSuraDetailRoute(
     QuranSuraDetailScreen(
         state = uiState,
         onBack = onBack,
+        onBookmarksClick = onBookmarksClick,
         onRetry = viewModel::retrySync,
         onDisplayModeSelected = viewModel::onDisplayModeSelected,
         onFontSizeChange = viewModel::onFontSizeChange,
@@ -77,6 +90,8 @@ fun QuranSuraDetailRoute(
         onDownloadAyah = { ayah -> viewModel.downloadAyah(ayah.ayahNumber) },
         onToggleBookmark = { ayah -> viewModel.toggleBookmark(ayah.ayahNumber) },
         onAyahVisible = { ayah -> viewModel.onAyahVisible(ayah.ayahNumber) },
+        bannerAdContent = bannerAdContent,
+        nativeAdContent = nativeAdContent,
     )
 }
 
@@ -85,6 +100,7 @@ fun QuranSuraDetailRoute(
 fun QuranSuraDetailScreen(
     state: QuranSuraDetailUiState,
     onBack: () -> Unit,
+    onBookmarksClick: () -> Unit = {},
     onRetry: () -> Unit,
     onDisplayModeSelected: (QuranDisplayMode) -> Unit,
     onFontSizeChange: (Int) -> Unit,
@@ -93,6 +109,8 @@ fun QuranSuraDetailScreen(
     onDownloadAyah: (QuranAyah) -> Unit,
     onToggleBookmark: (QuranAyah) -> Unit,
     onAyahVisible: (QuranAyah) -> Unit,
+    bannerAdContent: (@Composable () -> Unit)? = null,
+    nativeAdContent: (@Composable () -> Unit)? = null,
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -102,20 +120,13 @@ fun QuranSuraDetailScreen(
     val language = Locale.getDefault().language.lowercase(Locale.ROOT)
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            AppTopBar(
+            QuranSuraDetailHeader(
                 title = state.sura?.nameTurkish ?: stringResource(R.string.quran_title),
-                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                navigationIconContentDescription = null,
-                onNavigationClick = onBack,
-                actions = {
-                    androidx.compose.material3.IconButton(onClick = { showReciterSheet = true }) {
-                        androidx.compose.material3.Icon(
-                            imageVector = Icons.Default.LibraryMusic,
-                            contentDescription = stringResource(R.string.quran_select_reciter),
-                        )
-                    }
-                },
+                onBack = onBack,
+                onOpenReciter = { showReciterSheet = true },
+                onOpenBookmarks = onBookmarksClick,
             )
         },
     ) { innerPadding ->
@@ -123,8 +134,12 @@ fun QuranSuraDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (state.shouldShowAds) {
+                bannerAdContent?.invoke()
+            }
+
             DisplayModeSelector(
                 currentMode = state.displayMode,
                 arabicLabel = stringResource(R.string.quran_mode_arabic),
@@ -177,13 +192,15 @@ fun QuranSuraDetailScreen(
             }
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 90.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(bottom = 0.dp),
             ) {
-                items(
+                itemsIndexed(
                     items = state.ayahs,
-                    key = { ayahState -> "${ayahState.ayah.suraNumber}_${ayahState.ayah.ayahNumber}" },
-                ) { ayahState ->
+                    key = { _, ayahState -> "${ayahState.ayah.suraNumber}_${ayahState.ayah.ayahNumber}" },
+                ) { index, ayahState ->
                     LaunchedEffect(ayahState.ayah.ayahNumber) {
                         onAyahVisible(ayahState.ayah)
                     }
@@ -207,6 +224,10 @@ fun QuranSuraDetailScreen(
                         onBookmarkClick = onToggleBookmark,
                         onLongClick = { ayah -> actionAyah = ayah },
                     )
+
+                    if (state.shouldShowAds && nativeAdContent != null && shouldInsertNativeAdAfterAyah(index, state.ayahs.size)) {
+                        nativeAdContent()
+                    }
                 }
             }
         }
@@ -255,6 +276,73 @@ fun QuranSuraDetailScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun QuranSuraDetailHeader(
+    title: String,
+    onBack: () -> Unit,
+    onOpenReciter: () -> Unit,
+    onOpenBookmarks: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp, vertical = 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.SemiBold,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            IconButton(onClick = onOpenReciter, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = Icons.Default.LibraryMusic,
+                    contentDescription = stringResource(R.string.quran_select_reciter),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            IconButton(onClick = onOpenBookmarks, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Bookmark,
+                    contentDescription = stringResource(R.string.quran_open_bookmarks),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+private fun shouldInsertNativeAdAfterAyah(
+    ayahIndex: Int,
+    totalAyahCount: Int,
+): Boolean {
+    if (totalAyahCount <= 0) return false
+    if (totalAyahCount == 1) return ayahIndex == 0
+    if (ayahIndex >= totalAyahCount - 1) return false
+
+    return if (totalAyahCount > 5) {
+        (ayahIndex + 1) % 5 == 0
+    } else {
+        ayahIndex == 0
     }
 }
 

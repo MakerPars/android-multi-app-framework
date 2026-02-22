@@ -26,6 +26,8 @@
     <string name="quran_bookmarks_empty">Noch keine Lesezeichen vorhanden.</string>
     <string name="quran_ayah_label">Vers %d</string>
     <string name="quran_open_bookmarks">Lesezeichen</string>
+    <string name="quran_open_settings">Einstellungen</string>
+    <string name="quran_open_rewards">Belohnungen</string>
     <string name="quran_error_load_suras">Sure-Liste konnte nicht geladen werden.</string>
     <string name="quran_error_load_sura">Sure-Inhalt konnte nicht geladen werden.</string>
     <string name="quran_audio_download_progress">Wird heruntergeladen %% %d</string>

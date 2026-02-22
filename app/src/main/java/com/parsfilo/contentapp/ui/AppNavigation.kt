@@ -222,6 +222,12 @@ fun AppNavHost(
                             navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
                         },
                         onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
+                        onSettingsClick = {
+                            navController.navigate(AppRoute.Settings.route)
+                        },
+                        onRewardsClick = {
+                            navController.navigate(AppRoute.Rewards.route)
+                        },
                         bannerAdContent = {
                             BannerAd(
                                 adUnitId = adUnitIds.banner,
@@ -239,12 +245,22 @@ fun AppNavHost(
                 ) {
                     QuranSuraDetailRoute(
                         onBack = { navController.popBackStack() },
+                        onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
                         onPlayAudioUrl = { url ->
                             audioPlayerViewModel.setOverrideAudioFileName(null)
                             audioPlayerViewModel.playFromUrl(url)
                         },
                         onPauseAudio = {
                             audioPlayerViewModel.pause()
+                        },
+                        bannerAdContent = {
+                            BannerAd(
+                                adUnitId = adUnitIds.banner,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                        nativeAdContent = {
+                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                         },
                     )
                 }
@@ -529,6 +545,7 @@ fun AppNavHost(
         }
     }
 }
+
 
 
 
