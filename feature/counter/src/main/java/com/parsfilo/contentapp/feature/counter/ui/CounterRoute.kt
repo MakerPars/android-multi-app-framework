@@ -69,6 +69,8 @@ fun CounterRoute(
         onToggleHaptic = viewModel::toggleHaptic,
         onToggleSound = viewModel::toggleSound,
         onTargetChanged = viewModel::onTargetChanged,
+        onFirstSessionReminderAction = viewModel::onFirstSessionReminderAction,
+        onFirstSessionReminderConsumed = viewModel::onFirstSessionReminderConsumed,
         bannerAdContent = bannerAdContent,
         nativeAdContent = nativeAdContent,
     )

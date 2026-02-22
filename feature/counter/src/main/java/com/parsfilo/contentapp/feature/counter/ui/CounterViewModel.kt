@@ -210,6 +210,14 @@ class CounterViewModel @Inject constructor(
                 zikirRepository.saveSession(session)
                 zikirRepository.updateStreakAfterSession()
 
+                val completedSessionsToday = zikirRepository.getTodayCompletedSessionCount().first()
+                if (completedSessionsToday == 1) {
+                    val reminderEnabled = preferencesDataSource.zikirReminderEnabled.first()
+                    if (!reminderEnabled) {
+                        _uiState.value = _uiState.value.copy(showFirstSessionReminderHint = true)
+                    }
+                }
+
                 val previousToday = state.todayTotalCount
                 val dailyGoal = _uiState.value.dailyGoal
                 val afterToday = previousToday + session.completedCount
@@ -280,6 +288,17 @@ class CounterViewModel @Inject constructor(
 
     fun onReminderSettingsToggle() {
         _uiState.value = _uiState.value.copy(showReminderSettings = !_uiState.value.showReminderSettings)
+    }
+
+    fun onFirstSessionReminderAction() {
+        _uiState.value = _uiState.value.copy(
+            showFirstSessionReminderHint = false,
+            showReminderSettings = true,
+        )
+    }
+
+    fun onFirstSessionReminderConsumed() {
+        _uiState.value = _uiState.value.copy(showFirstSessionReminderHint = false)
     }
 
     fun onSessionHistoryToggle() {
@@ -408,6 +427,3 @@ class CounterViewModel @Inject constructor(
         private const val MAX_INTERSTITIAL_PER_DAY = 2
     }
 }
-
-
-

@@ -39,4 +39,5 @@ data class CounterUiState(
     val isPremium: Boolean = false,
     val lastCompletedSession: ZikirSession? = null,
     val historyUnlockedForSession: Boolean = false,
+    val showFirstSessionReminderHint: Boolean = false,
 )

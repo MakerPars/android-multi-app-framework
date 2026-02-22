@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,7 @@ import com.parsfilo.contentapp.feature.counter.R
 @Composable
 fun CounterFab(
     arabicText: String,
+    latinText: String,
     currentCount: Int,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
@@ -68,8 +71,11 @@ fun CounterFab(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(220.dp)
+            .minimumInteractiveComponentSize()
             .semantics {
-                this.contentDescription = contentDescription.orEmpty()
+                if (!contentDescription.isNullOrBlank()) {
+                    this.contentDescription = contentDescription
+                }
             },
     ) {
         Canvas(modifier = Modifier.size(220.dp)) {
@@ -105,7 +111,15 @@ fun CounterFab(
                         textAlign = TextAlign.Center,
                     )
                 }
-                Spacer(modifier = Modifier.size(4.dp))
+                Spacer(modifier = Modifier.size(2.dp))
+                Text(
+                    text = latinText,
+                    fontSize = 13.sp,
+                    color = onSecondary.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    fontStyle = FontStyle.Italic,
+                )
+                Spacer(modifier = Modifier.size(2.dp))
                 Text(
                     text = stringResource(R.string.counter_tap_hint),
                     fontSize = 12.sp,

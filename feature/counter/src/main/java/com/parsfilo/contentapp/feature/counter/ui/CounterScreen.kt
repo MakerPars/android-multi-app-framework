@@ -27,8 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +84,8 @@ fun CounterScreen(
     onToggleHaptic: () -> Unit,
     onToggleSound: () -> Unit,
     onTargetChanged: (Int) -> Unit,
+    onFirstSessionReminderAction: () -> Unit,
+    onFirstSessionReminderConsumed: () -> Unit,
     bannerAdContent: (@Composable () -> Unit)? = null,
     nativeAdContent: (@Composable () -> Unit)? = null,
 ) {
@@ -92,6 +96,22 @@ fun CounterScreen(
     val clipboard = LocalClipboardManager.current
     val reminderSavedMessage = stringResource(R.string.counter_reminder_saved)
     val copiedMessage = stringResource(R.string.counter_copied)
+    val firstSessionReminderPrompt = stringResource(R.string.counter_first_session_reminder_prompt)
+    val firstSessionReminderAction = stringResource(R.string.counter_first_session_reminder_action)
+
+    LaunchedEffect(uiState.showFirstSessionReminderHint) {
+        if (!uiState.showFirstSessionReminderHint) return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = firstSessionReminderPrompt,
+            actionLabel = firstSessionReminderAction,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            onFirstSessionReminderAction()
+        } else {
+            onFirstSessionReminderConsumed()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -166,9 +186,14 @@ fun CounterScreen(
 
                 CounterFab(
                     arabicText = selectedZikir?.arabicText.orEmpty(),
+                    latinText = selectedZikir?.latinText.orEmpty(),
                     currentCount = uiState.currentCount,
                     onTap = onCounterTapped,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
+                    contentDescription = stringResource(
+                        R.string.counter_content_description_fab,
+                        uiState.currentCount,
+                    ),
                 )
 
                 Row(
@@ -434,5 +459,3 @@ private fun TargetButton(
         ),
     )
 }
-
-

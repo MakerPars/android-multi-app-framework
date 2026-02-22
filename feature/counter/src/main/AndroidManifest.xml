@@ -1,2 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest>
+    <!-- Flavor-only strategy: receiver and exact-alarm permissions are declared in app/src/zikirmatik/AndroidManifest.xml. -->
+</manifest>
