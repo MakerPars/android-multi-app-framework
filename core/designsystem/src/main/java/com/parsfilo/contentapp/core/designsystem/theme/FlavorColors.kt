@@ -25,12 +25,12 @@ data class FlavorColorTokens(
     val secondary: Color,
     val background: Color,
     val surface: Color,
-    val onPrimary: Color = Color(0xFFFFFBF0),
-    val onSurface: Color = Color(0xFF12121A),
-    val onBackground: Color = Color(0xFF12121A),
+    val onPrimary: Color = Color(0xFFFFF8EE),
+    val onSurface: Color = Color(0xFF1A100C),
+    val onBackground: Color = Color(0xFF1A100C),
     val surfaceVariant: Color,
     val outline: Color,
-    val gold: Color = Color(0xFFBF9640),
+    val gold: Color = Color(0xFFC09030),
 )
 
 object FlavorColors {
@@ -39,254 +39,254 @@ object FlavorColors {
         // ── Ramazan / Vakitler ───────────────────────────────────────────────
 
         "imsakiye" -> FlavorColorTokens(
-            // Gece yarısı laciverd + antik altın — Ramazan gecesi gökyüzü
-            primary        = Color(0xFF0F1F5C),
-            primaryDark    = Color(0xFF091440),
-            primaryDeep    = Color(0xFF050B28),
-            secondary      = Color(0xFFBF9B3A),
-            background     = Color(0xFFECEFF8),
-            surface        = Color(0xFFF4F6FC),
-            surfaceVariant = Color(0xFFDDE3F4),
-            outline        = Color(0xFFACBBDE),
-            gold           = Color(0xFFBF9B3A),
+            // Sıcak lacivert + zengin kehribar — Ramazan gecesi ateşi
+            primary = Color(0xFF1C1A58),
+            primaryDark = Color(0xFF120E3E),
+            primaryDeep = Color(0xFF080626),
+            secondary = Color(0xFFC49028),
+            background = Color(0xFFEDE8DC),
+            surface = Color(0xFFF5F0E6),
+            surfaceVariant = Color(0xFFDDD4C0),
+            outline = Color(0xFFB0A08A),
+            gold = Color(0xFFC49028),
         )
 
         "namazvakitleri" -> FlavorColorTokens(
-            // Derin orman + altın yeşil — namaz huzuru
-            primary        = Color(0xFF0E4A30),
-            primaryDark    = Color(0xFF08321E),
-            primaryDeep    = Color(0xFF041A10),
-            secondary      = Color(0xFF2E8B57),
-            background     = Color(0xFFEBF4EF),
-            surface        = Color(0xFFF2F8F4),
-            surfaceVariant = Color(0xFFD5E9DC),
-            outline        = Color(0xFFA3CCAF),
-            gold           = Color(0xFFB8862A),
+            // Zengin sıcak orman yeşili + koyu kehribar — namaz huzuru
+            primary = Color(0xFF1C3E22),
+            primaryDark = Color(0xFF122818),
+            primaryDeep = Color(0xFF081408),
+            secondary = Color(0xFF8C6610),
+            background = Color(0xFFE8EEE0),
+            surface = Color(0xFFF0F4E8),
+            surfaceVariant = Color(0xFFD2DFCA),
+            outline = Color(0xFF9CB88C),
+            gold = Color(0xFF8C6610),
         )
 
         // ── Sesli Sureler ────────────────────────────────────────────────────
 
         "yasinsuresi" -> FlavorColorTokens(
-            // Koyu zeytin-haki + eski altın — köklü kudsiyyet
-            primary        = Color(0xFF233D0E),
-            primaryDark    = Color(0xFF162608),
-            primaryDeep    = Color(0xFF0B1404),
-            secondary      = Color(0xFF9E7A0A),
-            background     = Color(0xFFEEF2E8),
-            surface        = Color(0xFFF3F6EE),
-            surfaceVariant = Color(0xFFDDE7CF),
-            outline        = Color(0xFFB4CA98),
-            gold           = Color(0xFF9E7A0A),
+            // Derin koyu zeytin + antik kehribar — köklü kudsiyet
+            primary = Color(0xFF2E3C10),
+            primaryDark = Color(0xFF1E280A),
+            primaryDeep = Color(0xFF0E1404),
+            secondary = Color(0xFF8E6208),
+            background = Color(0xFFEAE8D4),
+            surface = Color(0xFFF2EEE2),
+            surfaceVariant = Color(0xFFD8D4BC),
+            outline = Color(0xFFB2A880),
+            gold = Color(0xFF8E6208),
         )
 
         "fetihsuresi" -> FlavorColorTokens(
-            // Prusya mavisi + gümüş-çelik — zafer ve onur
-            primary        = Color(0xFF0E2875),
-            primaryDark    = Color(0xFF081955),
-            primaryDeep    = Color(0xFF040D35),
-            secondary      = Color(0xFF4A78C8),
-            background     = Color(0xFFECF0FA),
-            surface        = Color(0xFFF2F5FC),
-            surfaceVariant = Color(0xFFD8E1F5),
-            outline        = Color(0xFFA4BAE5),
-            gold           = Color(0xFF8FA8D4),
+            // Sıcak derin lacivert + kehribar bronz — zafer ve onur
+            primary = Color(0xFF1C2A70),
+            primaryDark = Color(0xFF101A50),
+            primaryDeep = Color(0xFF080C2E),
+            secondary = Color(0xFFA87020),
+            background = Color(0xFFEAE8DC),
+            surface = Color(0xFFF2F0E4),
+            surfaceVariant = Color(0xFFD8D4C0),
+            outline = Color(0xFFB0A88C),
+            gold = Color(0xFFA87020),
         )
 
         "amenerrasulu" -> FlavorColorTokens(
-            // Koyu bordo-şarap + champagne — derin iman
-            primary        = Color(0xFF4A1220),
-            primaryDark    = Color(0xFF320B16),
-            primaryDeep    = Color(0xFF1E060D),
-            secondary      = Color(0xFFB8904A),
-            background     = Color(0xFFF2ECEE),
-            surface        = Color(0xFFF7F3F4),
-            onSurface      = Color(0xFF200D12),
-            onBackground   = Color(0xFF200D12),
-            surfaceVariant = Color(0xFFE8DADD),
-            outline        = Color(0xFFCCB0B5),
-            gold           = Color(0xFFB8904A),
+            // Zengin koyu bordo + antik altın — derin iman
+            primary = Color(0xFF5E1428),
+            primaryDark = Color(0xFF420E1C),
+            primaryDeep = Color(0xFF280810),
+            secondary = Color(0xFFA87830),
+            background = Color(0xFFEEE4DC),
+            surface = Color(0xFFF6EEE6),
+            onSurface = Color(0xFF280E14),
+            onBackground = Color(0xFF280E14),
+            surfaceVariant = Color(0xFFE2CEC4),
+            outline = Color(0xFFC8A898),
+            gold = Color(0xFFA87830),
         )
 
         "ayetelkursi" -> FlavorColorTokens(
-            // Gece yarısı moru + teal ışığı — Kürsî yüceliği
-            primary        = Color(0xFF1E1055),
-            primaryDark    = Color(0xFF120A38),
-            primaryDeep    = Color(0xFF08051E),
-            secondary      = Color(0xFF0097A7),
-            background     = Color(0xFFEEECF7),
-            surface        = Color(0xFFF4F2FB),
-            surfaceVariant = Color(0xFFDDD8F2),
-            outline        = Color(0xFFB5ADE3),
-            gold           = Color(0xFF9B82CC),
+            // Sıcak derin mor + kehribar altın — Kürsî yüceliği
+            primary = Color(0xFF261258),
+            primaryDark = Color(0xFF1A0C3C),
+            primaryDeep = Color(0xFF0C0622),
+            secondary = Color(0xFF8A6018),
+            background = Color(0xFFEAE4DC),
+            surface = Color(0xFFF2EEE2),
+            surfaceVariant = Color(0xFFDCD0C0),
+            outline = Color(0xFFB8A890),
+            gold = Color(0xFF8A6018),
         )
 
         "esmaulhusna" -> FlavorColorTokens(
-            // Koyu erguvani mor + antik altın — 99 ismin ihtişamı
-            primary        = Color(0xFF3E0F5A),
-            primaryDark    = Color(0xFF28083C),
-            primaryDeep    = Color(0xFF150422),
-            secondary      = Color(0xFFB8922A),
-            background     = Color(0xFFF0ECF8),
-            surface        = Color(0xFFF6F3FC),
-            surfaceVariant = Color(0xFFE6D9F5),
-            outline        = Color(0xFFCCB0E8),
-            gold           = Color(0xFFB8922A),
+            // Zengin patlıcan moru + eski altın — 99 ismin ihtişamı
+            primary = Color(0xFF4E1262),
+            primaryDark = Color(0xFF360C44),
+            primaryDeep = Color(0xFF1E0628),
+            secondary = Color(0xFFAC7818),
+            background = Color(0xFFEEE8D8),
+            surface = Color(0xFFF6F0E4),
+            surfaceVariant = Color(0xFFE0D4BC),
+            outline = Color(0xFFC0A878),
+            gold = Color(0xFFAC7818),
         )
 
         "kenzularsduasi" -> FlavorColorTokens(
-            // Derin petrol mavisi + yakut kırmızısı — Arş'ın hazinesi
-            primary        = Color(0xFF082A46),
-            primaryDark    = Color(0xFF041A2E),
-            primaryDeep    = Color(0xFF020D18),
-            secondary      = Color(0xFFC0522A),
-            background     = Color(0xFFEAEFF5),
-            surface        = Color(0xFFF0F5FA),
-            surfaceVariant = Color(0xFFD2E2EF),
-            outline        = Color(0xFF9BBCDA),
-            gold           = Color(0xFFC0A050),
+            // Sıcak derin navy-teal + terracotta — Arş'ın hazinesi
+            primary = Color(0xFF1C3248),
+            primaryDark = Color(0xFF102030),
+            primaryDeep = Color(0xFF081018),
+            secondary = Color(0xFFA83820),
+            background = Color(0xFFE8E4D8),
+            surface = Color(0xFFF0EAE0),
+            surfaceVariant = Color(0xFFD8D0C0),
+            outline = Color(0xFFB0A08C),
+            gold = Color(0xFFC09040),
         )
 
         "insirahsuresi" -> FlavorColorTokens(
-            // Derin teal + slate lavanta — genişlik, ferahlık
-            primary        = Color(0xFF0E4D5C),
-            primaryDark    = Color(0xFF08323D),
-            primaryDeep    = Color(0xFF041A22),
-            secondary      = Color(0xFF7E57A8),
-            background     = Color(0xFFEAF4F6),
-            surface        = Color(0xFFF0F8FA),
-            surfaceVariant = Color(0xFFD2E8EE),
-            outline        = Color(0xFF9ACCDA),
-            gold           = Color(0xFF8E9E80),
+            // Sıcak derin teal + sıcak menekşe — ferahlık ve genişlik
+            primary = Color(0xFF1E4A54),
+            primaryDark = Color(0xFF123038),
+            primaryDeep = Color(0xFF081820),
+            secondary = Color(0xFF825892),
+            background = Color(0xFFE4EEE8),
+            surface = Color(0xFFEEF4F0),
+            surfaceVariant = Color(0xFFCCD8CE),
+            outline = Color(0xFF9AB4A8),
+            gold = Color(0xFF9A8040),
         )
 
         "ismiazamduasi" -> FlavorColorTokens(
-            // Derin indigo + antika altın — yüce isim
-            primary        = Color(0xFF2A0850),
-            primaryDark    = Color(0xFF1A0534),
-            primaryDeep    = Color(0xFF0E021E),
-            secondary      = Color(0xFFA87E1A),
-            background     = Color(0xFFEEEAF8),
-            surface        = Color(0xFFF5F2FC),
-            surfaceVariant = Color(0xFFE0D5F5),
-            outline        = Color(0xFFBFAAE5),
-            gold           = Color(0xFFA87E1A),
+            // Zengin sıcak indigo + koyu bal kehribarı — yüce isim
+            primary = Color(0xFF361060),
+            primaryDark = Color(0xFF240840),
+            primaryDeep = Color(0xFF120424),
+            secondary = Color(0xFF9E6A10),
+            background = Color(0xFFEAE4D8),
+            surface = Color(0xFFF2EEE2),
+            surfaceVariant = Color(0xFFE0D4C0),
+            outline = Color(0xFFC0A882),
+            gold = Color(0xFF9E6A10),
         )
 
         "vakiasuresi" -> FlavorColorTokens(
-            // Yanık toprak + kor kırmızısı — kıyamet ağırlığı
-            primary        = Color(0xFF5C2410),
-            primaryDark    = Color(0xFF3D1608),
-            primaryDeep    = Color(0xFF220B04),
-            secondary      = Color(0xFFB86830),
-            background     = Color(0xFFF3EDE8),
-            surface        = Color(0xFFF8F4F0),
-            surfaceVariant = Color(0xFFEDD9CC),
-            outline        = Color(0xFFD4B09A),
-            gold           = Color(0xFFB86830),
+            // Derin yanık toprak + koyu kehribar kor — kıyamet ağırlığı
+            primary = Color(0xFF6E2010),
+            primaryDark = Color(0xFF4E1608),
+            primaryDeep = Color(0xFF2C0C04),
+            secondary = Color(0xFFC45C18),
+            background = Color(0xFFF0E8DC),
+            surface = Color(0xFFF8F0E4),
+            surfaceVariant = Color(0xFFEED8C4),
+            outline = Color(0xFFD4B090),
+            gold = Color(0xFFC45C18),
         )
 
         "namazsurelerivedualarsesli" -> FlavorColorTokens(
-            // Çelik gece mavisi + gümüş — toplu namaz bütünlüğü
-            primary        = Color(0xFF1A3260),
-            primaryDark    = Color(0xFF0E1E42),
-            primaryDeep    = Color(0xFF070F26),
-            secondary      = Color(0xFF5A84B8),
-            background     = Color(0xFFECF0F8),
-            surface        = Color(0xFFF2F5FB),
-            surfaceVariant = Color(0xFFD8E2F2),
-            outline        = Color(0xFFA4BCD8),
-            gold           = Color(0xFF8AAACE),
+            // Sıcak derin lacivert + kehribar altın — namaz bütünlüğü
+            primary = Color(0xFF202E5C),
+            primaryDark = Color(0xFF141E42),
+            primaryDeep = Color(0xFF080E26),
+            secondary = Color(0xFFA46818),
+            background = Color(0xFFEAE8DC),
+            surface = Color(0xFFF2F0E4),
+            surfaceVariant = Color(0xFFD8D4C0),
+            outline = Color(0xFFB0A888),
+            gold = Color(0xFFA46818),
         )
 
         // ── Araçlar ──────────────────────────────────────────────────────────
 
         "kuran_kerim" -> FlavorColorTokens(
-            // Mushaf koyu yeşili + pergamen krem — Kuran'ın klasik ruhu
-            primary        = Color(0xFF0F3D20),
-            primaryDark    = Color(0xFF082714),
-            primaryDeep    = Color(0xFF04140A),
-            secondary      = Color(0xFF7A5A10),
-            background     = Color(0xFFEAF2EC),
-            surface        = Color(0xFFF2F8F3),
-            surfaceVariant = Color(0xFFCEE4D4),
-            outline        = Color(0xFF96C4A2),
-            gold           = Color(0xFF7A5A10),
+            // Zengin mushaf yeşili + parşömen kehribarı — Kuran'ın ruhu
+            primary = Color(0xFF1E4028),
+            primaryDark = Color(0xFF122818),
+            primaryDeep = Color(0xFF081408),
+            secondary = Color(0xFF8E5C10),
+            background = Color(0xFFE8EEE0),
+            surface = Color(0xFFF2F4E8),
+            surfaceVariant = Color(0xFFD0DFCA),
+            outline = Color(0xFF9CBA90),
+            gold = Color(0xFF8E5C10),
         )
 
         "kible" -> FlavorColorTokens(
-            // Koyu amber-toprak + bakır — pusulada yön ve kök
-            primary        = Color(0xFF6B2E0A),
-            primaryDark    = Color(0xFF491E06),
-            primaryDeep    = Color(0xFF280F02),
-            secondary      = Color(0xFFBF8A22),
-            background     = Color(0xFFF2EDE6),
-            surface        = Color(0xFFF8F4EE),
-            surfaceVariant = Color(0xFFEDD9C2),
-            outline        = Color(0xFFD4B890),
-            gold           = Color(0xFFBF8A22),
+            // Derin terracotta + zengin bakır — pusulada yön ve kök
+            primary = Color(0xFF7C2C0A),
+            primaryDark = Color(0xFF561E06),
+            primaryDeep = Color(0xFF300E02),
+            secondary = Color(0xFFCC7018),
+            background = Color(0xFFF0E8DC),
+            surface = Color(0xFFF8F0E4),
+            surfaceVariant = Color(0xFFEEDAD0),
+            outline = Color(0xFFD4B088),
+            gold = Color(0xFFCC7018),
         )
 
         "mucizedualar" -> FlavorColorTokens(
-            // Gül kırmızısı + altın gece — mucizevi atmosfer
-            primary        = Color(0xFF6B0F34),
-            primaryDark    = Color(0xFF480A22),
-            primaryDeep    = Color(0xFF280512),
-            secondary      = Color(0xFFBF922A),
-            background     = Color(0xFFF2EAEE),
-            surface        = Color(0xFFF8F2F5),
-            surfaceVariant = Color(0xFFEED5E0),
-            outline        = Color(0xFFD4A8B8),
-            gold           = Color(0xFFBF922A),
+            // Zengin koyu kırmızı + sıcak altın — mucizevi atmosfer
+            primary = Color(0xFF7E1030),
+            primaryDark = Color(0xFF580A22),
+            primaryDeep = Color(0xFF320510),
+            secondary = Color(0xFFC07818),
+            background = Color(0xFFF0E4E8),
+            surface = Color(0xFFF8EEF0),
+            surfaceVariant = Color(0xFFEED4D8),
+            outline = Color(0xFFD4A8B0),
+            gold = Color(0xFFC07818),
         )
 
         "zikirmatik" -> FlavorColorTokens(
-            // Koyu mavi-siyah + elektrik teal — modern meditasyon aracı
-            primary        = Color(0xFF0F1E2E),
-            primaryDark    = Color(0xFF08121E),
-            primaryDeep    = Color(0xFF030810),
-            secondary      = Color(0xFF0E8C78),
-            background     = Color(0xFFE8EEF2),
-            surface        = Color(0xFFF0F5F8),
-            surfaceVariant = Color(0xFFCCDDE6),
-            outline        = Color(0xFF8AAEC2),
-            gold           = Color(0xFF0E8C78),
+            // Sıcak koyu lacivert + zengin yeşil teal — meditasyon aracı
+            primary = Color(0xFF1E2432),
+            primaryDark = Color(0xFF121820),
+            primaryDeep = Color(0xFF070A10),
+            secondary = Color(0xFF1E8A60),
+            background = Color(0xFFE4ECE8),
+            surface = Color(0xFFEEF4F0),
+            surfaceVariant = Color(0xFFC8DCD4),
+            outline = Color(0xFF88B0A0),
+            gold = Color(0xFF1E8A60),
         )
 
         "bereketduasi" -> FlavorColorTokens(
-            // Koyu zeytin + kehribar toprak — bereket ve bolluk
-            primary        = Color(0xFF1E4E28),
-            primaryDark    = Color(0xFF12341A),
-            primaryDeep    = Color(0xFF081C0D),
-            secondary      = Color(0xFF9A6E1A),
-            background     = Color(0xFFEBF2EB),
-            surface        = Color(0xFFF2F7F2),
-            surfaceVariant = Color(0xFFD4E5D2),
-            outline        = Color(0xFF9EC2A0),
-            gold           = Color(0xFF9A6E1A),
+            // Zengin sıcak orman zeytin + bal kehribarı — bereket ve bolluk
+            primary = Color(0xFF2C4A28),
+            primaryDark = Color(0xFF1C321A),
+            primaryDeep = Color(0xFF0C180C),
+            secondary = Color(0xFF9C5E10),
+            background = Color(0xFFE8EEE0),
+            surface = Color(0xFFF2F4E8),
+            surfaceVariant = Color(0xFFD2DEC8),
+            outline = Color(0xFF9EBC8A),
+            gold = Color(0xFF9C5E10),
         )
 
         "nazarayeti" -> FlavorColorTokens(
-            // Nazar laciverd + kehribar turkuaz — göz değmez bariyer
-            primary        = Color(0xFF102060),
-            primaryDark    = Color(0xFF091442),
-            primaryDeep    = Color(0xFF040A26),
-            secondary      = Color(0xFF1E7A94),
-            background     = Color(0xFFEAEEF8),
-            surface        = Color(0xFFF0F4FC),
-            surfaceVariant = Color(0xFFD5DDEF),
-            outline        = Color(0xFF9AB2D8),
-            gold           = Color(0xFF6AADCC),
+            // Sıcak derin kobalt + sıcak teal — göz değmez bariyer
+            primary = Color(0xFF1E2462),
+            primaryDark = Color(0xFF131844),
+            primaryDeep = Color(0xFF080B26),
+            secondary = Color(0xFF285E7A),
+            background = Color(0xFFE8E6DC),
+            surface = Color(0xFFF2F0E4),
+            surfaceVariant = Color(0xFFD4CCBC),
+            outline = Color(0xFFA09888),
+            gold = Color(0xFF6888B0),
         )
 
         else -> FlavorColorTokens(
-            primary        = Color(0xFF1A2880),
-            primaryDark    = Color(0xFF0F185A),
-            primaryDeep    = Color(0xFF080C30),
-            secondary      = Color(0xFF5040A8),
-            background     = Color(0xFFECEEF8),
-            surface        = Color(0xFFF2F4FC),
-            surfaceVariant = Color(0xFFD8DCEE),
-            outline        = Color(0xFFA8B0D0),
+            primary = Color(0xFF1E2870),
+            primaryDark = Color(0xFF121860),
+            primaryDeep = Color(0xFF080C30),
+            secondary = Color(0xFF8C6018),
+            background = Color(0xFFEAE8DC),
+            surface = Color(0xFFF2F0E4),
+            surfaceVariant = Color(0xFFD8D4C0),
+            outline = Color(0xFFB0A888),
         )
     }
 }

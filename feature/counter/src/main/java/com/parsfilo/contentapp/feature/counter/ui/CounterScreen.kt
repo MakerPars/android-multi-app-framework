@@ -38,9 +38,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import android.content.ClipData
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
@@ -93,7 +94,7 @@ fun CounterScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val reminderSavedMessage = stringResource(R.string.counter_reminder_saved)
     val copiedMessage = stringResource(R.string.counter_copied)
     val firstSessionReminderPrompt = stringResource(R.string.counter_first_session_reminder_prompt)
@@ -269,7 +270,9 @@ fun CounterScreen(
                 onShareDismissed()
             },
             onCopy = {
-                clipboard.setText(AnnotatedString(uiState.shareText))
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("zikir_share_text", uiState.shareText)))
+                }
                 onShareTextCopied()
                 scope.launch {
                     snackbarHostState.showSnackbar(copiedMessage)
@@ -459,3 +462,6 @@ private fun TargetButton(
         ),
     )
 }
+
+
+
