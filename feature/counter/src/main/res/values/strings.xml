@@ -40,7 +40,7 @@
 
     <string name="notif_reminder_channel">Zikir Hatirlaticilari</string>
     <string name="notif_reminder_title">📿 Zikir Vaktiniz</string>
-    <string name="notif_reminder_body_no_activity">Bugun henuz zikir yapmadiniz. Allah'i zikretmek kalplere huzur verir.</string>
+    <string name="notif_reminder_body_no_activity">Bugun henuz zikir yapmadiniz. Allah\'i zikretmek kalplere huzur verir.</string>
     <string name="notif_reminder_body_with_activity">Bugun %s zikir yaptiniz. Devam edin! 🤲</string>
     <string name="notif_streak_title">🔥 Seriniz Kirilmak Uzere!</string>
     <string name="notif_streak_body">%d gunluk serinizi korumak icin bugunku zikirinizi yapin.</string>
@@ -72,3 +72,4 @@
     <string name="counter_content_description_share">Zikir sonucunu paylas</string>
     <string name="counter_copy">Kopyala</string>
 </resources>
+
