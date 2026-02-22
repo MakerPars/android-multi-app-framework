@@ -129,3 +129,4 @@ internal fun prayerBodyFontFamily(): FontFamily {
 
 @Composable
 internal fun isPrayerTimesDarkMode(): Boolean = isSystemInDarkTheme()
+

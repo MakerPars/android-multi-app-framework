@@ -47,3 +47,4 @@ internal object PrayerTimesColors {
     val CardText = Color(0xFFFFFFFF)
     val CardTextSecondary = Color(0xD9FFFFFF)
 }
+
