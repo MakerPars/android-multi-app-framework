@@ -6,12 +6,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -82,14 +85,24 @@ internal fun PrayerTimesListSection(
     val activeIndex = if (useRelativeState) (nextIndex - 1).coerceAtLeast(0) else -1
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                PrayerTimesDesignTokens.GlassSurface.copy(alpha = 0.88f),
+                RoundedCornerShape(16.dp),
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(16.dp),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         IconButton(
             enabled = dayIndex > 0,
             onClick = {
-                // ✅ Uyarıyı kesen hali: dayIndex yerine selectedDayIndex kullan
                 selectedDayIndex = (selectedDayIndex - 1).coerceAtLeast(0)
             },
         ) {
@@ -108,7 +121,6 @@ internal fun PrayerTimesListSection(
         IconButton(
             enabled = dayIndex < upcomingDays.lastIndex,
             onClick = {
-                // ✅ Uyarıyı kesen hali: dayIndex yerine selectedDayIndex kullan
                 selectedDayIndex = (selectedDayIndex + 1).coerceAtMost(upcomingDays.lastIndex)
             },
         ) {
@@ -118,6 +130,8 @@ internal fun PrayerTimesListSection(
             )
         }
     }
+
+    Spacer(modifier = Modifier.height(8.dp))
 
     prayers.forEachIndexed { index, row ->
         val rowState = when {
@@ -131,10 +145,14 @@ internal fun PrayerTimesListSection(
             row = row,
             rowState = rowState,
             isAlarmEnabled = selectedAlarmPrayerKeys.isEmpty() || selectedAlarmPrayerKeys.contains(
-                row.item.key
+                row.item.key,
             ),
             onToggleAlarm = { onToggleAlarm(row.item.key) },
         )
+
+        if (index < prayers.lastIndex) {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
     }
 }
 
@@ -177,19 +195,20 @@ private fun PrayerTimeRow(
     )
 
     val backgroundColor = when (rowState) {
-        PrayerRowState.ACTIVE -> PrayerTimesDesignTokens.AccentPrimary.copy(alpha = 0.95f)
-        PrayerRowState.NEXT -> PrayerTimesDesignTokens.AccentSecondary.copy(alpha = 0.45f)
-        else -> PrayerTimesDesignTokens.GlassSurface.copy(alpha = 0.82f)
+        PrayerRowState.ACTIVE -> PrayerTimesDesignTokens.ActionPrimary.copy(alpha = 0.97f)
+        PrayerRowState.NEXT -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.95f)
+        PrayerRowState.PAST -> PrayerTimesDesignTokens.ListItemPast
+        PrayerRowState.NORMAL -> PrayerTimesDesignTokens.GlassSurface.copy(alpha = 0.88f)
     }
 
     val alpha = when (rowState) {
-        PrayerRowState.PAST -> 0.45f
+        PrayerRowState.PAST -> 0.72f
         PrayerRowState.NEXT -> shimmerAlpha
         else -> 1f
     }
 
     val contentColor =
-        if (rowState == PrayerRowState.ACTIVE) Color.Black else MaterialTheme.colorScheme.onSurface
+        if (rowState == PrayerRowState.ACTIVE) PrayerTimesDesignTokens.HeaderText else MaterialTheme.colorScheme.onSurface
 
     Row(
         modifier = Modifier
@@ -203,6 +222,11 @@ private fun PrayerTimeRow(
             }
             .alpha(alpha)
             .background(backgroundColor, RoundedCornerShape(20.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f),
+                shape = RoundedCornerShape(20.dp),
+            )
             .padding(horizontal = 14.dp)
             .semantics {
                 contentDescription = "${row.item.key} namazı vakti ${row.hm.replace(':', ' ')}"
@@ -213,7 +237,7 @@ private fun PrayerTimeRow(
             painter = painterResource(id = row.item.iconRes),
             contentDescription = null,
             tint = if (rowState == PrayerRowState.ACTIVE) {
-                Color.Black
+                PrayerTimesDesignTokens.HeaderText
             } else {
                 PrayerTimesDesignTokens.AccentPrimary
             },
@@ -239,9 +263,11 @@ private fun PrayerTimeRow(
 
         IconButton(
             onClick = onToggleAlarm,
-            modifier = Modifier.semantics {
-                contentDescription = if (isAlarmEnabled) "Alarm açık" else "Alarm kapalı"
-            },
+            modifier = Modifier
+                .size(42.dp)
+                .semantics {
+                    contentDescription = if (isAlarmEnabled) "Alarm açık" else "Alarm kapalı"
+                },
         ) {
             Icon(
                 imageVector = if (isAlarmEnabled) {

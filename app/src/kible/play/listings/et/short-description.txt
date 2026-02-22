@@ -1,1 +1,0 @@
-Praktiline kompassi rakendus, mis aitab teil Qibla täpselt ja kiiresti leida.

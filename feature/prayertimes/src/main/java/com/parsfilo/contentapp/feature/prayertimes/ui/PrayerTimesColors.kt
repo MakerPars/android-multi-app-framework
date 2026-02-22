@@ -31,10 +31,19 @@ internal object PrayerTimesColors {
         @ReadOnlyComposable
         get() = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // İmsakiye büyük kartları için sabit renkler (flavor'dan bağımsız kalır)
-    val ImsakCardBg = Color(0xFF1E2B6F)
-    val IftarCardBg = Color(0xFFC0392B)
-    val NextPrayerCardBg = Color(0xFF2C3E50)
+    // Büyük kartlar flavor temasına bağlı olmalı.
+    val ImsakCardBg: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primaryContainer
+    val IftarCardBg: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.secondary
+    val NextPrayerCardBg: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
     val CardText = Color(0xFFFFFFFF)
-    val CardTextSecondary = Color(0xFFBDC3E0)
+    val CardTextSecondary = Color(0xD9FFFFFF)
 }

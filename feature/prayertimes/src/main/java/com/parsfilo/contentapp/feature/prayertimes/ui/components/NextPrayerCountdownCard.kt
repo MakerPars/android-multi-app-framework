@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,13 +47,18 @@ internal fun NextPrayerCountdownCard(
                     )
                 )
             )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f),
+                shape = RoundedCornerShape(20.dp),
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = stringResource(R.string.prayertimes_next_prayer_title),
             style = MaterialTheme.typography.titleSmall.copy(fontFamily = prayerBodyFontFamily()),
-            color = PrayerTimesDesignTokens.HeaderText,
+            color = PrayerTimesDesignTokens.DimText,
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -72,7 +78,7 @@ internal fun NextPrayerCountdownCard(
             Text(
                 text = stringResource(R.string.prayertimes_countdown_label),
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = prayerBodyFontFamily()),
-                color = PrayerTimesDesignTokens.HeaderText,
+                color = PrayerTimesDesignTokens.DimText,
             )
             AnimatedContent(
                 targetState = countdown,

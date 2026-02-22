@@ -1,1 +1,0 @@
-Dhikr counter: multi-counter, goal tracking, haptic, Undo and reminders.

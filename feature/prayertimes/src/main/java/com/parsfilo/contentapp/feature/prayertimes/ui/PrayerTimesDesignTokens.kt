@@ -1,6 +1,7 @@
 package com.parsfilo.contentapp.feature.prayertimes.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Brush
@@ -9,30 +10,30 @@ import androidx.compose.ui.text.font.FontFamily
 import com.parsfilo.contentapp.core.designsystem.theme.ArabicFontFamily
 
 internal object PrayerTimesDesignTokens {
-    val AccentSecondary = Color(0xFF7B5EA7)
-    val ActionPrimarySoft = Color(0xFF6B85F8)
-
     const val GlassAlpha = 0.82f
 
-    val DarkBackgroundStart = Color(0xFF0D1B2A)
-    val DarkBackgroundEnd = Color(0xFF1B2E3C)
-
-    val HeaderGradientEnd = Color(0xFF34495E)
-    val ImsakGradientEnd = Color(0xFF2B3DB8)
-    val IftarGradientEnd = Color(0xFFE74C3C)
-
-    val ListItemPast = Color(0x73FFFFFF)
-    val GoldText = Color(0xFFBFCFFF)
+    val DarkBackgroundStart = Color(0xFF07160E)
+    val DarkBackgroundEnd = Color(0xFF0D2117)
 
     val AccentPrimary: Color
         @Composable
         @ReadOnlyComposable
         get() = PrayerTimesColors.Accent
 
+    val AccentSecondary: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.secondary
+
     val ActionPrimary: Color
         @Composable
         @ReadOnlyComposable
         get() = PrayerTimesColors.Accent
+
+    val ActionPrimarySoft: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primaryContainer
 
     val GlassSurface: Color
         @Composable
@@ -54,15 +55,40 @@ internal object PrayerTimesDesignTokens {
         @ReadOnlyComposable
         get() = PrayerTimesColors.NextPrayerCardBg
 
+    val HeaderGradientEnd: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primaryContainer
+
     val ImsakGradientStart: Color
         @Composable
         @ReadOnlyComposable
         get() = PrayerTimesColors.ImsakCardBg
 
+    val ImsakGradientEnd: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
+
     val IftarGradientStart: Color
         @Composable
         @ReadOnlyComposable
         get() = PrayerTimesColors.IftarCardBg
+
+    val IftarGradientEnd: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.secondaryContainer
+
+    val ListItemPast: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+
+    val GoldText: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.tertiary
 
     val HeaderText: Color
         @Composable
