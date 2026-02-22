@@ -1,10 +1,12 @@
 package com.parsfilo.contentapp.feature.quran.ui.surelist
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -86,6 +91,11 @@ fun QuranSuraListScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            if (state.shouldShowAds) {
+                bannerAdContent?.invoke()
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onSearch,
@@ -95,11 +105,6 @@ fun QuranSuraListScreen(
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 singleLine = true,
             )
-
-            if (state.shouldShowAds) {
-                bannerAdContent?.invoke()
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
             val lastRead = state.lastRead
             if (lastRead != null) {
@@ -230,35 +235,48 @@ private fun QuranSuraListHeader(
             .statusBarsPadding()
             .padding(horizontal = dimens.space6, vertical = dimens.space4),
         color = colorScheme.primaryContainer.copy(alpha = 0.95f),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        shape = RoundedCornerShape(
             bottomStart = dimens.radiusLarge,
             bottomEnd = dimens.radiusLarge,
         ),
         tonalElevation = dimens.elevationMedium,
-        shadowElevation = dimens.elevationLow,
+        shadowElevation = dimens.elevationHigh,
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = dimens.space8, vertical = dimens.space6),
+                .padding(horizontal = dimens.space6, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Box(modifier = Modifier.size(44.dp))
+            Spacer(modifier = Modifier.size(44.dp))
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.SemiBold,
+                ),
                 color = colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
             )
 
-            IconButton(onClick = onBookmarksClick, modifier = Modifier.size(44.dp)) {
+            IconButton(
+                onClick = onBookmarksClick,
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(colorScheme.secondaryContainer.copy(alpha = 0.24f), CircleShape)
+                    .border(
+                        width = dimens.stroke,
+                        color = colorScheme.secondary.copy(alpha = 0.35f),
+                        shape = CircleShape,
+                    ),
+            ) {
                 Icon(
                     imageVector = Icons.Default.Bookmark,
                     contentDescription = stringResource(R.string.quran_open_bookmarks),
-                    tint = colorScheme.secondary,
+                    tint = colorScheme.onPrimaryContainer,
                 )
             }
         }
