@@ -157,6 +157,13 @@ fun ContentScreen(
                     onRewardsClick = onRewardsClick,
                 )
 
+                if (uiState.shouldShowAds) {
+                    BannerAd(
+                        adUnitId = bannerAdUnitId,
+                        modifier = Modifier.padding(horizontal = dimens.space6, vertical = dimens.space4)
+                    )
+                }
+
                 // Gold divider
                 HorizontalDivider(
                     thickness = dimens.stroke,
@@ -198,7 +205,7 @@ fun ContentScreen(
                             )
                         }
                     }
-                                } else {
+                } else {
                     // Audio Player
                     audioPlayerContent()
 
@@ -229,14 +236,6 @@ fun ContentScreen(
                             }
                         }
                     }
-
-                    if (uiState.shouldShowAds) {
-                        BannerAd(
-                            adUnitId = bannerAdUnitId,
-                            modifier = Modifier.padding(horizontal = dimens.space6, vertical = dimens.space4)
-                        )
-                    }
-
                     // Bottom Mode Selector
                     BottomModeSelector(
                         currentMode = uiState.displayMode,
@@ -545,3 +544,6 @@ private fun ContentScreenSuccessPreview() {
         )
     }
 }
+
+
+
