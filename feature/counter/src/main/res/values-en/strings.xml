@@ -1,0 +1,74 @@
+<resources>
+    <string name="counter_title">Dhikr Counter</string>
+    <string name="counter_change_zikir">Change</string>
+    <string name="counter_target_format">/ %d</string>
+    <string name="counter_reset">Reset</string>
+    <string name="counter_share">Share</string>
+    <string name="counter_tap_hint">Tap to count</string>
+    <string name="counter_daily_goal_progress">%1$s / %2$s · %3$d%% done</string>
+    <string name="counter_goal_complete">Daily goal completed! ✅</string>
+
+    <string name="counter_streak_label">%d DAY STREAK</string>
+    <string name="counter_streak_none">Start your streak today</string>
+    <string name="counter_today_total">Today: %s dhikr</string>
+
+    <string name="counter_selector_title">Select Dhikr</string>
+    <string name="counter_recommended_target">Recommended: %d repetitions</string>
+
+    <string name="counter_session_done_title">🤲 MashaAllah!</string>
+    <string name="counter_session_done_body">%1$d %2$s completed</string>
+    <string name="counter_session_duration">Duration: %s</string>
+    <string name="counter_today_summary">Today: %s dhikr</string>
+    <string name="counter_continue">Continue</string>
+    <string name="counter_share_session">↗ Share</string>
+    <string name="counter_duration_minutes_seconds">%1$d min %2$d sec</string>
+    <string name="counter_duration_seconds">%d sec</string>
+    <string name="counter_session_seconds_format">%d sec</string>
+
+    <string name="counter_reminder_title">Reminder Settings</string>
+    <string name="counter_reminder_daily">Daily reminder</string>
+    <string name="counter_reminder_time_label">Time</string>
+    <string name="counter_daily_goal_label">Daily Goal: %d dhikr</string>
+    <string name="counter_streak_reminder">Streak alert (9:00 PM)</string>
+    <string name="counter_save">Save</string>
+    <string name="counter_reminder_saved">Reminder settings saved</string>
+
+    <string name="counter_history_title">Dhikr History</string>
+    <string name="counter_history_premium_hint">See full history with Premium</string>
+    <string name="counter_history_empty">No sessions yet. Start your first dhikr!</string>
+    <string name="counter_unlock_history_with_ad">Watch Ad → Unlock Full History</string>
+
+    <string name="notif_reminder_channel">Dhikr Reminders</string>
+    <string name="notif_reminder_title">📿 Time for Dhikr</string>
+    <string name="notif_reminder_body_no_activity">You have not done any dhikr today. Remembrance of Allah brings peace to hearts.</string>
+    <string name="notif_reminder_body_with_activity">You did %s dhikr today. Keep going! 🤲</string>
+    <string name="notif_streak_title">🔥 Your Streak is at Risk!</string>
+    <string name="notif_streak_body">Complete today's dhikr to keep your %d day streak alive.</string>
+    <string name="notif_goal_done_title">✅ Goal Completed!</string>
+    <string name="notif_goal_done_body">You completed your daily goal of %d dhikr. Congratulations!</string>
+
+    <string name="share_text_template">🤲 I completed %1$d %2$s dhikr\n%3$s\n\n📊 Today total: %4$s dhikr\n\n📿 Build your dhikr habit with Zikirmatik\nhttps://play.google.com/store/apps/details?id=com.parsfilo.zikirmatik</string>
+    <string name="counter_share_preview_title">Share Preview</string>
+    <string name="counter_share_preview_subtitle">You can copy this text or share it directly.</string>
+    <string name="counter_copied">Copied to clipboard</string>
+
+    <string name="counter_virtue_label">📖 Virtue</string>
+    <string name="counter_virtue_source_label">Source:</string>
+
+    <string name="counter_target_33">33 repetitions</string>
+    <string name="counter_target_99">99 repetitions</string>
+    <string name="counter_target_100">100 repetitions</string>
+    <string name="counter_target_1000">1000 repetitions</string>
+    <string name="counter_target_custom">Custom…</string>
+
+    <string name="counter_settings_haptic">Haptic</string>
+    <string name="counter_settings_sound">Sound</string>
+    <string name="counter_menu_settings">Settings</string>
+    <string name="counter_menu_rewards">Rewards</string>
+    <string name="counter_select_time">Select time</string>
+    <string name="counter_goal_slider_value">Goal: %d</string>
+    <string name="counter_content_description_fab">%d dhikr counted. Tap to count.</string>
+    <string name="counter_content_description_streak">%d day streak</string>
+    <string name="counter_content_description_share">Share dhikr result</string>
+    <string name="counter_copy">Copy</string>
+</resources>

@@ -276,6 +276,7 @@ dependencies {
     implementation(project(":feature:curvedbottomnavigation"))
     implementation(project(":feature:prayertimes"))
     implementation(project(":feature:qibla"))
+    implementation(project(":feature:counter"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -1,0 +1,74 @@
+<resources>
+    <string name="counter_title">Zikirmatik</string>
+    <string name="counter_change_zikir">Degistir</string>
+    <string name="counter_target_format">/ %d</string>
+    <string name="counter_reset">Sifirla</string>
+    <string name="counter_share">Paylas</string>
+    <string name="counter_tap_hint">Dokunarak say</string>
+    <string name="counter_daily_goal_progress">%1$s / %2$s · %3$d tamamlandi</string>
+    <string name="counter_goal_complete">Gunluk hedef tamamlandi! ✅</string>
+
+    <string name="counter_streak_label">%d GUN</string>
+    <string name="counter_streak_none">Bugun zikir yap, serin baslasin</string>
+    <string name="counter_today_total">Bugun: %s zikir</string>
+
+    <string name="counter_selector_title">Zikir Sec</string>
+    <string name="counter_recommended_target">Onerilen: %d tekrar</string>
+
+    <string name="counter_session_done_title">🤲 Tebrikler!</string>
+    <string name="counter_session_done_body">%1$d %2$s tamamlandi</string>
+    <string name="counter_session_duration">Sure: %s</string>
+    <string name="counter_today_summary">Bugun: %s zikir</string>
+    <string name="counter_continue">Devam Et</string>
+    <string name="counter_share_session">↗ Paylas</string>
+    <string name="counter_duration_minutes_seconds">%1$d dk %2$d sn</string>
+    <string name="counter_duration_seconds">%d sn</string>
+    <string name="counter_session_seconds_format">%d sn</string>
+
+    <string name="counter_reminder_title">Hatirlatici Ayarlari</string>
+    <string name="counter_reminder_daily">Gunluk hatirlatici</string>
+    <string name="counter_reminder_time_label">Saat</string>
+    <string name="counter_daily_goal_label">Gunluk Hedef: %d zikir</string>
+    <string name="counter_streak_reminder">Seri uyarisi (aksam 21:00)</string>
+    <string name="counter_save">Kaydet</string>
+    <string name="counter_reminder_saved">Hatirlatici ayarlari kaydedildi</string>
+
+    <string name="counter_history_title">Zikir Gecmisi</string>
+    <string name="counter_history_premium_hint">Premium ile tum gecmisi gorun</string>
+    <string name="counter_history_empty">Henuz zikir oturumu yok. Ilk zikirinizi yapin!</string>
+    <string name="counter_unlock_history_with_ad">Reklam Izle → Tum Gecmisi Ac</string>
+
+    <string name="notif_reminder_channel">Zikir Hatirlaticilari</string>
+    <string name="notif_reminder_title">📿 Zikir Vaktiniz</string>
+    <string name="notif_reminder_body_no_activity">Bugun henuz zikir yapmadiniz. Allah'i zikretmek kalplere huzur verir.</string>
+    <string name="notif_reminder_body_with_activity">Bugun %s zikir yaptiniz. Devam edin! 🤲</string>
+    <string name="notif_streak_title">🔥 Seriniz Kirilmak Uzere!</string>
+    <string name="notif_streak_body">%d gunluk serinizi korumak icin bugunku zikirinizi yapin.</string>
+    <string name="notif_goal_done_title">✅ Hedef Tamamlandi!</string>
+    <string name="notif_goal_done_body">Gunluk %d zikir hedefinizi tamamladiniz. Tebrikler!</string>
+
+    <string name="share_text_template">🤲 %1$d kez %2$s zikri yaptim\n%3$s\n\n📊 Bugun toplam: %4$s zikir\n\n📿 Zikirmatik uygulamasiyla zikir aliskanligi edinin\nhttps://play.google.com/store/apps/details?id=com.parsfilo.zikirmatik</string>
+    <string name="counter_share_preview_title">Paylasim Onizleme</string>
+    <string name="counter_share_preview_subtitle">Bu metni kopyalayabilir veya dogrudan paylasabilirsiniz.</string>
+    <string name="counter_copied">Metin panoya kopyalandi</string>
+
+    <string name="counter_virtue_label">📖 Fazileti</string>
+    <string name="counter_virtue_source_label">Kaynak:</string>
+
+    <string name="counter_target_33">33 tekrar</string>
+    <string name="counter_target_99">99 tekrar</string>
+    <string name="counter_target_100">100 tekrar</string>
+    <string name="counter_target_1000">1000 tekrar</string>
+    <string name="counter_target_custom">Ozel…</string>
+
+    <string name="counter_settings_haptic">Titresim</string>
+    <string name="counter_settings_sound">Ses</string>
+    <string name="counter_menu_settings">Ayarlar</string>
+    <string name="counter_menu_rewards">Oduller</string>
+    <string name="counter_select_time">Saat secin</string>
+    <string name="counter_goal_slider_value">Hedef: %d</string>
+    <string name="counter_content_description_fab">%d zikir sayildi. Dokunarak say.</string>
+    <string name="counter_content_description_streak">%d gunluk seri</string>
+    <string name="counter_content_description_share">Zikir sonucunu paylas</string>
+    <string name="counter_copy">Kopyala</string>
+</resources>

@@ -19,6 +19,50 @@ class PreferencesDataSource @Inject constructor(
         preferences[PreferencesKeys.OTHER_APPS_BADGE_SEEN_SIGNATURE] ?: ""
     }
 
+    val zikirHapticEnabled: Flow<Boolean> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_HAPTIC] ?: true
+    }
+
+    val zikirSoundEnabled: Flow<Boolean> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_SOUND] ?: false
+    }
+
+    val lastSelectedZikirKey: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.LAST_ZIKIR_KEY] ?: "subhanallah"
+    }
+
+    val zikirReminderEnabled: Flow<Boolean> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_REMINDER_ENABLED] ?: false
+    }
+
+    val zikirReminderHour: Flow<Int> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_REMINDER_HOUR] ?: 9
+    }
+
+    val zikirReminderMinute: Flow<Int> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_REMINDER_MINUTE] ?: 0
+    }
+
+    val zikirDailyGoal: Flow<Int> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_DAILY_GOAL] ?: 100
+    }
+
+    val zikirStreakReminderEnabled: Flow<Boolean> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_STREAK_REMINDER] ?: true
+    }
+
+    val zikirLastInterstitialAt: Flow<Long> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_LAST_INTERSTITIAL_AT] ?: 0L
+    }
+
+    val zikirInterstitialShownCountDay: Flow<Int> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_INTERSTITIAL_SHOWN_COUNT_DAY] ?: 0
+    }
+
+    val zikirInterstitialDayKey: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.ZIKIR_INTERSTITIAL_DAY_KEY] ?: ""
+    }
+
     val userData: Flow<UserPreferencesData> = userPreferences.data.map { preferences ->
         UserPreferencesData(
             darkMode = preferences[PreferencesKeys.DARK_MODE] ?: false,
@@ -55,7 +99,7 @@ class PreferencesDataSource @Inject constructor(
     }
 
     suspend fun setFontSize(size: Int) {
-         userPreferences.edit { preferences ->
+        userPreferences.edit { preferences ->
             preferences[PreferencesKeys.FONT_SIZE] = size
         }
     }
@@ -130,6 +174,50 @@ class PreferencesDataSource @Inject constructor(
         }
     }
 
+    suspend fun setZikirHapticEnabled(v: Boolean) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_HAPTIC] = v }
+    }
+
+    suspend fun setZikirSoundEnabled(v: Boolean) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_SOUND] = v }
+    }
+
+    suspend fun setLastSelectedZikirKey(key: String) {
+        userPreferences.edit { it[PreferencesKeys.LAST_ZIKIR_KEY] = key }
+    }
+
+    suspend fun setZikirReminderEnabled(v: Boolean) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_REMINDER_ENABLED] = v }
+    }
+
+    suspend fun setZikirReminderHour(h: Int) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_REMINDER_HOUR] = h }
+    }
+
+    suspend fun setZikirReminderMinute(m: Int) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_REMINDER_MINUTE] = m }
+    }
+
+    suspend fun setZikirDailyGoal(goal: Int) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_DAILY_GOAL] = goal }
+    }
+
+    suspend fun setZikirStreakReminderEnabled(v: Boolean) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_STREAK_REMINDER] = v }
+    }
+
+    suspend fun setZikirLastInterstitialAt(timestamp: Long) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_LAST_INTERSTITIAL_AT] = timestamp }
+    }
+
+    suspend fun setZikirInterstitialShownCountDay(count: Int) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_INTERSTITIAL_SHOWN_COUNT_DAY] = count }
+    }
+
+    suspend fun setZikirInterstitialDayKey(dayKey: String) {
+        userPreferences.edit { it[PreferencesKeys.ZIKIR_INTERSTITIAL_DAY_KEY] = dayKey }
+    }
+
     private object PreferencesKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val DISPLAY_MODE = stringPreferencesKey("display_mode")
@@ -145,6 +233,19 @@ class PreferencesDataSource @Inject constructor(
         val LAST_PUSH_SYNC_AT = longPreferencesKey("last_push_sync_at")
         val LAST_PUSH_TOKEN = stringPreferencesKey("last_push_token")
         val OTHER_APPS_BADGE_SEEN_SIGNATURE = stringPreferencesKey("other_apps_badge_seen_signature")
+
+        val ZIKIR_HAPTIC = booleanPreferencesKey("zikir_haptic")
+        val ZIKIR_SOUND = booleanPreferencesKey("zikir_sound")
+        val LAST_ZIKIR_KEY = stringPreferencesKey("last_zikir_key")
+        val ZIKIR_REMINDER_ENABLED = booleanPreferencesKey("zikir_reminder_enabled")
+        val ZIKIR_REMINDER_HOUR = intPreferencesKey("zikir_reminder_hour")
+        val ZIKIR_REMINDER_MINUTE = intPreferencesKey("zikir_reminder_minute")
+        val ZIKIR_DAILY_GOAL = intPreferencesKey("zikir_daily_goal")
+        val ZIKIR_STREAK_REMINDER = booleanPreferencesKey("zikir_streak_reminder")
+
+        val ZIKIR_LAST_INTERSTITIAL_AT = longPreferencesKey("zikir_last_interstitial_at")
+        val ZIKIR_INTERSTITIAL_SHOWN_COUNT_DAY = intPreferencesKey("zikir_interstitial_shown_count_day")
+        val ZIKIR_INTERSTITIAL_DAY_KEY = stringPreferencesKey("zikir_interstitial_day_key")
     }
 }
 

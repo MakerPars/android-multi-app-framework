@@ -6,12 +6,16 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
 import com.parsfilo.contentapp.core.database.dao.prayer.PrayerTimesDao
+import com.parsfilo.contentapp.core.database.dao.zikir.ZikirSessionDao
+import com.parsfilo.contentapp.core.database.dao.zikir.ZikirStreakDao
 import com.parsfilo.contentapp.core.database.model.NotificationEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerCityEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerCountryEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerDistrictEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerSyncStateEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerTimeEntity
+import com.parsfilo.contentapp.core.database.model.zikir.ZikirSessionEntity
+import com.parsfilo.contentapp.core.database.model.zikir.ZikirStreakEntity
 
 @Database(
     entities = [
@@ -21,13 +25,17 @@ import com.parsfilo.contentapp.core.database.model.prayer.PrayerTimeEntity
         PrayerDistrictEntity::class,
         PrayerTimeEntity::class,
         PrayerSyncStateEntity::class,
+        ZikirSessionEntity::class,
+        ZikirStreakEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun prayerTimesDao(): PrayerTimesDao
+    abstract fun zikirSessionDao(): ZikirSessionDao
+    abstract fun zikirStreakDao(): ZikirStreakDao
 
     companion object {
         const val DATABASE_NAME = "app-database"
@@ -89,6 +97,39 @@ abstract class AppDatabase : RoomDatabase() {
                         "`coverage_end` TEXT NOT NULL, " +
                         "`last_access_at` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`district_id`))"
+                )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `zikir_sessions` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`zikirKey` TEXT NOT NULL, " +
+                        "`arabicText` TEXT NOT NULL, " +
+                        "`latinText` TEXT NOT NULL, " +
+                        "`targetCount` INTEGER NOT NULL, " +
+                        "`completedCount` INTEGER NOT NULL, " +
+                        "`completedAt` INTEGER NOT NULL, " +
+                        "`durationSeconds` INTEGER NOT NULL, " +
+                        "`isComplete` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_zikir_sessions_completedAt` " +
+                        "ON `zikir_sessions` (`completedAt`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_zikir_sessions_zikirKey_completedAt` " +
+                        "ON `zikir_sessions` (`zikirKey`, `completedAt`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `zikir_streak` (" +
+                        "`id` INTEGER NOT NULL, " +
+                        "`currentStreak` INTEGER NOT NULL, " +
+                        "`longestStreak` INTEGER NOT NULL, " +
+                        "`lastActivityDate` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`id`))"
                 )
             }
         }

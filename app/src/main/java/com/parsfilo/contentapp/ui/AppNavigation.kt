@@ -33,6 +33,7 @@ import com.parsfilo.contentapp.feature.audio.ui.InlineAudioPlayer
 import com.parsfilo.contentapp.feature.auth.ui.AuthRoute
 import com.parsfilo.contentapp.feature.billing.ui.SubscriptionRoute
 import com.parsfilo.contentapp.feature.content.ui.ContentRoute
+import com.parsfilo.contentapp.feature.counter.ui.CounterRoute
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesDetailRoute
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesListRoute
 import com.parsfilo.contentapp.feature.content.ui.prayer.PrayerDetailRoute
@@ -109,6 +110,7 @@ fun AppNavHost(
                 BuildConfig.FLAVOR == "kible" -> AppRoute.Qibla.route
                 BuildConfig.FLAVOR == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
                 BuildConfig.FLAVOR == "mucizedualar" -> AppRoute.MiraclesList.route
+                BuildConfig.FLAVOR == "zikirmatik" -> AppRoute.ZikirCounter.route
                 else -> AppRoute.Content.route
             }
         ) {
@@ -162,6 +164,40 @@ fun AppNavHost(
                     },
                     onRewardsClick = {
                         navController.navigate(AppRoute.Rewards.route)
+                    },
+                    bannerAdContent = {
+                        BannerAd(
+                            adUnitId = adUnitIds.banner,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    nativeAdContent = {
+                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                    },
+                )
+            }
+            composable(AppRoute.ZikirCounter.route) {
+                CounterRoute(
+                    onSettingsClick = {
+                        navController.navigate(AppRoute.Settings.route)
+                    },
+                    onRewardsClick = {
+                        navController.navigate(AppRoute.Rewards.route)
+                    },
+                    onShowInterstitial = {
+                        val activity = hostActivity ?: return@CounterRoute
+                        activity.adOrchestrator.showInterstitialIfEligible(activity)
+                    },
+                    onShowRewardedHistoryAd = { onUnlocked ->
+                        val activity = hostActivity
+                        if (activity == null) {
+                            onUnlocked()
+                        } else {
+                            activity.adOrchestrator.showRewardedInterstitialIfEligible(
+                                activity = activity,
+                                onUserEarnedReward = onUnlocked,
+                            )
+                        }
                     },
                     bannerAdContent = {
                         BannerAd(
@@ -434,4 +470,6 @@ fun AppNavHost(
         }
     }
 }
+
+
 

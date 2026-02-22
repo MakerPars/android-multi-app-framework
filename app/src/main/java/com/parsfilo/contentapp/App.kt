@@ -14,6 +14,7 @@ import com.parsfilo.contentapp.core.firebase.appcheck.FirebaseAppCheckInstaller
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.feature.audio.data.AudioCachePrefetcher
 import com.parsfilo.contentapp.feature.billing.BillingManager
+import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
 import com.parsfilo.contentapp.feature.prayertimes.alarm.PrayerAlarmScheduler
 import com.parsfilo.contentapp.feature.prayertimes.widget.PrayerTimesWidgetReceiver
 import com.parsfilo.contentapp.feature.prayertimes.worker.PrayerTimesRefreshWorker
@@ -46,6 +47,9 @@ class App : Application() {
 
     @Inject
     lateinit var prayerAlarmScheduler: PrayerAlarmScheduler
+
+    @Inject
+    lateinit var zikirReminderScheduler: ZikirReminderScheduler
 
     @Inject
     lateinit var pushRegistrationManager: PushRegistrationManager
@@ -169,6 +173,15 @@ class App : Application() {
             }
         }
 
+        if (BuildConfig.FLAVOR_NAME == "zikirmatik") {
+            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
+                runCatching {
+                    zikirReminderScheduler.scheduleOrCancelFromPreferences()
+                    zikirReminderScheduler.scheduleStreakCheckWorker()
+                }
+            }
+        }
+
         SentryMetrics.distribution(
             key = "app.on_create.duration",
             value = (SystemClock.elapsedRealtime() - appStartUptimeMs).toDouble(),
@@ -283,4 +296,8 @@ class CrashlyticsTree : Timber.Tree() {
         }
     }
 }
+
+
+
+
 

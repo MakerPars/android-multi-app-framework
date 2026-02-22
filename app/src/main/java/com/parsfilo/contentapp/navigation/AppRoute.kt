@@ -21,14 +21,15 @@ sealed class AppRoute(val route: String, val arguments: List<NamedNavArgument> =
     data object PrayerList : AppRoute("prayer_list")
     data object PrayerDetail : AppRoute(
         route = "prayer_detail/{prayerId}",
-        arguments = listOf(navArgument("prayerId") { type = NavType.IntType })
+        arguments = listOf(navArgument("prayerId") { type = NavType.IntType }),
     ) {
         fun createRoute(prayerId: Int) = "prayer_detail/$prayerId"
     }
     data object MiraclesList : AppRoute("miracles_list")
+    data object ZikirCounter : AppRoute("zikir_counter")
     data object MiraclesDetail : AppRoute(
         route = "miracles_detail/{prayerIndex}",
-        arguments = listOf(navArgument("prayerIndex") { type = NavType.IntType })
+        arguments = listOf(navArgument("prayerIndex") { type = NavType.IntType }),
     ) {
         fun createRoute(prayerIndex: Int) = "miracles_detail/$prayerIndex"
     }
@@ -39,7 +40,7 @@ sealed class AppRoute(val route: String, val arguments: List<NamedNavArgument> =
     data object MessageList : AppRoute("message_list")
     data object MessageDetail : AppRoute(
         route = "message_detail/{messageId}",
-        arguments = listOf(navArgument("messageId") { type = NavType.StringType })
+        arguments = listOf(navArgument("messageId") { type = NavType.StringType }),
     ) {
         fun createRoute(messageId: String) = "message_detail/$messageId"
     }
@@ -49,7 +50,7 @@ sealed class AppRoute(val route: String, val arguments: List<NamedNavArgument> =
     data object NotificationList : AppRoute("notification_list")
     data object NotificationDetail : AppRoute(
         route = "notification_detail/{notificationId}",
-        arguments = listOf(navArgument("notificationId") { type = NavType.LongType })
+        arguments = listOf(navArgument("notificationId") { type = NavType.LongType }),
     ) {
         fun createRoute(notificationId: Long) = "notification_detail/$notificationId"
     }
