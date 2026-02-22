@@ -6,6 +6,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
 import com.parsfilo.contentapp.core.database.dao.prayer.PrayerTimesDao
+import com.parsfilo.contentapp.core.database.dao.quran.QuranDao
 import com.parsfilo.contentapp.core.database.dao.zikir.ZikirSessionDao
 import com.parsfilo.contentapp.core.database.dao.zikir.ZikirStreakDao
 import com.parsfilo.contentapp.core.database.model.NotificationEntity
@@ -14,6 +15,11 @@ import com.parsfilo.contentapp.core.database.model.prayer.PrayerCountryEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerDistrictEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerSyncStateEntity
 import com.parsfilo.contentapp.core.database.model.prayer.PrayerTimeEntity
+import com.parsfilo.contentapp.core.database.model.quran.QuranAudioCacheEntity
+import com.parsfilo.contentapp.core.database.model.quran.QuranAyahEntity
+import com.parsfilo.contentapp.core.database.model.quran.QuranBookmarkEntity
+import com.parsfilo.contentapp.core.database.model.quran.QuranLastReadEntity
+import com.parsfilo.contentapp.core.database.model.quran.QuranSuraEntity
 import com.parsfilo.contentapp.core.database.model.zikir.ZikirSessionEntity
 import com.parsfilo.contentapp.core.database.model.zikir.ZikirStreakEntity
 
@@ -27,8 +33,13 @@ import com.parsfilo.contentapp.core.database.model.zikir.ZikirStreakEntity
         PrayerSyncStateEntity::class,
         ZikirSessionEntity::class,
         ZikirStreakEntity::class,
+        QuranSuraEntity::class,
+        QuranAyahEntity::class,
+        QuranAudioCacheEntity::class,
+        QuranBookmarkEntity::class,
+        QuranLastReadEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,6 +47,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerTimesDao(): PrayerTimesDao
     abstract fun zikirSessionDao(): ZikirSessionDao
     abstract fun zikirStreakDao(): ZikirStreakDao
+    abstract fun quranDao(): QuranDao
 
     companion object {
         const val DATABASE_NAME = "app-database"
@@ -129,6 +141,68 @@ abstract class AppDatabase : RoomDatabase() {
                         "`currentStreak` INTEGER NOT NULL, " +
                         "`longestStreak` INTEGER NOT NULL, " +
                         "`lastActivityDate` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`id`))"
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_suras` (" +
+                        "`number` INTEGER NOT NULL, " +
+                        "`nameArabic` TEXT NOT NULL, " +
+                        "`nameLatin` TEXT NOT NULL, " +
+                        "`nameTurkish` TEXT NOT NULL, " +
+                        "`nameEnglish` TEXT NOT NULL, " +
+                        "`revelationType` TEXT NOT NULL, " +
+                        "`ayahCount` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`number`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_suras_nameLatin` ON `quran_suras` (`nameLatin`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_suras_nameTurkish` ON `quran_suras` (`nameTurkish`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_ayahs` (" +
+                        "`suraNumber` INTEGER NOT NULL, " +
+                        "`ayahNumber` INTEGER NOT NULL, " +
+                        "`arabic` TEXT NOT NULL, " +
+                        "`latin` TEXT NOT NULL, " +
+                        "`turkish` TEXT NOT NULL, " +
+                        "`english` TEXT NOT NULL, " +
+                        "`german` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`suraNumber`, `ayahNumber`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_ayahs_suraNumber` ON `quran_ayahs` (`suraNumber`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_audio_cache` (" +
+                        "`reciterId` TEXT NOT NULL, " +
+                        "`suraNumber` INTEGER NOT NULL, " +
+                        "`ayahNumber` INTEGER NOT NULL, " +
+                        "`filePath` TEXT NOT NULL, " +
+                        "`downloadedAt` INTEGER NOT NULL, " +
+                        "`fileSize` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`reciterId`, `suraNumber`, `ayahNumber`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_audio_cache_reciterId_suraNumber` ON `quran_audio_cache` (`reciterId`, `suraNumber`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_bookmarks` (" +
+                        "`suraNumber` INTEGER NOT NULL, " +
+                        "`ayahNumber` INTEGER NOT NULL, " +
+                        "`savedAt` INTEGER NOT NULL, " +
+                        "`note` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`suraNumber`, `ayahNumber`))"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_bookmarks_savedAt` ON `quran_bookmarks` (`savedAt`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_last_read` (" +
+                        "`id` INTEGER NOT NULL, " +
+                        "`suraNumber` INTEGER NOT NULL, " +
+                        "`ayahNumber` INTEGER NOT NULL, " +
+                        "`savedAt` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`id`))"
                 )
             }

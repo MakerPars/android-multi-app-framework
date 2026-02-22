@@ -653,6 +653,27 @@ class AudioPlayerViewModel @Inject constructor(
         player?.play()
     }
 
+    fun playFromUrl(url: String) {
+        val mediaPlayer = player ?: return
+        val mediaItem = MediaItem.fromUri(Uri.parse(url))
+
+        savedStateHandle[STATE_KEY_POSITION] = 0L
+        stopPositionTracking()
+
+        mediaPlayer.pause()
+        mediaPlayer.clearMediaItems()
+        mediaPlayer.setMediaItem(mediaItem)
+        mediaPlayer.prepare()
+        mediaPlayer.play()
+
+        _playerState.value = _playerState.value.copy(
+            assetReady = true,
+            assetLoading = false,
+            assetError = null,
+        )
+        updateState()
+    }
+
     fun pause() {
         player?.pause()
     }
@@ -773,3 +794,5 @@ class AudioPlayerViewModel @Inject constructor(
         player = null
     }
 }
+
+

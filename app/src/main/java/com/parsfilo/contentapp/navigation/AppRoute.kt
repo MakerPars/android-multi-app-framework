@@ -27,6 +27,15 @@ sealed class AppRoute(val route: String, val arguments: List<NamedNavArgument> =
     }
     data object MiraclesList : AppRoute("miracles_list")
     data object ZikirCounter : AppRoute("zikir_counter")
+    data object QuranSuraList : AppRoute("quran_sura_list")
+    data object QuranBookmarks : AppRoute("quran_bookmarks")
+    data object QuranSuraDetail : AppRoute(
+        route = "quran_sura_detail/{suraNumber}",
+        arguments = listOf(navArgument("suraNumber") { type = NavType.IntType }),
+    ) {
+        fun createRoute(suraNumber: Int) = "quran_sura_detail/$suraNumber"
+    }
+    data object QuranReciterSettings : AppRoute("quran_reciter_settings")
     data object MiraclesDetail : AppRoute(
         route = "miracles_detail/{prayerIndex}",
         arguments = listOf(navArgument("prayerIndex") { type = NavType.IntType }),
@@ -55,3 +64,4 @@ sealed class AppRoute(val route: String, val arguments: List<NamedNavArgument> =
         fun createRoute(notificationId: Long) = "notification_detail/$notificationId"
     }
 }
+

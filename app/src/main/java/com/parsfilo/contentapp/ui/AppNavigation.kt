@@ -47,6 +47,10 @@ import com.parsfilo.contentapp.feature.prayertimes.model.PrayerAppVariant
 import com.parsfilo.contentapp.feature.prayertimes.ui.PrayerLocationPickerRoute
 import com.parsfilo.contentapp.feature.prayertimes.ui.PrayerTimesRoute
 import com.parsfilo.contentapp.feature.qibla.QiblaRoute
+import com.parsfilo.contentapp.feature.quran.ui.bookmarks.QuranBookmarksRoute
+import com.parsfilo.contentapp.feature.quran.ui.reciter.QuranReciterSettingsRoute
+import com.parsfilo.contentapp.feature.quran.ui.suradetail.QuranSuraDetailRoute
+import com.parsfilo.contentapp.feature.quran.ui.surelist.QuranSuraListRoute
 import com.parsfilo.contentapp.feature.settings.ui.SettingsRoute
 import com.parsfilo.contentapp.monetization.AppAdUnitIds
 import com.parsfilo.contentapp.navigation.AppRoute
@@ -111,6 +115,7 @@ fun AppNavHost(
                 BuildConfig.FLAVOR == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
                 BuildConfig.FLAVOR == "mucizedualar" -> AppRoute.MiraclesList.route
                 BuildConfig.FLAVOR == "zikirmatik" -> AppRoute.ZikirCounter.route
+                BuildConfig.FLAVOR == "kuran_kerim" -> AppRoute.QuranSuraList.route
                 else -> AppRoute.Content.route
             }
         ) {
@@ -209,6 +214,60 @@ fun AppNavHost(
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
                 )
+            }
+            if (BuildConfig.FLAVOR_NAME == "kuran_kerim") {
+                composable(AppRoute.QuranSuraList.route) {
+                    QuranSuraListRoute(
+                        onSuraClick = { suraNumber ->
+                            navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
+                        },
+                        onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
+                        bannerAdContent = {
+                            BannerAd(
+                                adUnitId = adUnitIds.banner,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                        nativeAdContent = {
+                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        },
+                    )
+                }
+                composable(
+                    route = AppRoute.QuranSuraDetail.route,
+                    arguments = AppRoute.QuranSuraDetail.arguments,
+                ) {
+                    QuranSuraDetailRoute(
+                        onBack = { navController.popBackStack() },
+                        onPlayAudioUrl = { url ->
+                            audioPlayerViewModel.setOverrideAudioFileName(null)
+                            audioPlayerViewModel.playFromUrl(url)
+                        },
+                        onPauseAudio = {
+                            audioPlayerViewModel.pause()
+                        },
+                    )
+                }
+                composable(AppRoute.QuranBookmarks.route) {
+                    QuranBookmarksRoute(
+                        onAyahClick = { sura, _ ->
+                            navController.navigate(AppRoute.QuranSuraDetail.createRoute(sura))
+                        },
+                        onBack = { navController.popBackStack() },
+                        bannerAdContent = {
+                            BannerAd(
+                                adUnitId = adUnitIds.banner,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                        nativeAdContent = {
+                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        },
+                    )
+                }
+                composable(AppRoute.QuranReciterSettings.route) {
+                    QuranReciterSettingsRoute(onBack = { navController.popBackStack() })
+                }
             }
             composable(AppRoute.Content.route) {
                 LaunchedEffect(Unit) {
@@ -470,6 +529,10 @@ fun AppNavHost(
         }
     }
 }
+
+
+
+
 
 
 

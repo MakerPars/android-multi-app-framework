@@ -63,6 +63,18 @@ class PreferencesDataSource @Inject constructor(
         it[PreferencesKeys.ZIKIR_INTERSTITIAL_DAY_KEY] ?: ""
     }
 
+    val quranSelectedReciter: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.QURAN_SELECTED_RECITER] ?: "alafasy_128"
+    }
+
+    val quranDisplayMode: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.QURAN_DISPLAY_MODE] ?: "TRANSLATION"
+    }
+
+    val quranFontSize: Flow<Int> = userPreferences.data.map {
+        it[PreferencesKeys.QURAN_FONT_SIZE] ?: 28
+    }
+
     val userData: Flow<UserPreferencesData> = userPreferences.data.map { preferences ->
         UserPreferencesData(
             darkMode = preferences[PreferencesKeys.DARK_MODE] ?: false,
@@ -218,6 +230,18 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { it[PreferencesKeys.ZIKIR_INTERSTITIAL_DAY_KEY] = dayKey }
     }
 
+    suspend fun setQuranReciter(reciterId: String) {
+        userPreferences.edit { it[PreferencesKeys.QURAN_SELECTED_RECITER] = reciterId }
+    }
+
+    suspend fun setQuranDisplayMode(mode: String) {
+        userPreferences.edit { it[PreferencesKeys.QURAN_DISPLAY_MODE] = mode }
+    }
+
+    suspend fun setQuranFontSize(size: Int) {
+        userPreferences.edit { it[PreferencesKeys.QURAN_FONT_SIZE] = size }
+    }
+
     private object PreferencesKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val DISPLAY_MODE = stringPreferencesKey("display_mode")
@@ -246,6 +270,10 @@ class PreferencesDataSource @Inject constructor(
         val ZIKIR_LAST_INTERSTITIAL_AT = longPreferencesKey("zikir_last_interstitial_at")
         val ZIKIR_INTERSTITIAL_SHOWN_COUNT_DAY = intPreferencesKey("zikir_interstitial_shown_count_day")
         val ZIKIR_INTERSTITIAL_DAY_KEY = stringPreferencesKey("zikir_interstitial_day_key")
+
+        val QURAN_SELECTED_RECITER = stringPreferencesKey("quran_selected_reciter")
+        val QURAN_DISPLAY_MODE = stringPreferencesKey("quran_display_mode")
+        val QURAN_FONT_SIZE = intPreferencesKey("quran_font_size")
     }
 }
 

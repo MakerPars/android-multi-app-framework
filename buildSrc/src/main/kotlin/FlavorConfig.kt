@@ -18,7 +18,7 @@ object AppFlavors {
         FlavorConfig("insirahsuresi", "İnşirah Sesli", "com.parsfilo.insirahsuresi", "insirahsuresi.mp3"),
         FlavorConfig("ismiazamduasi", "İsmi Azam Sesli", "com.parsfilo.ismiazamduasi", "ismiazamduasi.mp3"),
         FlavorConfig("kenzularsduasi", "Kenzül Arş Sesli", "com.parsfilo.kenzularsduasi", "kenzularsduasi.mp3"),
-        FlavorConfig("kuran_kerim", "Kuran-ı Kerim", "com.parsfilo.kuran_kerim"),
+        FlavorConfig("kuran_kerim", "Kuran-ı Kerim", "com.parsfilo.kuran_kerim", audioFileName = null),
         FlavorConfig("kible", "Kıble", "com.parsfilo.kible"),
         FlavorConfig("mucizedualar", "Mucize Dualar", "com.parsfilo.mucizedualar"),
         FlavorConfig("namazvakitleri", "Namaz Vakitleri", "com.parsfilo.namazvakitleri", isPrayerTimesFlavor = true),
@@ -29,3 +29,4 @@ object AppFlavors {
         FlavorConfig("zikirmatik", "Zikirmatik", "com.parsfilo.zikirmatik")
     )
 }
+

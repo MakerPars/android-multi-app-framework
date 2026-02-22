@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.parsfilo.contentapp.core.database.AppDatabase
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
 import com.parsfilo.contentapp.core.database.dao.prayer.PrayerTimesDao
+import com.parsfilo.contentapp.core.database.dao.quran.QuranDao
 import com.parsfilo.contentapp.core.database.dao.zikir.ZikirSessionDao
 import com.parsfilo.contentapp.core.database.dao.zikir.ZikirStreakDao
 import dagger.Module
@@ -26,7 +27,7 @@ object DatabaseModule {
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME
     )
-        .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+        .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
         .build()
 
     @Provides
@@ -48,4 +49,9 @@ object DatabaseModule {
     fun providesZikirStreakDao(
         database: AppDatabase,
     ): ZikirStreakDao = database.zikirStreakDao()
+
+    @Provides
+    fun providesQuranDao(
+        database: AppDatabase,
+    ): QuranDao = database.quranDao()
 }

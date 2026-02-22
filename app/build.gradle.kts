@@ -277,6 +277,7 @@ dependencies {
     implementation(project(":feature:prayertimes"))
     implementation(project(":feature:qibla"))
     implementation(project(":feature:counter"))
+    implementation(project(":feature:quran"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -317,4 +318,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+
 
