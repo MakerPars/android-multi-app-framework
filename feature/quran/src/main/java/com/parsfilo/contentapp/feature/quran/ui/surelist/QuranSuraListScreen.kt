@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.feature.quran.ui.surelist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -9,14 +10,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,12 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
-import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
+import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.quran.R
 import com.parsfilo.contentapp.feature.quran.ui.component.SuraListItem
 
@@ -68,22 +75,10 @@ fun QuranSuraListScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(
+            QuranSuraListHeader(
                 title = stringResource(R.string.quran_title),
-                actions = {
-                    androidx.compose.material3.IconButton(onClick = onBookmarksClick) {
-                        androidx.compose.material3.Icon(
-                            imageVector = Icons.Default.Bookmark,
-                            contentDescription = stringResource(R.string.quran_open_bookmarks),
-                        )
-                    }
-                },
+                onBookmarksClick = onBookmarksClick,
             )
-        },
-        bottomBar = {
-            if (state.shouldShowAds) {
-                bannerAdContent?.invoke()
-            }
         },
     ) { innerPadding ->
         Column(
@@ -100,6 +95,11 @@ fun QuranSuraListScreen(
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 singleLine = true,
             )
+
+            if (state.shouldShowAds) {
+                bannerAdContent?.invoke()
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             val lastRead = state.lastRead
             if (lastRead != null) {
@@ -194,7 +194,7 @@ fun QuranSuraListScreen(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 96.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 itemsIndexed(
                     items = suras,
@@ -211,6 +211,55 @@ fun QuranSuraListScreen(
                         nativeAdContent()
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuranSuraListHeader(
+    title: String,
+    onBookmarksClick: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val dimens = LocalDimens.current
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = dimens.space6, vertical = dimens.space4),
+        color = colorScheme.primaryContainer.copy(alpha = 0.95f),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+            bottomStart = dimens.radiusLarge,
+            bottomEnd = dimens.radiusLarge,
+        ),
+        tonalElevation = dimens.elevationMedium,
+        shadowElevation = dimens.elevationLow,
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimens.space8, vertical = dimens.space6),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Box(modifier = Modifier.size(44.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
+            )
+
+            IconButton(onClick = onBookmarksClick, modifier = Modifier.size(44.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Bookmark,
+                    contentDescription = stringResource(R.string.quran_open_bookmarks),
+                    tint = colorScheme.secondary,
+                )
             }
         }
     }
