@@ -1,0 +1,28 @@
+Zikirmatik – tasbih/dhikr kontagailu aurreratua. Akatsik gabe erabiltzeko diseinatua profil anitzeko laguntzarekin, helburuen progresioarekin eta ukitu zehatzekin. Ez da internet behar; Datuak gailuan gordetzen dira.
+
+EZAUGARRIAK
+- Zenbagailu anitz: izena, helburua (aukerakoa), deskribapena, kolorea/ikonoa, laudorio modua.
+- Handitu/gutxitu/berrezarri azkarra: ukipen-eremu handiak esku bakarrean sartzeko.
+- Helburuaren aurrerapena: ehunekoa, geratzen dena, txanda kopurua (33/99 urrats laudorio moduan).
+- Haptics: bibrazio laburra urrats bakoitzean, bibrazio luzea helburu/itzulian.
+- Mantendu pantaila piztuta (aukerakoa): saio luzeetarako.
+- Desegin: konpondu okerreko ukituak Deseginarekin 5 segundotan.
+- Historia eta estatistikak: saioaren erregistroa denbora-zigiluarekin; eguneroko/asteko laburpenak.
+- Oroigarriak: egunero/astero jakinarazpena; Salto automatikoa ordu lasaietan.
+- Gaia: iluna/argia/sistema.
+- Iragarkiak: pankarta/jatorrizko iragarki bistaratzea aplikazioaren barruan.
+- Pribatutasuna: ez konturik, ez jarraipenik; Datuak tokiko datu-basean gordetzen dira (Room).
+
+ERABILERA AHOLKUAK
+- Tasbih modua aktibatuta dagoenean, biraketa handitzen da 33 pausoz behin eta bibrazio luzea ematen du.
+- Ehunekoa/hondarra automatikoki kalkulatzen da helburu bat ezartzen duzun kontagailuetan.
+- "Mantendu pantaila piztuta" neurgailuaren xehetasunen pantailan soilik aplikatzen da.
+- Atzitu murriztu/berrezarri/editatu/artxibo eragiketak luze sakatuta menutik.
+- Kudeatu abisu-denbora/aldia eta denbora-tartea lasaia Ezarpenetatik.
+
+PRIBATUTASUNA
+- Datuak gailuan gordetzen dira; Ez da datu pertsonalik, kokapena edo harremanetarako informaziorik jasotzen.
+- Interneteko konexioa iragarkiak kargatzeko soilik erabiltzen da.
+
+IRITZIA
+- Akatsen/iradokizunen iritzia bidal dezakezu dendaren ebaluazioaren bidez.

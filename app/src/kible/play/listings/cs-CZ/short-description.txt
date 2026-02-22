@@ -1,0 +1,1 @@
+Praktická aplikace s kompasem, která vám pomůže rychle a přesně najít Qiblu.

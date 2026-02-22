@@ -1,0 +1,28 @@
+Zikirmatik – háþróaður tasbih/dhikr teljari. Hannað fyrir hraðvirka, villulausa notkun með fjölsniða stuðningi, markframvindu og nákvæmum snertingum. Ekkert internet krafist; Gögnin eru geymd á tækinu.
+
+EIGINLEIKAR
+- Margir teljarar: nafn, skotmark (valfrjálst), lýsing, litur/tákn, lofstilling.
+- Fljótleg aukning/minnkun/endurstilla: stór snertiflötur fyrir aðgang með einni hendi.
+- Markmið framfarir: prósenta, eftir, fjöldi umferða (33/99 skref í lofham).
+- Haptics: stuttur titringur með hverju skrefi, langur titringur þegar markmið/hring er lokið.
+- Haltu skjánum á (valfrjálst): fyrir langar lotur.
+- Afturkalla: laga rangar snertingar með Afturkalla innan 5 sekúndna.
+- Saga og tölfræði: lotuskrá með tímastimpli; daglegar/vikulegar samantektir.
+- Áminningar: dagleg / vikuleg tilkynning; Sjálfvirkt sleppa á rólegum tímum.
+- Þema: dökkt/ljóst/kerfi.
+- Auglýsingar: borði / innfæddur auglýsingaskjár í forritinu.
+- Persónuvernd: engir reikningar, engin mælingar; Gögnin eru geymd í staðbundnum gagnagrunni (Room).
+
+NOTKUNARÁBENDINGAR
+- Þegar kveikt er á tasbih-stillingu eykst snúningurinn með 33 skrefum og gefur langan titring.
+- Prósentan/afgangurinn er sjálfkrafa reiknaður í teljaranum þar sem þú setur markmið.
+- „Haltu skjánum á“ er aðeins notaður á smáatriði mælisins.
+- Fáðu aðgang að aðgerðum til að minnka / endurstilla / breyta / geyma í langri ýttu valmyndinni.
+- Hafa umsjón með áminningartíma/tímabili og kyrrðartíma frá stillingum.
+
+PERSONVERND
+- Gögn eru geymd á tækinu; Engum persónuupplýsingum, staðsetningu eða tengiliðaupplýsingum er safnað.
+- Nettenging er aðeins notuð til að hlaða auglýsingar.
+
+ENDURLAG
+- Þú getur sent endurgjöf fyrir villur/tillögur í gegnum mat á verslun.

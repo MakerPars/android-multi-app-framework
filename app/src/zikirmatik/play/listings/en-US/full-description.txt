@@ -1,0 +1,17 @@
+Dhikr Counter – Advanced Tasbih Counter
+
+Advanced tasbih/dhikr counter designed for fast, error-free use with multi-profile support, goal tracking and haptic feedback. No internet required; data stays on your device.
+
+📿 Features:
+✅ Multi-counter: name, goal (optional), description, color/icon, tasbih mode
+✅ Quick increment/decrement/reset: large touch areas for one-hand use
+✅ Goal progress: percentage, remaining, round count (33/99 in tasbih mode)
+✅ Haptics: short vibration per step, long on goal/round completion
+✅ Keep screen on (optional) for long sessions
+✅ Undo: fix accidental taps within 5 seconds
+✅ History & statistics: timestamped sessions; daily/weekly summaries
+✅ Reminders: daily/weekly notifications
+✅ Theme: dark/light/system
+✅ Privacy: no account, no tracking; data stored locally
+
+📱 Download now and enhance your dhikr practice!

@@ -1,0 +1,28 @@
+Zikirmatik – fejlett tasbih/dhikr számláló. Gyors, hibamentes használatra tervezve többprofil támogatással, célprogresszívsággal és precíz érintéssel. Nincs internet szükséges; Az adatokat a készülék tárolja.
+
+JELLEMZŐK
+- Több számláló: név, cél (opcionális), leírás, szín/ikon, dicséret mód.
+- Gyors növelés/csökkentés/visszaállítás: nagy érintési területek az egykezes hozzáféréshez.
+- Célhaladás: százalék, hátralévő, fordulók száma (33/99 lépés dicséret módban).
+- Haptika: rövid rezgés minden lépésnél, hosszú vibráció a cél/kör teljesítésekor.
+- Tartsa bekapcsolva a képernyőt (opcionális): hosszú munkamenetekhez.
+- Visszavonás: javítsa ki a hibás érintéseket az Undo funkcióval 5 másodpercen belül.
+- Előzmények és statisztikák: munkamenet rekord időbélyeggel; napi/heti összefoglalók.
+- Emlékeztetők: napi/heti értesítés; Automatikus kihagyás csendes órákban.
+- Téma: sötét/világos/rendszer.
+- Reklámok: banner/natív hirdetés megjelenítése az alkalmazáson belül.
+- Adatvédelem: nincs fiók, nincs nyomon követés; Az adatok a helyi adatbázisban (Szoba) tárolódnak.
+
+HASZNÁLATI TIPPEK
+- Ha a Tasbih mód be van kapcsolva, a forgás 33 lépésenként növekszik, és hosszú rezgést ad.
+- A százalék/maradék automatikusan kiszámításra kerül azokban a számlálókban, ahol beállított célt.
+- A „Képernyő bekapcsolva tartása” csak a mérőműszer részletes képernyőjén kerül alkalmazásra.
+- Hozzáférés a kicsinyítési/visszaállítási/szerkesztési/archiválási műveletekhez a hosszan megnyomott menüből.
+- Kezelje az emlékeztető idejét/időszakát és a csendes időintervallumot a Beállításokból.
+
+ADATVÉDELEM
+- Az adatokat a készülék tárolja; Nem gyűjtenek személyes adatokat, tartózkodási helyeket vagy elérhetőségeket.
+- Az internetkapcsolat csak hirdetések betöltésére szolgál.
+
+VISSZAJELZÉS
+- Visszajelzést küldhet a hibákról/javaslatokról az üzlet értékelésén keresztül.

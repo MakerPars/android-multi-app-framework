@@ -1,0 +1,3 @@
+Her ülkenin illere ve ilçelere göre namaz vakitlerini gösterir.
+Sabah, öğle ,ikindi, akşam, yatsı namazı vakitlerini ülke, il, ilçe özelinde saat ve dakikasını gösterir.
+Namazlarınızı kaçırmamak için kullanabileceğiniz güzel bir uygulamadır.

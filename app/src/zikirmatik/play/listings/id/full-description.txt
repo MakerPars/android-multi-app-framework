@@ -1,0 +1,28 @@
+Zikirmatik – penghitung tasbih/dzikir tingkat lanjut. Dirancang untuk penggunaan cepat dan bebas kesalahan dengan dukungan multi-profil, perkembangan target, dan sentuhan presisi. Tidak diperlukan internet; Data disimpan di perangkat.
+
+FITUR
+- Beberapa penghitung: nama, target (opsional), deskripsi, warna/ikon, mode pujian.
+- Peningkatan/penurunan/pengaturan ulang yang cepat: area sentuh yang luas untuk akses satu tangan.
+- Kemajuan target: persentase, sisa, jumlah putaran (33/99 langkah dalam mode pujian).
+- Haptics: getaran pendek di setiap langkah, getaran panjang pada target/penyelesaian putaran.
+- Tetap nyalakan layar (opsional): untuk sesi yang panjang.
+- Undo: perbaiki sentuhan yang salah dengan Undo dalam waktu 5 detik.
+- Sejarah dan statistik: catatan sesi dengan stempel waktu; ringkasan harian/mingguan.
+- Pengingat: pemberitahuan harian/mingguan; Lewati otomatis pada jam tenang.
+- Tema: gelap/terang/sistem.
+- Iklan: tampilan banner/iklan asli di dalam aplikasi.
+- Privasi: tidak ada akun, tidak ada pelacakan; Data disimpan di database lokal (Ruangan).
+
+TIPS PENGGUNAAN
+- Saat mode tasbih aktif, putarannya bertambah setiap 33 langkah dan memberikan getaran yang panjang.
+- Persentase/sisanya dihitung secara otomatis di penghitung tempat Anda menetapkan target.
+- “Tetap nyalakan layar” hanya diterapkan pada layar detail meteran.
+- Akses operasi pengurangan/reset/edit/arsipkan dari menu tekan lama.
+- Kelola waktu/periode pengingat dan interval waktu tenang dari Pengaturan.
+
+PRIVASI
+- Data disimpan di perangkat; Tidak ada data pribadi, lokasi, atau informasi kontak yang dikumpulkan.
+- Koneksi internet hanya digunakan untuk memuat iklan.
+
+UMPAN BALIK
+- Anda dapat mengirimkan masukan atas kesalahan/saran melalui evaluasi toko.

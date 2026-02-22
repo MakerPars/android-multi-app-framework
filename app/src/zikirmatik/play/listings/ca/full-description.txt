@@ -1,0 +1,28 @@
+Zikirmatik: comptador avançat de tasbih/dhikr. Dissenyat per a un ús ràpid i sense errors amb suport per a diversos perfils, progressió d'objectius i tocs precisos. No es requereix internet; Les dades es guarden al dispositiu.
+
+CARACTERÍSTIQUES
+- Múltiples comptadors: nom, objectiu (opcional), descripció, color/icona, mode d'elogi.
+- Augment/disminució/restabliment ràpid: grans àrees tàctils per accedir amb una sola mà.
+- Progrés objectiu: percentatge, restant, nombre de rondes (33/99 passos en mode elogi).
+- Hàptics: vibració curta amb cada pas, vibració llarga a l'objectiu/finalització de la volta.
+- Mantenir la pantalla encesa (opcional): per a sessions llargues.
+- Desfés: corregeix els tocs incorrectes amb Desfer en 5 segons.
+- Historial i estadístiques: registre de sessió amb marca de temps; resums diaris/setmanals.
+- Recordatoris: notificació diària/setmanal; Salt automàtic durant hores tranquil·les.
+- Tema: fosc/llum/sistema.
+- Anuncis: visualització de banners/anuncis natius dins de l'aplicació.
+- Privadesa: sense comptes, sense seguiment; Les dades s'emmagatzemen a la base de dades local (Room).
+
+CONSELLS D'ÚS
+- Quan el mode tasbih està activat, la rotació augmenta cada 33 passos i produeix una vibració llarga.
+- El percentatge/res es calcula automàticament als comptadors on establiu un objectiu.
+- "Mantenir la pantalla activada" només s'aplica a la pantalla de detall del comptador.
+- Accediu a les operacions de reducció/restabliment/edició/arxivatge des del menú de premsa llarga.
+- Gestioneu el temps/període del recordatori i l'interval de temps silenciós des de Configuració.
+
+PRIVACITAT
+- Les dades s'emmagatzemen al dispositiu; No es recull cap dada personal, ubicació o informació de contacte.
+- La connexió a Internet només s'utilitza per carregar anuncis.
+
+Comentaris
+- Podeu enviar comentaris per errors/suggeriments mitjançant l'avaluació de la botiga.

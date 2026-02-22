@@ -1,0 +1,28 @@
+Zikirmatik – avansert tasbih/dhikr-teller. Designet for rask, feilfri bruk med støtte for flere profiler, målprogresjon og presise berøringer. Ingen internett nødvendig; Dataene lagres på enheten.
+
+FUNKSJONER
+- Flere tellere: navn, mål (valgfritt), beskrivelse, farge/ikon, ros-modus.
+- Rask økning/redusering/reset: store berøringsområder for enhåndstilgang.
+- Målfremgang: prosentandel, gjenværende, antall runder (33/99 trinn i ros-modus).
+- Haptics: kort vibrasjon med hvert trinn, lang vibrasjon ved mål/rundegjennomføring.
+- Hold skjermen på (valgfritt): for lange økter.
+- Angre: fiks feil berøring med Angre innen 5 sekunder.
+- Historie og statistikk: øktrekord med tidsstempel; daglige/ukentlige oppsummeringer.
+- Påminnelser: daglig/ukentlig varsling; Autohopp i stille timer.
+- Tema: mørk/lys/system.
+- Annonser: banner/native annonsevisning i applikasjonen.
+- Personvern: ingen kontoer, ingen sporing; Dataene lagres i den lokale databasen (Room).
+
+BRUKTIPS
+- Når tasbih-modus er på, øker rotasjonen for hvert 33. trinn og gir en lang vibrasjon.
+- Prosenten/resten beregnes automatisk i tellerne der du setter et mål.
+- "Behold skjermen på" brukes bare på målerens detaljskjerm.
+- Få tilgang til reduserings-/tilbakestill-/redigerings-/arkivoperasjoner fra langtrykksmenyen.
+- Administrer påminnelsestid/-periode og stilletidsintervall fra Innstillinger.
+
+PERSONVERN
+- Data lagres på enheten; Ingen personopplysninger, plassering eller kontaktinformasjon samles inn.
+- Internett-tilkobling brukes kun til å laste inn annonser.
+
+TILBAKEBRING
+- Du kan sende tilbakemelding for feil/forslag via butikkevaluering.

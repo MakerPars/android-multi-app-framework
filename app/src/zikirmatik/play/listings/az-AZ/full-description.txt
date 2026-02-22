@@ -1,0 +1,28 @@
+Zikirmatik – inkişaf etmiş təsbih/zikr sayğacı. Çox profilli dəstək, hədəf irəliləməsi və dəqiq toxunuşlarla sürətli, səhvsiz istifadə üçün nəzərdə tutulmuşdur. İnternet tələb olunmur; Məlumatlar cihazda saxlanılır.
+
+XÜSUSİYYƏTLƏRİ
+- Çoxsaylı sayğaclar: ad, hədəf (isteğe bağlı), təsvir, rəng/ikon, tərif rejimi.
+- Tez artırma/azaltma/sıfırlama: bir əllə giriş üçün geniş toxunma sahələri.
+- Hədəf tərəqqi: faiz, qalan, turların sayı (tərif rejimində 33/99 addım).
+- Haptikalar: hər addımda qısa vibrasiya, hədəf/dövrənin tamamlanmasında uzun vibrasiya.
+- Ekranı açıq saxlayın (isteğe bağlı): uzun seanslar üçün.
+- Geri Al: 5 saniyə ərzində Geri Al ilə yanlış toxunuşları düzəldin.
+- Tarix və statistika: vaxt möhürü ilə sessiya qeydi; gündəlik/həftəlik xülasələr.
+- Xatırlatmalar: gündəlik/həftəlik bildiriş; Sakit saatlarda avtomatik ötürmə.
+- Mövzu: qaranlıq/açıq/sistem.
+- Reklamlar: tətbiq daxilində banner/doğma reklam ekranı.
+- Məxfilik: hesab yoxdur, izləmə yoxdur; Məlumat yerli verilənlər bazasında (Otaqda) saxlanılır.
+
+İSTİFADƏ İPUCULARI
+- Təsbih rejimi aktiv olduqda fırlanma hər 33 addımdan bir artır və uzun vibrasiya verir.
+- Faiz/qalıq avtomatik olaraq hədəf qoyduğunuz sayğaclarda hesablanır.
+- “Ekranı açıq saxlayın” yalnız sayğac detalları ekranında tətbiq olunur.
+- Uzun basma menyusundan azaltma/sıfırlama/redaktə/arxiv əməliyyatlarına daxil olun.
+- Parametrlərdən öyüd-nəsihət vaxtını/dövrünü və sakit vaxt intervalını idarə edin.
+
+MƏXFİLLİK
+- Məlumat cihazda saxlanılır; Heç bir şəxsi məlumat, yer və ya əlaqə məlumatları toplanmır.
+- İnternet bağlantısı yalnız reklamları yükləmək üçün istifadə olunur.
+
+ƏLAQƏ
+- Mağazanın qiymətləndirilməsi vasitəsilə səhvlər/təkliflər üçün rəy göndərə bilərsiniz.

@@ -1,0 +1,28 @@
+Zikirmatik – zaawansowany licznik tasbih/dhikr. Zaprojektowany do szybkiego, bezbłędnego użytkowania z obsługą wielu profili, progresją celów i precyzyjnymi dotknięciami. Nie wymaga Internetu; Dane są przechowywane na urządzeniu.
+
+CECHY
+- Wiele liczników: nazwa, cel (opcjonalnie), opis, kolor/ikona, tryb pochwały.
+- Szybkie zwiększanie/zmniejszanie/resetowanie: duże obszary dotykowe umożliwiające dostęp jedną ręką.
+- Docelowy postęp: procent, pozostały, liczba rund (33/99 kroków w trybie pochwały).
+- Haptyka: krótkie wibracje przy każdym kroku, długie wibracje po ukończeniu celu/okrążeniu.
+- Pozostaw ekran włączony (opcjonalnie): w przypadku długich sesji.
+- Cofnij: napraw błędne dotknięcia za pomocą opcji Cofnij w ciągu 5 sekund.
+- Historia i statystyki: zapis sesji ze znacznikiem czasu; podsumowania dzienne/tygodniowe.
+- Przypomnienia: powiadomienia codzienne/cotygodniowe; Automatyczne pomijanie w cichych godzinach.
+- Motyw: ciemny/jasny/system.
+- Reklamy: wyświetlanie banerów/reklam natywnych w aplikacji.
+- Prywatność: brak kont, brak śledzenia; Dane gromadzone są w lokalnej bazie danych (Pokój).
+
+WSKAZÓWKI UŻYTKOWANIA
+- Gdy tryb tasbih jest włączony, obrót zwiększa się co 33 kroki i powoduje długie wibracje.
+- Procent/pozostała wartość jest automatycznie obliczana w licznikach, w których ustawiasz cel.
+- Opcja „Zachowaj ekran włączony” jest stosowana tylko na ekranie szczegółów licznika.
+- Uzyskaj dostęp do operacji zmniejszania/resetowania/edycji/archiwizacji z menu po długim naciśnięciu.
+- Zarządzaj czasem/okresem przypomnienia i okresem ciszy w Ustawieniach.
+
+PRYWATNOŚĆ
+- Dane są przechowywane na urządzeniu; Nie są gromadzone żadne dane osobowe, lokalizacja ani dane kontaktowe.
+- Połączenie internetowe służy wyłącznie do ładowania reklam.
+
+OPINIE
+- Możesz przesłać opinię dotyczącą błędów/sugestii poprzez ocenę sklepu.

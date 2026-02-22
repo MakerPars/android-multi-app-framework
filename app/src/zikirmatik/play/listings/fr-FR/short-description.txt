@@ -1,0 +1,1 @@
+Compteur dhikr : multi-compteur, suivi objectifs, haptique et rappels.

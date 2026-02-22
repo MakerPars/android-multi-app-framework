@@ -1,0 +1,4 @@
+-Desteklenen cihazlar genişletildi.
+Tablet desteği eklendi.
+-Hatalar giderildi.
+-Görsel İyileştirmeler yapıldı.

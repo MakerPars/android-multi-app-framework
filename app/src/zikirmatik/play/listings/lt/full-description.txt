@@ -1,0 +1,28 @@
+Zikirmatik – pažangus tasbih/dhikr skaitiklis. Sukurtas greitam ir be klaidų naudojimui su kelių profilių palaikymu, tikslo progresavimu ir tiksliais prisilietimais. Nereikia interneto; Duomenys saugomi įrenginyje.
+
+SAVYBĖS
+- Keli skaitikliai: pavadinimas, tikslas (neprivaloma), aprašymas, spalva / piktograma, pagyrimo režimas.
+- Greitas padidinimas / sumažinimas / atstatymas: didelės liečiamos sritys, leidžiančios pasiekti viena ranka.
+- Tikslinė pažanga: procentas, likęs, raundų skaičius (33/99 žingsnių pagyrimo režimu).
+- Haptics: trumpa vibracija kiekviename žingsnyje, ilga vibracija įveikus tikslą / ratą.
+- Laikykite ekraną įjungtą (pasirinktinai): ilgoms sesijoms.
+- Anuliuoti: ištaisykite neteisingus prisilietimus naudodami Anuliuoti per 5 sekundes.
+- Istorija ir statistika: sesijos įrašas su laiko žyma; dienos / savaitės suvestinės.
+- Priminimai: dienos / savaitės pranešimas; Automatinis praleidimas ramiomis valandomis.
+- Tema: tamsus / šviesus / sistema.
+- Skelbimai: reklamjuostės / vietinės reklamos rodymas programoje.
+- Privatumas: nėra paskyrų, nėra stebėjimo; Duomenys saugomi vietinėje duomenų bazėje (Kambarys).
+
+NAUDOJIMO PATARIMAI
+- Kai įjungtas tasbih režimas, sukimasis didėja kas 33 žingsnius ir suteikia ilgą vibraciją.
+- Procentas / likutis automatiškai apskaičiuojamas skaitikliuose, kuriuose nustatote tikslą.
+- „Keep screen on“ taikoma tik skaitiklio išsamios informacijos ekrane.
+- Pasiekite mažinimo / iš naujo / redagavimo / archyvavimo operacijas iš ilgo paspaudimo meniu.
+- Tvarkykite priminimo laiką / laikotarpį ir tylų laiko intervalą iš nustatymų.
+
+PRIVATUMAS
+- Duomenys saugomi įrenginyje; Jokie asmens duomenys, vieta ar kontaktinė informacija nerenkama.
+- Interneto ryšys naudojamas tik skelbimams įkelti.
+
+ATSILIEPIMAI
+- Galite siųsti atsiliepimus apie klaidas / pasiūlymus naudodami parduotuvės įvertinimą.

@@ -1,0 +1,28 @@
+Zikirmatik – napredni brojač tesbiha/zikra. Dizajniran za brzu upotrebu bez pogrešaka s podrškom za više profila, ciljanim napredovanjem i preciznim dodirima. Nije potreban internet; Podaci se čuvaju na uređaju.
+
+OSOBINE
+- Višestruki brojači: naziv, cilj (po izboru), opis, boja/ikona, način pohvale.
+- Brzo povećanje/smanjenje/poništavanje: velika dodirna područja za pristup jednom rukom.
+- Ciljani napredak: postotak, preostali, broj krugova (33/99 koraka u načinu pohvale).
+- Opipljivost: kratka vibracija sa svakim korakom, duga vibracija nakon cilja/završetka kruga.
+- Držite zaslon uključenim (opcionalno): za duge sesije.
+- Poništavanje: popravite pogrešne dodire s Undo unutar 5 sekundi.
+- Povijest i statistika: zapis sesije s vremenskom oznakom; dnevni/tjedni sažeci.
+- Podsjetnici: dnevna/tjedna obavijest; Automatsko preskakanje tijekom mirnih sati.
+- Tema: tamno/svijetlo/sustav.
+- Oglasi: banner/nativni prikaz oglasa unutar aplikacije.
+- Privatnost: nema računa, nema praćenja; Podaci se pohranjuju u lokalnu bazu podataka (Soba).
+
+SAVJETI ZA KORIŠTENJE
+- Kada je tasbih mod uključen, rotacija se povećava sa svaka 33 koraka i daje dugu vibraciju.
+- Postotak/ostatak se automatski izračunava u brojačima gdje ste postavili cilj.
+- “Zadrži zaslon uključenim” primjenjuje se samo na zaslonu s detaljima mjerača.
+- Pristupite operacijama smanjenja/poništavanja/uređivanja/arhiviranja iz izbornika dugim pritiskom.
+- Upravljajte vremenom/razdobljem podsjetnika i tihim vremenskim intervalom iz postavki.
+
+PRIVATNOST
+- Podaci se pohranjuju na uređaj; Ne prikupljaju se osobni podaci, lokacija ili kontakt informacije.
+- Internet veza se koristi samo za učitavanje oglasa.
+
+POVRATNE INFORMACIJE
+- Možete poslati povratne informacije za pogreške/prijedloge putem procjene trgovine.

@@ -1,0 +1,28 @@
+Zikirmatik – gelişmiş tasbih/zikir sayacı. Çoklu profil desteği, hedef ilerlemesi ve hassas dokunuşlarla hızlı, hatasız kullanım için tasarlandı. İnternet gerekmez; veriler cihazda tutulur.
+
+ÖZELLİKLER
+- Çoklu sayaç: isim, hedef (opsiyonel), açıklama, renk/ikon, tasbih modu.
+- Hızlı artır/azalt/sıfırla: tek elle erişim için büyük dokunma alanları.
+- Hedef ilerlemesi: yüzde, kalan, tur sayısı (tasbih modunda 33/99 adım).
+- Haptics: her adımda kısa, hedef/tur tamamlandığında uzun titreşim.
+- Ekranı açık tutma (opsiyonel): uzun oturumlar için.
+- Geri alma: yanlış dokunuşları 5 sn içinde Undo ile düzeltin.
+- Geçmiş ve istatistik: zaman damgalı oturum kaydı; günlük/haftalık özetler.
+- Hatırlatıcılar: günlük/haftalık bildirim; sessiz saatlerde otomatik atlama.
+- Tema: koyu/açık/sistem.
+- Reklamlar: uygulama içinde banner/native reklam gösterimi.
+- Gizlilik: hesap yok, takip yok; veriler yerel veritabanında (Room) saklanır.
+
+KULLANIM İPUÇLARI
+- Tasbih modu açıkken her 33 adımda tur artar ve uzun titreşim verir.
+- Hedef belirlediğiniz sayaçlarda yüzde/kalan otomatik hesaplanır.
+- “Ekranı açık tut” sadece sayaç detay ekranında uygulanır.
+- Uzun basış menüsünden azaltma/sıfırlama/düzenleme/arşivleme işlemlerine erişin.
+- Hatırlatıcı saat/dönem ve sessiz saat aralığını Ayarlar’dan yönetin.
+
+GİZLİLİK
+- Veriler cihazda saklanır; kişisel veri, konum veya kişi bilgisi toplanmaz.
+- İnternet bağlantısı sadece reklam yüklemek için kullanılır.
+
+GERİ BİLDİRİM
+- Hata/öneri için mağaza değerlendirmesi üzerinden geri bildirim gönderebilirsiniz.

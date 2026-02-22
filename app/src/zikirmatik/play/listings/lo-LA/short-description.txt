@@ -1,0 +1,1 @@
+Zikrmatik: ຫຼາຍ counter, ຄວາມຄືບຫນ້າເປົ້າຫມາຍ, haptics, Undo ແລະເຕືອນ.

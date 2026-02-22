@@ -1,0 +1,28 @@
+Zikirmatik – kaunter tasbih/zikir lanjutan. Direka untuk penggunaan pantas dan bebas ralat dengan sokongan berbilang profil, kemajuan sasaran dan sentuhan yang tepat. Tiada internet diperlukan; Data disimpan pada peranti.
+
+CIRI-CIRI
+- Berbilang pembilang: nama, sasaran (pilihan), penerangan, warna/ikon, mod pujian.
+- Peningkatan/penurunan/set semula pantas: kawasan sentuh yang besar untuk akses sebelah tangan.
+- Kemajuan sasaran: peratusan, baki, bilangan pusingan (33/99 langkah dalam mod pujian).
+- Haptics: getaran pendek dengan setiap langkah, getaran panjang pada sasaran/penyelesaian pusingan.
+- Pastikan skrin dihidupkan (pilihan): untuk sesi yang panjang.
+- Buat asal: betulkan sentuhan yang salah dengan Buat asal dalam masa 5 saat.
+- Sejarah dan statistik: rekod sesi dengan cap masa; ringkasan harian/mingguan.
+- Peringatan: pemberitahuan harian/mingguan; Auto langkau semasa waktu senyap.
+- Tema: gelap/terang/sistem.
+- Iklan: paparan sepanduk/iklan asli dalam aplikasi.
+- Privasi: tiada akaun, tiada penjejakan; Data disimpan dalam pangkalan data tempatan (Bilik).
+
+PETUA PENGGUNAAN
+- Apabila mod tasbih dihidupkan, putaran meningkat dengan setiap 33 langkah dan memberikan getaran yang panjang.
+- Peratusan/baki dikira secara automatik dalam kaunter tempat anda menetapkan sasaran.
+- "Pastikan skrin dihidupkan" digunakan hanya pada skrin butiran meter.
+- Akses operasi kurangkan/set semula/edit/arkib daripada menu tekan lama.
+- Urus masa/tempoh peringatan dan selang masa senyap daripada Tetapan.
+
+PRIVASI
+- Data disimpan pada peranti; Tiada data peribadi, lokasi atau maklumat hubungan dikumpul.
+- Sambungan Internet hanya digunakan untuk memuatkan iklan.
+
+MAKLUM BALAS
+- Anda boleh menghantar maklum balas untuk ralat/cadangan melalui penilaian kedai.

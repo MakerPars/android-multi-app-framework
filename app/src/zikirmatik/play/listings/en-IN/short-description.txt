@@ -1,0 +1,1 @@
+Zikrmatik: multi-counter, goal progress, haptics, Undo and reminder.

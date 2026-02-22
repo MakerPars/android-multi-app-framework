@@ -1,0 +1,1 @@
+Zikirmatik: çoklu sayaç, hedef ilerlemesi, haptik, Undo ve hatırlatıcı.

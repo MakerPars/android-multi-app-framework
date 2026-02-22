@@ -1,0 +1,28 @@
+Zikirmatik: contador avanzado de tasbih/dhikr. Deseñado para un uso rápido e sen erros con compatibilidade con varios perfiles, progresión de obxectivos e toques precisos. Non se necesita internet; Os datos gárdanse no dispositivo.
+
+CARACTERÍSTICAS
+- Contadores múltiples: nome, destino (opcional), descrición, cor/icona, modo de eloxio.
+- Aumento/diminución/reinicio rápido: grandes áreas táctiles para acceso con una sola mano.
+- Progreso obxectivo: porcentaxe, restante, número de roldas (33/99 pasos no modo de eloxio).
+- Háptica: vibración curta con cada paso, vibración longa no obxectivo/finalización da volta.
+- Manter a pantalla acesa (opcional): para sesións longas.
+- Desfacer: corrixe os toques incorrectos con Desfacer en 5 segundos.
+- Historial e estatísticas: rexistro da sesión con marca de tempo; resumos diarios/semanais.
+- Recordatorios: notificación diaria/semanal; Salto automático durante horas tranquilas.
+- Tema: escuro/luz/sistema.
+- Anuncios: visualización de banner/anuncio nativo dentro da aplicación.
+- Privacidade: sen contas, sen seguimento; Os datos gárdanse na base de datos local (Sala).
+
+CONSELLOS DE USO
+- Cando o modo tasbih está activado, a rotación aumenta cada 33 pasos e dá unha longa vibración.
+- A porcentaxe/resto calcúlase automaticamente nos contadores onde estableces un obxectivo.
+- "Manter a pantalla activada" só se aplica na pantalla de detalles do medidor.
+- Acceda ás operacións de redución/reinicio/edición/arquivo desde o menú de pulsación longa.
+- Xestiona o tempo/período de recordatorio e o intervalo de tempo silencioso desde Configuración.
+
+PRIVACIDADE
+- Os datos almacénanse no dispositivo; Non se recollen datos persoais, localización ou información de contacto.
+- A conexión a Internet úsase só para cargar anuncios.
+
+COMENTARIOS
+- Podes enviar comentarios sobre erros/suxestións mediante a avaliación da tenda.
