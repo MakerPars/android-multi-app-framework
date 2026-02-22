@@ -348,15 +348,21 @@ class CounterViewModel @Inject constructor(
     }
 
     fun onShareSession() {
-        val session = _uiState.value.lastCompletedSession ?: return
+        val state = _uiState.value
+        val session = state.lastCompletedSession
+        val selectedZikir = state.selectedZikir ?: state.zikirList.firstOrNull() ?: return
+        val latinText = session?.latinText ?: selectedZikir.latinText
+        val arabicText = session?.arabicText ?: selectedZikir.arabicText
+        val completedCount = session?.completedCount ?: state.currentCount
+
         val shareText = zikirShareHelper.buildShareText(
-            latinText = session.latinText,
-            arabicText = session.arabicText,
-            completedCount = session.completedCount,
-            todayTotal = _uiState.value.todayTotalCount,
-            currentStreak = _uiState.value.currentStreak,
+            latinText = latinText,
+            arabicText = arabicText,
+            completedCount = completedCount,
+            todayTotal = state.todayTotalCount,
+            currentStreak = state.currentStreak,
         )
-        _uiState.value = _uiState.value.copy(
+        _uiState.value = state.copy(
             shareText = shareText,
             showSharePreview = true,
         )
@@ -427,3 +433,4 @@ class CounterViewModel @Inject constructor(
         private const val MAX_INTERSTITIAL_PER_DAY = 2
     }
 }
+
