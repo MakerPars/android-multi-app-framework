@@ -43,7 +43,7 @@
     <string name="notif_reminder_channel">Zikir Hatırlatıcıları</string>
     <string name="notif_reminder_title">📿 Zikir Vaktiniz</string>
     <string name="notif_reminder_body_no_activity">Bugün henüz zikir yapmadınız. Allah’ın zikretmek kalplere huzur verir.</string>
-    <string name="notif_reminder_body_with_activity">Bugün %s zikir yaptınız. Devam edin! 🤲</string>
+    <string name="notif_reminder_body_with_activity">Bugün %d zikir yaptınız. Devam edin! 🤲</string>
     <string name="notif_streak_title">🔥 Seriniz Kırılmak Üzere!</string>
     <string name="notif_streak_body">%d günlük serinizi korumak için bugünkü zikirinizi yapın.</string>
     <string name="notif_goal_done_title">✅ Hedef Tamamlandı!</string>

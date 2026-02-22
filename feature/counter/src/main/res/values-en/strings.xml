@@ -43,7 +43,7 @@
     <string name="notif_reminder_channel">Dhikr Reminders</string>
     <string name="notif_reminder_title">📿 Time for Dhikr</string>
     <string name="notif_reminder_body_no_activity">You have not done any dhikr today. Remembrance of Allah brings peace to hearts.</string>
-    <string name="notif_reminder_body_with_activity">You did %s dhikr today. Keep going! 🤲</string>
+    <string name="notif_reminder_body_with_activity">You did %d dhikr today. Keep going! 🤲</string>
     <string name="notif_streak_title">🔥 Your Streak is at Risk!</string>
     <string name="notif_streak_body">Complete today’s dhikr to keep your %d day streak alive.</string>
     <string name="notif_goal_done_title">✅ Goal Completed!</string>
