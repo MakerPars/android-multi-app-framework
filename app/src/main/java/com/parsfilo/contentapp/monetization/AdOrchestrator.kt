@@ -5,6 +5,7 @@ import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.AdManager
+import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
@@ -35,7 +36,6 @@ class AdOrchestrator @Inject constructor(
     private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
-        val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
         SentryMetrics.count("ads.initialize.called")
 
         // UMP + MobileAds callbacks are UI-coupled; keep init on main thread.
@@ -47,7 +47,7 @@ class AdOrchestrator @Inject constructor(
                         SentryMetrics.count("ads.initialize.skipped.gated")
                         return@launch
                     }
-                    preloadAds(ids)
+                    preloadAds(activity)
                 }
             }
         }
@@ -58,14 +58,23 @@ class AdOrchestrator @Inject constructor(
         orchestratorScope.cancel()
     }
 
-    suspend fun showInterstitialIfEligible(activity: Activity, onAdDismissed: () -> Unit = {}) {
+    suspend fun showInterstitialIfEligible(
+        activity: Activity,
+        placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
+        route: String? = null,
+        onAdDismissed: () -> Unit = {},
+    ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             onAdDismissed()
             return
         }
         SentryMetrics.count("ads.interstitial.show.attempt")
         SentryMetrics.breadcrumb("ads", "Interstitial show attempt")
-        interstitialAdManager.showAd(activity) {
+        interstitialAdManager.showAd(
+            activity = activity,
+            placement = placement,
+            route = route,
+        ) {
             SentryMetrics.count("ads.interstitial.dismissed")
             SentryMetrics.breadcrumb("ads", "Interstitial dismissed")
             onAdDismissed()
@@ -90,9 +99,11 @@ class AdOrchestrator @Inject constructor(
             SentryMetrics.count("ads.app_open.dismissed")
             SentryMetrics.breadcrumb("ads", "AppOpen dismissed")
             // Reklam bitti veya gösterilemedi — yeni reklam yükle
-            val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
             SentryMetrics.count("ads.load.requested.app_open")
-            appOpenAdManager.loadAd(ids.appOpen)
+            appOpenAdManager.loadAd(
+                AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+                AdPlacement.APP_OPEN_RESUME,
+            )
         }
     }
 
@@ -102,6 +113,8 @@ class AdOrchestrator @Inject constructor(
      */
     suspend fun showRewardedInterstitialIfEligible(
         activity: Activity,
+        placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+        route: String? = null,
         onUserEarnedReward: () -> Unit = {},
         onAdDismissed: () -> Unit = {}
     ) {
@@ -138,7 +151,7 @@ class AdOrchestrator @Inject constructor(
                 // Sonraki gösterim için yeniden yükle
                 val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
                 SentryMetrics.count("ads.load.requested.rewarded_interstitial")
-                rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial)
+                rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial, placement, route)
                 onAdDismissed()
             }
         )
@@ -155,24 +168,44 @@ class AdOrchestrator @Inject constructor(
                     clearPreloadedAds()
                     return@launch
                 }
-                val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
-                preloadAds(ids)
+                preloadAds(activity)
             }
         }
     }
 
-    private fun preloadAds(ids: AppAdUnitIds.Ids) {
+    private fun preloadAds(activity: Activity) {
         SentryMetrics.count("ads.load.requested.app_open")
-        appOpenAdManager.loadAd(ids.appOpen)
+        appOpenAdManager.loadAd(
+            AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+            AdPlacement.APP_OPEN_RESUME,
+        )
 
         SentryMetrics.count("ads.load.requested.interstitial")
-        interstitialAdManager.loadAd(ids.interstitial)
+        interstitialAdManager.loadAd(
+            AppAdUnitIds.resolvePlacement(
+                activity,
+                AdPlacement.INTERSTITIAL_NAV_BREAK,
+                BuildConfig.USE_TEST_ADS,
+            ),
+            AdPlacement.INTERSTITIAL_NAV_BREAK,
+        )
 
         SentryMetrics.count("ads.load.requested.native")
-        nativeAdManager.loadAds(ids.native, 3)
+        nativeAdManager.loadAds(
+            AppAdUnitIds.resolvePlacement(activity, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
+            AdPlacement.NATIVE_FEED_HOME,
+            2,
+        )
 
         SentryMetrics.count("ads.load.requested.rewarded_interstitial")
-        rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial)
+        rewardedInterstitialAdManager.loadAd(
+            AppAdUnitIds.resolvePlacement(
+                activity,
+                AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+                BuildConfig.USE_TEST_ADS,
+            ),
+            AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+        )
     }
 
     private fun clearPreloadedAds() {

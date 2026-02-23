@@ -4,10 +4,13 @@ import android.app.Activity
 import android.content.Context
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
+import com.google.android.ump.ConsentDebugSettings
+import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
+import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -16,15 +19,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Consent durumunu temsil eden sealed interface.
- */
 sealed interface ConsentStatus {
     data object Unknown : ConsentStatus
     data object Required : ConsentStatus
@@ -33,22 +35,18 @@ sealed interface ConsentStatus {
     data class Error(val message: String) : ConsentStatus
 }
 
-/**
- * AdMob SDK başlatıcı + UMP (User Messaging Platform) onay yöneticisi.
- *
- * Flow:
- * 1. Activity.onCreate → [initialize]
- * 2. UMP consent kontrolü → [consentStatus] StateFlow güncellenir
- * 3. Consent OK → MobileAds.initialize
- * 4. SDK hazır → [onAdsInitialized] callback'i çağrılır
- */
+enum class UmpDebugGeography(val umpValue: Int) {
+    NONE(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_DISABLED),
+    EEA(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA),
+    US_STATES(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_REGULATED_US_STATE),
+}
+
 @Singleton
 class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val preferencesDataSource: PreferencesDataSource,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
-    companion object;
-
     private val isMobileAdsInitializeCalled = AtomicBoolean(false)
     @Volatile
     private var onAdsInitialized: (() -> Unit)? = null
@@ -61,108 +59,180 @@ class AdManager @Inject constructor(
     private val _isSdkReady = MutableStateFlow(false)
     val isSdkReady: StateFlow<Boolean> = _isSdkReady.asStateFlow()
 
-    /**
-     * AdMob SDK + UMP consent akışını başlatır.
-     * @param activity Mevcut Activity
-     * @param onReady SDK hazır olduğunda çağrılır (reklamları yüklemek için)
-     */
+    private val _privacyOptionsRequired = MutableStateFlow(false)
+    val privacyOptionsRequired: StateFlow<Boolean> = _privacyOptionsRequired.asStateFlow()
+
+    private val _debugGeography = MutableStateFlow(UmpDebugGeography.NONE)
+    val debugGeography: StateFlow<UmpDebugGeography> = _debugGeography.asStateFlow()
+
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
         onAdsInitialized = onReady
         AdsConsentRuntimeState.update(false)
 
-        val params = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
-            .build()
-
         val consentInformation = UserMessagingPlatform.getConsentInformation(context)
+        val ageGateStatus = currentAgeGateStatus()
+        val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
 
         consentInformation.requestConsentInfoUpdate(
             activity,
             params,
             {
+                updatePrivacyOptionsState(consentInformation)
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { loadAndShowError ->
                     if (loadAndShowError != null) {
-                        Timber.w("Consent form error: ${loadAndShowError.message}")
+                        Timber.w("Consent form error: %s", loadAndShowError.message)
                         _consentStatus.value = ConsentStatus.Error(
-                            loadAndShowError.message ?: "Unknown consent error"
+                            loadAndShowError.message ?: "Unknown consent error",
                         )
                     }
-                    if (consentInformation.canRequestAds()) {
-                        AdsConsentRuntimeState.update(true)
-                        _consentStatus.value = ConsentStatus.Obtained
-                        initializeMobileAdsSdk()
-                    } else {
-                        AdsConsentRuntimeState.update(false)
-                        _consentStatus.value = ConsentStatus.Required
-                    }
+                    applyConsentOutcome(consentInformation, ageGateStatus)
                 }
             },
             { requestConsentError ->
-                Timber.w("Consent info update error: ${requestConsentError.message}")
+                Timber.w("Consent info update error: %s", requestConsentError.message)
                 _consentStatus.value = ConsentStatus.Error(
-                    requestConsentError.message ?: "Consent info update failed"
+                    requestConsentError.message ?: "Consent info update failed",
                 )
-                AdsConsentRuntimeState.update(consentInformation.canRequestAds())
+                updatePrivacyOptionsState(consentInformation)
+                applyConsentRuntimeState(consentInformation.canRequestAds())
             },
         )
 
-        // Pre-consent reklam yükleme (consent zaten verilmişse)
         if (consentInformation.canRequestAds()) {
-            AdsConsentRuntimeState.update(true)
+            updatePrivacyOptionsState(consentInformation)
+            applyConsentRuntimeState(true)
             _consentStatus.value = ConsentStatus.NotRequired
-            initializeMobileAdsSdk()
+            initializeMobileAdsSdk(ageGateStatus)
         } else {
             AdsConsentRuntimeState.update(false)
         }
     }
 
-    /**
-     * Re-check consent after privacy options form interactions so ad serving state changes
-     * immediately in the same app session.
-     */
     fun refreshConsent(activity: Activity, onUpdated: (Boolean) -> Unit = {}) {
-        val params = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
-            .build()
         val consentInformation = UserMessagingPlatform.getConsentInformation(context)
+        val ageGateStatus = currentAgeGateStatus()
+        val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
 
         consentInformation.requestConsentInfoUpdate(
             activity,
             params,
             {
+                updatePrivacyOptionsState(consentInformation)
                 val canRequestAds = consentInformation.canRequestAds()
                 applyConsentRuntimeState(canRequestAds)
                 if (canRequestAds) {
-                    initializeMobileAdsSdk()
+                    initializeMobileAdsSdk(ageGateStatus)
+                } else {
+                    applyGlobalRequestConfiguration(ageGateStatus)
                 }
                 onUpdated(canRequestAds)
             },
             { requestConsentError ->
-                Timber.w("Consent refresh error: ${requestConsentError.message}")
+                Timber.w("Consent refresh error: %s", requestConsentError.message)
+                updatePrivacyOptionsState(consentInformation)
                 val canRequestAds = consentInformation.canRequestAds()
                 applyConsentRuntimeState(canRequestAds)
                 if (canRequestAds) {
-                    initializeMobileAdsSdk()
+                    initializeMobileAdsSdk(ageGateStatus)
+                } else {
+                    applyGlobalRequestConfiguration(ageGateStatus)
                 }
                 onUpdated(canRequestAds)
             },
         )
     }
 
-    private fun initializeMobileAdsSdk() {
-        if (isMobileAdsInitializeCalled.getAndSet(true)) {
-            return
+    fun showPrivacyOptions(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+        UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
+            if (formError != null) {
+                Timber.w("Privacy options form error: %s", formError.message)
+                refreshConsent(activity) {
+                    onCompleted(false)
+                }
+            } else {
+                refreshConsent(activity) {
+                    onCompleted(true)
+                }
+            }
         }
+    }
 
-        applyGlobalRequestConfiguration()
+    fun showConsentFormIfRequired(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+        val ageGateStatus = currentAgeGateStatus()
+        val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
+        val consentInformation = UserMessagingPlatform.getConsentInformation(context)
+        consentInformation.requestConsentInfoUpdate(
+            activity,
+            params,
+            {
+                updatePrivacyOptionsState(consentInformation)
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
+                    if (formError != null) {
+                        Timber.w("Debug consent form error: %s", formError.message)
+                        refreshConsent(activity) { onCompleted(false) }
+                    } else {
+                        refreshConsent(activity) { onCompleted(true) }
+                    }
+                }
+            },
+            { requestError ->
+                Timber.w("Debug consent request update error: %s", requestError.message)
+                refreshConsent(activity) { onCompleted(false) }
+            },
+        )
+    }
 
-        // Main thread blocking issues fixed by moving to IO dispatcher
+    fun resetConsent() {
+        UserMessagingPlatform.getConsentInformation(context).reset()
+        AdsConsentRuntimeState.update(false)
+        _consentStatus.value = ConsentStatus.Unknown
+        _privacyOptionsRequired.value = false
+    }
+
+    fun setConsentDebugGeography(geography: UmpDebugGeography) {
+        _debugGeography.value = geography
+        Timber.d("UMP debug geography set to %s", geography)
+    }
+
+    fun openAdInspector(activity: Activity, onResult: (String?) -> Unit = {}) {
+        MobileAds.openAdInspector(activity) { error ->
+            if (error != null) {
+                Timber.w("Ad Inspector error: %s", error.message)
+                onResult(error.message)
+            } else {
+                onResult(null)
+            }
+        }
+    }
+
+    fun onAdsConfigChanged(activity: Activity, onUpdated: (Boolean) -> Unit = {}) {
+        refreshConsent(activity, onUpdated)
+    }
+
+    private fun applyConsentOutcome(
+        consentInformation: ConsentInformation,
+        ageGateStatus: AdAgeGateStatus,
+    ) {
+        if (consentInformation.canRequestAds()) {
+            applyConsentRuntimeState(true)
+            _consentStatus.value = ConsentStatus.Obtained
+            initializeMobileAdsSdk(ageGateStatus)
+        } else {
+            applyConsentRuntimeState(false)
+            _consentStatus.value = ConsentStatus.Required
+            applyGlobalRequestConfiguration(ageGateStatus)
+        }
+    }
+
+    private fun initializeMobileAdsSdk(ageGateStatus: AdAgeGateStatus) {
+        applyGlobalRequestConfiguration(ageGateStatus)
+
+        if (isMobileAdsInitializeCalled.getAndSet(true)) return
+
         initScope.launch {
             MobileAds.initialize(context) { initStatus ->
-                Timber.d("MobileAds initialized: ${initStatus.adapterStatusMap}")
-                AdsConsentRuntimeState.update(true)
+                Timber.d("MobileAds initialized: %s", initStatus.adapterStatusMap)
                 _isSdkReady.value = true
-                // Invoke and immediately null out to prevent Activity leak
                 onAdsInitialized?.invoke()
                 onAdsInitialized = null
                 initScope.cancel()
@@ -170,13 +240,46 @@ class AdManager @Inject constructor(
         }
     }
 
-    private fun applyGlobalRequestConfiguration() {
-        // Keep current config values and explicitly propagate TFUA flag to ad requests.
-        val requestConfiguration = MobileAds.getRequestConfiguration()
-            .toBuilder()
-            .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE)
-            .build()
-        MobileAds.setRequestConfiguration(requestConfiguration)
+    private fun applyGlobalRequestConfiguration(ageGateStatus: AdAgeGateStatus) {
+        val isUnderAge = ageGateStatus != AdAgeGateStatus.AGE_16_OR_OVER
+        val builder = MobileAds.getRequestConfiguration().toBuilder()
+            .setTagForChildDirectedTreatment(
+                RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED,
+            )
+            .setTagForUnderAgeOfConsent(
+                if (isUnderAge) {
+                    RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+                } else {
+                    RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE
+                },
+            )
+        if (isUnderAge) {
+            builder.setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_T)
+        }
+        MobileAds.setRequestConfiguration(builder.build())
+    }
+
+    private fun buildConsentRequestParameters(
+        ageGateStatus: AdAgeGateStatus,
+        debugGeography: UmpDebugGeography,
+    ): ConsentRequestParameters {
+        val builder = ConsentRequestParameters.Builder()
+            .setTagForUnderAgeOfConsent(ageGateStatus != AdAgeGateStatus.AGE_16_OR_OVER)
+
+        if (isDebugBuild() && debugGeography != UmpDebugGeography.NONE) {
+            val debugSettings = ConsentDebugSettings.Builder(context)
+                .setDebugGeography(debugGeography.umpValue)
+                .build()
+            builder.setConsentDebugSettings(debugSettings)
+        }
+
+        return builder.build()
+    }
+
+    private fun updatePrivacyOptionsState(consentInformation: ConsentInformation) {
+        _privacyOptionsRequired.value =
+            consentInformation.privacyOptionsRequirementStatus ==
+                ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
     }
 
     private fun applyConsentRuntimeState(canRequestAds: Boolean) {
@@ -187,5 +290,12 @@ class AdManager @Inject constructor(
             ConsentStatus.Required
         }
     }
-}
 
+    private fun currentAgeGateStatus(): AdAgeGateStatus =
+        runBlocking(ioDispatcher) {
+            AdAgeGateStatus.fromStorage(preferencesDataSource.userData.first().adsAgeGateStatus)
+        }
+
+    private fun isDebugBuild(): Boolean =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+}

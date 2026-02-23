@@ -5,6 +5,8 @@ import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.AdValue
+import com.google.android.gms.ads.VideoOptions
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,75 +18,116 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Native reklam havuzu yöneticisi.
- *
- * Google'ın en iyi uygulamalarına uygun:
- * - Önceden yükleme (precaching) — ekranda görünür olan kadar
- * - Thread-safe havuz yönetimi
- * - Kullanılmayan reklamların destroy edilmesi
- * - loadAd() ile tek tek yükleme (mediation uyumlu)
- * - NativeAdOptions ile video desteği
- *
- * @see <a href="https://developers.google.com/admob/android/native#best_practices">Best Practices</a>
- */
+private data class PooledNativeAd(
+    val ad: NativeAd,
+    val loadedAtMillis: Long,
+    val placement: AdPlacement,
+    val adUnitId: String,
+)
+
 @Singleton
 class NativeAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val adRevenueLogger: AdRevenueLogger,
 ) {
-    private val nativeAds = mutableListOf<NativeAd>()
+    private val nativeAds = mutableListOf<PooledNativeAd>()
     @Volatile
     private var isLoading = false
     private var currentAdUnitId: String = ""
+    private var currentPlacement: AdPlacement = AdPlacement.NATIVE_DEFAULT
+    private var loadBackoffState = AdLoadBackoffState()
 
     private val _adLoadedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val adLoadedFlow: SharedFlow<Unit> = _adLoadedFlow.asSharedFlow()
 
-    companion object;
+    companion object {
+        private const val POOL_MAX = 2
+        private const val NATIVE_TTL_MS = 30 * 60 * 1000L
+    }
 
-    /**
-     * Belirtilen sayıda native reklam yükler.
-     * Google belgeleri: mediation kullanılıyorsa loadAds() yerine loadAd() kullanılmalıdır.
-     * Bu nedenle her reklam ayrı ayrı yüklenir.
-     */
-    fun loadAds(adUnitId: String, count: Int) {
+    fun loadAds(
+        adUnitId: String,
+        placement: AdPlacement = AdPlacement.NATIVE_DEFAULT,
+        count: Int,
+    ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             destroyAds()
             return
         }
-        if (isLoading) {
-            Timber.d("Already loading, ignoring request")
+        pruneExpiredAds()
+        if (!AdLoadBackoffPolicy.canLoad(SystemTimeProvider.nowMillis(), loadBackoffState)) {
+            Timber.d("Native load throttled until=%d", loadBackoffState.nextLoadAllowedAtMillis)
             return
         }
+        if (isLoading) {
+            Timber.d("Already loading, ignoring native load request")
+            return
+        }
+        synchronized(nativeAds) {
+            if (nativeAds.size >= POOL_MAX) {
+                Timber.d("Native pool already full (%d)", nativeAds.size)
+                return
+            }
+        }
+
         currentAdUnitId = adUnitId
+        currentPlacement = placement
         isLoading = true
 
         val loadedCount = AtomicInteger(0)
-        val targetCount = count.coerceIn(1, 5)
+        val targetCount = count.coerceIn(1, POOL_MAX)
 
-        for (i in 0 until targetCount) {
+        repeat(targetCount) {
             val adLoader = AdLoader.Builder(context, adUnitId)
                 .forNativeAd { ad: NativeAd ->
-                    synchronized(nativeAds) {
-                        nativeAds.add(ad)
+                    ad.setOnPaidEventListener { adValue: AdValue ->
+                        adRevenueLogger.logPaidEvent(
+                            AdPaidEventContext(
+                                adUnitId = adUnitId,
+                                adFormat = AdFormat.NATIVE,
+                                placement = placement,
+                                route = null,
+                                adValue = adValue,
+                                responseMeta = adRevenueLogger.extractResponseMeta(ad.responseInfo),
+                            ),
+                        )
                     }
-                    Timber.d("Native ad loaded (${nativeAds.size} in pool)")
+                    synchronized(nativeAds) {
+                        if (nativeAds.size >= POOL_MAX) {
+                            ad.destroy()
+                        } else {
+                            nativeAds.add(
+                                PooledNativeAd(
+                                    ad = ad,
+                                    loadedAtMillis = SystemTimeProvider.nowMillis(),
+                                    placement = placement,
+                                    adUnitId = adUnitId,
+                                ),
+                            )
+                        }
+                    }
+                    Timber.d("Native ad loaded (pool=%d)", synchronized(nativeAds) { nativeAds.size })
                 }
                 .withAdListener(object : AdListener() {
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         if (error.code == 3) {
-                            Timber.i("Native ad no-fill: ${error.message} (code=${error.code})")
+                            Timber.i("Native no-fill code=%d msg=%s", error.code, error.message)
                         } else {
-                            Timber.w("Native ad load warning: ${error.message} (code=${error.code})")
+                            Timber.w("Native load warning code=%d msg=%s", error.code, error.message)
                         }
+                        loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
+                            nowMillis = SystemTimeProvider.nowMillis(),
+                            current = loadBackoffState,
+                            errorCode = error.code,
+                        )
                         if (loadedCount.incrementAndGet() >= targetCount) {
                             isLoading = false
                         }
                     }
 
                     override fun onAdLoaded() {
+                        loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
                         val current = loadedCount.incrementAndGet()
-                        Timber.d("Native ad impression ready ($current/$targetCount)")
                         _adLoadedFlow.tryEmit(Unit)
                         if (current >= targetCount) {
                             isLoading = false
@@ -92,22 +135,36 @@ class NativeAdManager @Inject constructor(
                     }
 
                     override fun onAdClicked() {
-                        Timber.d("Native ad clicked")
+                        val pooled = synchronized(nativeAds) { nativeAds.firstOrNull() }
+                        if (pooled != null) {
+                            adRevenueLogger.logClick(
+                                adFormat = AdFormat.NATIVE,
+                                placement = pooled.placement,
+                                adUnitId = pooled.adUnitId,
+                            )
+                        }
                     }
 
                     override fun onAdImpression() {
-                        Timber.d("Native ad impression recorded")
+                        val pooled = synchronized(nativeAds) { nativeAds.firstOrNull() }
+                        if (pooled != null) {
+                            adRevenueLogger.logImpression(
+                                adFormat = AdFormat.NATIVE,
+                                placement = pooled.placement,
+                                adUnitId = pooled.adUnitId,
+                            )
+                        }
                     }
                 })
                 .withNativeAdOptions(
                     NativeAdOptions.Builder()
                         .setVideoOptions(
-                            com.google.android.gms.ads.VideoOptions.Builder()
+                            VideoOptions.Builder()
                                 .setStartMuted(true)
-                                .build()
+                                .build(),
                         )
                         .setRequestMultipleImages(false)
-                        .build()
+                        .build(),
                 )
                 .build()
 
@@ -115,37 +172,47 @@ class NativeAdManager @Inject constructor(
         }
     }
 
-    /**
-     * Havuzdan bir native reklam alır.
-     * Reklam tüketildikten sonra havuzdan kaldırılır.
-     * Havuz azaldığında yeni reklamlar otomatik yüklenir.
-     */
-    fun getNativeAd(): NativeAd? {
+    fun getNativeAd(placement: AdPlacement = AdPlacement.NATIVE_DEFAULT): NativeAd? {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             destroyAds()
             return null
         }
-        val ad = synchronized(nativeAds) {
-            if (nativeAds.isNotEmpty()) nativeAds.removeAt(0) else null
+        pruneExpiredAds()
+
+        val pooled = synchronized(nativeAds) {
+            val idx = nativeAds.indexOfFirst { it.placement == placement }
+                .takeIf { it >= 0 } ?: nativeAds.indices.firstOrNull()
+            if (idx == null) null else nativeAds.removeAt(idx)
         }
 
-        // Havuz azaldığında arka planda daha fazla yükle
         val currentSize = synchronized(nativeAds) { nativeAds.size }
-        if (currentSize <= 1 && currentAdUnitId.isNotEmpty() && !isLoading) {
-            Timber.d("Pool low ($currentSize), loading more ads")
-            loadAds(currentAdUnitId, 2)
+        if (currentSize <= 0 && currentAdUnitId.isNotEmpty() && !isLoading) {
+            loadAds(currentAdUnitId, currentPlacement, 1)
         }
 
-        return ad
+        return pooled?.ad
     }
 
-    /** Tüm reklamları destroy eder ve havuzu temizler */
     fun destroyAds() {
         synchronized(nativeAds) {
-            nativeAds.forEach { it.destroy() }
+            nativeAds.forEach { it.ad.destroy() }
             nativeAds.clear()
         }
         isLoading = false
         Timber.d("All native ads destroyed")
+    }
+
+    private fun pruneExpiredAds() {
+        val now = SystemTimeProvider.nowMillis()
+        synchronized(nativeAds) {
+            val iterator = nativeAds.iterator()
+            while (iterator.hasNext()) {
+                val pooled = iterator.next()
+                if (now - pooled.loadedAtMillis > NATIVE_TTL_MS) {
+                    pooled.ad.destroy()
+                    iterator.remove()
+                }
+            }
+        }
     }
 }

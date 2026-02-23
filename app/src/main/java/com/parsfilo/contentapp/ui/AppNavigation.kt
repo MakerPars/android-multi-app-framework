@@ -28,6 +28,7 @@ import com.parsfilo.contentapp.core.model.DisplayMode
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdItem
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdViewModel
+import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.feature.audio.ui.InlineAudioPlayer
 import com.parsfilo.contentapp.feature.auth.ui.AuthRoute
@@ -87,7 +88,10 @@ fun AppNavHost(
     fun requestInterstitialAd() {
         val activity = hostActivity ?: return
         coroutineScope.launch {
-            activity.adOrchestrator.showInterstitialIfEligible(activity)
+            activity.adOrchestrator.showInterstitialIfEligible(
+                activity = activity,
+                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+            )
         }
     }
 
@@ -121,6 +125,9 @@ fun AppNavHost(
             }
         ) {
             composable(AppRoute.PrayerTimesHome.route) {
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
+                }
                 PrayerTimesRoute(
                     appName = stringResource(com.parsfilo.contentapp.R.string.app_name),
                     variant = if (BuildConfig.FLAVOR == "imsakiye") {
@@ -131,6 +138,7 @@ fun AppNavHost(
                     bannerAdContent = {
                         BannerAd(
                             adUnitId = adUnitIds.banner,
+                            placement = AdPlacement.BANNER_HOME,
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
@@ -163,6 +171,9 @@ fun AppNavHost(
                 )
             }
             composable(AppRoute.Qibla.route) {
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
+                }
                 QiblaRoute(
                     appName = stringResource(com.parsfilo.contentapp.R.string.app_name),
                     onSettingsClick = {
@@ -174,6 +185,7 @@ fun AppNavHost(
                     bannerAdContent = {
                         BannerAd(
                             adUnitId = adUnitIds.banner,
+                            placement = AdPlacement.BANNER_QIBLA,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     },
@@ -183,6 +195,9 @@ fun AppNavHost(
                 )
             }
             composable(AppRoute.ZikirCounter.route) {
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_ZIKIR)
+                }
                 CounterRoute(
                     onSettingsClick = {
                         navController.navigate(AppRoute.Settings.route)
@@ -192,7 +207,11 @@ fun AppNavHost(
                     },
                     onShowInterstitial = {
                         val activity = hostActivity ?: return@CounterRoute
-                        activity.adOrchestrator.showInterstitialIfEligible(activity)
+                        activity.adOrchestrator.showInterstitialIfEligible(
+                            activity = activity,
+                            placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                            route = AppRoute.ZikirCounter.route,
+                        )
                     },
                     onShowRewardedHistoryAd = { onUnlocked ->
                         val activity = hostActivity
@@ -201,6 +220,8 @@ fun AppNavHost(
                         } else {
                             activity.adOrchestrator.showRewardedInterstitialIfEligible(
                                 activity = activity,
+                                placement = AdPlacement.REWARDED_INTERSTITIAL_HISTORY_UNLOCK,
+                                route = AppRoute.ZikirCounter.route,
                                 onUserEarnedReward = onUnlocked,
                             )
                         }
@@ -208,6 +229,7 @@ fun AppNavHost(
                     bannerAdContent = {
                         BannerAd(
                             adUnitId = adUnitIds.banner,
+                            placement = AdPlacement.BANNER_ZIKIR,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     },
@@ -299,6 +321,9 @@ fun AppNavHost(
                 }
             }
             composable(AppRoute.Content.route) {
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
+                }
                 LaunchedEffect(Unit) {
                     audioPlayerViewModel.setOverrideAudioFileName(null)
                 }

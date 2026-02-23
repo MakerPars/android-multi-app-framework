@@ -40,8 +40,33 @@
 
     <string name="settings_privacy_options">Gizlilik seçenekleri</string>
     <string name="settings_privacy_options_desc">Reklam onay tercihlerini yönet</string>
+    <string name="settings_privacy_options_desc_required">Reklam gizlilik seçenekleri gerekli</string>
+    <string name="settings_privacy_options_desc_optional">Gizlilik ve reklam tercihlerini görüntüle / güncelle</string>
     <string name="settings_privacy_options_button">Yönet</string>
     <string name="settings_privacy_options_unavailable">Bu işlem şu anda kullanılamıyor</string>
     <string name="settings_privacy_options_error">Gizlilik seçenekleri açılamadı</string>
+    <string name="settings_privacy_options_saved">Gizlilik tercihleri güncellendi</string>
+
+    <string name="settings_ads_age_gate_title">Reklam yaş tercihi</string>
+    <string name="settings_ads_age_gate_desc">Reklam gizlilik ayarları için yaş grubunu belirtin</string>
+    <string name="settings_ads_age_unknown">Belirtmek istemiyorum</string>
+    <string name="settings_ads_age_under_16">16 yaş altıyım</string>
+    <string name="settings_ads_age_16_or_over">16 yaş ve üzeriyim</string>
+
+    <string name="settings_ads_debug_title">Ads Debug (UMP / GMA)</string>
+    <string name="settings_ads_debug_desc">Sadece debug derlemelerde görünür. Consent ve reklam araçlarını test edin.</string>
+    <string name="settings_ads_debug_geo_status">UMP debug geography: %1$s</string>
+    <string name="settings_ads_debug_open_inspector">Ad Inspector Aç</string>
+    <string name="settings_ads_debug_reset_consent">Consent Sıfırla</string>
+    <string name="settings_ads_debug_show_consent_form">Consent Formunu Göster</string>
+    <string name="settings_ads_debug_force_eea">Force EEA</string>
+    <string name="settings_ads_debug_force_us">Force US States</string>
+    <string name="settings_ads_debug_clear_geo">Debug Geography Temizle</string>
+    <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector açıldı</string>
+    <string name="settings_ads_debug_ad_inspector_error">Ad Inspector açılamadı</string>
+    <string name="settings_ads_debug_consent_reset">Consent bilgisi sıfırlandı</string>
+    <string name="settings_ads_debug_consent_form_done">Consent akışı tamamlandı</string>
+    <string name="settings_ads_debug_consent_form_error">Consent akışı tamamlanamadı</string>
+    <string name="settings_ads_debug_ads_config_updated">Reklam ayarları güncellendi</string>
 </resources>
 

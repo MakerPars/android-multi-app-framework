@@ -43,6 +43,7 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:firebase"))
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines.android)
     implementation(project(":core:model"))
@@ -60,4 +61,7 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
 }

@@ -58,7 +58,8 @@ fun NativeAdItem(
     val ctaText = colorScheme.onPrimary
 
     DisposableEffect(nativeAd) {
-        onDispose { /* Ad lifecycle managed by NativeAdManager */ }
+        // NativeAd lifecycle is manager-owned; UI must not destroy here to avoid double-destroy.
+        onDispose { }
     }
 
     Box(

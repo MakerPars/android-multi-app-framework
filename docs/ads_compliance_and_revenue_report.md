@@ -1,0 +1,151 @@
+# Ads Compliance and Revenue Report (AdMob/GMA/UMP) — February 2026
+
+## Summary
+This patch upgrades the app's AdMob/GMA/UMP integration to reduce policy risk and prevent avoidable revenue loss while keeping the existing multi-module architecture intact.
+
+Primary outcomes:
+- UMP consent flow now supports age-gate-aware parameters and debug geography controls.
+- Privacy options are always accessible in Settings.
+- ILRD (`onPaidEvent`) logging is centralized and expanded across banner/interstitial/app-open/rewarded/rewarded-interstitial/native.
+- Interstitial/App Open cooldown timestamps are recorded on impression instead of before `show()`.
+- Load spam is reduced with no-fill/transient-error backoff.
+- Banner sizing moved to anchored adaptive (better visibility/fill than the previous fixed inline 50dp approach).
+- Placement-based ad unit ID resolution is supported with safe format fallback.
+- Native ad pool now has smaller size + TTL pruning.
+
+## Official References Used
+- AdMob Android privacy / UMP: https://developers.google.com/admob/android/privacy
+- GDPR: https://developers.google.com/admob/android/privacy/gdpr
+- US states privacy: https://developers.google.com/admob/android/privacy/us-states
+- Privacy options entry point: https://developers.google.com/admob/android/privacy/options
+- Ad Inspector: https://developers.google.com/admob/android/ad-inspector
+- ILRD / `onPaidEvent`: https://developers.google.com/admob/android/impression-level-ad-revenue
+- Google Mobile Ads examples (API Demo / Ad Inspector / ILRD snippets): https://github.com/googleads/googleads-mobile-android-examples
+
+## Code Changes (What / Why)
+
+### 1) UMP + Privacy + Age Gate
+- `feature/ads/.../AdManager.kt`
+  - Added age-gate-aware `ConsentRequestParameters`
+  - Added `privacyOptionsRequired` runtime state
+  - Added `showPrivacyOptions`, `showConsentFormIfRequired`, `resetConsent`, `openAdInspector`, debug geography controls
+  - Applies `RequestConfiguration` based on age-gate state
+- `core/datastore/.../PreferencesDataSource.kt`
+  - Added stored age-gate fields (`adsAgeGateStatus`, `adsAgeGatePromptCompleted`)
+- `feature/settings/.../SettingsViewModel.kt`
+  - Persists age-gate choice
+  - Exposes `AdManager` debug helpers
+- `feature/settings/.../SettingsScreen.kt`
+  - Privacy options row always visible
+  - Added age-gate selection UI
+  - Added debug-only Ads tools (Ad Inspector / consent reset / debug geography)
+
+### 2) ILRD Centralization
+- `feature/ads/.../AdRevenueLogger.kt`
+  - Central event payload builder and Firebase Analytics logging
+- ILRD integrated in:
+  - `InterstitialAdManager.kt`
+  - `AppOpenAdManager.kt`
+  - `RewardedAdManager.kt`
+  - `RewardedInterstitialAdManager.kt`
+  - `NativeAdManager.kt`
+  - `ui/BannerAd.kt`
+
+### 3) Revenue-loss Bug Fixes and Load Quality
+- `InterstitialAdManager.kt`
+  - Frequency cap timestamp now records on `onAdImpression`
+  - Backoff added for repeated load failures / no-fill
+- `AppOpenAdManager.kt`
+  - Cooldown timestamp now records on `onAdImpression`
+  - Backoff added
+- `NativeAdManager.kt`
+  - Pool reduced and TTL pruning added
+  - Backoff added
+- `ui/BannerAd.kt`
+  - Anchored adaptive banner size
+  - Better recomposition lifecycle handling
+
+### 4) Placement-based Ad Unit Resolution
+- `feature/ads/.../AdPlacement.kt`, `AdFormat.kt`
+- `app/.../AppAdUnitIds.kt`
+  - `resolvePlacement(...)` with fallback to format defaults
+- `app/.../AdOrchestrator.kt`
+  - Placement-aware preload/show paths (core placements)
+- `app/.../AppNavigation.kt`
+  - Core route placements wired (home/qibla/zikir/content interstitial paths)
+
+### 5) Manifest
+- `app/src/main/AndroidManifest.xml`
+  - Added `com.google.android.gms.permission.AD_ID`
+
+## Manual Checklist (AdMob Console)
+
+### Privacy & Messaging (UMP)
+- Create and publish **GDPR (EEA/UK)** message.
+- Create and publish **US states** message.
+- Confirm message scope targets correct regions.
+- Verify privacy options entry point requirement behavior on test devices.
+
+### Ad Units / Placements
+- Create (optional but recommended) placement-specific ad units matching resource naming convention:
+  - Banner examples: `ad_unit_banner_home`, `ad_unit_banner_qibla`, `ad_unit_banner_zikir`
+  - Interstitial examples: `ad_unit_interstitial_nav_break`, `ad_unit_interstitial_audio_stop`
+  - App open example: `ad_unit_open_app_resume`
+  - Rewarded interstitial example: `ad_unit_rewarded_interstitial_history_unlock`
+- If a placement resource is missing, the app safely falls back to the format default ID.
+
+### app-ads.txt
+- Publish `app-ads.txt` on your verified domain.
+- Confirm AdMob shows “Authorized” / verified status.
+
+### Mediation
+- This patch remains **AdMob-only compatible**.
+- Mediation is optional and not required for this compliance patch.
+
+## Manual Checklist (Google Play Console)
+- Data safety form matches current ad usage (ads + identifiers + consent behavior).
+- Privacy policy URL is set and publicly reachable.
+- If any app is enrolled in Families, review family-targeted ad policy requirements separately.
+
+## In-App QA Checklist
+- Settings screen always shows **Privacy options** row.
+- Privacy options form opens and updates ad behavior in the same session.
+- Age-gate selection persists and updates ad serving config without restart.
+- Debug build shows **Ads Debug (UMP / GMA)** tools.
+- `Open Ad Inspector` works on a debug device.
+- `Reset Consent` + `Force EEA/US States` + `Show Consent Form` are usable.
+
+## QA Scenarios
+1. **EEA Debug Geography**
+   - Force EEA
+   - Reset consent
+   - Show consent form
+   - Deny consent
+   - Verify ads are not requested (`canRequestAds=false` path)
+2. **US States Debug Geography**
+   - Force US states
+   - Reset consent
+   - Show consent/privacy flow
+3. **Age Gate**
+   - Choose `16 yaş altıyım` and verify protected ad config is applied
+   - Switch back to `16 yaş ve üzeriyim`
+4. **Interstitial/AppOpen timestamp bug**
+   - Trigger ad show failure (test with invalid unit/network off)
+   - Verify cooldown is not incorrectly locked
+5. **No-fill / backoff**
+   - Observe logs for throttled reload after no-fill (`code=3`)
+6. **Banner sizing**
+   - Verify anchored adaptive banner displays with appropriate height on multiple screen widths
+7. **ILRD**
+   - Confirm `ad_paid_event` Firebase analytics events appear (production/staging traffic may be required)
+
+## Monitoring / Operational Notes
+- ILRD logs are centralized and PII-free.
+- Route values should be low-cardinality route templates (avoid dynamic IDs in analytics).
+- Backoff logs help distinguish no-fill from integration errors.
+- Consent/Privacy UI changes require AdMob Console messages to be published; code alone is not sufficient.
+
+## Risks / Rollout Notes
+- Placement resources missing in a flavor will fall back to format defaults (safe behavior).
+- Age-gate wording and legal interpretation may require product/legal review (technical implementation is provided).
+- Native click/impression attribution is best-effort; ILRD is the primary revenue source-of-truth for monetization optimization.

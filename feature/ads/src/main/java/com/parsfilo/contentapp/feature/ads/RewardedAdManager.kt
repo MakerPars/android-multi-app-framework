@@ -6,7 +6,6 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,19 +18,31 @@ import javax.inject.Singleton
 
 @Singleton
 class RewardedAdManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val adRevenueLogger: AdRevenueLogger,
 ) {
     private var rewardedAd: RewardedAd? = null
+    private var currentPlacement: AdPlacement = AdPlacement.REWARDED_DEFAULT
+    private var currentRoute: String? = null
+    private var loadBackoffState = AdLoadBackoffState()
     private val _isAdReady = MutableStateFlow(false)
     val isAdReady: StateFlow<Boolean> = _isAdReady.asStateFlow()
 
     fun isAdReadyNow(): Boolean = _isAdReady.value
 
-    fun loadAd(adUnitId: String) {
+    fun loadAd(
+        adUnitId: String,
+        placement: AdPlacement = AdPlacement.REWARDED_DEFAULT,
+        route: String? = null,
+    ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             clearAd()
             return
         }
+        val now = SystemTimeProvider.nowMillis()
+        if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) return
+        currentPlacement = placement
+        currentRoute = route
         val adRequest = AdRequest.Builder().build()
         Timber.d("Rewarded load requested: %s", adUnitId)
         RewardedAd.load(
@@ -42,17 +53,26 @@ class RewardedAdManager @Inject constructor(
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     rewardedAd = null
                     _isAdReady.value = false
+                    loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
+                        nowMillis = SystemTimeProvider.nowMillis(),
+                        current = loadBackoffState,
+                        errorCode = adError.code,
+                    )
                     Timber.w("Rewarded failed to load (%s): %s", adUnitId, adError.message)
                 }
 
                 override fun onAdLoaded(ad: RewardedAd) {
-                    ad.onPaidEventListener = OnPaidEventListener { value ->
-                        Timber.i(
-                            "Rewarded paid event (%s): micros=%d currency=%s precision=%d",
-                            adUnitId,
-                            value.valueMicros,
-                            value.currencyCode,
-                            value.precisionType,
+                    loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
+                    ad.onPaidEventListener = { value ->
+                        adRevenueLogger.logPaidEvent(
+                            AdPaidEventContext(
+                                adUnitId = ad.adUnitId,
+                                adFormat = AdFormat.REWARDED,
+                                placement = currentPlacement,
+                                route = currentRoute,
+                                adValue = value,
+                                responseMeta = adRevenueLogger.extractResponseMeta(ad.responseInfo),
+                            ),
                         )
                     }
                     val responseInfo = ad.responseInfo
@@ -75,8 +95,9 @@ class RewardedAdManager @Inject constructor(
             onAdDismissed()
             return
         }
-        if (rewardedAd != null) {
-            rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+        val loadedAd = rewardedAd
+        if (loadedAd != null) {
+            loadedAd.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     rewardedAd = null
                     _isAdReady.value = false
@@ -97,9 +118,24 @@ class RewardedAdManager @Inject constructor(
 
                 override fun onAdImpression() {
                     Timber.d("Rewarded impression recorded")
+                    adRevenueLogger.logImpression(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = loadedAd.adUnitId,
+                        route = currentRoute,
+                    )
+                }
+
+                override fun onAdClicked() {
+                    adRevenueLogger.logClick(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = loadedAd.adUnitId,
+                        route = currentRoute,
+                    )
                 }
             }
-            rewardedAd?.show(activity) { rewardItem ->
+            loadedAd.show(activity) { rewardItem ->
                 // Handle the reward.
                 Timber.d("Rewarded reward earned: %s x%d", rewardItem.type, rewardItem.amount)
                 onUserEarnedReward()

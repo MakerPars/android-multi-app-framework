@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
 import android.provider.Settings
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
@@ -74,13 +75,15 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.ump.ConsentInformation
-import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.messaging.FirebaseMessaging
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
 import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
+import com.parsfilo.contentapp.feature.ads.AdAgeGateStatus
+import com.parsfilo.contentapp.feature.ads.AdManager
+import com.parsfilo.contentapp.feature.ads.UmpDebugGeography
 import com.parsfilo.contentapp.feature.settings.R
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -99,6 +102,10 @@ fun SettingsRoute(
         onFontSizeChanged = viewModel::setFontSize,
         onNotificationsChanged = viewModel::setNotificationsEnabled,
         onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
+        onAdsAgeGateChanged = viewModel::setAdsAgeGateStatus,
+        onResetConsent = viewModel::resetConsent,
+        onSetConsentDebugGeography = viewModel::setConsentDebugGeography,
+        adManager = viewModel.adManager(),
         onShareApp = { platform -> viewModel.logShareApp(platform) },
     )
 }
@@ -111,6 +118,10 @@ fun SettingsScreen(
     onFontSizeChanged: (Int) -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onPrivacyOptionsUpdated: () -> Unit = {},
+    onAdsAgeGateChanged: (AdAgeGateStatus) -> Unit,
+    onResetConsent: () -> Unit,
+    onSetConsentDebugGeography: (UmpDebugGeography) -> Unit,
+    adManager: AdManager,
     onShareApp: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -138,11 +149,8 @@ fun SettingsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 systemNotificationsEnabled = isNotificationPermissionEnabled(context)
-                val status = UserMessagingPlatform
-                    .getConsentInformation(context)
-                    .privacyOptionsRequirementStatus
-                isPrivacyOptionsRequired =
-                    status == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+                val status = adManager.privacyOptionsRequired.value
+                isPrivacyOptionsRequired = status
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -158,7 +166,15 @@ fun SettingsScreen(
     val fcmDebugCopiedText = stringResource(R.string.settings_fcm_debug_copied)
     val privacyOptionsUnavailableText = stringResource(R.string.settings_privacy_options_unavailable)
     val privacyOptionsErrorText = stringResource(R.string.settings_privacy_options_error)
+    val privacyOptionsSavedText = stringResource(R.string.settings_privacy_options_saved)
+    val adInspectorOpenedText = stringResource(R.string.settings_ads_debug_ad_inspector_opened)
+    val adInspectorErrorText = stringResource(R.string.settings_ads_debug_ad_inspector_error)
+    val consentResetText = stringResource(R.string.settings_ads_debug_consent_reset)
+    val consentFormShownText = stringResource(R.string.settings_ads_debug_consent_form_done)
+    val consentFormErrorText = stringResource(R.string.settings_ads_debug_consent_form_error)
+    val adsConfigUpdatedText = stringResource(R.string.settings_ads_debug_ads_config_updated)
     var languageMenuExpanded by remember { mutableStateOf(false) }
+    var ageGateMenuExpanded by remember { mutableStateOf(false) }
 
     val languageOptions = remember {
         listOf(
@@ -182,11 +198,7 @@ fun SettingsScreen(
     val effectiveLanguageTag = appLocaleTags.ifBlank { Locale.getDefault().toLanguageTag() }
 
     LaunchedEffect(Unit) {
-        val status = UserMessagingPlatform
-            .getConsentInformation(context)
-            .privacyOptionsRequirementStatus
-        isPrivacyOptionsRequired =
-            status == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+        isPrivacyOptionsRequired = adManager.privacyOptionsRequired.value
     }
 
     Box(
@@ -303,6 +315,7 @@ fun SettingsScreen(
                 val isDebugBuild = remember(context) {
                     (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
                 }
+                val debugGeography by adManager.debugGeography.collectAsStateWithLifecycle()
                 var debugFcmToken by remember(preferences.lastPushToken) {
                     mutableStateOf(preferences.lastPushToken)
                 }
@@ -326,6 +339,16 @@ fun SettingsScreen(
                     uncheckedThumbColor = colorScheme.onSurfaceVariant,
                     uncheckedTrackColor = colorScheme.surfaceVariant
                 )
+                val currentAgeGateStatus = remember(preferences.adsAgeGateStatus) {
+                    AdAgeGateStatus.fromStorage(preferences.adsAgeGateStatus)
+                }
+                val ageGateOptions = remember {
+                    listOf(
+                        AdAgeGateStatus.UNKNOWN to R.string.settings_ads_age_unknown,
+                        AdAgeGateStatus.UNDER_16 to R.string.settings_ads_age_under_16,
+                        AdAgeGateStatus.AGE_16_OR_OVER to R.string.settings_ads_age_16_or_over,
+                    )
+                }
 
                 Column(
                     modifier = Modifier
@@ -379,47 +402,98 @@ fun SettingsScreen(
                         modifier = Modifier.padding(horizontal = dimens.space16)
                     )
 
-                    if (isPrivacyOptionsRequired) {
-                        ListItem(
-                            headlineContent = {
-                                Text(stringResource(R.string.settings_privacy_options))
-                            },
-                            supportingContent = {
-                                Text(stringResource(R.string.settings_privacy_options_desc))
-                            },
-                            trailingContent = {
-                                TextButton(
-                                    onClick = {
-                                        val hostActivity = activity
-                                        if (hostActivity == null) {
-                                            showMessage(privacyOptionsUnavailableText)
-                                            return@TextButton
-                                        }
-                                        UserMessagingPlatform.showPrivacyOptionsForm(hostActivity) { formError ->
-                                            if (formError != null) {
-                                                showMessage(privacyOptionsErrorText)
-                                            } else {
-                                                onPrivacyOptionsUpdated()
-                                            }
-                                            val status = UserMessagingPlatform
-                                                .getConsentInformation(context)
-                                                .privacyOptionsRequirementStatus
-                                            isPrivacyOptionsRequired =
-                                                status == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
-                                        }
-                                    }
-                                ) {
-                                    Text(stringResource(R.string.settings_privacy_options_button))
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(R.string.settings_privacy_options))
+                        },
+                        supportingContent = {
+                            Text(
+                                if (isPrivacyOptionsRequired) {
+                                    stringResource(R.string.settings_privacy_options_desc_required)
+                                } else {
+                                    stringResource(R.string.settings_privacy_options_desc_optional)
                                 }
-                            },
-                            colors = listItemColors
-                        )
+                            )
+                        },
+                        trailingContent = {
+                            TextButton(
+                                onClick = {
+                                    val hostActivity = activity
+                                    if (hostActivity == null) {
+                                        showMessage(privacyOptionsUnavailableText)
+                                        return@TextButton
+                                    }
+                                    adManager.showPrivacyOptions(hostActivity) { success ->
+                                        if (success) {
+                                            onPrivacyOptionsUpdated()
+                                            showMessage(privacyOptionsSavedText)
+                                        } else {
+                                            showMessage(privacyOptionsErrorText)
+                                        }
+                                        isPrivacyOptionsRequired = adManager.privacyOptionsRequired.value
+                                    }
+                                }
+                            ) {
+                                Text(stringResource(R.string.settings_privacy_options_button))
+                            }
+                        },
+                        colors = listItemColors
+                    )
 
-                        HorizontalDivider(
-                            color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
-                        )
-                    }
+                    HorizontalDivider(
+                        color = colorScheme.outline.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(horizontal = dimens.space16)
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(R.string.settings_ads_age_gate_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.settings_ads_age_gate_desc))
+                        },
+                        trailingContent = {
+                            Box {
+                                TextButton(onClick = { ageGateMenuExpanded = true }) {
+                                    Text(
+                                        text = stringResource(
+                                            ageGateOptions.firstOrNull { it.first == currentAgeGateStatus }?.second
+                                                ?: R.string.settings_ads_age_unknown,
+                                        ),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = ageGateMenuExpanded,
+                                    onDismissRequest = { ageGateMenuExpanded = false },
+                                ) {
+                                    ageGateOptions.forEach { (status, labelRes) ->
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(labelRes)) },
+                                            onClick = {
+                                                ageGateMenuExpanded = false
+                                                onAdsAgeGateChanged(status)
+                                                val hostActivity = activity
+                                                if (hostActivity != null) {
+                                                    adManager.onAdsConfigChanged(hostActivity) { _ ->
+                                                        onPrivacyOptionsUpdated()
+                                                        showMessage(adsConfigUpdatedText)
+                                                        isPrivacyOptionsRequired =
+                                                            adManager.privacyOptionsRequired.value
+                                                    }
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        colors = listItemColors,
+                    )
+
+                    HorizontalDivider(
+                        color = colorScheme.outline.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(horizontal = dimens.space16)
+                    )
 
                     // Dark Mode toggle
                     ListItem(
@@ -561,6 +635,148 @@ fun SettingsScreen(
                     }
 
                     if (isDebugBuild) {
+                        Spacer(modifier = Modifier.height(dimens.space8))
+
+                        AppCard(
+                            modifier = Modifier.padding(horizontal = dimens.space8),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                contentColor = colorScheme.onSurfaceVariant,
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(dimens.space16)) {
+                                Text(
+                                    text = stringResource(R.string.settings_ads_debug_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space4))
+                                Text(
+                                    text = stringResource(R.string.settings_ads_debug_desc),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                Text(
+                                    text = stringResource(
+                                        R.string.settings_ads_debug_geo_status,
+                                        debugGeography.name,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space12))
+                                AppButton(
+                                    text = stringResource(R.string.settings_ads_debug_open_inspector),
+                                    onClick = {
+                                        val hostActivity = activity
+                                        if (hostActivity == null) {
+                                            showMessage(privacyOptionsUnavailableText)
+                                            return@AppButton
+                                        }
+                                        adManager.openAdInspector(hostActivity) { error ->
+                                            showMessage(
+                                                if (error == null) {
+                                                    adInspectorOpenedText
+                                                } else {
+                                                    "$adInspectorErrorText: $error"
+                                                },
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.primary,
+                                        contentColor = colorScheme.onPrimary,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                AppButton(
+                                    text = stringResource(R.string.settings_ads_debug_reset_consent),
+                                    onClick = {
+                                        onResetConsent()
+                                        showMessage(consentResetText)
+                                        val hostActivity = activity
+                                        if (hostActivity != null) {
+                                            adManager.onAdsConfigChanged(hostActivity) {
+                                                onPrivacyOptionsUpdated()
+                                                isPrivacyOptionsRequired =
+                                                    adManager.privacyOptionsRequired.value
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.secondary,
+                                        contentColor = colorScheme.onSecondary,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                AppButton(
+                                    text = stringResource(R.string.settings_ads_debug_show_consent_form),
+                                    onClick = {
+                                        val hostActivity = activity ?: return@AppButton
+                                        adManager.showConsentFormIfRequired(hostActivity) { success ->
+                                            onPrivacyOptionsUpdated()
+                                            showMessage(
+                                                if (success) consentFormShownText else consentFormErrorText,
+                                            )
+                                            isPrivacyOptionsRequired =
+                                                adManager.privacyOptionsRequired.value
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.primary,
+                                        contentColor = colorScheme.onPrimary,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    AppButton(
+                                        text = stringResource(R.string.settings_ads_debug_force_eea),
+                                        onClick = {
+                                            onSetConsentDebugGeography(UmpDebugGeography.EEA)
+                                            showMessage("UMP debug geography: EEA")
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.tertiary,
+                                            contentColor = colorScheme.onTertiary,
+                                        ),
+                                    )
+                                    Spacer(modifier = Modifier.width(dimens.space8))
+                                    AppButton(
+                                        text = stringResource(R.string.settings_ads_debug_force_us),
+                                        onClick = {
+                                            onSetConsentDebugGeography(UmpDebugGeography.US_STATES)
+                                            showMessage("UMP debug geography: US_STATES")
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.tertiary,
+                                            contentColor = colorScheme.onTertiary,
+                                        ),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                AppButton(
+                                    text = stringResource(R.string.settings_ads_debug_clear_geo),
+                                    onClick = {
+                                        onSetConsentDebugGeography(UmpDebugGeography.NONE)
+                                        showMessage("UMP debug geography cleared")
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.surface,
+                                        contentColor = colorScheme.onSurface,
+                                    ),
+                                )
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(dimens.space8))
 
                         AppCard(

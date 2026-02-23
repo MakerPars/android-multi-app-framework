@@ -6,7 +6,6 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,18 +22,27 @@ import javax.inject.Singleton
 @Singleton
 class RewardedInterstitialAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val adRevenueLogger: AdRevenueLogger,
 ) {
-    companion object;
-
     private var rewardedInterstitialAd: RewardedInterstitialAd? = null
     private var isLoading = false
+    private var currentPlacement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT
+    private var currentRoute: String? = null
+    private var loadBackoffState = AdLoadBackoffState()
 
-    fun loadAd(adUnitId: String) {
+    fun loadAd(
+        adUnitId: String,
+        placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+        route: String? = null,
+    ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             clearAd()
             return
         }
+        if (!AdLoadBackoffPolicy.canLoad(SystemTimeProvider.nowMillis(), loadBackoffState)) return
         if (isLoading || rewardedInterstitialAd != null) return
+        currentPlacement = placement
+        currentRoute = route
 
         isLoading = true
         val adRequest = AdRequest.Builder().build()
@@ -46,13 +54,17 @@ class RewardedInterstitialAdManager @Inject constructor(
             object : RewardedInterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedInterstitialAd) {
                     Timber.d("Ad loaded: $adUnitId")
-                    ad.onPaidEventListener = OnPaidEventListener { value ->
-                        Timber.i(
-                            "RewardedInterstitial paid event (%s): micros=%d currency=%s precision=%d",
-                            adUnitId,
-                            value.valueMicros,
-                            value.currencyCode,
-                            value.precisionType,
+                    loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
+                    ad.onPaidEventListener = { value ->
+                        adRevenueLogger.logPaidEvent(
+                            AdPaidEventContext(
+                                adUnitId = ad.adUnitId,
+                                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                                placement = currentPlacement,
+                                route = currentRoute,
+                                adValue = value,
+                                responseMeta = adRevenueLogger.extractResponseMeta(ad.responseInfo),
+                            ),
                         )
                     }
                     val responseInfo = ad.responseInfo
@@ -70,6 +82,11 @@ class RewardedInterstitialAdManager @Inject constructor(
                     Timber.w("Failed to load: ${error.message}")
                     rewardedInterstitialAd = null
                     isLoading = false
+                    loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
+                        nowMillis = SystemTimeProvider.nowMillis(),
+                        current = loadBackoffState,
+                        errorCode = error.code,
+                    )
                 }
             },
         )
@@ -111,6 +128,21 @@ class RewardedInterstitialAdManager @Inject constructor(
 
             override fun onAdImpression() {
                 Timber.d("RewardedInterstitial impression recorded")
+                adRevenueLogger.logImpression(
+                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = currentRoute,
+                )
+            }
+
+            override fun onAdClicked() {
+                adRevenueLogger.logClick(
+                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = currentRoute,
+                )
             }
         }
 

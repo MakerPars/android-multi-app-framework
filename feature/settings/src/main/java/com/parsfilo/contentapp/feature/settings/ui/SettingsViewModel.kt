@@ -6,6 +6,9 @@ import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.datastore.UserPreferencesData
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logAppShared
+import com.parsfilo.contentapp.feature.ads.AdAgeGateStatus
+import com.parsfilo.contentapp.feature.ads.AdManager
+import com.parsfilo.contentapp.feature.ads.UmpDebugGeography
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +21,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val preferencesDataSource: PreferencesDataSource,
     private val appAnalytics: AppAnalytics,
+    private val adManager: AdManager,
 ) : ViewModel() {
 
     init {
@@ -55,6 +59,23 @@ class SettingsViewModel @Inject constructor(
     fun logShareApp(platform: String) {
         appAnalytics.logAppShared(platform = platform)
     }
+
+    fun setAdsAgeGateStatus(status: AdAgeGateStatus) {
+        viewModelScope.launch {
+            preferencesDataSource.setAdsAgeGateStatus(status.storageValue)
+            preferencesDataSource.setAdsAgeGatePromptCompleted(true)
+        }
+    }
+
+    fun setConsentDebugGeography(geography: UmpDebugGeography) {
+        adManager.setConsentDebugGeography(geography)
+    }
+
+    fun resetConsent() {
+        adManager.resetConsent()
+    }
+
+    fun adManager(): AdManager = adManager
 }
 
 sealed interface SettingsUiState {

@@ -2,6 +2,8 @@ package com.parsfilo.contentapp.monetization
 
 import android.content.Context
 import com.parsfilo.contentapp.R
+import com.parsfilo.contentapp.feature.ads.AdFormat
+import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdUnitIds
 
 /**
@@ -48,6 +50,34 @@ object AppAdUnitIds {
             )
         }
     }
+
+    fun resolvePlacement(
+        context: Context,
+        placement: AdPlacement,
+        useTestAds: Boolean,
+    ): String {
+        val ids = resolve(context, useTestAds)
+        val placementValue = placement.resourceName
+            ?.let { stringByNameOrNull(context, it) }
+            ?.takeIf { it.isNotBlank() }
+        return placementOrDefault(placementValue, ids, placement.format)
+    }
+
+    internal fun defaultIdForFormat(ids: Ids, format: AdFormat): String =
+        when (format) {
+            AdFormat.BANNER -> ids.banner
+            AdFormat.NATIVE -> ids.native
+            AdFormat.INTERSTITIAL -> ids.interstitial
+            AdFormat.APP_OPEN -> ids.appOpen
+            AdFormat.REWARDED -> ids.rewarded
+            AdFormat.REWARDED_INTERSTITIAL -> ids.rewardedInterstitial
+        }
+
+    internal fun placementOrDefault(
+        placementValue: String?,
+        ids: Ids,
+        format: AdFormat,
+    ): String = placementValue?.takeIf { it.isNotBlank() } ?: defaultIdForFormat(ids, format)
 
     private fun stringByNameOrNull(context: Context, name: String): String? {
         val resId = context.resources.getIdentifier(name, "string", context.packageName)

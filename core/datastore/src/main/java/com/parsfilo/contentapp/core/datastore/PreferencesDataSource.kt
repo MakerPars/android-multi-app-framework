@@ -47,6 +47,14 @@ class PreferencesDataSource @Inject constructor(
         it[PreferencesKeys.ZIKIR_DAILY_GOAL] ?: 100
     }
 
+    val adsAgeGateStatus: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_AGE_GATE_STATUS] ?: "UNKNOWN"
+    }
+
+    val adsAgeGatePromptCompleted: Flow<Boolean> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] ?: false
+    }
+
     val zikirStreakReminderEnabled: Flow<Boolean> = userPreferences.data.map {
         it[PreferencesKeys.ZIKIR_STREAK_REMINDER] ?: true
     }
@@ -93,7 +101,9 @@ class PreferencesDataSource @Inject constructor(
             notificationPermissionPrompted = preferences[PreferencesKeys.NOTIFICATION_PERMISSION_PROMPTED] ?: false,
             installationId = preferences[PreferencesKeys.INSTALLATION_ID] ?: "",
             lastPushSyncAt = preferences[PreferencesKeys.LAST_PUSH_SYNC_AT] ?: 0L,
-            lastPushToken = preferences[PreferencesKeys.LAST_PUSH_TOKEN] ?: ""
+            lastPushToken = preferences[PreferencesKeys.LAST_PUSH_TOKEN] ?: "",
+            adsAgeGateStatus = preferences[PreferencesKeys.ADS_AGE_GATE_STATUS] ?: "UNKNOWN",
+            adsAgeGatePromptCompleted = preferences[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] ?: false,
         )
     }
 
@@ -250,6 +260,14 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { it[PreferencesKeys.QURAN_FONT_SIZE] = size }
     }
 
+    suspend fun setAdsAgeGateStatus(status: String) {
+        userPreferences.edit { it[PreferencesKeys.ADS_AGE_GATE_STATUS] = status }
+    }
+
+    suspend fun setAdsAgeGatePromptCompleted(completed: Boolean) {
+        userPreferences.edit { it[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] = completed }
+    }
+
     private object PreferencesKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val DISPLAY_MODE = stringPreferencesKey("display_mode")
@@ -264,6 +282,8 @@ class PreferencesDataSource @Inject constructor(
         val INSTALLATION_ID = stringPreferencesKey("installation_id")
         val LAST_PUSH_SYNC_AT = longPreferencesKey("last_push_sync_at")
         val LAST_PUSH_TOKEN = stringPreferencesKey("last_push_token")
+        val ADS_AGE_GATE_STATUS = stringPreferencesKey("ads_age_gate_status")
+        val ADS_AGE_GATE_PROMPT_COMPLETED = booleanPreferencesKey("ads_age_gate_prompt_completed")
         val OTHER_APPS_BADGE_SEEN_SIGNATURE = stringPreferencesKey("other_apps_badge_seen_signature")
 
         val ZIKIR_HAPTIC = booleanPreferencesKey("zikir_haptic")
@@ -299,5 +319,7 @@ data class UserPreferencesData(
     val notificationPermissionPrompted: Boolean = false,
     val installationId: String = "",
     val lastPushSyncAt: Long = 0L,
-    val lastPushToken: String = ""
+    val lastPushToken: String = "",
+    val adsAgeGateStatus: String = "UNKNOWN",
+    val adsAgeGatePromptCompleted: Boolean = false,
 )
