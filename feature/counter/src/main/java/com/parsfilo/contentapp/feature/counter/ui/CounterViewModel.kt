@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
@@ -60,7 +62,9 @@ class CounterViewModel @Inject constructor(
 
     private fun loadInitialData() {
         viewModelScope.launch(Dispatchers.IO) {
-            val zikirList = zikirRepository.getZikirList()
+            val baseZikirList = zikirRepository.getZikirList()
+            val customItems = parseCustomZikirItems(preferencesDataSource.customZikirItemsJson.first())
+            val zikirList = (baseZikirList + customItems).distinctBy { it.key }
             val selectedKey = preferencesDataSource.lastSelectedZikirKey.first()
             val selected = zikirList.firstOrNull { it.key == selectedKey } ?: zikirList.firstOrNull()
             _uiState.value = _uiState.value.copy(
@@ -68,6 +72,7 @@ class CounterViewModel @Inject constructor(
                 zikirList = zikirList,
                 selectedZikir = selected,
                 targetCount = selected?.defaultTarget ?: _uiState.value.targetCount,
+                showZikirSelector = zikirList.isNotEmpty(),
             )
         }
     }
@@ -248,6 +253,45 @@ class CounterViewModel @Inject constructor(
         }
     }
 
+    fun onAddCustomZikir(
+        arabicText: String,
+        latinText: String,
+        turkishMeaning: String,
+        defaultTarget: Int,
+    ) {
+        val arabic = arabicText.trim()
+        val latin = latinText.trim()
+        val meaning = turkishMeaning.trim()
+        if (arabic.isBlank() && latin.isBlank()) return
+
+        val normalizedTarget = defaultTarget.coerceAtLeast(1)
+        val item = ZikirItem(
+            key = "$CUSTOM_ZIKIR_KEY_PREFIX${System.currentTimeMillis()}",
+            arabicText = arabic,
+            latinText = if (latin.isNotBlank()) latin else arabic,
+            turkishMeaning = meaning,
+            defaultTarget = normalizedTarget,
+            virtue = "",
+            virtueSource = "",
+        )
+
+        val updatedList = (_uiState.value.zikirList + item).distinctBy { it.key }
+        _uiState.value = _uiState.value.copy(
+            zikirList = updatedList,
+            selectedZikir = item,
+            targetCount = normalizedTarget,
+            currentCount = 0,
+            isSessionActive = false,
+            sessionStartTime = 0L,
+            showZikirSelector = false,
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            preferencesDataSource.setCustomZikirItemsJson(serializeCustomZikirItems(updatedList))
+            preferencesDataSource.setLastSelectedZikirKey(item.key)
+        }
+    }
+
     fun onResetCurrentCount() {
         _uiState.value = _uiState.value.copy(
             currentCount = 0,
@@ -417,6 +461,50 @@ class CounterViewModel @Inject constructor(
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(nowMs)
     }
 
+    private fun parseCustomZikirItems(raw: String): List<ZikirItem> {
+        if (raw.isBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val obj = array.optJSONObject(index) ?: continue
+                    val key = obj.optString("key")
+                    if (!key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX)) continue
+                    add(
+                        ZikirItem(
+                            key = key,
+                            arabicText = obj.optString("arabicText"),
+                            latinText = obj.optString("latinText"),
+                            turkishMeaning = obj.optString("turkishMeaning"),
+                            defaultTarget = obj.optInt("defaultTarget", 33).coerceAtLeast(1),
+                            virtue = obj.optString("virtue"),
+                            virtueSource = obj.optString("virtueSource"),
+                        )
+                    )
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun serializeCustomZikirItems(items: List<ZikirItem>): String {
+        val array = JSONArray()
+        items
+            .filter { it.key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX) }
+            .forEach { item ->
+                val obj = JSONObject().apply {
+                    put("key", item.key)
+                    put("arabicText", item.arabicText)
+                    put("latinText", item.latinText)
+                    put("turkishMeaning", item.turkishMeaning)
+                    put("defaultTarget", item.defaultTarget)
+                    put("virtue", item.virtue)
+                    put("virtueSource", item.virtueSource)
+                }
+                array.put(obj)
+            }
+        return array.toString()
+    }
+
     private data class PreferenceSnapshot(
         val isHapticEnabled: Boolean,
         val isSoundEnabled: Boolean,
@@ -431,6 +519,7 @@ class CounterViewModel @Inject constructor(
     companion object {
         private const val MIN_INTERSTITIAL_GAP_MS = 15 * 60 * 1000L
         private const val MAX_INTERSTITIAL_PER_DAY = 2
+        private const val CUSTOM_ZIKIR_KEY_PREFIX = "custom_"
     }
 }
 

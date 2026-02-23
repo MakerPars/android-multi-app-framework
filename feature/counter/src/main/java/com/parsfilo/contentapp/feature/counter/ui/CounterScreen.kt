@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -59,7 +60,7 @@ import com.parsfilo.contentapp.feature.counter.ui.components.SessionCompleteDial
 import com.parsfilo.contentapp.feature.counter.ui.components.SessionHistorySheet
 import com.parsfilo.contentapp.feature.counter.ui.components.SharePreviewCard
 import com.parsfilo.contentapp.feature.counter.ui.components.StreakBadge
-import com.parsfilo.contentapp.feature.counter.ui.components.ZikirSelectorSheet
+import com.parsfilo.contentapp.feature.counter.ui.components.ZikirSelectorPage
 import com.parsfilo.contentapp.feature.counter.ui.components.ZikirTextCard
 import kotlinx.coroutines.launch
 
@@ -73,6 +74,7 @@ fun CounterScreen(
     onShareSession: () -> Unit,
     onZikirSelectorToggle: () -> Unit,
     onZikirSelected: (ZikirItem) -> Unit,
+    onAddCustomZikir: (arabicText: String, latinText: String, turkishMeaning: String, defaultTarget: Int) -> Unit,
     onDismissSessionComplete: () -> Unit,
     onShareConfirmed: () -> Unit,
     onShareDismissed: () -> Unit,
@@ -113,6 +115,17 @@ fun CounterScreen(
         }
     }
 
+    if (uiState.showZikirSelector) {
+        ZikirSelectorPage(
+            zikirList = uiState.zikirList,
+            selectedKey = uiState.selectedZikir?.key,
+            onSelect = onZikirSelected,
+            onDismiss = onZikirSelectorToggle,
+            onAddCustomZikir = onAddCustomZikir,
+        )
+        return
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -120,6 +133,7 @@ fun CounterScreen(
             CounterTopBar(
                 onReminderClick = onReminderSettingsToggle,
                 onHistoryClick = onSessionHistoryToggle,
+                onZikirListClick = onZikirSelectorToggle,
                 onSettingsClick = onSettingsClick,
                 onRewardsClick = onRewardsClick,
                 isHapticEnabled = uiState.isHapticEnabled,
@@ -218,15 +232,6 @@ fun CounterScreen(
         }
     }
 
-    if (uiState.showZikirSelector) {
-        ZikirSelectorSheet(
-            zikirList = uiState.zikirList,
-            selectedKey = uiState.selectedZikir?.key,
-            onSelect = onZikirSelected,
-            onDismiss = onZikirSelectorToggle,
-        )
-    }
-
     if (uiState.showReminderSettings) {
         ReminderSettingsSheet(
             initialSettings = uiState.reminderSettings,
@@ -287,6 +292,7 @@ fun CounterScreen(
 private fun CounterTopBar(
     onReminderClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onZikirListClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onRewardsClick: () -> Unit,
     isHapticEnabled: Boolean,
@@ -309,6 +315,12 @@ private fun CounterTopBar(
                 Icon(
                     imageVector = Icons.Filled.BarChart,
                     contentDescription = stringResource(R.string.counter_history_title),
+                )
+            }
+            IconButton(onClick = onZikirListClick) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = stringResource(R.string.counter_open_zikir_list),
                 )
             }
             IconButton(onClick = { expanded = true }) {

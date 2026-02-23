@@ -13,6 +13,14 @@
     <string name="counter_today_total">Heute: %s Dhikr</string>
 
     <string name="counter_selector_title">Dhikr auswählen</string>
+    <string name="counter_open_zikir_list">Zur Dhikr-Liste zurück</string>
+    <string name="counter_add_zikir">Dhikr hinzufügen</string>
+    <string name="counter_add_zikir_title">Neuen Dhikr hinzufügen</string>
+    <string name="counter_add_zikir_arabic">Arabischer Text</string>
+    <string name="counter_add_zikir_latin">Lateinische Umschrift</string>
+    <string name="counter_add_zikir_meaning">Bedeutung</string>
+    <string name="counter_add_zikir_target">Zielanzahl</string>
+    <string name="counter_cancel">Abbrechen</string>
     <string name="counter_recommended_target">Empfohlen: %d Wiederholungen</string>
 
     <string name="counter_session_done_title">🤲 MashaAllah!</string>
