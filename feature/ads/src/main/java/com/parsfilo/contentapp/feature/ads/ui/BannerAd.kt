@@ -9,6 +9,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -16,6 +17,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import kotlin.math.max
 
 @SuppressLint("MissingPermission")
@@ -24,6 +26,9 @@ fun BannerAd(
     adUnitId: String,
     modifier: Modifier = Modifier,
 ) {
+    val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
+    if (!canRequestAds) return
+
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
     val adWidthDp: Int = with(density) {

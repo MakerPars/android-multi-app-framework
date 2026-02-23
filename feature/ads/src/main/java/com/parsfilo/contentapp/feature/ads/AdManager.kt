@@ -68,6 +68,7 @@ class AdManager @Inject constructor(
      */
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
         onAdsInitialized = onReady
+        AdsConsentRuntimeState.update(false)
 
         val params = ConsentRequestParameters.Builder()
             .setTagForUnderAgeOfConsent(false)
@@ -87,9 +88,11 @@ class AdManager @Inject constructor(
                         )
                     }
                     if (consentInformation.canRequestAds()) {
+                        AdsConsentRuntimeState.update(true)
                         _consentStatus.value = ConsentStatus.Obtained
                         initializeMobileAdsSdk()
                     } else {
+                        AdsConsentRuntimeState.update(false)
                         _consentStatus.value = ConsentStatus.Required
                     }
                 }
@@ -99,13 +102,17 @@ class AdManager @Inject constructor(
                 _consentStatus.value = ConsentStatus.Error(
                     requestConsentError.message ?: "Consent info update failed"
                 )
+                AdsConsentRuntimeState.update(consentInformation.canRequestAds())
             },
         )
 
         // Pre-consent reklam yükleme (consent zaten verilmişse)
         if (consentInformation.canRequestAds()) {
+            AdsConsentRuntimeState.update(true)
             _consentStatus.value = ConsentStatus.NotRequired
             initializeMobileAdsSdk()
+        } else {
+            AdsConsentRuntimeState.update(false)
         }
     }
 
@@ -120,6 +127,7 @@ class AdManager @Inject constructor(
         initScope.launch {
             MobileAds.initialize(context) { initStatus ->
                 Timber.d("MobileAds initialized: ${initStatus.adapterStatusMap}")
+                AdsConsentRuntimeState.update(true)
                 _isSdkReady.value = true
                 // Invoke and immediately null out to prevent Activity leak
                 onAdsInitialized?.invoke()

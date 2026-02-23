@@ -80,6 +80,12 @@ Referans:
 - Bu, Google dokümantasyonundaki TFUA notuyla uyumlu:
   UMP etiketi tek başına ad isteği tarafına otomatik taşınmaz.
 
+6. Consent sonucu gelmeden banner ad request gönderimi kapatıldı:
+- `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/AdsConsentRuntimeState.kt`
+- `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/ui/BannerAd.kt`
+- `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/AdManager.kt`
+- Varsayılan durum `canRequestAds=false`; UMP olumlu sonuç vermeden banner yüklenmez.
+
 ## Resmi örneklerle eşleme (GoogleAds Android Examples)
 
 Bu repo AdMob ad unit (`ca-app-pub-...`) kullandığı için yükleme tarafında
@@ -143,6 +149,21 @@ python SECRET/ADMOB_KOTNROL/admob_checker.py --client-secret SECRET/ADMOB_KOTNRO
 - https://developers.google.com/admob/android/privacy
 - https://developers.google.com/admob/android/privacy/gdpr
 - https://developers.google.com/admob/android/privacy/options
+
+## Uyum durumu (kod + panel)
+
+Koddan tamamlananlar:
+- UMP consent her açılışta çağrılıyor.
+- Consent yoksa ad SDK initialize akışı bloke.
+- Privacy options form (gerekli ülkelerde) Settings ekranından açılabiliyor.
+- TFUA bilgisi `RequestConfiguration` ile ad request katmanına uygulanıyor.
+- Banner ad request'leri, consent sonucu gelene kadar gönderilmiyor.
+
+AdMob panelde manuel zorunlu olanlar:
+- `Privacy & messaging` altında GDPR ve US States mesajlarını oluşturup yayınlamak.
+- Her mesaj tipinde hedef ülkeler/eyaletler ve dil kapsamını doğru seçmek.
+- Test cihazlarında UMP formunun görünüp kapanabildiğini doğrulamak.
+- Play Console veri güvenliği formunu bu davranışla uyumlu doldurmak.
 
 ## Android gelir/teşhis referansları
 - Rewarded: https://developers.google.com/admob/android/rewarded
