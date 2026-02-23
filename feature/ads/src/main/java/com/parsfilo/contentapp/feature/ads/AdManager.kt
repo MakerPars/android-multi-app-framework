@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.feature.ads
 import android.app.Activity
 import android.content.Context
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
@@ -113,6 +114,8 @@ class AdManager @Inject constructor(
             return
         }
 
+        applyGlobalRequestConfiguration()
+
         // Main thread blocking issues fixed by moving to IO dispatcher
         initScope.launch {
             MobileAds.initialize(context) { initStatus ->
@@ -124,6 +127,15 @@ class AdManager @Inject constructor(
                 initScope.cancel()
             }
         }
+    }
+
+    private fun applyGlobalRequestConfiguration() {
+        // Keep current config values and explicitly propagate TFUA flag to ad requests.
+        val requestConfiguration = MobileAds.getRequestConfiguration()
+            .toBuilder()
+            .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE)
+            .build()
+        MobileAds.setRequestConfiguration(requestConfiguration)
     }
 }
 

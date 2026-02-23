@@ -70,8 +70,32 @@ Referans:
   - parametreli eşikler
   - `inventory` check (v1 + v1beta görünümü)
   - token cache varsayılanı repo dışı
-- `admob_debug.py`
+  - `admob_debug.py`
   - OAuth tabanlı hızlı API erişim testi
+
+5. Resmi privacy standardına göre global ad request konfigürasyonu eklendi:
+- `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/AdManager.kt`
+- UMP tarafındaki `setTagForUnderAgeOfConsent(false)` bilgisi, ad isteklerine de
+  `MobileAds.setRequestConfiguration(...)` ile yansıtılıyor.
+- Bu, Google dokümantasyonundaki TFUA notuyla uyumlu:
+  UMP etiketi tek başına ad isteği tarafına otomatik taşınmaz.
+
+## Resmi örneklerle eşleme (GoogleAds Android Examples)
+
+Bu repo AdMob ad unit (`ca-app-pub-...`) kullandığı için yükleme tarafında
+`AdRequest.Builder()` ile devam eder; Ad Manager örneklerindeki
+`AdManagerAdRequest` yalnız GAM envanteri içindir.
+
+- APIDemo:
+  `kotlin/advanced/APIDemo/.../MainActivity.kt`
+  ve `.../snippets/RequestConfigurationSnippets.kt`
+  → `MobileAds.getRequestConfiguration().toBuilder()` + `setRequestConfiguration`.
+- AdManager örnekleri (AppOpen/Banner/Interstitial/Rewarded/Native):
+  UMP gather + privacy options + request configuration + sonra SDK init pattern’i.
+- Bizdeki karşılığı:
+  `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/AdManager.kt`
+  ve
+  `feature/settings/src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt`.
 
 ## AdMob panelinde yapılanlar (bu oturum)
 
