@@ -27,7 +27,11 @@ class ZikirReminderNotifier @Inject constructor(
         val body = if (todayTotalCount <= 0) {
             context.getString(R.string.notif_reminder_body_no_activity)
         } else {
-            context.getString(R.string.notif_reminder_body_with_activity, todayTotalCount)
+            context.resources.getQuantityString(
+                R.plurals.notif_reminder_body_with_activity,
+                todayTotalCount,
+                todayTotalCount,
+            )
         }
         showNotification(
             notificationId = 94001,
@@ -40,7 +44,11 @@ class ZikirReminderNotifier @Inject constructor(
         showNotification(
             notificationId = 94002,
             title = context.getString(R.string.notif_streak_title),
-            body = context.getString(R.string.notif_streak_body, streak),
+            body = context.resources.getQuantityString(
+                R.plurals.notif_streak_body,
+                streak,
+                streak,
+            ),
         )
     }
 
@@ -48,7 +56,11 @@ class ZikirReminderNotifier @Inject constructor(
         showNotification(
             notificationId = 94003,
             title = context.getString(R.string.notif_goal_done_title),
-            body = context.getString(R.string.notif_goal_done_body, goal),
+            body = context.resources.getQuantityString(
+                R.plurals.notif_goal_done_body,
+                goal,
+                goal,
+            ),
         )
     }
 

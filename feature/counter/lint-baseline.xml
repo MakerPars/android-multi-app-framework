@@ -2,50 +2,6 @@
 <issues format="6" by="lint 9.0.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.0.1)" variant="all" version="9.0.1">
 
     <issue
-        id="MissingPermission"
-        message="Setting Exact alarms with `setExactAndAllowWhileIdle` requires the `SCHEDULE_EXACT_ALARM` permission or power exemption from user; it is intended for applications where the user knowingly schedules actions to happen at a precise time such as alarms, clocks, calendars, etc. Check out the javadoc on this permission to make sure your use case is valid."
-        errorLine1="        alarmManager.setExactAndAllowWhileIdle("
-        errorLine2="        ^">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/alarm/ZikirReminderScheduler.kt"
-            line="34"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ComposableLambdaParameterNaming"
-        message="Composable lambda parameter should be named `content`"
-        errorLine1="    nativeAdContent: (@Composable () -> Unit)? = null,"
-        errorLine2="    ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/ui/components/SessionHistorySheet.kt"
-            line="33"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposableLambdaParameterNaming"
-        message="Composable lambda parameter should be named `content`"
-        errorLine1="    bannerAdContent: (@Composable () -> Unit)? = null,"
-        errorLine2="    ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/ui/components/ZikirSelectorSheet.kt"
-            line="54"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposableLambdaParameterPosition"
-        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
-        errorLine1="    nativeAdContent: (@Composable () -> Unit)? = null,"
-        errorLine2="    ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/ui/components/SessionHistorySheet.kt"
-            line="33"
-            column="5"/>
-    </issue>
-
-    <issue
         id="PluralsCandidate"
         message="Formatting %d followed by words (&quot;tamamlandı&quot;): This should probably be a plural rather than a string"
         errorLine1="    &lt;string name=&quot;counter_daily_goal_progress&quot;>%1$s / %2$s · %3$d tamamlandı&lt;/string>"
@@ -58,133 +14,12 @@
 
     <issue
         id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;repetitions&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_recommended_target&quot;>Recommended: %d repetitions&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="24"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;tekrar&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_recommended_target&quot;>Önerilen: %d tekrar&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="24"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
         message="Formatting %d followed by words (&quot;sec&quot;): This should probably be a plural rather than a string"
         errorLine1="    &lt;string name=&quot;counter_duration_minutes_seconds&quot;>%1$d min %2$d sec&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values-en/strings.xml"
-            line="32"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;sec&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_duration_seconds&quot;>%d sec&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="33"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;sec&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_session_seconds_format&quot;>%d sec&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="34"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;dhikr&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_daily_goal_label&quot;>Daily Goal: %d dhikr&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="39"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;zikir&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_daily_goal_label&quot;>Günlük Hedef: %d zikir&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="39"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;dhikr&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;notif_reminder_body_with_activity&quot;>You did %d dhikr today. Keep going! 🤲&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="54"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;zikir&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;notif_reminder_body_with_activity&quot;>Bugün %d zikir yaptınız. Devam edin! 🤲&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="54"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;day&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;notif_streak_body&quot;>Complete today’s dhikr to keep your %d day streak alive.&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="56"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;dhikr&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;notif_goal_done_body&quot;>You completed your daily goal of %d dhikr. Congratulations!&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="58"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;zikir&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;notif_goal_done_body&quot;>Günlük %d zikir hedefinizi tamamladınız. Tebrikler!&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="58"
+            line="38"
             column="5"/>
     </issue>
 
@@ -195,95 +30,8 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="60"
+            line="89"
             column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;dhikr&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_content_description_fab&quot;>%d dhikr counted. Tap to count.&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="81"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;zikir&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_content_description_fab&quot;>%d zikir sayıldı. Dokunarak say.&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="81"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="PluralsCandidate"
-        message="Formatting %d followed by words (&quot;day&quot;): This should probably be a plural rather than a string"
-        errorLine1="    &lt;string name=&quot;counter_content_description_streak&quot;>%d day streak&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="82"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="SyntheticAccessor"
-        message="Access to `private` method `toEntity` of class `ZikirRepositoryImplKt` requires synthetic accessor"
-        errorLine1="        zikirSessionDao.insert(session.toEntity())"
-        errorLine2="                               ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/data/ZikirRepositoryImpl.kt"
-            line="62"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="SyntheticAccessor"
-        message="Access to `private` method `toModel` of class `ZikirRepositoryImplKt` requires synthetic accessor"
-        errorLine1="            list.map { it.toModel() }"
-        errorLine2="                       ~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/counter/data/ZikirRepositoryImpl.kt"
-            line="67"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
-        message="Duplicate string value `%d Tage Serie`, used in `counter_content_description_streak` and `counter_streak_label`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
-        errorLine1="    &lt;string name=&quot;counter_streak_label&quot;>%d TAGE SERIE&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-de/strings.xml"
-            line="11"
-            column="5"/>
-        <location
-            file="src/main/res/values-de/strings.xml"
-            line="82"
-            column="5"
-            message="Duplicates value in `counter_streak_label` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
-        message="Duplicate string value `%d day streak`, used in `counter_content_description_streak` and `counter_streak_label`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
-        errorLine1="    &lt;string name=&quot;counter_streak_label&quot;>%d DAY STREAK&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="11"
-            column="5"/>
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="82"
-            column="5"
-            message="Duplicates value in `counter_streak_label` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
 
     <issue
@@ -293,11 +41,11 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="13"
+            line="16"
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="29"
+            line="35"
             column="5"
             message="Duplicates value in `counter_today_total`"/>
     </issue>
@@ -309,11 +57,11 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values-de/strings.xml"
-            line="13"
+            line="16"
             column="5"/>
         <location
             file="src/main/res/values-de/strings.xml"
-            line="29"
+            line="35"
             column="5"
             message="Duplicates value in `counter_today_total`"/>
     </issue>
@@ -325,61 +73,13 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values-en/strings.xml"
-            line="13"
+            line="16"
             column="5"/>
         <location
             file="src/main/res/values-en/strings.xml"
-            line="29"
+            line="35"
             column="5"
             message="Duplicates value in `counter_today_total`"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
-        message="Duplicate string value `%d sec`, used in `counter_duration_seconds` and `counter_session_seconds_format`"
-        errorLine1="    &lt;string name=&quot;counter_duration_seconds&quot;>%d sec&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="33"
-            column="5"/>
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="34"
-            column="5"
-            message="Duplicates value in `counter_duration_seconds`"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
-        message="Duplicate string value `%d sek`, used in `counter_duration_seconds` and `counter_session_seconds_format`"
-        errorLine1="    &lt;string name=&quot;counter_duration_seconds&quot;>%d sek&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-de/strings.xml"
-            line="33"
-            column="5"/>
-        <location
-            file="src/main/res/values-de/strings.xml"
-            line="34"
-            column="5"
-            message="Duplicates value in `counter_duration_seconds`"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
-        message="Duplicate string value `%d sn`, used in `counter_duration_seconds` and `counter_session_seconds_format`"
-        errorLine1="    &lt;string name=&quot;counter_duration_seconds&quot;>%d sn&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="33"
-            column="5"/>
-        <location
-            file="src/main/res/values/strings.xml"
-            line="34"
-            column="5"
-            message="Duplicates value in `counter_duration_seconds`"/>
     </issue>
 
 </issues>

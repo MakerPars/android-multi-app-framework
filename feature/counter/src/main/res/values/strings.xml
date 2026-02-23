@@ -8,7 +8,10 @@
     <string name="counter_daily_goal_progress">%1$s / %2$s · %3$d tamamlandı</string>
     <string name="counter_goal_complete">Günlük hedef tamamlandı! ✅</string>
 
-    <string name="counter_streak_label">%d GÜN</string>
+    <plurals name="counter_streak_label">
+        <item quantity="one">%d GÜN</item>
+        <item quantity="other">%d GÜN</item>
+    </plurals>
     <string name="counter_streak_none">Bugün zikir yap, serin başlasın</string>
     <string name="counter_today_total">Bugün: %s zikir</string>
 
@@ -21,7 +24,10 @@
     <string name="counter_add_zikir_meaning">Anlam</string>
     <string name="counter_add_zikir_target">Hedef tekrar</string>
     <string name="counter_cancel">İptal</string>
-    <string name="counter_recommended_target">Önerilen: %d tekrar</string>
+    <plurals name="counter_recommended_target">
+        <item quantity="one">Önerilen: %d tekrar</item>
+        <item quantity="other">Önerilen: %d tekrar</item>
+    </plurals>
 
     <string name="counter_session_done_title">🤲 Tebrikler!</string>
     <string name="counter_session_done_body">%1$d %2$s tamamlandı</string>
@@ -30,16 +36,30 @@
     <string name="counter_continue">Devam Et</string>
     <string name="counter_share_session">↗ Paylaş</string>
     <string name="counter_duration_minutes_seconds">%1$d dk %2$d sn</string>
-    <string name="counter_duration_seconds">%d sn</string>
-    <string name="counter_session_seconds_format">%d sn</string>
+    <plurals name="counter_duration_seconds">
+        <item quantity="one">%d sn</item>
+        <item quantity="other">%d sn</item>
+    </plurals>
+    <plurals name="counter_session_seconds_format">
+        <item quantity="one">%d sn</item>
+        <item quantity="other">%d sn</item>
+    </plurals>
 
     <string name="counter_reminder_title">Hatırlatıcı Ayarları</string>
     <string name="counter_reminder_daily">Günlük hatırlatıcı</string>
     <string name="counter_reminder_time_label">Saat</string>
-    <string name="counter_daily_goal_label">Günlük Hedef: %d zikir</string>
+    <plurals name="counter_daily_goal_label">
+        <item quantity="one">Günlük Hedef: %d zikir</item>
+        <item quantity="other">Günlük Hedef: %d zikir</item>
+    </plurals>
     <string name="counter_streak_reminder">Seri uyarısı (akşam 21:00)</string>
     <string name="counter_save">Kaydet</string>
     <string name="counter_reminder_saved">Hatırlatıcı ayarları kaydedildi</string>
+    <string name="counter_exact_alarm_permission_required">Tam saatinde hatırlatma için Alarmlar ve Hatırlatıcılar izni gerekir.</string>
+    <string name="counter_exact_alarm_permission_action">İzin ver</string>
+    <string name="counter_exact_alarm_settings_open_failed">İzin ekranı açılamadı.</string>
+    <string name="counter_exact_alarm_permission_granted">Tam zamanlı hatırlatma izni etkinleştirildi.</string>
+    <string name="counter_exact_alarm_permission_still_missing">Tam zamanlı hatırlatma izni verilmedi. Hatırlatıcı yaklaşık zamanda çalışacaktır.</string>
     <string name="counter_first_session_reminder_prompt">📿 Hatırlatıcı kurmak ister misiniz?</string>
     <string name="counter_first_session_reminder_action">Ayarla</string>
 
@@ -51,11 +71,20 @@
     <string name="notif_reminder_channel">Zikir Hatırlatıcıları</string>
     <string name="notif_reminder_title">📿 Zikir Vaktiniz</string>
     <string name="notif_reminder_body_no_activity">Bugün henüz zikir yapmadınız. Allah’ın zikretmek kalplere huzur verir.</string>
-    <string name="notif_reminder_body_with_activity">Bugün %d zikir yaptınız. Devam edin! 🤲</string>
+    <plurals name="notif_reminder_body_with_activity">
+        <item quantity="one">Bugün %d zikir yaptınız. Devam edin! 🤲</item>
+        <item quantity="other">Bugün %d zikir yaptınız. Devam edin! 🤲</item>
+    </plurals>
     <string name="notif_streak_title">🔥 Seriniz Kırılmak Üzere!</string>
-    <string name="notif_streak_body">%d günlük serinizi korumak için bugünkü zikirinizi yapın.</string>
+    <plurals name="notif_streak_body">
+        <item quantity="one">%d günlük serinizi korumak için bugünkü zikirinizi yapın.</item>
+        <item quantity="other">%d günlük serinizi korumak için bugünkü zikirinizi yapın.</item>
+    </plurals>
     <string name="notif_goal_done_title">✅ Hedef Tamamlandı!</string>
-    <string name="notif_goal_done_body">Günlük %d zikir hedefinizi tamamladınız. Tebrikler!</string>
+    <plurals name="notif_goal_done_body">
+        <item quantity="one">Günlük %d zikir hedefinizi tamamladınız. Tebrikler!</item>
+        <item quantity="other">Günlük %d zikir hedefinizi tamamladınız. Tebrikler!</item>
+    </plurals>
 
     <string name="share_text_template">🤲 %1$d kez %2$s zikri yaptım\n%3$s\n\n📊 Bugün toplam: %4$s zikir\n\n📿 Zikirmatik uygulamasıyla zikir alışkanlığı edinin\nhttps://play.google.com/store/apps/details?id=com.parsfilo.zikirmatik</string>
     <string name="counter_share_preview_title">Paylaşım Önizleme</string>
@@ -78,8 +107,14 @@
     <string name="counter_menu_more">Daha fazla seçenek</string>
     <string name="counter_select_time">Saat seçin</string>
     <string name="counter_goal_slider_value">Hedef: %d</string>
-    <string name="counter_content_description_fab">%d zikir sayıldı. Dokunarak say.</string>
-    <string name="counter_content_description_streak">%d günlük seri</string>
+    <plurals name="counter_content_description_fab">
+        <item quantity="one">%d zikir sayıldı. Dokunarak say.</item>
+        <item quantity="other">%d zikir sayıldı. Dokunarak say.</item>
+    </plurals>
+    <plurals name="counter_content_description_streak">
+        <item quantity="one">%d günlük seri</item>
+        <item quantity="other">%d günlük seri</item>
+    </plurals>
     <string name="counter_content_description_share">Zikir sonucunu paylaş</string>
     <string name="counter_copy">Kopyala</string>
 </resources>

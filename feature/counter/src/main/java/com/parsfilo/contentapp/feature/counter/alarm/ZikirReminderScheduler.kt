@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -12,6 +13,7 @@ import androidx.work.WorkManager
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import timber.log.Timber
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -23,18 +25,19 @@ class ZikirReminderScheduler @Inject constructor(
     private val preferencesDataSource: PreferencesDataSource,
 ) {
 
-    fun scheduleDaily(hour: Int, minute: Int) {
-        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
+    fun scheduleDaily(hour: Int, minute: Int): ReminderScheduleMode {
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+            ?: return ReminderScheduleMode.INEXACT_FALLBACK
         val pendingIntent = reminderPendingIntent(
             flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        ) ?: return
+        ) ?: return ReminderScheduleMode.INEXACT_FALLBACK
 
         val triggerAt = nextTriggerAt(hour = hour, minute = minute)
         alarmManager.cancel(pendingIntent)
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAt,
-            pendingIntent,
+        return scheduleAlarm(
+            alarmManager = alarmManager,
+            triggerAt = triggerAt,
+            pendingIntent = pendingIntent,
         )
     }
 
@@ -47,15 +50,26 @@ class ZikirReminderScheduler @Inject constructor(
         }
     }
 
-    suspend fun scheduleOrCancelFromPreferences() {
+    suspend fun scheduleOrCancelFromPreferences(): ReminderScheduleMode? {
         val enabled = preferencesDataSource.zikirReminderEnabled.first()
         if (!enabled) {
             cancel()
-            return
+            return null
         }
         val hour = preferencesDataSource.zikirReminderHour.first()
         val minute = preferencesDataSource.zikirReminderMinute.first()
-        scheduleDaily(hour, minute)
+        return scheduleDaily(hour, minute)
+    }
+
+    fun canRequestExactAlarmPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
+        return !canScheduleExactAlarmsNow()
+    }
+
+    fun canScheduleExactAlarmsNow(): Boolean {
+        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        return alarmManager.canScheduleExactAlarms()
     }
 
     fun scheduleStreakCheckWorker() {
@@ -109,9 +123,57 @@ class ZikirReminderScheduler @Inject constructor(
         return target.timeInMillis
     }
 
+    private fun scheduleAlarm(
+        alarmManager: AlarmManager,
+        triggerAt: Long,
+        pendingIntent: PendingIntent,
+    ): ReminderScheduleMode {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAt,
+                pendingIntent,
+            )
+            ReminderScheduleMode.EXACT
+        } else if (alarmManager.canScheduleExactAlarms()) {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAt,
+                    pendingIntent,
+                )
+                ReminderScheduleMode.EXACT
+            } catch (securityException: SecurityException) {
+                Timber.w(securityException, "Exact alarm denied at runtime; falling back to inexact scheduling")
+                scheduleInexact(alarmManager, triggerAt, pendingIntent)
+            }
+        } else {
+            scheduleInexact(alarmManager, triggerAt, pendingIntent)
+        }
+    }
+
+    private fun scheduleInexact(
+        alarmManager: AlarmManager,
+        triggerAt: Long,
+        pendingIntent: PendingIntent,
+    ): ReminderScheduleMode {
+        // Fallback avoids crashes when exact alarm special access is unavailable on Android 12+.
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAt,
+            pendingIntent,
+        )
+        return ReminderScheduleMode.INEXACT_FALLBACK
+    }
+
     companion object {
         const val ACTION_ZIKIR_REMINDER = "com.parsfilo.zikirmatik.ZIKIR_REMINDER"
         const val STREAK_WORK_NAME = "zikir_streak_check_work"
         private const val REQUEST_CODE_DAILY_REMINDER = 72041
     }
+}
+
+enum class ReminderScheduleMode {
+    EXACT,
+    INEXACT_FALLBACK,
 }

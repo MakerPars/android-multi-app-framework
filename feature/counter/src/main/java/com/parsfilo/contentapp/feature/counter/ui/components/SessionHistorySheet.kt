@@ -13,6 +13,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
@@ -30,9 +31,9 @@ fun SessionHistorySheet(
     sessions: List<ZikirSession>,
     isPremium: Boolean,
     historyUnlockedForSession: Boolean,
-    nativeAdContent: (@Composable () -> Unit)? = null,
     onUnlockWithAd: () -> Unit,
     onDismiss: () -> Unit,
+    content: (@Composable () -> Unit)? = null,
 ) {
     val d = LocalDimens.current
     val visibleSessions = if (isPremium || historyUnlockedForSession) sessions else sessions.take(10)
@@ -76,8 +77,8 @@ fun SessionHistorySheet(
                 ) {
                     itemsIndexed(visibleSessions, key = { _, item -> item.id }) { index, session ->
                         SessionHistoryItem(session)
-                        if (!isPremium && nativeAdContent != null && (index + 1) % 3 == 0) {
-                            nativeAdContent()
+                        if (!isPremium && content != null && (index + 1) % 3 == 0) {
+                            content()
                         }
                     }
                 }
@@ -106,8 +107,9 @@ private fun SessionHistoryItem(session: ZikirSession) {
                 fontSize = 12.sp,
             )
             Text(
-                text = androidx.compose.ui.res.stringResource(
-                    R.string.counter_session_seconds_format,
+                text = pluralStringResource(
+                    R.plurals.counter_session_seconds_format,
+                    session.durationSeconds.toInt().coerceAtLeast(0),
                     session.durationSeconds,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

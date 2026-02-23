@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderNotifier
+import com.parsfilo.contentapp.feature.counter.alarm.ReminderScheduleMode
 import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
 import com.parsfilo.contentapp.feature.counter.data.ZikirRepository
 import com.parsfilo.contentapp.feature.counter.model.CounterHapticEvent
@@ -48,6 +49,9 @@ class CounterViewModel @Inject constructor(
 
     private val _interstitialEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val interstitialEvents = _interstitialEvents.asSharedFlow()
+
+    private val _reminderUiEvents = MutableSharedFlow<CounterReminderUiEvent>(extraBufferCapacity = 1)
+    val reminderUiEvents = _reminderUiEvents.asSharedFlow()
 
     private val isPremiumFlow = preferencesDataSource.userData.map { it.isPremium }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -376,12 +380,32 @@ class CounterViewModel @Inject constructor(
             preferencesDataSource.setZikirDailyGoal(settings.dailyGoal)
             preferencesDataSource.setZikirStreakReminderEnabled(settings.streakReminderEnabled)
             if (settings.enabled) {
-                zikirReminderScheduler.scheduleDaily(settings.hour, settings.minute)
+                val scheduleMode = zikirReminderScheduler.scheduleDaily(settings.hour, settings.minute)
+                if (scheduleMode == ReminderScheduleMode.INEXACT_FALLBACK &&
+                    zikirReminderScheduler.canRequestExactAlarmPermission()
+                ) {
+                    _reminderUiEvents.emit(CounterReminderUiEvent.RequestExactAlarmPermission)
+                }
             } else {
                 zikirReminderScheduler.cancel()
             }
             zikirReminderScheduler.scheduleStreakCheckWorker()
             _uiState.value = _uiState.value.copy(showReminderSettings = false)
+        }
+    }
+
+    fun onExactAlarmPermissionSettingsReturned() {
+        viewModelScope.launch {
+            if (!zikirReminderScheduler.canRequestExactAlarmPermission()) {
+                zikirReminderScheduler.scheduleOrCancelFromPreferences()
+                _reminderUiEvents.emit(
+                    CounterReminderUiEvent.ExactAlarmPermissionGranted
+                )
+            } else {
+                _reminderUiEvents.emit(
+                    CounterReminderUiEvent.ExactAlarmPermissionStillMissing
+                )
+            }
         }
     }
 

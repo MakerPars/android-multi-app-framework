@@ -60,6 +60,8 @@ fun CounterRoute(
         onShareTextCopied = viewModel::onShareTextCopied,
         onReminderSettingsToggle = viewModel::onReminderSettingsToggle,
         onReminderSaved = viewModel::onReminderSaved,
+        reminderUiEvents = viewModel.reminderUiEvents,
+        onExactAlarmPermissionSettingsReturned = viewModel::onExactAlarmPermissionSettingsReturned,
         onSessionHistoryToggle = viewModel::onSessionHistoryToggle,
         onSessionHistoryDismiss = viewModel::onSessionHistoryDismissed,
         onUnlockHistoryWithAd = {

@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
@@ -86,7 +87,13 @@ fun ReminderSettingsSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text(text = androidx.compose.ui.res.stringResource(R.string.counter_daily_goal_label, dailyGoal))
+            Text(
+                text = pluralStringResource(
+                    R.plurals.counter_daily_goal_label,
+                    dailyGoal,
+                    dailyGoal,
+                ),
+            )
             Slider(
                 value = dailyGoal.toFloat(),
                 onValueChange = { dailyGoal = it.toInt() },

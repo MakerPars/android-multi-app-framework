@@ -130,7 +130,7 @@ class ZikirRepositoryImpl @Inject constructor(
     private fun dateFormatter(): SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 }
 
-private fun ZikirSession.toEntity(): ZikirSessionEntity {
+internal fun ZikirSession.toEntity(): ZikirSessionEntity {
     return ZikirSessionEntity(
         id = id,
         zikirKey = zikirKey,
@@ -144,7 +144,7 @@ private fun ZikirSession.toEntity(): ZikirSessionEntity {
     )
 }
 
-private fun ZikirSessionEntity.toModel(): ZikirSession {
+internal fun ZikirSessionEntity.toModel(): ZikirSession {
     return ZikirSession(
         id = id,
         zikirKey = zikirKey,

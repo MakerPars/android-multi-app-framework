@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,7 +52,7 @@ fun ZikirSelectorPage(
     onToggleHaptic: () -> Unit,
     onToggleSound: () -> Unit,
     isPremium: Boolean,
-    bannerAdContent: (@Composable () -> Unit)? = null,
+    content: (@Composable () -> Unit)? = null,
 ) {
     val d = LocalDimens.current
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
@@ -75,7 +76,7 @@ fun ZikirSelectorPage(
         )
 
         if (!isPremium) {
-            bannerAdContent?.invoke()
+            content?.invoke()
         }
 
         LazyColumn(
@@ -120,8 +121,9 @@ fun ZikirSelectorPage(
                             fontSize = 14.sp,
                         )
                         Text(
-                            text = stringResource(
-                                R.string.counter_recommended_target,
+                            text = pluralStringResource(
+                                R.plurals.counter_recommended_target,
+                                item.defaultTarget,
                                 item.defaultTarget,
                             ),
                             color = MaterialTheme.colorScheme.secondary,

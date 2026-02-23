@@ -1,6 +1,13 @@
 package com.parsfilo.contentapp.feature.counter.ui
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,9 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
@@ -51,6 +60,8 @@ import com.parsfilo.contentapp.feature.counter.ui.components.StreakBadge
 import com.parsfilo.contentapp.feature.counter.ui.components.ZikirSelectorPage
 import com.parsfilo.contentapp.feature.counter.ui.components.ZikirTextCard
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun CounterScreen(
@@ -69,6 +80,8 @@ fun CounterScreen(
     onShareTextCopied: () -> Unit,
     onReminderSettingsToggle: () -> Unit,
     onReminderSaved: (ReminderSettings) -> Unit,
+    reminderUiEvents: Flow<CounterReminderUiEvent> = emptyFlow(),
+    onExactAlarmPermissionSettingsReturned: () -> Unit = {},
     onSessionHistoryToggle: () -> Unit,
     onSessionHistoryDismiss: () -> Unit,
     onUnlockHistoryWithAd: () -> Unit,
@@ -84,11 +97,23 @@ fun CounterScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val clipboard = LocalClipboard.current
     val reminderSavedMessage = stringResource(R.string.counter_reminder_saved)
     val copiedMessage = stringResource(R.string.counter_copied)
     val firstSessionReminderPrompt = stringResource(R.string.counter_first_session_reminder_prompt)
     val firstSessionReminderAction = stringResource(R.string.counter_first_session_reminder_action)
+    val exactAlarmPermissionMessage = stringResource(R.string.counter_exact_alarm_permission_required)
+    val exactAlarmPermissionAction = stringResource(R.string.counter_exact_alarm_permission_action)
+    val exactAlarmSettingsOpenFailed = stringResource(R.string.counter_exact_alarm_settings_open_failed)
+    val exactAlarmPermissionGranted = stringResource(R.string.counter_exact_alarm_permission_granted)
+    val exactAlarmPermissionStillMissing = stringResource(R.string.counter_exact_alarm_permission_still_missing)
+
+    val exactAlarmPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) {
+        onExactAlarmPermissionSettingsReturned()
+    }
 
     LaunchedEffect(uiState.showFirstSessionReminderHint) {
         if (!uiState.showFirstSessionReminderHint) return@LaunchedEffect
@@ -100,6 +125,44 @@ fun CounterScreen(
             onFirstSessionReminderAction()
         } else {
             onFirstSessionReminderConsumed()
+        }
+    }
+
+    LaunchedEffect(reminderUiEvents) {
+        reminderUiEvents.collect { event ->
+            when (event) {
+                CounterReminderUiEvent.RequestExactAlarmPermission -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = exactAlarmPermissionMessage,
+                        actionLabel = exactAlarmPermissionAction,
+                    )
+                    if (result == SnackbarResult.ActionPerformed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val exactAlarmIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = "package:${context.packageName}".toUri()
+                        }
+                        val fallbackIntent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null),
+                        )
+                        try {
+                            exactAlarmPermissionLauncher.launch(exactAlarmIntent)
+                        } catch (_: ActivityNotFoundException) {
+                            try {
+                                exactAlarmPermissionLauncher.launch(fallbackIntent)
+                            } catch (_: Throwable) {
+                                snackbarHostState.showSnackbar(exactAlarmSettingsOpenFailed)
+                            }
+                        } catch (_: Throwable) {
+                            snackbarHostState.showSnackbar(exactAlarmSettingsOpenFailed)
+                        }
+                    }
+                }
+
+                CounterReminderUiEvent.ExactAlarmPermissionGranted ->
+                    snackbarHostState.showSnackbar(exactAlarmPermissionGranted)
+                CounterReminderUiEvent.ExactAlarmPermissionStillMissing ->
+                    snackbarHostState.showSnackbar(exactAlarmPermissionStillMissing)
+            }
         }
     }
 
@@ -119,7 +182,7 @@ fun CounterScreen(
             onToggleHaptic = onToggleHaptic,
             onToggleSound = onToggleSound,
             isPremium = uiState.isPremium,
-            bannerAdContent = bannerAdContent,
+            content = bannerAdContent,
         )
         return
     }
@@ -210,8 +273,9 @@ fun CounterScreen(
                         currentCount = uiState.currentCount,
                         onTap = onCounterTapped,
                         modifier = Modifier.align(Alignment.CenterHorizontally),
-                        contentDescription = stringResource(
-                            R.string.counter_content_description_fab,
+                        contentDescription = pluralStringResource(
+                            R.plurals.counter_content_description_fab,
+                            uiState.currentCount,
                             uiState.currentCount,
                         ),
                     )
@@ -256,9 +320,9 @@ fun CounterScreen(
             sessions = uiState.recentSessions,
             isPremium = uiState.isPremium,
             historyUnlockedForSession = uiState.historyUnlockedForSession,
-            nativeAdContent = if (uiState.isPremium) null else nativeAdContent,
             onUnlockWithAd = onUnlockHistoryWithAd,
             onDismiss = onSessionHistoryDismiss,
+            content = if (uiState.isPremium) null else nativeAdContent,
         )
     }
 

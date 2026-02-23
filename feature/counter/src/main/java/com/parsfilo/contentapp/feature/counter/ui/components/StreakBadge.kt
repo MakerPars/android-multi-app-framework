@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
@@ -36,7 +37,13 @@ fun StreakBadge(
             }
             val icon = if (streakAnim.value >= 30) "💎" else "🔥"
             Text(
-                text = "$icon ${androidx.compose.ui.res.stringResource(R.string.counter_streak_label, streakAnim.value)}",
+                text = "$icon ${
+                    pluralStringResource(
+                        R.plurals.counter_streak_label,
+                        streakAnim.value,
+                        streakAnim.value,
+                    )
+                }",
                 modifier = Modifier
                     .background(
                         color = badgeColor.copy(alpha = 0.15f),
