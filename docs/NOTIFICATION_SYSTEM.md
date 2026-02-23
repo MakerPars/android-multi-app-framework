@@ -120,10 +120,13 @@ Mobil uygulamadan her uygulama açılışında (`app_start`) otomatik çağrıl�
 | `body` | map | `tr: "Fetih Suresi'ni okumayı unutmayın"` |
 | `status` | string | `scheduled` |
 | `sentTimezones` | array | `[]` |
+| `lastResetAt` | timestamp | _(opsiyonel, sistem otomatik yönetir)_ |
 
-> ⚠️ **ÖNEMLİ:** Tekrarlayan event'ler için `sentTimezones` dizisi her çalışmada dolar.
-> Bir sonraki hafta/gün tekrar çalışması için `sentTimezones`'u boşaltmanız gerekir.
-> İleride bu otomatik sıfırlanacak şekilde geliştirilebilir.
+> ✅ **Güncel davranış:** Tekrarlayan event'lerde `sentTimezones` artık otomatik sıfırlanır.
+> - `daily` için her 24 saatte,
+> - `weekly:*` için her 7 günde bir
+> scheduler tarafından reset yapılır ve `lastResetAt` güncellenir.
+> Manuel reset gerekmez.
 
 ### `recurrence` Değerleri
 

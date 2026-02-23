@@ -19,6 +19,7 @@ interface ScheduledEvent {
     body: Record<string, string>;   // { "tr": "...", "en": "...", "ar": "..." }
     status: string;            // "scheduled", "sent", "expired"
     sentTimezones?: string[];  // Gönderilen timezone'lar
+    lastResetAt?: admin.firestore.Timestamp; // Recurrence gönderim penceresi başlangıcı
 }
 
 /**
@@ -85,10 +86,11 @@ async function processEvent(
     event: ScheduledEvent,
 ): Promise<void> {
     const now = new Date();
-    const sentTimezones = event.sentTimezones ?? [];
+    const effectiveEvent = await resetSentTimezonesIfPeriodElapsed(db, eventId, event, now);
+    const sentTimezones = effectiveEvent.sentTimezones ?? [];
 
     // 2. Hedef teslimat saatine uyan timezone'ları bul
-    const matchingTimezones = getMatchingTimezones(event.localDeliveryTime, now);
+    const matchingTimezones = getMatchingTimezones(effectiveEvent.localDeliveryTime, now);
 
     // Daha önce gönderilenleri çıkar
     const newTimezones = matchingTimezones.filter(
@@ -103,28 +105,28 @@ async function processEvent(
     // Tek bir referans timezone'u üzerinden (ilk eşleşen) kontrol yapalım
     const refTz = newTimezones[0];
 
-    if (event.date) {
+    if (effectiveEvent.date) {
         // Tek seferlik event → tarih eşleşmesi kontrol et
         const localDate = getLocalDate(refTz, now);
-        if (localDate !== event.date) {
+        if (localDate !== effectiveEvent.date) {
             return; // Bu tarih değil
         }
-    } else if (event.recurrence) {
+    } else if (effectiveEvent.recurrence) {
         // Tekrarlayan event → gün kontrolü
-        if (!matchesRecurrence(event.recurrence, refTz, now)) {
+        if (!matchesRecurrence(effectiveEvent.recurrence, refTz, now)) {
             return;
         }
     }
 
-    logger.info(`Processing event "${event.name}" for timezone(s): ${newTimezones.join(", ")}`);
+    logger.info(`Processing event "${effectiveEvent.name}" for timezone(s): ${newTimezones.join(", ")}`);
 
     // 4. Bu timezone'lardaki cihazları çek
-    const devices = await getDevicesForTimezones(db, newTimezones, event.packages);
+    const devices = await getDevicesForTimezones(db, newTimezones, effectiveEvent.packages);
 
     if (devices.length === 0) {
         logger.info(`No devices found for timezones: ${newTimezones.join(", ")}`);
         // Yine de timezone'ları gönderildi olarak işaretle
-        await markTimezonesAsSent(db, eventId, sentTimezones, newTimezones, event);
+        await markTimezonesAsSent(db, eventId, newTimezones);
         return;
     }
 
@@ -137,11 +139,11 @@ async function processEvent(
 
     for (const [locale, tokens] of Object.entries(localeGroups)) {
         const lang = locale.split("-")[0]; // "tr-TR" → "tr"
-        const title = event.title[lang] ?? event.title["tr"] ?? event.name;
-        const body = event.body[lang] ?? event.body["tr"] ?? "";
+        const title = effectiveEvent.title[lang] ?? effectiveEvent.title["tr"] ?? effectiveEvent.name;
+        const body = effectiveEvent.body[lang] ?? effectiveEvent.body["tr"] ?? "";
 
         const result = await sendToTokens(tokens, { title, body }, {
-            type: event.type,
+            type: effectiveEvent.type,
             eventId: eventId,
         });
 
@@ -151,7 +153,7 @@ async function processEvent(
     }
 
     logger.info(
-        `Event "${event.name}": sent=${totalSuccess}, failed=${totalFailure}, ` +
+        `Event "${effectiveEvent.name}": sent=${totalSuccess}, failed=${totalFailure}, ` +
         `invalidTokens=${allInvalidTokens.length}`,
     );
 
@@ -161,7 +163,71 @@ async function processEvent(
     }
 
     // 7. Gönderilen timezone'ları kaydet
-    await markTimezonesAsSent(db, eventId, sentTimezones, newTimezones, event);
+    await markTimezonesAsSent(db, eventId, newTimezones);
+}
+
+async function resetSentTimezonesIfPeriodElapsed(
+    db: admin.firestore.Firestore,
+    eventId: string,
+    fallbackEvent: ScheduledEvent,
+    now: Date,
+): Promise<ScheduledEvent> {
+    const eventRef = db.collection("scheduled_events").doc(eventId);
+    const nowMillis = now.getTime();
+    const nowTimestamp = admin.firestore.Timestamp.fromMillis(nowMillis);
+
+    return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(eventRef);
+        if (!snapshot.exists) {
+            return fallbackEvent;
+        }
+
+        const currentEvent = snapshot.data() as ScheduledEvent;
+        if (!currentEvent.recurrence) {
+            return currentEvent;
+        }
+
+        const lastResetMillis = currentEvent.lastResetAt?.toMillis();
+        const updates: Record<string, unknown> = {};
+
+        if (isRecurrenceResetDue(currentEvent.recurrence, lastResetMillis, nowMillis)) {
+            updates.sentTimezones = [];
+            updates.lastResetAt = nowTimestamp;
+            logger.info(
+                `Reset sentTimezones for recurrence event "${currentEvent.name}" (eventId=${eventId}).`,
+            );
+        } else if (!currentEvent.lastResetAt) {
+            updates.lastResetAt = nowTimestamp;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            transaction.update(eventRef, updates);
+        }
+
+        return { ...currentEvent, ...updates } as ScheduledEvent;
+    });
+}
+
+export function isRecurrenceResetDue(
+    recurrence: string,
+    lastResetMillis: number | undefined,
+    nowMillis: number,
+): boolean {
+    const periodMillis = recurrencePeriodMillis(recurrence);
+    if (periodMillis == null || lastResetMillis == null) {
+        return false;
+    }
+    return nowMillis - lastResetMillis >= periodMillis;
+}
+
+export function recurrencePeriodMillis(recurrence: string): number | null {
+    if (recurrence === "daily") {
+        return 24 * 60 * 60 * 1000;
+    }
+    if (recurrence.startsWith("weekly:")) {
+        return 7 * 24 * 60 * 60 * 1000;
+    }
+    return null;
 }
 
 /**
@@ -247,23 +313,31 @@ function groupByLocale(
 async function markTimezonesAsSent(
     db: admin.firestore.Firestore,
     eventId: string,
-    previouslySent: string[],
     newlySent: string[],
-    event: ScheduledEvent,
 ): Promise<void> {
-    const allSent = [...new Set([...previouslySent, ...newlySent])];
+    const eventRef = db.collection("scheduled_events").doc(eventId);
+    await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(eventRef);
+        if (!snapshot.exists) {
+            return;
+        }
 
-    const updateData: Record<string, unknown> = {
-        sentTimezones: allSent,
-    };
+        const event = snapshot.data() as ScheduledEvent;
+        const existingSent = event.sentTimezones ?? [];
+        const allSent = [...new Set([...existingSent, ...newlySent])];
 
-    // Tek seferlik event ve tüm büyük timezone'lara gönderildiyse → "sent"
-    if (!event.recurrence && allSent.length >= ALL_TIMEZONES.length) {
-        updateData.status = "sent";
-        logger.info(`Event "${event.name}" marked as SENT (all timezones covered).`);
-    }
+        const updateData: Record<string, unknown> = {
+            sentTimezones: allSent,
+        };
 
-    await db.collection("scheduled_events").doc(eventId).update(updateData);
+        // Tek seferlik event ve tüm büyük timezone'lara gönderildiyse → "sent"
+        if (!event.recurrence && allSent.length >= ALL_TIMEZONES.length) {
+            updateData.status = "sent";
+            logger.info(`Event "${event.name}" marked as SENT (all timezones covered).`);
+        }
+
+        transaction.update(eventRef, updateData);
+    });
 }
 
 /**
