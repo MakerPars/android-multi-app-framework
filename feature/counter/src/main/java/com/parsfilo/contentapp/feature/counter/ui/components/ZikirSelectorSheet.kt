@@ -1,5 +1,6 @@
 package com.parsfilo.contentapp.feature.counter.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,22 +10,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -32,9 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardOptions
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
-import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.counter.R
 import com.parsfilo.contentapp.feature.counter.model.ZikirItem
@@ -46,29 +43,48 @@ fun ZikirSelectorPage(
     onSelect: (ZikirItem) -> Unit,
     onDismiss: () -> Unit,
     onAddCustomZikir: (arabicText: String, latinText: String, turkishMeaning: String, defaultTarget: Int) -> Unit,
+    onSettingsClick: () -> Unit,
+    onRewardsClick: () -> Unit,
+    onReminderClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    isHapticEnabled: Boolean,
+    isSoundEnabled: Boolean,
+    onToggleHaptic: () -> Unit,
+    onToggleSound: () -> Unit,
+    isPremium: Boolean,
+    bannerAdContent: (@Composable () -> Unit)? = null,
 ) {
     val d = LocalDimens.current
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = stringResource(R.string.counter_selector_title),
-                navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                navigationIconContentDescription = stringResource(R.string.counter_continue),
-                actionIcon = Icons.Filled.Add,
-                actionIconContentDescription = stringResource(R.string.counter_add_zikir),
-                onActionClick = { showAddDialog = true },
-                onNavigationClick = onDismiss,
-            )
-        },
-    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        CounterHeaderBar(
+            onSettingsClick = onSettingsClick,
+            onRewardsClick = onRewardsClick,
+            onReminderClick = onReminderClick,
+            onHistoryClick = onHistoryClick,
+            isHapticEnabled = isHapticEnabled,
+            isSoundEnabled = isSoundEnabled,
+            onToggleHaptic = onToggleHaptic,
+            onToggleSound = onToggleSound,
+            onAddCustomZikir = { showAddDialog = true },
+            onContinue = onDismiss,
+        )
+
+        if (!isPremium) {
+            bannerAdContent?.invoke()
+        }
+
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .fillMaxWidth()
+                .weight(1f)
                 .padding(horizontal = d.space16),
-            contentPadding = PaddingValues(vertical = d.space12),
+            contentPadding = PaddingValues(top = d.space8, bottom = d.space4),
             verticalArrangement = Arrangement.spacedBy(d.space10),
         ) {
             items(zikirList, key = { it.key }) { item ->
@@ -105,7 +121,7 @@ fun ZikirSelectorPage(
                             fontSize = 14.sp,
                         )
                         Text(
-                            text = androidx.compose.ui.res.stringResource(
+                            text = stringResource(
                                 R.string.counter_recommended_target,
                                 item.defaultTarget,
                             ),

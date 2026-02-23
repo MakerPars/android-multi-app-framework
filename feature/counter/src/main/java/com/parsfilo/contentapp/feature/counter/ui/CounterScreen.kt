@@ -1,6 +1,9 @@
 package com.parsfilo.contentapp.feature.counter.ui
 
+import android.content.ClipData
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,19 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,16 +21,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import android.content.ClipData
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
@@ -47,13 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
-import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.counter.R
 import com.parsfilo.contentapp.feature.counter.model.CounterUiState
 import com.parsfilo.contentapp.feature.counter.model.ReminderSettings
 import com.parsfilo.contentapp.feature.counter.model.ZikirItem
 import com.parsfilo.contentapp.feature.counter.ui.components.CounterFab
+import com.parsfilo.contentapp.feature.counter.ui.components.CounterHeaderBar
 import com.parsfilo.contentapp.feature.counter.ui.components.DailyProgressSection
 import com.parsfilo.contentapp.feature.counter.ui.components.ReminderSettingsSheet
 import com.parsfilo.contentapp.feature.counter.ui.components.SessionCompleteDialog
@@ -122,112 +110,130 @@ fun CounterScreen(
             onSelect = onZikirSelected,
             onDismiss = onZikirSelectorToggle,
             onAddCustomZikir = onAddCustomZikir,
+            onSettingsClick = onSettingsClick,
+            onRewardsClick = onRewardsClick,
+            onReminderClick = onReminderSettingsToggle,
+            onHistoryClick = onSessionHistoryToggle,
+            isHapticEnabled = uiState.isHapticEnabled,
+            isSoundEnabled = uiState.isSoundEnabled,
+            onToggleHaptic = onToggleHaptic,
+            onToggleSound = onToggleSound,
+            isPremium = uiState.isPremium,
+            bannerAdContent = bannerAdContent,
         )
         return
+    }
+
+    BackHandler {
+        onZikirSelectorToggle()
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            CounterTopBar(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            CounterHeaderBar(
                 onReminderClick = onReminderSettingsToggle,
                 onHistoryClick = onSessionHistoryToggle,
-                onZikirListClick = onZikirSelectorToggle,
                 onSettingsClick = onSettingsClick,
                 onRewardsClick = onRewardsClick,
                 isHapticEnabled = uiState.isHapticEnabled,
                 isSoundEnabled = uiState.isSoundEnabled,
                 onToggleHaptic = onToggleHaptic,
                 onToggleSound = onToggleSound,
+                onOpenZikirList = onZikirSelectorToggle,
             )
-        },
-        bottomBar = {
+
             if (!uiState.isPremium) {
                 bannerAdContent?.invoke()
             }
-        },
-    ) { innerPadding ->
-        if (uiState.isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = d.space16, vertical = d.space12),
-                verticalArrangement = Arrangement.spacedBy(d.space12),
-            ) {
-                StreakBadge(
-                    streak = uiState.currentStreak,
-                    todayTotal = uiState.todayTotalCount,
-                    modifier = Modifier.fillMaxWidth(),
-                )
 
-                DailyProgressSection(
-                    todayTotal = uiState.todayTotalCount,
-                    dailyGoal = uiState.dailyGoal,
-                    progress = uiState.dailyGoalProgress,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                val selectedZikir = uiState.selectedZikir
-                if (selectedZikir != null) {
-                    ZikirTextCard(
-                        zikir = selectedZikir,
-                        onChangeClick = onZikirSelectorToggle,
-                    )
-                }
-
-                TargetSelectorRow(
-                    targetCount = uiState.targetCount,
-                    onTargetChanged = onTargetChanged,
-                )
-
-                CurrentCountSection(
-                    currentCount = uiState.currentCount,
-                    targetCount = uiState.targetCount,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                CounterFab(
-                    arabicText = selectedZikir?.arabicText.orEmpty(),
-                    latinText = selectedZikir?.latinText.orEmpty(),
-                    currentCount = uiState.currentCount,
-                    onTap = onCounterTapped,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    contentDescription = stringResource(
-                        R.string.counter_content_description_fab,
-                        uiState.currentCount,
-                    ),
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(d.space10),
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    AppButton(
-                        text = stringResource(R.string.counter_reset),
-                        onClick = onResetCurrentCount,
-                        modifier = Modifier.weight(1f),
-                    )
-                    AppButton(
-                        text = stringResource(R.string.counter_share),
-                        onClick = onShareSession,
-                        modifier = Modifier.weight(1f),
-                    )
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = d.space16, vertical = d.space10),
+                    verticalArrangement = Arrangement.spacedBy(d.space12),
+                ) {
+                    StreakBadge(
+                        streak = uiState.currentStreak,
+                        todayTotal = uiState.todayTotalCount,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
-                Spacer(modifier = Modifier.height(d.space8))
+                    DailyProgressSection(
+                        todayTotal = uiState.todayTotalCount,
+                        dailyGoal = uiState.dailyGoal,
+                        progress = uiState.dailyGoalProgress,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    val selectedZikir = uiState.selectedZikir
+                    if (selectedZikir != null) {
+                        ZikirTextCard(
+                            zikir = selectedZikir,
+                            onChangeClick = onZikirSelectorToggle,
+                        )
+                    }
+
+                    TargetSelectorRow(
+                        targetCount = uiState.targetCount,
+                        onTargetChanged = onTargetChanged,
+                    )
+
+                    CurrentCountSection(
+                        currentCount = uiState.currentCount,
+                        targetCount = uiState.targetCount,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    CounterFab(
+                        arabicText = selectedZikir?.arabicText.orEmpty(),
+                        latinText = selectedZikir?.latinText.orEmpty(),
+                        currentCount = uiState.currentCount,
+                        onTap = onCounterTapped,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        contentDescription = stringResource(
+                            R.string.counter_content_description_fab,
+                            uiState.currentCount,
+                        ),
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(d.space10),
+                    ) {
+                        AppButton(
+                            text = stringResource(R.string.counter_reset),
+                            onClick = onResetCurrentCount,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AppButton(
+                            text = stringResource(R.string.counter_share),
+                            onClick = onShareSession,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(d.space8))
+                }
             }
         }
     }
@@ -286,103 +292,6 @@ fun CounterScreen(
             onDismiss = onShareDismissed,
         )
     }
-}
-
-@Composable
-private fun CounterTopBar(
-    onReminderClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onZikirListClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onRewardsClick: () -> Unit,
-    isHapticEnabled: Boolean,
-    isSoundEnabled: Boolean,
-    onToggleHaptic: () -> Unit,
-    onToggleSound: () -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    AppTopBar(
-        title = stringResource(R.string.counter_title),
-        actions = {
-            IconButton(onClick = onReminderClick) {
-                Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = stringResource(R.string.counter_reminder_title),
-                )
-            }
-            IconButton(onClick = onHistoryClick) {
-                Icon(
-                    imageVector = Icons.Filled.BarChart,
-                    contentDescription = stringResource(R.string.counter_history_title),
-                )
-            }
-            IconButton(onClick = onZikirListClick) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = stringResource(R.string.counter_open_zikir_list),
-                )
-            }
-            IconButton(onClick = { expanded = true }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = null,
-                )
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (isHapticEnabled) {
-                                stringResource(R.string.counter_settings_haptic) + " ✓"
-                            } else {
-                                stringResource(R.string.counter_settings_haptic)
-                            }
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onToggleHaptic()
-                    },
-                )
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (isSoundEnabled) {
-                                stringResource(R.string.counter_settings_sound) + " ✓"
-                            } else {
-                                stringResource(R.string.counter_settings_sound)
-                            }
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onToggleSound()
-                    },
-                )
-                HorizontalDivider()
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.counter_menu_settings)) },
-                    leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    onClick = {
-                        expanded = false
-                        onSettingsClick()
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.counter_menu_rewards)) },
-                    leadingIcon = { Icon(Icons.Filled.CardGiftcard, contentDescription = null) },
-                    onClick = {
-                        expanded = false
-                        onRewardsClick()
-                    },
-                )
-            }
-        },
-    )
 }
 
 @Composable
@@ -474,6 +383,3 @@ private fun TargetButton(
         ),
     )
 }
-
-
-

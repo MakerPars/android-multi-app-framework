@@ -75,6 +75,7 @@
     <string name="counter_settings_sound">Sound</string>
     <string name="counter_menu_settings">Settings</string>
     <string name="counter_menu_rewards">Rewards</string>
+    <string name="counter_menu_more">More options</string>
     <string name="counter_select_time">Select time</string>
     <string name="counter_goal_slider_value">Goal: %d</string>
     <string name="counter_content_description_fab">%d dhikr counted. Tap to count.</string>

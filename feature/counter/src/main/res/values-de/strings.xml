@@ -75,6 +75,7 @@
     <string name="counter_settings_sound">Ton</string>
     <string name="counter_menu_settings">Einstellungen</string>
     <string name="counter_menu_rewards">Belohnungen</string>
+    <string name="counter_menu_more">Weitere Optionen</string>
     <string name="counter_select_time">Uhrzeit auswählen</string>
     <string name="counter_goal_slider_value">Ziel: %d</string>
     <string name="counter_content_description_fab">%d Dhikr gezählt. Zum Zählen tippen.</string>

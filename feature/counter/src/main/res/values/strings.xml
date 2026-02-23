@@ -75,6 +75,7 @@
     <string name="counter_settings_sound">Ses</string>
     <string name="counter_menu_settings">Ayarlar</string>
     <string name="counter_menu_rewards">Ödüller</string>
+    <string name="counter_menu_more">Daha fazla seçenek</string>
     <string name="counter_select_time">Saat seçin</string>
     <string name="counter_goal_slider_value">Hedef: %d</string>
     <string name="counter_content_description_fab">%d zikir sayıldı. Dokunarak say.</string>
