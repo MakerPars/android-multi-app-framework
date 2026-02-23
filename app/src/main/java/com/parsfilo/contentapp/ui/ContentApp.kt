@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -172,6 +173,7 @@ fun ContentApp(
     ) {
         Box(
             modifier = Modifier
+                .testTag("app_root")
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
