@@ -45,6 +45,11 @@ import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logTabSelected
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.navigation.AppRoute
+import com.parsfilo.contentapp.ui.update.HardUpdateRequiredOverlay
+import com.parsfilo.contentapp.ui.update.SoftUpdateDialog
+import com.parsfilo.contentapp.update.UpdateGateViewModel
+import com.parsfilo.contentapp.update.UpdatePolicy
+import com.parsfilo.contentapp.update.openPlayStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -74,6 +79,9 @@ fun ContentApp(
     )
     val isUserSignedIn by viewModel.isUserSignedIn.collectAsStateWithLifecycle()
     val darkModeEnabled by viewModel.darkModeEnabled.collectAsStateWithLifecycle()
+    val updateGateViewModel: UpdateGateViewModel = hiltViewModel()
+    val updatePolicy by updateGateViewModel.activePolicy.collectAsStateWithLifecycle()
+    val updateDebugSnapshot by updateGateViewModel.debugSnapshot.collectAsStateWithLifecycle()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = true
@@ -152,6 +160,10 @@ fun ContentApp(
         openNotificationsEvents.collect {
             navigateToRoute(AppRoute.NotificationsGraph)
         }
+    }
+
+    LaunchedEffect(Unit) {
+        updateGateViewModel.checkForUpdate()
     }
 
     DisposableEffect(lifecycleOwner, audioPlayerViewModel) {
@@ -239,6 +251,12 @@ fun ContentApp(
                             audioPlayerViewModel = audioPlayerViewModel,
                             appAnalytics = appAnalytics,
                             onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
+                            updateDebugSummary = updateDebugSnapshot?.toSummaryText(),
+                            onUpdateDebugFetchNow = updateGateViewModel::fetchNowForDebug,
+                            onUpdateDebugSimulateSoft = updateGateViewModel::simulateSoftPrompt,
+                            onUpdateDebugSimulateHard = updateGateViewModel::simulateHardBlock,
+                            onUpdateDebugClearSimulation = updateGateViewModel::clearSimulation,
+                            onUpdateDebugResetSoftPrompt = updateGateViewModel::resetSoftPromptForSession,
                         )
                     }
                 }
@@ -270,6 +288,12 @@ fun ContentApp(
                             audioPlayerViewModel = audioPlayerViewModel,
                             appAnalytics = appAnalytics,
                             onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
+                            updateDebugSummary = updateDebugSnapshot?.toSummaryText(),
+                            onUpdateDebugFetchNow = updateGateViewModel::fetchNowForDebug,
+                            onUpdateDebugSimulateSoft = updateGateViewModel::simulateSoftPrompt,
+                            onUpdateDebugSimulateHard = updateGateViewModel::simulateHardBlock,
+                            onUpdateDebugClearSimulation = updateGateViewModel::clearSimulation,
+                            onUpdateDebugResetSoftPrompt = updateGateViewModel::resetSoftPromptForSession,
                         )
                     }
                 }
@@ -289,6 +313,22 @@ fun ContentApp(
                     }
                 }
             }
+
+            when (val policy = updatePolicy) {
+                is UpdatePolicy.Hard -> HardUpdateRequiredOverlay(
+                    policy = policy,
+                    onUpdateClick = { openPlayStore(context) },
+                    modifier = Modifier.align(Alignment.Center),
+                )
+
+                is UpdatePolicy.Soft -> SoftUpdateDialog(
+                    policy = policy,
+                    onUpdateClick = { openPlayStore(context) },
+                    onLaterClick = updateGateViewModel::dismissSoftPromptForSession,
+                )
+
+                UpdatePolicy.None -> Unit
+            }
         }
     }
 }
@@ -300,7 +340,6 @@ private fun Int.toBadgeText(): String? {
         else -> toString()
     }
 }
-
 
 
 

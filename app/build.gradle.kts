@@ -349,13 +349,13 @@ dependencies {
     }
 
     implementation(libs.firebase.crashlytics)
-    implementation("io.sentry:sentry-compose-android:8.33.0")
+    implementation(libs.sentry.compose.android)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.timber)
 
     testImplementation(libs.junit)
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation(libs.androidx.runner)
+    androidTestImplementation(libs.androidx.rules)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -8,7 +8,7 @@ import dagger.hilt.android.AndroidEntryPoint
 /**
  * Media3 MediaSessionService.
  *
- * Audio yükleme ve kontrol [AudioPlayerViewModel] tarafından yapılır;
+ * Audio yükleme ve kontrol AudioPlayerViewModel tarafından yapılır;
  * bu servis yalnızca MediaSession'ı expose eder ve foreground notification sağlar.
  * Player singleton olduğu için ViewModel'ın hazırladığı MediaItem
  * burada zaten yüklü olur.

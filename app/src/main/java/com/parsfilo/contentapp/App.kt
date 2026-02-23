@@ -81,17 +81,16 @@ class App : Application() {
                 options.setProfileSessionSampleRate(0.0)
 
                 // Enable Sentry Logs with strict budget controls.
-                options.logs.setEnabled(true)
-                options.logs.setBeforeSend(
+                options.logs.isEnabled = true
+                options.logs.beforeSend =
                     io.sentry.SentryOptions.Logs.BeforeSendLogCallback { logEvent ->
                         if (shouldDropSentryLogNoise(logEvent)) null else logEvent
                     }
-                )
 
                 options.setDiagnosticLevel(if (BuildConfig.DEBUG) SentryLevel.INFO else SentryLevel.WARNING)
-                options.setEnableUserInteractionBreadcrumbs(true)
-                options.setEnableAutoSessionTracking(true)
-                options.setMaxBreadcrumbs(150)
+                options.isEnableUserInteractionBreadcrumbs = true
+                options.isEnableAutoSessionTracking = true
+                options.maxBreadcrumbs = 150
                 options.beforeSend = io.sentry.SentryOptions.BeforeSendCallback { event, _ ->
                     if (shouldDropSentryNoise(event)) null else event
                 }

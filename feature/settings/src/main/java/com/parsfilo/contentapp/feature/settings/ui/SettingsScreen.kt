@@ -89,6 +89,12 @@ import java.util.Locale
 fun SettingsRoute(
     onBackClick: () -> Unit = {},
     onPrivacyOptionsUpdated: () -> Unit = {},
+    updateDebugSummary: String? = null,
+    onUpdateDebugFetchNow: () -> Unit = {},
+    onUpdateDebugSimulateSoft: () -> Unit = {},
+    onUpdateDebugSimulateHard: () -> Unit = {},
+    onUpdateDebugClearSimulation: () -> Unit = {},
+    onUpdateDebugResetSoftPrompt: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,6 +109,12 @@ fun SettingsRoute(
         onResetConsent = viewModel::resetConsent,
         onSetConsentDebugGeography = viewModel::setConsentDebugGeography,
         adManager = viewModel.adManager(),
+        updateDebugSummary = updateDebugSummary,
+        onUpdateDebugFetchNow = onUpdateDebugFetchNow,
+        onUpdateDebugSimulateSoft = onUpdateDebugSimulateSoft,
+        onUpdateDebugSimulateHard = onUpdateDebugSimulateHard,
+        onUpdateDebugClearSimulation = onUpdateDebugClearSimulation,
+        onUpdateDebugResetSoftPrompt = onUpdateDebugResetSoftPrompt,
         onShareApp = { platform -> viewModel.logShareApp(platform) },
     )
 }
@@ -119,6 +131,12 @@ fun SettingsScreen(
     onResetConsent: () -> Unit,
     onSetConsentDebugGeography: (UmpDebugGeography) -> Unit,
     adManager: AdManager,
+    updateDebugSummary: String? = null,
+    onUpdateDebugFetchNow: () -> Unit = {},
+    onUpdateDebugSimulateSoft: () -> Unit = {},
+    onUpdateDebugSimulateHard: () -> Unit = {},
+    onUpdateDebugClearSimulation: () -> Unit = {},
+    onUpdateDebugResetSoftPrompt: () -> Unit = {},
     onShareApp: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -170,6 +188,12 @@ fun SettingsScreen(
     val consentFormShownText = stringResource(R.string.settings_ads_debug_consent_form_done)
     val consentFormErrorText = stringResource(R.string.settings_ads_debug_consent_form_error)
     val adsConfigUpdatedText = stringResource(R.string.settings_ads_debug_ads_config_updated)
+    val updateDebugFetchText = stringResource(R.string.settings_update_debug_fetch_now)
+    val updateDebugFetchStartedText = stringResource(R.string.settings_update_debug_fetch_started)
+    val updateDebugSimSoftText = stringResource(R.string.settings_update_debug_simulate_soft)
+    val updateDebugSimHardText = stringResource(R.string.settings_update_debug_simulate_hard)
+    val updateDebugClearSimText = stringResource(R.string.settings_update_debug_clear_simulation)
+    val updateDebugResetSoftText = stringResource(R.string.settings_update_debug_reset_soft_session)
     var languageMenuExpanded by remember { mutableStateOf(false) }
     var ageGateMenuExpanded by remember { mutableStateOf(false) }
 
@@ -781,6 +805,109 @@ fun SettingsScreen(
                             shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
                                 containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                contentColor = colorScheme.onSurfaceVariant,
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(dimens.space16)) {
+                                Text(
+                                    text = stringResource(R.string.settings_update_debug_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space4))
+                                Text(
+                                    text = stringResource(R.string.settings_update_debug_desc),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space10))
+                                Text(
+                                    text = updateDebugSummary
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?: stringResource(R.string.settings_update_debug_summary_empty),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space12))
+                                AppButton(
+                                    text = updateDebugFetchText,
+                                        onClick = {
+                                            onUpdateDebugFetchNow()
+                                            showMessage(updateDebugFetchStartedText)
+                                        },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.primary,
+                                        contentColor = colorScheme.onPrimary,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    AppButton(
+                                        text = updateDebugSimSoftText,
+                                        onClick = {
+                                            onUpdateDebugSimulateSoft()
+                                            showMessage(updateDebugSimSoftText)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.tertiary,
+                                            contentColor = colorScheme.onTertiary,
+                                        ),
+                                    )
+                                    Spacer(modifier = Modifier.width(dimens.space8))
+                                    AppButton(
+                                        text = updateDebugSimHardText,
+                                        onClick = {
+                                            onUpdateDebugSimulateHard()
+                                            showMessage(updateDebugSimHardText)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.error,
+                                            contentColor = colorScheme.onError,
+                                        ),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(dimens.space8))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    AppButton(
+                                        text = updateDebugClearSimText,
+                                        onClick = {
+                                            onUpdateDebugClearSimulation()
+                                            showMessage(updateDebugClearSimText)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.secondary,
+                                            contentColor = colorScheme.onSecondary,
+                                        ),
+                                    )
+                                    Spacer(modifier = Modifier.width(dimens.space8))
+                                    AppButton(
+                                        text = updateDebugResetSoftText,
+                                        onClick = {
+                                            onUpdateDebugResetSoftPrompt()
+                                            showMessage(updateDebugResetSoftText)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.surface,
+                                            contentColor = colorScheme.onSurface,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(dimens.space8))
+
+                        AppCard(
+                            modifier = Modifier.padding(horizontal = dimens.space8),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
                                 contentColor = colorScheme.onSurfaceVariant
                             )
                         ) {
@@ -999,4 +1126,3 @@ private fun shareApp(context: Context) {
         )
     )
 }
-

@@ -68,5 +68,15 @@
     <string name="settings_ads_debug_consent_form_done">Consent akışı tamamlandı</string>
     <string name="settings_ads_debug_consent_form_error">Consent akışı tamamlanamadı</string>
     <string name="settings_ads_debug_ads_config_updated">Reklam ayarları güncellendi</string>
+
+    <string name="settings_update_debug_title">Update Debug (Remote Config)</string>
+    <string name="settings_update_debug_desc">Sadece debug derlemelerde görünür. Force update akışını test edin.</string>
+    <string name="settings_update_debug_summary_empty">Henüz force update verisi alınmadı.</string>
+    <string name="settings_update_debug_fetch_now">Remote Config Getir</string>
+    <string name="settings_update_debug_fetch_started">Remote Config fetch başlatıldı</string>
+    <string name="settings_update_debug_simulate_soft">Soft Simüle</string>
+    <string name="settings_update_debug_simulate_hard">Hard Simüle</string>
+    <string name="settings_update_debug_clear_simulation">Simülasyonu Temizle</string>
+    <string name="settings_update_debug_reset_soft_session">Soft Prompt Reset</string>
 </resources>
 

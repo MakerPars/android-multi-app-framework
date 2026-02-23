@@ -155,6 +155,33 @@ Primary outcomes:
 - Backoff logs help distinguish no-fill from integration errors.
 - Consent/Privacy UI changes require AdMob Console messages to be published; code alone is not sufficient.
 
+## Force Update (Remote Config)
+- Force update gate uses Firebase Remote Config with in-app fail-safe defaults (app remains usable if fetch fails).
+- Parameters:
+  - `min_supported_version_code`
+  - `latest_version_code`
+  - `update_mode` (`none|soft|hard`)
+  - `update_title_tr`, `update_message_tr`, `update_button_tr`, `later_button_tr`
+  - `update_title_en`, `update_message_en`, `update_button_en`, `later_button_en`
+- Behavior:
+  - `currentVersionCode < min_supported_version_code` => hard block (mandatory update)
+  - `currentVersionCode < latest_version_code` => soft prompt (dismissible for current session)
+  - `min_supported_version_code` rule always has highest priority
+- Shared Firebase project strategy:
+  - Keys remain global
+  - App-specific values are assigned using a Remote Config condition (`app_is_zikirmatik`) matched by Firebase App ID
+- Emergency rollout:
+  - Soft prompt: increase `latest_version_code`
+  - Hard block: increase `min_supported_version_code`
+  - Optional `update_mode=hard|soft` can force behavior, but min-supported rule still wins
+- Debug validation:
+  - Settings > Update Debug > fetch RC now
+  - Verify summary values (`current/min/latest/mode/policy`)
+  - Simulate soft/hard to validate UI
+  - Test update button opens Play Store
+- Operational note:
+  - Remote Config template JSON is not committed to the repo; use Firebase CLI with a temporary file and `--project` flag.
+
 ## Risks / Rollout Notes
 - Placement resources missing in a flavor will fall back to format defaults (safe behavior).
 - Age-gate wording and legal interpretation may require product/legal review (technical implementation is provided).
