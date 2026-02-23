@@ -63,7 +63,7 @@
     <string name="settings_ads_debug_force_eea">Force EEA</string>
     <string name="settings_ads_debug_force_us">Force US States</string>
     <string name="settings_ads_debug_clear_geo">Debug Geography Temizle</string>
-    <string name="settings_ads_debug_geo_set_reset_hint">UMP debug geography: %1$s. Consent sıfırlandı. Test için Consent Formunu Göster&apos;e basın.</string>
+    <string name="settings_ads_debug_geo_set_reset_hint">UMP debug geography: %1$s. Consent sıfırlandı. Test için Consent Formunu Göster\'e basın.</string>
     <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector açıldı</string>
     <string name="settings_ads_debug_ad_inspector_error">Ad Inspector açılamadı</string>
     <string name="settings_ads_debug_consent_reset">Consent bilgisi sıfırlandı</string>

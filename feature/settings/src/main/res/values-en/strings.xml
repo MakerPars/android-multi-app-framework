@@ -46,7 +46,7 @@
     <string name="settings_privacy_options_unavailable">This action is currently unavailable</string>
     <string name="settings_privacy_options_error">Could not open privacy options</string>
     <string name="settings_privacy_options_saved">Privacy preferences updated</string>
-    <string name="settings_privacy_options_not_required_now">Privacy options aren&apos;t required in your region right now.</string>
+    <string name="settings_privacy_options_not_required_now">Privacy options aren\'t required in your region right now.</string>
 
     <string name="settings_ads_age_gate_title">Ad age preference</string>
     <string name="settings_ads_age_gate_desc">Select your age group for ad privacy settings</string>
