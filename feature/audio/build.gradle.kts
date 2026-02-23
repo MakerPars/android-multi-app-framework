@@ -11,16 +11,6 @@ android {
 
     defaultConfig {
         minSdk = 24
-        buildConfigField(
-            "String",
-            "AUDIO_BASE_URL",
-            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio\""
-        )
-        buildConfigField(
-            "String",
-            "AUDIO_MANIFEST_URL",
-            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest\""
-        )
     }
 
     buildFeatures {
@@ -36,6 +26,7 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:firebase"))
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines.android)
     implementation(project(":core:model"))

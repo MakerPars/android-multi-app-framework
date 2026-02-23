@@ -14,6 +14,7 @@ import androidx.media3.session.SessionToken
 import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 import com.google.common.util.concurrent.ListenableFuture
+import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.feature.audio.BuildConfig
 import com.parsfilo.contentapp.feature.audio.service.AudioService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,6 +61,7 @@ private data class RemoteAudioSource(
 class AudioPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val assetPackManager: AssetPackManager,
+    private val endpointsProvider: EndpointsProvider,
     @javax.inject.Named("audioFileName") private val audioFileName: String,
     @javax.inject.Named("useAssetPackAudio") private val useAssetPackAudio: Boolean,
     private val savedStateHandle: SavedStateHandle
@@ -328,6 +330,7 @@ class AudioPlayerViewModel @Inject constructor(
     private fun resolveRemoteAudioSource(effectiveAudioFileName: String): RemoteAudioSource? {
         val manifest = fetchRemoteAudioManifest() ?: return null
         val packageName = context.packageName
+        val audioBaseUrl = endpointsProvider.getAudioBaseUrl()
         val keyFromPackage = manifest.packageAudio[packageName]
         val preferredKey = if (!keyFromPackage.isNullOrBlank()) keyFromPackage else effectiveAudioFileName
         val normalizedKey = normalizeAudioFileName(preferredKey) ?: effectiveAudioFileName
@@ -335,21 +338,21 @@ class AudioPlayerViewModel @Inject constructor(
         if (manifest.availableKeys.contains(normalizedKey)) {
             return RemoteAudioSource(
                 key = normalizedKey,
-                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(normalizedKey)}"
+                url = "$audioBaseUrl/${Uri.encode(normalizedKey)}"
             )
         }
 
         if (manifest.availableKeys.contains(effectiveAudioFileName)) {
             return RemoteAudioSource(
                 key = effectiveAudioFileName,
-                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(effectiveAudioFileName)}"
+                url = "$audioBaseUrl/${Uri.encode(effectiveAudioFileName)}"
             )
         }
 
         if (manifest.availableKeys.contains("audio.mp3")) {
             return RemoteAudioSource(
                 key = "audio.mp3",
-                url = "${BuildConfig.AUDIO_BASE_URL}/audio.mp3"
+                url = "$audioBaseUrl/audio.mp3"
             )
         }
 
@@ -459,7 +462,7 @@ class AudioPlayerViewModel @Inject constructor(
     private fun fetchRemoteAudioManifest(): RemoteAudioManifest? {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(BuildConfig.AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
+            connection = (URL(endpointsProvider.getAudioManifestUrl()).openConnection() as HttpURLConnection).apply {
                 connectTimeout = REMOTE_MANIFEST_TIMEOUT_MS
                 readTimeout = REMOTE_MANIFEST_TIMEOUT_MS
                 requestMethod = "GET"

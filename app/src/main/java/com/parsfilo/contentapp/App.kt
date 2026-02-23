@@ -11,6 +11,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.parsfilo.contentapp.core.firebase.AnalyticsUserPropertyKey
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.appcheck.FirebaseAppCheckInstaller
+import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.feature.audio.data.AudioCachePrefetcher
 import com.parsfilo.contentapp.feature.billing.BillingManager
@@ -56,6 +57,9 @@ class App : Application() {
 
     @Inject
     lateinit var audioCachePrefetcher: AudioCachePrefetcher
+
+    @Inject
+    lateinit var endpointsProvider: EndpointsProvider
 
     override fun onCreate() {
         super.onCreate()
@@ -103,6 +107,7 @@ class App : Application() {
 
         // App Check must be installed early to protect Firebase endpoints (Firestore, Functions, etc.)
         appCheckInstaller.install()
+        endpointsProvider.prefetchAsync()
         SentryMetrics.gauge("push.topics.configured", DEFAULT_FCM_TOPICS.size.toDouble())
         ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
             runCatching {

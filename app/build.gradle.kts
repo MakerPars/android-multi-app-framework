@@ -189,16 +189,6 @@ android {
         buildConfigField("boolean", "USE_ASSET_PACK_AUDIO", "false")
         buildConfigField(
             "String",
-            "AUDIO_BASE_URL",
-            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio\"",
-        )
-        buildConfigField(
-            "String",
-            "AUDIO_MANIFEST_URL",
-            "\"https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest\"",
-        )
-        buildConfigField(
-            "String",
             "PUSH_REGISTRATION_URL",
             asBuildConfigString(pick("PUSH_REGISTRATION_URL") ?: ""),
         )

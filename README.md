@@ -77,6 +77,18 @@ This repo supports per-flavour versions via `app-versions.properties`:
 
 If a flavour is missing, build fallback is `versionCode=1` and `versionName=1.0.0`.
 
+### Remote Config Endpoint Keys
+
+Endpoint values are centralized in `core/firebase/src/main/java/com/parsfilo/contentapp/core/firebase/config/EndpointsProvider.kt`.
+
+Firebase Remote Config keys:
+
+- `audio_base_url` (default: `https://contentapp-content-api.oaslananka.workers.dev/api/audio`)
+- `audio_manifest_url` (default: `https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest`)
+- `other_apps_url` (default: `https://contentapp-content-api.oaslananka.workers.dev/api/other-apps`)
+
+If a key is missing/blank or fetch fails, defaults above are used automatically.
+
 ## CI/CD (Azure DevOps)
 
 Azure DevOps pipeline dosyaları:

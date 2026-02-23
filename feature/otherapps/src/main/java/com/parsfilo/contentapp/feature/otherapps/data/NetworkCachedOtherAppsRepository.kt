@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.feature.otherapps.data
 import android.content.Context
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
+import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.feature.otherapps.model.OtherApp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -26,6 +27,7 @@ import javax.inject.Singleton
 class NetworkCachedOtherAppsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
+    private val endpointsProvider: EndpointsProvider,
 ) : OtherAppsRepository {
 
     private val _apps = MutableStateFlow<List<OtherApp>>(emptyList())
@@ -124,7 +126,7 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
     }
 
     private fun fetchRemoteJson(): String? {
-        return fetchJsonFrom(REMOTE_URL) ?: fetchJsonFrom(FALLBACK_REMOTE_URL)
+        return fetchJsonFrom(endpointsProvider.getOtherAppsUrl())
     }
 
     private fun fetchJsonFrom(url: String): String? {
@@ -154,8 +156,6 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
     }
 
     private companion object {
-        private const val REMOTE_URL = "https://contentapp-content-api.oaslananka.workers.dev/api/other-apps"
-        private const val FALLBACK_REMOTE_URL = "https://mobildev.site/other_apps.json"
         private const val CACHE_FILE_NAME = "other_apps_cache.json"
         private const val CACHE_TTL_MILLIS = 24 * 60 * 60 * 1000L
         private const val CONNECT_TIMEOUT_MS = 10_000

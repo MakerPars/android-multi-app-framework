@@ -3,7 +3,7 @@ package com.parsfilo.contentapp.feature.audio.data
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
-import com.parsfilo.contentapp.feature.audio.BuildConfig
+import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -38,6 +38,7 @@ private data class RemoteAudioSource(
 @Singleton
 class AudioCachePrefetcher @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val endpointsProvider: EndpointsProvider,
 ) {
 
     fun prefetchIfNeeded(
@@ -99,7 +100,7 @@ class AudioCachePrefetcher @Inject constructor(
         if (normalizedPackageKey != null && manifest.availableKeys.contains(normalizedPackageKey)) {
             return RemoteAudioSource(
                 key = normalizedPackageKey,
-                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(normalizedPackageKey)}",
+                url = "${endpointsProvider.getAudioBaseUrl()}/${Uri.encode(normalizedPackageKey)}",
             )
         }
 
@@ -107,7 +108,7 @@ class AudioCachePrefetcher @Inject constructor(
         if (fallback != null && manifest.availableKeys.contains(fallback)) {
             return RemoteAudioSource(
                 key = fallback,
-                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(fallback)}",
+                url = "${endpointsProvider.getAudioBaseUrl()}/${Uri.encode(fallback)}",
             )
         }
         return null
@@ -129,7 +130,7 @@ class AudioCachePrefetcher @Inject constructor(
         return orderedKeys.map { key ->
             RemoteAudioSource(
                 key = key,
-                url = "${BuildConfig.AUDIO_BASE_URL}/${Uri.encode(key)}",
+                url = "${endpointsProvider.getAudioBaseUrl()}/${Uri.encode(key)}",
             )
         }
     }
@@ -159,7 +160,7 @@ class AudioCachePrefetcher @Inject constructor(
     private fun fetchManifest(): RemoteAudioManifest? {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(BuildConfig.AUDIO_MANIFEST_URL).openConnection() as HttpURLConnection).apply {
+            connection = (URL(endpointsProvider.getAudioManifestUrl()).openConnection() as HttpURLConnection).apply {
                 connectTimeout = MANIFEST_TIMEOUT_MS
                 readTimeout = MANIFEST_TIMEOUT_MS
                 requestMethod = "GET"
