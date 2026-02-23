@@ -23,7 +23,7 @@ class ZikirReminderScheduler @Inject constructor(
     private val preferencesDataSource: PreferencesDataSource,
 ) {
 
-    suspend fun scheduleDaily(hour: Int, minute: Int) {
+    fun scheduleDaily(hour: Int, minute: Int) {
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
         val pendingIntent = reminderPendingIntent(
             flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -38,7 +38,7 @@ class ZikirReminderScheduler @Inject constructor(
         )
     }
 
-    suspend fun cancel() {
+    fun cancel() {
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
         val pendingIntent = reminderPendingIntent(PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE)
         pendingIntent?.let {
