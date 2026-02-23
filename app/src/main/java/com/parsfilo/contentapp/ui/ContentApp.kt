@@ -36,9 +36,6 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emptyFlow
 import androidx.window.core.layout.WindowSizeClass
 import com.parsfilo.contentapp.R
 import com.parsfilo.contentapp.core.designsystem.AppTheme
@@ -48,6 +45,8 @@ import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logTabSelected
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.navigation.AppRoute
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun ContentApp(

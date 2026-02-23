@@ -1,4 +1,3 @@
-import org.gradle.api.GradleException
 import java.util.Properties
 
 plugins {

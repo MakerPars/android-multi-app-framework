@@ -9,11 +9,11 @@ import com.parsfilo.contentapp.core.model.Prayer
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.content.data.PrayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

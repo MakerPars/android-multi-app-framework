@@ -28,10 +28,10 @@ import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.monetization.AdOrchestrator
 import com.parsfilo.contentapp.ui.ContentApp
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import javax.inject.Inject

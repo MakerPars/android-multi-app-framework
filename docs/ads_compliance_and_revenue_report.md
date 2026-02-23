@@ -65,6 +65,13 @@ Primary outcomes:
   - Anchored adaptive banner size
   - Better recomposition lifecycle handling
 
+## Firebase Consent Mode Mapping
+- UMP consent outcome is synchronized to Firebase Analytics Consent API (`setConsent`).
+- `analytics_storage` and `ad_storage` are updated together from the UMP `canRequestAds()` result.
+- Analytics collection starts disabled on cold start and is enabled at runtime only after consent is granted.
+- Privacy Options / consent refresh updates Firebase consent + analytics collection state without app restart.
+- Crashlytics collection is not disabled by this mapping and continues independently.
+
 ### 4) Placement-based Ad Unit Resolution
 - `feature/ads/.../AdPlacement.kt`, `AdFormat.kt`
 - `app/.../AppAdUnitIds.kt`
@@ -122,6 +129,7 @@ Primary outcomes:
    - Show consent form
    - Deny consent
    - Verify ads are not requested (`canRequestAds=false` path)
+   - Verify Firebase DebugView stops receiving new analytics events after deny
 2. **US States Debug Geography**
    - Force US states
    - Reset consent
@@ -138,6 +146,8 @@ Primary outcomes:
    - Verify anchored adaptive banner displays with appropriate height on multiple screen widths
 7. **ILRD**
    - Confirm `ad_paid_event` Firebase analytics events appear (production/staging traffic may be required)
+8. **Firebase Consent Mapping**
+   - Grant consent and verify Firebase DebugView receives events again without restarting the app
 
 ## Monitoring / Operational Notes
 - ILRD logs are centralized and PII-free.

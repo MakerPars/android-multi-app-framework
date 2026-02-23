@@ -22,8 +22,8 @@ import com.parsfilo.contentapp.feature.prayertimes.worker.PrayerTimesRefreshWork
 import com.parsfilo.contentapp.observability.SentryMetrics
 import dagger.hilt.android.HiltAndroidApp
 import io.sentry.Sentry
-import io.sentry.SentryLevel
 import io.sentry.SentryEvent
+import io.sentry.SentryLevel
 import io.sentry.SentryLogEvent
 import io.sentry.SentryLogLevel
 import io.sentry.android.core.SentryAndroid
@@ -64,6 +64,10 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         val appStartUptimeMs = SystemClock.elapsedRealtime()
+
+        // Start with analytics collection disabled until UMP consent result is finalized.
+        // Crashlytics remains independent and continues collecting crashes.
+        appAnalytics.setAnalyticsCollectionEnabled(false)
 
         if (BuildConfig.SENTRY_DSN.isNotBlank()) {
             SentryAndroid.init(this) { options ->
@@ -134,8 +138,9 @@ class App : Application() {
             }
         }
 
-        // Analytics defaults: keep collection enabled in debug too, but add stable user properties
-        // so debug traffic can be filtered out in reporting if needed.
+        // Analytics defaults (consent-aware): collection starts disabled on cold start and is
+        // re-enabled by AdManager only after consent is granted. User properties/default params
+        // are still set here so runtime enablement starts with stable metadata.
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
         appAnalytics.setUserProperty(

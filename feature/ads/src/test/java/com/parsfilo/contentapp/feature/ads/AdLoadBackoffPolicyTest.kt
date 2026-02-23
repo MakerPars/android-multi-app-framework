@@ -1,8 +1,8 @@
 package com.parsfilo.contentapp.feature.ads
 
 import com.google.common.truth.Truth.assertThat
-import kotlin.random.Random
 import org.junit.Test
+import kotlin.random.Random
 
 class AdLoadBackoffPolicyTest {
 

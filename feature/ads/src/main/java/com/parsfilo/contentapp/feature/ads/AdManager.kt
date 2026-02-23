@@ -11,6 +11,7 @@ import com.google.android.ump.UserMessagingPlatform
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
+import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,7 @@ enum class UmpDebugGeography(val umpValue: Int) {
 class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesDataSource: PreferencesDataSource,
+    private val appAnalytics: AppAnalytics,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val isMobileAdsInitializeCalled = AtomicBoolean(false)
@@ -105,6 +107,7 @@ class AdManager @Inject constructor(
             initializeMobileAdsSdk(ageGateStatus)
         } else {
             AdsConsentRuntimeState.update(false)
+            applyFirebaseConsent(false)
         }
     }
 
@@ -185,6 +188,7 @@ class AdManager @Inject constructor(
     fun resetConsent() {
         UserMessagingPlatform.getConsentInformation(context).reset()
         AdsConsentRuntimeState.update(false)
+        applyFirebaseConsent(false)
         _consentStatus.value = ConsentStatus.Unknown
         _privacyOptionsRequired.value = false
     }
@@ -284,10 +288,26 @@ class AdManager @Inject constructor(
 
     private fun applyConsentRuntimeState(canRequestAds: Boolean) {
         AdsConsentRuntimeState.update(canRequestAds)
+        applyFirebaseConsent(canRequestAds)
         _consentStatus.value = if (canRequestAds) {
             ConsentStatus.Obtained
         } else {
             ConsentStatus.Required
+        }
+    }
+
+    private fun applyFirebaseConsent(consentGranted: Boolean) {
+        try {
+            val (adStorageGranted, analyticsStorageGranted) =
+                mapToFirebaseConsentGrantedFlags(consentGranted)
+            appAnalytics.setConsent(
+                adStorageGranted = adStorageGranted,
+                analyticsStorageGranted = analyticsStorageGranted,
+            )
+            appAnalytics.setAnalyticsCollectionEnabled(consentGranted)
+            Timber.d("Firebase consent updated: granted=%s", consentGranted)
+        } catch (t: Throwable) {
+            Timber.w(t, "Failed to update Firebase consent mapping")
         }
     }
 
@@ -299,3 +319,6 @@ class AdManager @Inject constructor(
     private fun isDebugBuild(): Boolean =
         (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 }
+
+internal fun mapToFirebaseConsentGrantedFlags(granted: Boolean): Pair<Boolean, Boolean> =
+    granted to granted

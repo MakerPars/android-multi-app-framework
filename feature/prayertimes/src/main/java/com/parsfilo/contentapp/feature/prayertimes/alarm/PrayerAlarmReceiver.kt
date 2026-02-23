@@ -6,10 +6,10 @@ import android.content.Intent
 import com.parsfilo.contentapp.core.datastore.PrayerPreferencesDataSource
 import com.parsfilo.contentapp.feature.prayertimes.model.PrayerAppVariant
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber

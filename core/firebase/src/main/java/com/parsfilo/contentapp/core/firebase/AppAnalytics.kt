@@ -41,6 +41,25 @@ class AppAnalytics @Inject constructor(
         analytics.setAnalyticsCollectionEnabled(enabled)
     }
 
+    fun setConsent(adStorageGranted: Boolean, analyticsStorageGranted: Boolean) {
+        analytics.setConsent(
+            mapOf(
+                FirebaseAnalytics.ConsentType.AD_STORAGE to
+                    if (adStorageGranted) {
+                        FirebaseAnalytics.ConsentStatus.GRANTED
+                    } else {
+                        FirebaseAnalytics.ConsentStatus.DENIED
+                    },
+                FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to
+                    if (analyticsStorageGranted) {
+                        FirebaseAnalytics.ConsentStatus.GRANTED
+                    } else {
+                        FirebaseAnalytics.ConsentStatus.DENIED
+                    },
+            ),
+        )
+    }
+
     fun setDefaultEventParameters(params: Bundle) {
         analytics.setDefaultEventParameters(params)
     }

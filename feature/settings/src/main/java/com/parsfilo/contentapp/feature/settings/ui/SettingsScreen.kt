@@ -7,11 +7,9 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
 import android.provider.Settings
-import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
@@ -74,7 +72,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.ump.ConsentInformation
 import com.google.firebase.messaging.FirebaseMessaging
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard

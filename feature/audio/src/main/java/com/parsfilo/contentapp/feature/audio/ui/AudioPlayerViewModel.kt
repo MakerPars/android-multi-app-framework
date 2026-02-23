@@ -15,13 +15,12 @@ import com.google.android.play.core.assetpacks.AssetPackManager
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 import com.google.common.util.concurrent.ListenableFuture
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
-import com.parsfilo.contentapp.feature.audio.BuildConfig
 import com.parsfilo.contentapp.feature.audio.service.AudioService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
