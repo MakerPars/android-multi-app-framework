@@ -31,6 +31,7 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
+import timber.log.Timber
 
 @HiltViewModel
 class CounterViewModel @Inject constructor(
@@ -374,6 +375,14 @@ class CounterViewModel @Inject constructor(
 
     fun onReminderSaved(settings: ReminderSettings) {
         viewModelScope.launch {
+            Timber.d(
+                "Reminder settings saved enabled=%s hour=%d minute=%d dailyGoal=%d streakReminder=%s",
+                settings.enabled,
+                settings.hour,
+                settings.minute,
+                settings.dailyGoal,
+                settings.streakReminderEnabled,
+            )
             preferencesDataSource.setZikirReminderEnabled(settings.enabled)
             preferencesDataSource.setZikirReminderHour(settings.hour)
             preferencesDataSource.setZikirReminderMinute(settings.minute)
@@ -381,9 +390,11 @@ class CounterViewModel @Inject constructor(
             preferencesDataSource.setZikirStreakReminderEnabled(settings.streakReminderEnabled)
             if (settings.enabled) {
                 val scheduleMode = zikirReminderScheduler.scheduleDaily(settings.hour, settings.minute)
+                Timber.d("Reminder schedule result=%s", scheduleMode)
                 if (scheduleMode == ReminderScheduleMode.INEXACT_FALLBACK &&
                     zikirReminderScheduler.canRequestExactAlarmPermission()
                 ) {
+                    Timber.d("Exact alarm permission required; emitting reminder permission request event")
                     _reminderUiEvents.emit(CounterReminderUiEvent.RequestExactAlarmPermission)
                 }
             } else {
@@ -397,11 +408,13 @@ class CounterViewModel @Inject constructor(
     fun onExactAlarmPermissionSettingsReturned() {
         viewModelScope.launch {
             if (!zikirReminderScheduler.canRequestExactAlarmPermission()) {
-                zikirReminderScheduler.scheduleOrCancelFromPreferences()
+                val scheduleMode = zikirReminderScheduler.scheduleOrCancelFromPreferences()
+                Timber.d("Exact alarm settings returned: permission granted, reschedule result=%s", scheduleMode)
                 _reminderUiEvents.emit(
                     CounterReminderUiEvent.ExactAlarmPermissionGranted
                 )
             } else {
+                Timber.d("Exact alarm settings returned: permission still missing")
                 _reminderUiEvents.emit(
                     CounterReminderUiEvent.ExactAlarmPermissionStillMissing
                 )

@@ -27,18 +27,32 @@ class ZikirReminderScheduler @Inject constructor(
 
     fun scheduleDaily(hour: Int, minute: Int): ReminderScheduleMode {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-            ?: return ReminderScheduleMode.INEXACT_FALLBACK
+            ?: run {
+                Timber.w("AlarmManager unavailable; reminder scheduling skipped")
+                return ReminderScheduleMode.INEXACT_FALLBACK
+            }
         val pendingIntent = reminderPendingIntent(
             flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        ) ?: return ReminderScheduleMode.INEXACT_FALLBACK
+        ) ?: run {
+            Timber.w("Reminder PendingIntent could not be created; scheduling skipped")
+            return ReminderScheduleMode.INEXACT_FALLBACK
+        }
 
         val triggerAt = nextTriggerAt(hour = hour, minute = minute)
         alarmManager.cancel(pendingIntent)
-        return scheduleAlarm(
+        val mode = scheduleAlarm(
             alarmManager = alarmManager,
             triggerAt = triggerAt,
             pendingIntent = pendingIntent,
         )
+        Timber.d(
+            "Zikir reminder scheduled mode=%s hour=%d minute=%d triggerAt=%d",
+            mode,
+            hour,
+            minute,
+            triggerAt,
+        )
+        return mode
     }
 
     fun cancel() {
@@ -47,12 +61,14 @@ class ZikirReminderScheduler @Inject constructor(
         pendingIntent?.let {
             alarmManager.cancel(it)
             it.cancel()
+            Timber.d("Zikir reminder cancelled")
         }
     }
 
     suspend fun scheduleOrCancelFromPreferences(): ReminderScheduleMode? {
         val enabled = preferencesDataSource.zikirReminderEnabled.first()
         if (!enabled) {
+            Timber.d("Zikir reminder disabled in preferences; cancelling reminder")
             cancel()
             return null
         }
@@ -97,6 +113,7 @@ class ZikirReminderScheduler @Inject constructor(
             ExistingPeriodicWorkPolicy.UPDATE,
             request,
         )
+        Timber.d("Zikir streak check worker scheduled (daily, initialDelayMs=%d)", initialDelay)
     }
 
     private fun reminderPendingIntent(flags: Int): PendingIntent? {
@@ -148,6 +165,7 @@ class ZikirReminderScheduler @Inject constructor(
                 scheduleInexact(alarmManager, triggerAt, pendingIntent)
             }
         } else {
+            Timber.d("Exact alarm access unavailable on API %d; using inexact fallback", Build.VERSION.SDK_INT)
             scheduleInexact(alarmManager, triggerAt, pendingIntent)
         }
     }
@@ -163,6 +181,7 @@ class ZikirReminderScheduler @Inject constructor(
             triggerAt,
             pendingIntent,
         )
+        Timber.d("Inexact reminder fallback scheduled triggerAt=%d", triggerAt)
         return ReminderScheduleMode.INEXACT_FALLBACK
     }
 

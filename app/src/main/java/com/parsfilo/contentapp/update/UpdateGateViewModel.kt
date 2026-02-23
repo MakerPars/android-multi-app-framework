@@ -33,19 +33,23 @@ class UpdateGateViewModel @Inject constructor(
     private val _debugOverridePolicy = MutableStateFlow<UpdatePolicy?>(null)
 
     fun checkForUpdate() {
+        Timber.d("Force update check requested (normal)")
         fetchPolicy(forceFetch = false)
     }
 
     fun retryCheck() {
+        Timber.d("Force update check requested (retry/force)")
         fetchPolicy(forceFetch = true)
     }
 
     fun dismissSoftPromptForSession() {
+        Timber.d("Force update soft prompt dismissed for current session")
         _softPromptDismissedThisSession.value = true
         recomputeActivePolicy()
     }
 
     fun resetSoftPromptForSession() {
+        Timber.d("Force update soft prompt session dismissal reset")
         _softPromptDismissedThisSession.value = false
         recomputeActivePolicy()
     }
@@ -58,6 +62,7 @@ class UpdateGateViewModel @Inject constructor(
                 _debugSnapshot.value = snapshot
                 _basePolicy.value = snapshot.resolvedPolicy
                 _debugOverridePolicy.value = null
+                Timber.d("Force update debug fetch resolved policy=%s", snapshot.resolvedPolicy::class.simpleName)
                 if (snapshot.resolvedPolicy !is UpdatePolicy.Soft) {
                     _softPromptDismissedThisSession.value = false
                 }
@@ -71,6 +76,7 @@ class UpdateGateViewModel @Inject constructor(
     }
 
     fun simulateSoftPrompt() {
+        Timber.d("Force update debug simulation set: Soft")
         _debugOverridePolicy.value = UpdatePolicy.Soft(
             title = "Güncelleme önerisi (Debug)",
             message = "Bu bir debug simülasyonudur.",
@@ -81,6 +87,7 @@ class UpdateGateViewModel @Inject constructor(
     }
 
     fun simulateHardBlock() {
+        Timber.d("Force update debug simulation set: Hard")
         _debugOverridePolicy.value = UpdatePolicy.Hard(
             title = "Zorunlu güncelleme (Debug)",
             message = "Bu bir debug simülasyonudur.",
@@ -90,6 +97,7 @@ class UpdateGateViewModel @Inject constructor(
     }
 
     fun clearSimulation() {
+        Timber.d("Force update debug simulation cleared")
         _debugOverridePolicy.value = null
         recomputeActivePolicy()
     }
@@ -101,6 +109,7 @@ class UpdateGateViewModel @Inject constructor(
                 val snapshot = updateCoordinator.getDebugSnapshot(forceFetch = forceFetch)
                 _debugSnapshot.value = snapshot
                 _basePolicy.value = snapshot.resolvedPolicy
+                Timber.d("Force update resolved policy=%s", snapshot.resolvedPolicy::class.simpleName)
                 if (snapshot.resolvedPolicy !is UpdatePolicy.Soft) {
                     _softPromptDismissedThisSession.value = false
                 }
@@ -122,5 +131,12 @@ class UpdateGateViewModel @Inject constructor(
             resolved is UpdatePolicy.Soft && _softPromptDismissedThisSession.value -> UpdatePolicy.None
             else -> resolved
         }
+        Timber.d(
+            "Force update active policy=%s (base=%s, override=%s, softDismissed=%s)",
+            _activePolicy.value::class.simpleName,
+            resolved::class.simpleName,
+            override?.let { it::class.simpleName } ?: "null",
+            _softPromptDismissedThisSession.value,
+        )
     }
 }
