@@ -73,14 +73,31 @@ class BillingManager @Inject constructor(
     }
 
     fun startConnection() {
-        if (billingClient.isReady) {
+        ensureScope()
+
+        val client = billingClient
+        if (client.isReady) {
             queryProductDetails()
             refreshPurchaseState()
             return
         }
-        if (!isConnecting.compareAndSet(false, true)) return
-        billingClient.startConnection(object : BillingClientStateListener {
+        if (!isConnecting.compareAndSet(false, true)) {
+            Timber.d("Billing connection already in progress")
+            return
+        }
+        if (billingClient !== client) {
+            isConnecting.set(false)
+            Timber.d("Billing client changed before startConnection; retrying with fresh client")
+            startConnection()
+            return
+        }
+
+        client.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
+                if (billingClient !== client) {
+                    Timber.d("Ignoring billing setup callback from stale client")
+                    return
+                }
                 isConnecting.set(false)
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProductDetails()
@@ -91,19 +108,19 @@ class BillingManager @Inject constructor(
             }
 
             override fun onBillingServiceDisconnected() {
+                if (billingClient !== client) {
+                    Timber.d("Ignoring billing disconnect callback from stale client")
+                    return
+                }
                 isConnecting.set(false)
                 Timber.w("Billing service disconnected")
-                endConnection()
+                replaceBillingClient(closeCurrent = false, resetScope = false)
             }
         })
     }
 
     fun endConnection() {
-        if (billingClient.isReady) {
-            billingClient.endConnection()
-        }
-        scope.coroutineContext[Job]?.cancel()
-        scope = createScope()
+        replaceBillingClient(closeCurrent = true, resetScope = true)
     }
 
     fun launchBillingFlow(activity: Activity, billingProduct: BillingProduct) {
@@ -317,6 +334,35 @@ class BillingManager @Inject constructor(
     private fun setError(message: String) {
         _subscriptionState.value = SubscriptionState.Error(message)
         Timber.w(message)
+    }
+
+    private fun replaceBillingClient(
+        closeCurrent: Boolean,
+        resetScope: Boolean
+    ) {
+        val currentClient = billingClient
+
+        if (closeCurrent && currentClient.isReady) {
+            runCatching {
+                currentClient.endConnection()
+            }.onFailure { throwable ->
+                Timber.w(throwable, "Billing endConnection failed while replacing client")
+            }
+        }
+
+        billingClient = createBillingClient()
+        isConnecting.set(false)
+
+        if (resetScope) {
+            scope.coroutineContext[Job]?.cancel()
+            scope = createScope()
+        }
+
+        Timber.d(
+            "Billing client replaced (closeCurrent=%s, resetScope=%s)",
+            closeCurrent,
+            resetScope
+        )
     }
 }
 

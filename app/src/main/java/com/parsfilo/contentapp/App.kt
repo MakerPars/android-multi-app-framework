@@ -170,7 +170,6 @@ class App : Application() {
 
             override fun onStart(owner: LifecycleOwner) {
                 billingManager.startConnection()
-                billingManager.refreshPurchaseState()
             }
         })
 
