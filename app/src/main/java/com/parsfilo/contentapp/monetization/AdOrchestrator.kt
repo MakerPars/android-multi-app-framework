@@ -5,6 +5,7 @@ import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.AdManager
+import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
@@ -46,18 +47,7 @@ class AdOrchestrator @Inject constructor(
                         SentryMetrics.count("ads.initialize.skipped.gated")
                         return@launch
                     }
-
-                    SentryMetrics.count("ads.load.requested.app_open")
-                    appOpenAdManager.loadAd(ids.appOpen)
-
-                    SentryMetrics.count("ads.load.requested.interstitial")
-                    interstitialAdManager.loadAd(ids.interstitial)
-
-                    SentryMetrics.count("ads.load.requested.native")
-                    nativeAdManager.loadAds(ids.native, 3)
-
-                    SentryMetrics.count("ads.load.requested.rewarded_interstitial")
-                    rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial)
+                    preloadAds(ids)
                 }
             }
         }
@@ -69,6 +59,10 @@ class AdOrchestrator @Inject constructor(
     }
 
     suspend fun showInterstitialIfEligible(activity: Activity, onAdDismissed: () -> Unit = {}) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            onAdDismissed()
+            return
+        }
         SentryMetrics.count("ads.interstitial.show.attempt")
         SentryMetrics.breadcrumb("ads", "Interstitial show attempt")
         interstitialAdManager.showAd(activity) {
@@ -83,6 +77,9 @@ class AdOrchestrator @Inject constructor(
      * AppOpenAdManager kendi içinde premium/cooldown kontrolünü yapar.
      */
     suspend fun showAppOpenAdIfEligible(activity: Activity) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            return
+        }
         SentryMetrics.count("ads.app_open.show.attempt")
         SentryMetrics.breadcrumb("ads", "AppOpen show attempt")
         if (!adGateChecker.shouldShowAds.first()) {
@@ -108,6 +105,10 @@ class AdOrchestrator @Inject constructor(
         onUserEarnedReward: () -> Unit = {},
         onAdDismissed: () -> Unit = {}
     ) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            onAdDismissed()
+            return
+        }
         SentryMetrics.count("ads.rewarded_interstitial.show.attempt")
         SentryMetrics.breadcrumb("ads", "RewardedInterstitial show attempt")
         if (!adGateChecker.shouldShowAds.first()) {
@@ -141,6 +142,44 @@ class AdOrchestrator @Inject constructor(
                 onAdDismissed()
             }
         )
+    }
+
+    fun refreshConsent(activity: Activity, scope: CoroutineScope) {
+        adManager.refreshConsent(activity) { canRequestAds ->
+            scope.launch(Main.immediate) {
+                if (!canRequestAds) {
+                    clearPreloadedAds()
+                    return@launch
+                }
+                if (!adGateChecker.shouldShowAds.first()) {
+                    clearPreloadedAds()
+                    return@launch
+                }
+                val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
+                preloadAds(ids)
+            }
+        }
+    }
+
+    private fun preloadAds(ids: AppAdUnitIds.Ids) {
+        SentryMetrics.count("ads.load.requested.app_open")
+        appOpenAdManager.loadAd(ids.appOpen)
+
+        SentryMetrics.count("ads.load.requested.interstitial")
+        interstitialAdManager.loadAd(ids.interstitial)
+
+        SentryMetrics.count("ads.load.requested.native")
+        nativeAdManager.loadAds(ids.native, 3)
+
+        SentryMetrics.count("ads.load.requested.rewarded_interstitial")
+        rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial)
+    }
+
+    private fun clearPreloadedAds() {
+        appOpenAdManager.clearAd()
+        interstitialAdManager.clearAd()
+        rewardedInterstitialAdManager.clearAd()
+        nativeAdManager.destroyAds()
     }
 }
 

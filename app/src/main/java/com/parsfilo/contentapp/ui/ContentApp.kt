@@ -53,6 +53,7 @@ import com.parsfilo.contentapp.navigation.AppRoute
 fun ContentApp(
     openNotificationsEvents: Flow<Unit> = emptyFlow(),
     appAnalytics: AppAnalytics,
+    onPrivacyOptionsUpdated: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
     audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel()
 ) {
@@ -238,6 +239,7 @@ fun ContentApp(
                             isUserSignedIn = isUserSignedIn,
                             audioPlayerViewModel = audioPlayerViewModel,
                             appAnalytics = appAnalytics,
+                            onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
                         )
                     }
                 }
@@ -268,6 +270,7 @@ fun ContentApp(
                             isUserSignedIn = isUserSignedIn,
                             audioPlayerViewModel = audioPlayerViewModel,
                             appAnalytics = appAnalytics,
+                            onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
                         )
                     }
                 }

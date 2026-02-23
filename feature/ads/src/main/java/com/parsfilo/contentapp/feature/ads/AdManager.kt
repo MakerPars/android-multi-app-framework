@@ -116,6 +116,39 @@ class AdManager @Inject constructor(
         }
     }
 
+    /**
+     * Re-check consent after privacy options form interactions so ad serving state changes
+     * immediately in the same app session.
+     */
+    fun refreshConsent(activity: Activity, onUpdated: (Boolean) -> Unit = {}) {
+        val params = ConsentRequestParameters.Builder()
+            .setTagForUnderAgeOfConsent(false)
+            .build()
+        val consentInformation = UserMessagingPlatform.getConsentInformation(context)
+
+        consentInformation.requestConsentInfoUpdate(
+            activity,
+            params,
+            {
+                val canRequestAds = consentInformation.canRequestAds()
+                applyConsentRuntimeState(canRequestAds)
+                if (canRequestAds) {
+                    initializeMobileAdsSdk()
+                }
+                onUpdated(canRequestAds)
+            },
+            { requestConsentError ->
+                Timber.w("Consent refresh error: ${requestConsentError.message}")
+                val canRequestAds = consentInformation.canRequestAds()
+                applyConsentRuntimeState(canRequestAds)
+                if (canRequestAds) {
+                    initializeMobileAdsSdk()
+                }
+                onUpdated(canRequestAds)
+            },
+        )
+    }
+
     private fun initializeMobileAdsSdk() {
         if (isMobileAdsInitializeCalled.getAndSet(true)) {
             return
@@ -144,6 +177,15 @@ class AdManager @Inject constructor(
             .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE)
             .build()
         MobileAds.setRequestConfiguration(requestConfiguration)
+    }
+
+    private fun applyConsentRuntimeState(canRequestAds: Boolean) {
+        AdsConsentRuntimeState.update(canRequestAds)
+        _consentStatus.value = if (canRequestAds) {
+            ConsentStatus.Obtained
+        } else {
+            ConsentStatus.Required
+        }
     }
 }
 

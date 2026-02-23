@@ -204,6 +204,12 @@ class MainActivity : ComponentActivity() {
                 ContentApp(
                     openNotificationsEvents = openNotificationsEvents,
                     appAnalytics = appAnalytics,
+                    onPrivacyOptionsUpdated = {
+                        adOrchestrator.refreshConsent(
+                            activity = this@MainActivity,
+                            scope = lifecycleScope,
+                        )
+                    },
                 )
             }
         } catch (_: NullPointerException) {
@@ -213,6 +219,12 @@ class MainActivity : ComponentActivity() {
                     ContentApp(
                         openNotificationsEvents = openNotificationsEvents,
                         appAnalytics = appAnalytics,
+                        onPrivacyOptionsUpdated = {
+                            adOrchestrator.refreshConsent(
+                                activity = this@MainActivity,
+                                scope = lifecycleScope,
+                            )
+                        },
                     )
                 }
             }

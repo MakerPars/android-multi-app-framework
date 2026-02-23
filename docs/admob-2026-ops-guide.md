@@ -86,6 +86,12 @@ Referans:
 - `feature/ads/src/main/java/com/parsfilo/contentapp/feature/ads/AdManager.kt`
 - Varsayılan durum `canRequestAds=false`; UMP olumlu sonuç vermeden banner yüklenmez.
 
+7. Privacy options sonrası rıza değişikliği aynı oturumda uygulanıyor:
+- `feature/settings/.../SettingsScreen.kt` form kapanış callback'i
+- `app/.../MainActivity.kt` -> `AdOrchestrator.refreshConsent(...)`
+- `app/.../monetization/AdOrchestrator.kt` consent false ise preload adlar temizlenir
+- Böylece kullanıcı rızayı geri çektiğinde app restart beklenmeden ad istekleri durur.
+
 ## Resmi örneklerle eşleme (GoogleAds Android Examples)
 
 Bu repo AdMob ad unit (`ca-app-pub-...`) kullandığı için yükleme tarafında

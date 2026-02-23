@@ -30,6 +30,10 @@ class RewardedInterstitialAdManager @Inject constructor(
     private var isLoading = false
 
     fun loadAd(adUnitId: String) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            return
+        }
         if (isLoading || rewardedInterstitialAd != null) return
 
         isLoading = true
@@ -76,6 +80,11 @@ class RewardedInterstitialAdManager @Inject constructor(
         onUserEarnedReward: (type: String, amount: Int) -> Unit,
         onAdDismissed: () -> Unit,
     ) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            onAdDismissed()
+            return
+        }
         val ad = rewardedInterstitialAd
         if (ad == null) {
             Timber.d("Ad not ready, calling onAdDismissed")
@@ -112,4 +121,9 @@ class RewardedInterstitialAdManager @Inject constructor(
     }
 
     fun isAdReady(): Boolean = rewardedInterstitialAd != null
+
+    fun clearAd() {
+        rewardedInterstitialAd = null
+        isLoading = false
+    }
 }

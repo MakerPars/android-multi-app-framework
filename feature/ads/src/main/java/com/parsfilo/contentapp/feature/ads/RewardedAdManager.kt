@@ -28,6 +28,10 @@ class RewardedAdManager @Inject constructor(
     fun isAdReadyNow(): Boolean = _isAdReady.value
 
     fun loadAd(adUnitId: String) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            return
+        }
         val adRequest = AdRequest.Builder().build()
         Timber.d("Rewarded load requested: %s", adUnitId)
         RewardedAd.load(
@@ -66,6 +70,11 @@ class RewardedAdManager @Inject constructor(
     }
 
     fun showAd(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            onAdDismissed()
+            return
+        }
         if (rewardedAd != null) {
             rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
@@ -100,5 +109,10 @@ class RewardedAdManager @Inject constructor(
             Timber.d("Rewarded show skipped: ad not ready")
             onAdDismissed()
         }
+    }
+
+    fun clearAd() {
+        rewardedAd = null
+        _isAdReady.value = false
     }
 }

@@ -67,6 +67,7 @@ fun AppNavHost(
     isUserSignedIn: Boolean,
     audioPlayerViewModel: AudioPlayerViewModel,
     appAnalytics: AppAnalytics,
+    onPrivacyOptionsUpdated: () -> Unit = {},
     nativeAdViewModel: NativeAdViewModel = hiltViewModel()
 ) {
     val audioState by audioPlayerViewModel.playerState.collectAsStateWithLifecycle()
@@ -494,7 +495,9 @@ fun AppNavHost(
             }
             composable(AppRoute.Settings.route) {
                 SettingsRoute(
-                    onBackClick = { navController.popBackStack() })
+                    onBackClick = { navController.popBackStack() },
+                    onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
+                )
             }
             composable(AppRoute.Rewards.route) {
                 RewardsRoute(

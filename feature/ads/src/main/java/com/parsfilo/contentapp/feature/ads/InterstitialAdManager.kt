@@ -28,6 +28,10 @@ class InterstitialAdManager @Inject constructor(
     }
 
     fun loadAd(adUnitId: String) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            return
+        }
         currentAdUnitId = adUnitId
         val adRequest = AdRequest.Builder().build()
 
@@ -52,6 +56,11 @@ class InterstitialAdManager @Inject constructor(
      * Son gösterimden beri [FREQUENCY_CAP_MS] geçmediyse göstermez.
      */
     suspend fun showAd(activity: Activity, onAdDismissed: () -> Unit) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            onAdDismissed()
+            return
+        }
         val prefs = preferencesDataSource.userData.first()
         val now = System.currentTimeMillis()
 
@@ -95,9 +104,13 @@ class InterstitialAdManager @Inject constructor(
 
     private fun maybeReload() {
         val adUnitId = currentAdUnitId ?: return
-        if (interstitialAd == null) {
+        if (interstitialAd == null && AdsConsentRuntimeState.canRequestAds.value) {
             loadAd(adUnitId)
         }
+    }
+
+    fun clearAd() {
+        interstitialAd = null
     }
 }
 

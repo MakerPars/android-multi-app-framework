@@ -29,6 +29,10 @@ class AppOpenAdManager @Inject constructor(
     }
 
     fun loadAd(adUnitId: String) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            return
+        }
         if (isLoadingAd || isAdAvailable()) {
             return
         }
@@ -58,6 +62,11 @@ class AppOpenAdManager @Inject constructor(
      * Son gösterimden beri [COOLDOWN_MS] geçmediyse göstermez.
      */
     suspend fun showAdIfAvailable(activity: Activity, onShowComplete: () -> Unit) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            clearAd()
+            onShowComplete()
+            return
+        }
         val prefs = preferencesDataSource.userData.first()
         val now = System.currentTimeMillis()
 
@@ -96,6 +105,12 @@ class AppOpenAdManager @Inject constructor(
         // Cooldown stamp kaydet
         preferencesDataSource.setLastAppOpenAdShown(now)
         appOpenAd?.show(activity)
+    }
+
+    fun clearAd() {
+        appOpenAd = null
+        isLoadingAd = false
+        loadTime = 0L
     }
 
     private fun isAdAvailable(): Boolean {

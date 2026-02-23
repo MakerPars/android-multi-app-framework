@@ -88,6 +88,7 @@ import java.util.Locale
 @Composable
 fun SettingsRoute(
     onBackClick: () -> Unit = {},
+    onPrivacyOptionsUpdated: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +98,7 @@ fun SettingsRoute(
         onDarkModeChanged = viewModel::setDarkMode,
         onFontSizeChanged = viewModel::setFontSize,
         onNotificationsChanged = viewModel::setNotificationsEnabled,
+        onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
         onShareApp = { platform -> viewModel.logShareApp(platform) },
     )
 }
@@ -108,6 +110,7 @@ fun SettingsScreen(
     onDarkModeChanged: (Boolean) -> Unit,
     onFontSizeChanged: (Int) -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
+    onPrivacyOptionsUpdated: () -> Unit = {},
     onShareApp: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -395,6 +398,8 @@ fun SettingsScreen(
                                         UserMessagingPlatform.showPrivacyOptionsForm(hostActivity) { formError ->
                                             if (formError != null) {
                                                 showMessage(privacyOptionsErrorText)
+                                            } else {
+                                                onPrivacyOptionsUpdated()
                                             }
                                             val status = UserMessagingPlatform
                                                 .getConsentInformation(context)

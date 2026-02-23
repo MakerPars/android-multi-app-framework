@@ -48,6 +48,10 @@ class NativeAdManager @Inject constructor(
      * Bu nedenle her reklam ayrı ayrı yüklenir.
      */
     fun loadAds(adUnitId: String, count: Int) {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            destroyAds()
+            return
+        }
         if (isLoading) {
             Timber.d("Already loading, ignoring request")
             return
@@ -117,6 +121,10 @@ class NativeAdManager @Inject constructor(
      * Havuz azaldığında yeni reklamlar otomatik yüklenir.
      */
     fun getNativeAd(): NativeAd? {
+        if (!AdsConsentRuntimeState.canRequestAds.value) {
+            destroyAds()
+            return null
+        }
         val ad = synchronized(nativeAds) {
             if (nativeAds.isNotEmpty()) nativeAds.removeAt(0) else null
         }
