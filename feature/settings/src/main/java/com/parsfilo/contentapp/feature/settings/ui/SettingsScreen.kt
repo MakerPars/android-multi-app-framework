@@ -182,12 +182,15 @@ fun SettingsScreen(
     val privacyOptionsUnavailableText = stringResource(R.string.settings_privacy_options_unavailable)
     val privacyOptionsErrorText = stringResource(R.string.settings_privacy_options_error)
     val privacyOptionsSavedText = stringResource(R.string.settings_privacy_options_saved)
+    val privacyOptionsNotRequiredNowText =
+        stringResource(R.string.settings_privacy_options_not_required_now)
     val adInspectorOpenedText = stringResource(R.string.settings_ads_debug_ad_inspector_opened)
     val adInspectorErrorText = stringResource(R.string.settings_ads_debug_ad_inspector_error)
     val consentResetText = stringResource(R.string.settings_ads_debug_consent_reset)
     val consentFormShownText = stringResource(R.string.settings_ads_debug_consent_form_done)
     val consentFormErrorText = stringResource(R.string.settings_ads_debug_consent_form_error)
     val adsConfigUpdatedText = stringResource(R.string.settings_ads_debug_ads_config_updated)
+    val debugGeoSetResetHintText = stringResource(R.string.settings_ads_debug_geo_set_reset_hint)
     val updateDebugFetchText = stringResource(R.string.settings_update_debug_fetch_now)
     val updateDebugFetchStartedText = stringResource(R.string.settings_update_debug_fetch_started)
     val updateDebugSimSoftText = stringResource(R.string.settings_update_debug_simulate_soft)
@@ -442,6 +445,10 @@ fun SettingsScreen(
                                     val hostActivity = activity
                                     if (hostActivity == null) {
                                         showMessage(privacyOptionsUnavailableText)
+                                        return@TextButton
+                                    }
+                                    if (!isPrivacyOptionsRequired) {
+                                        showMessage(privacyOptionsNotRequiredNowText)
                                         return@TextButton
                                     }
                                     adManager.showPrivacyOptions(hostActivity) { success ->
@@ -759,8 +766,22 @@ fun SettingsScreen(
                                     AppButton(
                                         text = stringResource(R.string.settings_ads_debug_force_eea),
                                         onClick = {
+                                            val hostActivity = activity
                                             onSetConsentDebugGeography(UmpDebugGeography.EEA)
-                                            showMessage("UMP debug geography: EEA")
+                                            onResetConsent()
+                                            if (hostActivity != null) {
+                                                adManager.onAdsConfigChanged(hostActivity) {
+                                                    onPrivacyOptionsUpdated()
+                                                    isPrivacyOptionsRequired =
+                                                        adManager.privacyOptionsRequired.value
+                                                }
+                                            }
+                                            showMessage(
+                                                String.format(
+                                                    debugGeoSetResetHintText,
+                                                    UmpDebugGeography.EEA.name,
+                                                ),
+                                            )
                                         },
                                         modifier = Modifier.weight(1f),
                                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -772,8 +793,22 @@ fun SettingsScreen(
                                     AppButton(
                                         text = stringResource(R.string.settings_ads_debug_force_us),
                                         onClick = {
+                                            val hostActivity = activity
                                             onSetConsentDebugGeography(UmpDebugGeography.US_STATES)
-                                            showMessage("UMP debug geography: US_STATES")
+                                            onResetConsent()
+                                            if (hostActivity != null) {
+                                                adManager.onAdsConfigChanged(hostActivity) {
+                                                    onPrivacyOptionsUpdated()
+                                                    isPrivacyOptionsRequired =
+                                                        adManager.privacyOptionsRequired.value
+                                                }
+                                            }
+                                            showMessage(
+                                                String.format(
+                                                    debugGeoSetResetHintText,
+                                                    UmpDebugGeography.US_STATES.name,
+                                                ),
+                                            )
                                         },
                                         modifier = Modifier.weight(1f),
                                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(

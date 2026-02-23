@@ -46,6 +46,7 @@
     <string name="settings_privacy_options_unavailable">Bu işlem şu anda kullanılamıyor</string>
     <string name="settings_privacy_options_error">Gizlilik seçenekleri açılamadı</string>
     <string name="settings_privacy_options_saved">Gizlilik tercihleri güncellendi</string>
+    <string name="settings_privacy_options_not_required_now">Bu bölgede gizlilik seçenekleri şu an gerekli değil.</string>
 
     <string name="settings_ads_age_gate_title">Reklam yaş tercihi</string>
     <string name="settings_ads_age_gate_desc">Reklam gizlilik ayarları için yaş grubunu belirtin</string>
@@ -62,6 +63,7 @@
     <string name="settings_ads_debug_force_eea">Force EEA</string>
     <string name="settings_ads_debug_force_us">Force US States</string>
     <string name="settings_ads_debug_clear_geo">Debug Geography Temizle</string>
+    <string name="settings_ads_debug_geo_set_reset_hint">UMP debug geography: %1$s. Consent sıfırlandı. Test için Consent Formunu Göster&apos;e basın.</string>
     <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector açıldı</string>
     <string name="settings_ads_debug_ad_inspector_error">Ad Inspector açılamadı</string>
     <string name="settings_ads_debug_consent_reset">Consent bilgisi sıfırlandı</string>

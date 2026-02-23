@@ -46,6 +46,7 @@
     <string name="settings_privacy_options_unavailable">Diese Aktion ist derzeit nicht verfügbar</string>
     <string name="settings_privacy_options_error">Datenschutzoptionen konnten nicht geöffnet werden</string>
     <string name="settings_privacy_options_saved">Datenschutzeinstellungen aktualisiert</string>
+    <string name="settings_privacy_options_not_required_now">Datenschutzoptionen sind in Ihrer Region derzeit nicht erforderlich.</string>
 
     <string name="settings_ads_age_gate_title">Altersangabe für Werbung</string>
     <string name="settings_ads_age_gate_desc">Wähle deine Altersgruppe für Datenschutz bei Werbung</string>
@@ -62,6 +63,7 @@
     <string name="settings_ads_debug_force_eea">EEA erzwingen</string>
     <string name="settings_ads_debug_force_us">US States erzwingen</string>
     <string name="settings_ads_debug_clear_geo">Debug-Geografie löschen</string>
+    <string name="settings_ads_debug_geo_set_reset_hint">UMP-Debug-Geografie: %1$s. Einwilligung wurde zurückgesetzt. Zum Testen auf „Consent-Formular anzeigen“ tippen.</string>
     <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector geöffnet</string>
     <string name="settings_ads_debug_ad_inspector_error">Ad Inspector konnte nicht geöffnet werden</string>
     <string name="settings_ads_debug_consent_reset">Einwilligungsdaten zurückgesetzt</string>

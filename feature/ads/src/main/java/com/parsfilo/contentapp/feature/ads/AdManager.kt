@@ -66,6 +66,7 @@ class AdManager @Inject constructor(
 
     private val _debugGeography = MutableStateFlow(UmpDebugGeography.NONE)
     val debugGeography: StateFlow<UmpDebugGeography> = _debugGeography.asStateFlow()
+    private var lastFirebaseConsentGranted: Boolean? = null
 
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
         onAdsInitialized = onReady
@@ -146,6 +147,17 @@ class AdManager @Inject constructor(
     }
 
     fun showPrivacyOptions(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+        val consentInformation = UserMessagingPlatform.getConsentInformation(context)
+        updatePrivacyOptionsState(consentInformation)
+        val isRequired =
+            consentInformation.privacyOptionsRequirementStatus ==
+                ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+        if (!isRequired) {
+            Timber.d("Privacy options not required in this region/session")
+            onCompleted(false)
+            return
+        }
+
         UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
             if (formError != null) {
                 Timber.w("Privacy options form error: %s", formError.message)
@@ -297,6 +309,7 @@ class AdManager @Inject constructor(
     }
 
     private fun applyFirebaseConsent(consentGranted: Boolean) {
+        if (lastFirebaseConsentGranted == consentGranted) return
         try {
             val (adStorageGranted, analyticsStorageGranted) =
                 mapToFirebaseConsentGrantedFlags(consentGranted)
@@ -306,6 +319,7 @@ class AdManager @Inject constructor(
             )
             appAnalytics.setAnalyticsCollectionEnabled(consentGranted)
             Timber.d("Firebase consent updated: granted=%s", consentGranted)
+            lastFirebaseConsentGranted = consentGranted
         } catch (t: Throwable) {
             Timber.w(t, "Failed to update Firebase consent mapping")
         }

@@ -30,6 +30,13 @@ class AdRevenueLogger @Inject constructor(
 ) {
     fun logPaidEvent(context: AdPaidEventContext) {
         val adValue = context.adValue
+        if (adValue.valueMicros == 0L) {
+            Timber.d(
+                "Ad paid event micros=0 (common for test ads / some networks) format=%s placement=%s",
+                context.adFormat.analyticsValue,
+                context.placement.analyticsValue,
+            )
+        }
         Timber.i(
             "Ad paid event format=%s placement=%s micros=%d currency=%s precision=%d responseId=%s adapter=%s",
             context.adFormat.analyticsValue,

@@ -1,0 +1,158 @@
+name: Auto Debug Ops
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'feature/**'
+      - 'buildSrc/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - 'settings.gradle.kts'
+      - 'app-versions.properties'
+      - 'scripts/ci/**'
+      - '.github/actions/resolve-flavors/**'
+      - '.github/actions/firebase-config/**'
+  pull_request:
+    branches: ['*']
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'feature/**'
+      - 'buildSrc/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - 'settings.gradle.kts'
+      - 'app-versions.properties'
+      - 'scripts/ci/**'
+      - '.github/actions/resolve-flavors/**'
+      - '.github/actions/firebase-config/**'
+
+concurrency:
+  group: auto-debug-ops-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false
+  JAVA_VERSION: '21'
+  ANDROID_API_LEVEL: 36
+
+jobs:
+  auto-debug-ops:
+    name: Auto Debug Ops (all flavors / Debug)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;36.0.0"
+
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          set +o pipefail
+          yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Resolve Flavors
+        id: resolve
+        uses: ./.github/actions/resolve-flavors
+        with:
+          target_flavors: all
+
+      - name: Export resolved flavors env
+        run: |
+          echo "RESOLVED_FLAVORS_JSON=${{ steps.resolve.outputs.resolved_json }}" >> "$GITHUB_ENV"
+          echo "RESOLVED_FLAVORS_CSV=${{ steps.resolve.outputs.resolved_csv }}" >> "$GITHUB_ENV"
+
+      - name: Firebase Config Override (R2 preferred, Base64 fallback)
+        uses: ./.github/actions/firebase-config
+        with:
+          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
+
+      - name: Validate Google Sign-In Config
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
+
+      - name: Run Quality Checks (detekt / ktlint / lint)
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            TASKS+=("lint${cap}Debug")
+          done
+
+          if [ "${#TASKS[@]}" -gt 0 ]; then
+            ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+          fi
+
+      - name: Build Debug APKs (all resolved flavors)
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+
+          mapfile -t FLAVORS < <(
+            echo "$RESOLVED_FLAVORS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+
+          TASKS=()
+          for flavor in "${FLAVORS[@]}"; do
+            [ -z "$flavor" ] && continue
+            cap="$(tr '[:lower:]' '[:upper:]' <<< "${flavor:0:1}")${flavor:1}"
+            TASKS+=("assemble${cap}Debug")
+          done
+
+          if [ "${#TASKS[@]}" -eq 0 ]; then
+            echo "No resolved flavors found"
+            exit 1
+          fi
+
+          echo "Running: ${TASKS[*]}"
+          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+
+      - name: Upload Build Outputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: auto-debug-ops-build-outputs
+          path: app/build/outputs/
+          retention-days: 7

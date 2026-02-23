@@ -46,6 +46,7 @@
     <string name="settings_privacy_options_unavailable">This action is currently unavailable</string>
     <string name="settings_privacy_options_error">Could not open privacy options</string>
     <string name="settings_privacy_options_saved">Privacy preferences updated</string>
+    <string name="settings_privacy_options_not_required_now">Privacy options aren&apos;t required in your region right now.</string>
 
     <string name="settings_ads_age_gate_title">Ad age preference</string>
     <string name="settings_ads_age_gate_desc">Select your age group for ad privacy settings</string>
@@ -62,6 +63,7 @@
     <string name="settings_ads_debug_force_eea">Force EEA</string>
     <string name="settings_ads_debug_force_us">Force US States</string>
     <string name="settings_ads_debug_clear_geo">Clear Debug Geography</string>
+    <string name="settings_ads_debug_geo_set_reset_hint">UMP debug geography: %1$s. Consent was reset. Tap Show Consent Form to test.</string>
     <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector opened</string>
     <string name="settings_ads_debug_ad_inspector_error">Could not open Ad Inspector</string>
     <string name="settings_ads_debug_consent_reset">Consent info reset</string>
