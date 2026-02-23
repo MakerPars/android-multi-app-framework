@@ -6,6 +6,7 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +42,22 @@ class RewardedInterstitialAdManager @Inject constructor(
             object : RewardedInterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedInterstitialAd) {
                     Timber.d("Ad loaded: $adUnitId")
+                    ad.onPaidEventListener = OnPaidEventListener { value ->
+                        Timber.i(
+                            "RewardedInterstitial paid event (%s): micros=%d currency=%s precision=%d",
+                            adUnitId,
+                            value.valueMicros,
+                            value.currencyCode,
+                            value.precisionType,
+                        )
+                    }
+                    val responseInfo = ad.responseInfo
+                    Timber.d(
+                        "RewardedInterstitial response (%s): responseId=%s adapter=%s",
+                        adUnitId,
+                        responseInfo.responseId,
+                        responseInfo.mediationAdapterClassName,
+                    )
                     rewardedInterstitialAd = ad
                     isLoading = false
                 }
@@ -81,6 +98,10 @@ class RewardedInterstitialAdManager @Inject constructor(
 
             override fun onAdShowedFullScreenContent() {
                 Timber.d("Ad shown")
+            }
+
+            override fun onAdImpression() {
+                Timber.d("RewardedInterstitial impression recorded")
             }
         }
 

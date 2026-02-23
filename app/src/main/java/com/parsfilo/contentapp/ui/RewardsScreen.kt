@@ -86,7 +86,7 @@ fun RewardsRoute(
         onBackClick = onBackClick,
         onWatchAd = {
             activity?.let {
-                viewModel.showRewardedAd(it, adUnitIds.rewarded)
+                viewModel.watchRewardedAd(it, adUnitIds.rewarded)
             }
         },
         onPurchase = { productDetails ->

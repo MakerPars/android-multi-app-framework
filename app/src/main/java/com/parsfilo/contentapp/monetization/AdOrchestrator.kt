@@ -8,7 +8,6 @@ import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
-import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialAdManager
 import com.parsfilo.contentapp.observability.SentryMetrics
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +25,6 @@ class AdOrchestrator @Inject constructor(
     private val appOpenAdManager: AppOpenAdManager,
     private val interstitialAdManager: InterstitialAdManager,
     val nativeAdManager: NativeAdManager,
-    private val rewardedAdManager: RewardedAdManager,
     internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
     private val adGateChecker: AdGateChecker,
     private val preferencesDataSource: PreferencesDataSource,
@@ -57,9 +55,6 @@ class AdOrchestrator @Inject constructor(
 
                     SentryMetrics.count("ads.load.requested.native")
                     nativeAdManager.loadAds(ids.native, 3)
-
-                    SentryMetrics.count("ads.load.requested.rewarded")
-                    rewardedAdManager.loadAd(ids.rewarded)
 
                     SentryMetrics.count("ads.load.requested.rewarded_interstitial")
                     rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial)

@@ -74,10 +74,14 @@ class RewardsViewModel @Inject constructor(
     }
 
     fun watchRewardedAd(activity: Activity, adUnitId: String) {
+        if (rewardedAdManager.isAdReadyNow()) {
+            _isAdLoading.value = false
+            showRewardedAd(activity, adUnitId)
+            return
+        }
+
         _isAdLoading.value = true
-
         rewardedAdManager.loadAd(adUnitId)
-
         viewModelScope.launch {
             val adReady = withTimeoutOrNull(10_000L) {
                 rewardedAdManager.isAdReady
@@ -99,6 +103,9 @@ class RewardsViewModel @Inject constructor(
                         rewardedAdManager.loadAd(adUnitId)
                     }
                 )
+            } else {
+                // İlk yükleme başarısızsa sonraki deneme için tekrar tetikleyelim.
+                rewardedAdManager.loadAd(adUnitId)
             }
         }
     }
