@@ -49,7 +49,11 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          # sdkmanager closes stdin when it has consumed enough answers; `yes` then exits with SIGPIPE.
+          # Temporarily disable pipefail so the step result is determined by sdkmanager, not yes.
+          set +o pipefail
           yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
 
@@ -173,7 +177,11 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          # sdkmanager closes stdin when it has consumed enough answers; `yes` then exits with SIGPIPE.
+          # Temporarily disable pipefail so the step result is determined by sdkmanager, not yes.
+          set +o pipefail
           yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
 
@@ -221,7 +229,11 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          # sdkmanager closes stdin when it has consumed enough answers; `yes` then exits with SIGPIPE.
+          # Temporarily disable pipefail so the step result is determined by sdkmanager, not yes.
+          set +o pipefail
           yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
 
@@ -273,7 +285,11 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          # sdkmanager closes stdin when it has consumed enough answers; `yes` then exits with SIGPIPE.
+          # Temporarily disable pipefail so the step result is determined by sdkmanager, not yes.
+          set +o pipefail
           yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
 
