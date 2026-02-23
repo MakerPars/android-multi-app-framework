@@ -40,7 +40,42 @@
 
     <string name="settings_privacy_options">Datenschutzoptionen</string>
     <string name="settings_privacy_options_desc">Einwilligung für Werbung verwalten</string>
+    <string name="settings_privacy_options_desc_required">Datenschutzoptionen für Werbung sind erforderlich</string>
+    <string name="settings_privacy_options_desc_optional">Datenschutz- und Werbeeinstellungen anzeigen / aktualisieren</string>
     <string name="settings_privacy_options_button">Verwalten</string>
     <string name="settings_privacy_options_unavailable">Diese Aktion ist derzeit nicht verfügbar</string>
     <string name="settings_privacy_options_error">Datenschutzoptionen konnten nicht geöffnet werden</string>
+    <string name="settings_privacy_options_saved">Datenschutzeinstellungen aktualisiert</string>
+
+    <string name="settings_ads_age_gate_title">Altersangabe für Werbung</string>
+    <string name="settings_ads_age_gate_desc">Wähle deine Altersgruppe für Datenschutz bei Werbung</string>
+    <string name="settings_ads_age_unknown">Möchte ich nicht angeben</string>
+    <string name="settings_ads_age_under_16">Ich bin unter 16</string>
+    <string name="settings_ads_age_16_or_over">Ich bin 16 oder älter</string>
+
+    <string name="settings_ads_debug_title">Ads-Debug (UMP / GMA)</string>
+    <string name="settings_ads_debug_desc">Nur in Debug-Builds sichtbar. Einwilligung und Werbetools testen.</string>
+    <string name="settings_ads_debug_geo_status">UMP-Debug-Geografie: %1$s</string>
+    <string name="settings_ads_debug_open_inspector">Ad Inspector öffnen</string>
+    <string name="settings_ads_debug_reset_consent">Einwilligung zurücksetzen</string>
+    <string name="settings_ads_debug_show_consent_form">Consent-Formular anzeigen</string>
+    <string name="settings_ads_debug_force_eea">EEA erzwingen</string>
+    <string name="settings_ads_debug_force_us">US States erzwingen</string>
+    <string name="settings_ads_debug_clear_geo">Debug-Geografie löschen</string>
+    <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector geöffnet</string>
+    <string name="settings_ads_debug_ad_inspector_error">Ad Inspector konnte nicht geöffnet werden</string>
+    <string name="settings_ads_debug_consent_reset">Einwilligungsdaten zurückgesetzt</string>
+    <string name="settings_ads_debug_consent_form_done">Consent-Ablauf abgeschlossen</string>
+    <string name="settings_ads_debug_consent_form_error">Consent-Ablauf konnte nicht abgeschlossen werden</string>
+    <string name="settings_ads_debug_ads_config_updated">Werbeeinstellungen aktualisiert</string>
+
+    <string name="settings_update_debug_title">Update-Debug (Remote Config)</string>
+    <string name="settings_update_debug_desc">Nur in Debug-Builds sichtbar. Force-Update-Ablauf testen.</string>
+    <string name="settings_update_debug_summary_empty">Noch keine Force-Update-Daten abgerufen.</string>
+    <string name="settings_update_debug_fetch_now">Remote Config abrufen</string>
+    <string name="settings_update_debug_fetch_started">Remote-Config-Abruf gestartet</string>
+    <string name="settings_update_debug_simulate_soft">Soft simulieren</string>
+    <string name="settings_update_debug_simulate_hard">Hard simulieren</string>
+    <string name="settings_update_debug_clear_simulation">Simulation löschen</string>
+    <string name="settings_update_debug_reset_soft_session">Soft-Prompt zurücksetzen</string>
 </resources>

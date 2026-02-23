@@ -40,7 +40,42 @@
 
     <string name="settings_privacy_options">Privacy options</string>
     <string name="settings_privacy_options_desc">Manage ad consent preferences</string>
+    <string name="settings_privacy_options_desc_required">Ad privacy options are required</string>
+    <string name="settings_privacy_options_desc_optional">View / update privacy and ad preferences</string>
     <string name="settings_privacy_options_button">Manage</string>
     <string name="settings_privacy_options_unavailable">This action is currently unavailable</string>
     <string name="settings_privacy_options_error">Could not open privacy options</string>
+    <string name="settings_privacy_options_saved">Privacy preferences updated</string>
+
+    <string name="settings_ads_age_gate_title">Ad age preference</string>
+    <string name="settings_ads_age_gate_desc">Select your age group for ad privacy settings</string>
+    <string name="settings_ads_age_unknown">Prefer not to say</string>
+    <string name="settings_ads_age_under_16">I am under 16</string>
+    <string name="settings_ads_age_16_or_over">I am 16 or older</string>
+
+    <string name="settings_ads_debug_title">Ads Debug (UMP / GMA)</string>
+    <string name="settings_ads_debug_desc">Visible only in debug builds. Test consent and ad tools.</string>
+    <string name="settings_ads_debug_geo_status">UMP debug geography: %1$s</string>
+    <string name="settings_ads_debug_open_inspector">Open Ad Inspector</string>
+    <string name="settings_ads_debug_reset_consent">Reset Consent</string>
+    <string name="settings_ads_debug_show_consent_form">Show Consent Form</string>
+    <string name="settings_ads_debug_force_eea">Force EEA</string>
+    <string name="settings_ads_debug_force_us">Force US States</string>
+    <string name="settings_ads_debug_clear_geo">Clear Debug Geography</string>
+    <string name="settings_ads_debug_ad_inspector_opened">Ad Inspector opened</string>
+    <string name="settings_ads_debug_ad_inspector_error">Could not open Ad Inspector</string>
+    <string name="settings_ads_debug_consent_reset">Consent info reset</string>
+    <string name="settings_ads_debug_consent_form_done">Consent flow completed</string>
+    <string name="settings_ads_debug_consent_form_error">Consent flow could not be completed</string>
+    <string name="settings_ads_debug_ads_config_updated">Ad settings updated</string>
+
+    <string name="settings_update_debug_title">Update Debug (Remote Config)</string>
+    <string name="settings_update_debug_desc">Visible only in debug builds. Test the force update flow.</string>
+    <string name="settings_update_debug_summary_empty">No force update data fetched yet.</string>
+    <string name="settings_update_debug_fetch_now">Fetch Remote Config</string>
+    <string name="settings_update_debug_fetch_started">Remote Config fetch started</string>
+    <string name="settings_update_debug_simulate_soft">Simulate Soft</string>
+    <string name="settings_update_debug_simulate_hard">Simulate Hard</string>
+    <string name="settings_update_debug_clear_simulation">Clear Simulation</string>
+    <string name="settings_update_debug_reset_soft_session">Reset Soft Prompt</string>
 </resources>
