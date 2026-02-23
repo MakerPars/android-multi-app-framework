@@ -1,3 +1,4 @@
+import org.gradle.api.GradleException
 import java.util.Properties
 
 plugins {
@@ -67,6 +68,60 @@ fun resolvedFlavorVersion(flavorName: String): ResolvedVersion {
 
     return ResolvedVersion(versionCode = code, versionName = name)
 }
+
+val validateFlavorVersions =
+    tasks.register("validateFlavorVersions") {
+        group = "verification"
+        description = "Validates app-versions.properties contains versionCode/versionName for every flavor."
+        val requiredFlavors = AppFlavors.all.map { it.name }
+        val appVersionsFilePath = appVersionsFile.absolutePath
+
+        doLast {
+            val versionsFile = File(appVersionsFilePath)
+            val props =
+                Properties().apply {
+                    if (versionsFile.exists()) {
+                        versionsFile.inputStream().use { load(it) }
+                    }
+                }
+
+            val missingKeys = mutableListOf<String>()
+            requiredFlavors.forEach { flavor ->
+                val codeKey = "$flavor.versionCode"
+                val nameKey = "$flavor.versionName"
+                if (props.getProperty(codeKey).isNullOrBlank()) {
+                    missingKeys += codeKey
+                }
+                if (props.getProperty(nameKey).isNullOrBlank()) {
+                    missingKeys += nameKey
+                }
+            }
+
+            if (!versionsFile.exists()) {
+                throw GradleException(
+                    buildString {
+                        appendLine("Missing required file: ${versionsFile.absolutePath}")
+                        appendLine("Expected per-flavor keys:")
+                        appendLine("  <flavor>.versionCode=123")
+                        appendLine("  <flavor>.versionName=1.2.3")
+                    },
+                )
+            }
+
+            if (missingKeys.isNotEmpty()) {
+                val sampleFlavor = requiredFlavors.firstOrNull() ?: "exampleFlavor"
+                throw GradleException(
+                    buildString {
+                        appendLine("Missing required flavor version keys in ${versionsFile.absolutePath}:")
+                        missingKeys.forEach { appendLine("  - $it") }
+                        appendLine("Expected format example:")
+                        appendLine("  $sampleFlavor.versionCode=123")
+                        appendLine("  $sampleFlavor.versionName=1.2.3")
+                    },
+                )
+            }
+        }
+    }
 
 android {
     namespace = "com.parsfilo.contentapp"
@@ -318,6 +373,17 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+tasks
+    .matching { task ->
+        val taskName = task.name
+        val isReleasePublishLike =
+            (taskName.startsWith("assemble") || taskName.startsWith("bundle") || taskName.startsWith("publish")) &&
+                taskName.contains("Release")
+        isReleasePublishLike
+    }.configureEach {
+        dependsOn(validateFlavorVersions)
+    }
 
 
 
