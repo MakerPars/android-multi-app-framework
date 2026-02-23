@@ -119,9 +119,12 @@ subprojects {
             val isCi =
                 (System.getenv("TF_BUILD") ?: "").equals("True", ignoreCase = true) || !System.getenv("BUILD_BUILDID")
                     .isNullOrBlank() || (System.getenv("CI") ?: "").equals("true", ignoreCase = true)
+            val isPullRequest =
+                (System.getenv("BUILD_REASON") ?: "").equals("PullRequest", ignoreCase = true) ||
+                    !System.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID").isNullOrBlank()
 
-            // ✅ CI’da pipeline kırılmasın (local'de kırılır)
-            ignoreFailures.set(isCi)
+            // PR kalite kapısında ktlint ihlali pipeline'ı kırmalıdır.
+            ignoreFailures.set(isCi && !isPullRequest)
 
             reporters {
                 reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)

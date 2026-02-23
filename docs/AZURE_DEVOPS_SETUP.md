@@ -8,6 +8,26 @@ Bu repo Azure DevOps üzerinde **Microsoft-hosted** (`ubuntu-latest`) agent ile 
 - `pipelines/azure-pipelines-manual.yml`: Elle tetiklenen build/publish operasyonları
 - `pipelines/azure-pipelines-release.yml`: Elle tetiklenen release build, opsiyonel production publish
 
+## PR Quality Gate Özeti
+
+`pipelines/azure-pipelines.yml` içinde PR doğrulamasında şu kontroller zorunludur:
+
+1. `detekt` + `ktlintCheck`
+2. `:app:validateFlavorVersions`
+3. `test` (unit testler)
+4. Dinamik flavour `lint` görevleri
+
+Ktlint davranışı:
+
+1. PR (`BUILD_REASON=PullRequest` veya `SYSTEM_PULLREQUEST_PULLREQUESTID` set) için `ignoreFailures=false`
+2. PR dışı CI için mevcut davranış korunur (`ignoreFailures=true`)
+
+Opsiyonel connected smoke test:
+
+1. Pipeline değişkeni `RUN_CONNECTED_TESTS` varsayılan `false`
+2. `true` yapıldığında `ConnectedSmokeTests` job'u `:app:connectedAmenerrasuluDebugAndroidTest` çalıştırır
+3. Job, bağlı cihaz/emulator yoksa bilinçli olarak fail eder
+
 > Not: Bu repo'da CI/CD için Azure DevOps kullanılır. GitHub Actions workflow'ları özellikle devre dışı bırakıldı ve
 > referans için `docs/legacy/github-actions/` altına arşivlendi.
 

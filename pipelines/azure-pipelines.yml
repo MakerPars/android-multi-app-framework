@@ -13,6 +13,7 @@ variables:
   ANDROID_SDK_ROOT: $(Agent.ToolsDirectory)/android-sdk
   ANDROID_HOME: $(Agent.ToolsDirectory)/android-sdk
   ANDROID_API_LEVEL: 36
+  RUN_CONNECTED_TESTS: "false"
 
 jobs:
   - job: AnalyzeImpact
@@ -166,6 +167,55 @@ jobs:
         inputs:
           targetPath: $(Build.ArtifactStagingDirectory)/detekt
           artifact: detekt-report
+
+  - job: ValidateAndUnitTest
+    displayName: Validate Flavour Versions & Unit Tests
+    dependsOn: AnalyzeImpact
+    condition: and(succeeded(), eq(dependencies.AnalyzeImpact.outputs['setvars.hasCode'], 'true'))
+    pool:
+      name: MSI
+      demands:
+        - Agent.Name -equals msi
+    steps:
+      - checkout: self
+        fetchDepth: 1
+
+      - template: templates/steps/setup-android.yml
+        parameters:
+          androidApiLevel: 36
+
+      - bash: |
+          set -euo pipefail
+          ./gradlew :app:validateFlavorVersions test --stacktrace --no-daemon --max-workers=2
+        displayName: Run Version Validation and Unit Tests
+
+  - job: ConnectedSmokeTests
+    displayName: Optional Connected Smoke Tests
+    dependsOn:
+      - AnalyzeImpact
+      - ValidateAndUnitTest
+    condition: and(succeeded(), eq(dependencies.AnalyzeImpact.outputs['setvars.hasCode'], 'true'), eq(variables['RUN_CONNECTED_TESTS'], 'true'))
+    pool:
+      name: MSI
+      demands:
+        - Agent.Name -equals msi
+    steps:
+      - checkout: self
+        fetchDepth: 1
+
+      - template: templates/steps/setup-android.yml
+        parameters:
+          androidApiLevel: 36
+
+      - bash: |
+          set -euo pipefail
+          adb start-server
+          if [ -z "$(adb devices | awk 'NR>1 && $2 == \"device\" {print $1}')" ]; then
+            echo "No connected emulator/device detected. Configure one before setting RUN_CONNECTED_TESTS=true."
+            exit 1
+          fi
+          ./gradlew :app:connectedAmenerrasuluDebugAndroidTest --stacktrace --no-daemon --max-workers=2
+        displayName: Run Connected Smoke Tests
 
   - job: AndroidLint
     displayName: Android Lint (Dynamic Flavours)

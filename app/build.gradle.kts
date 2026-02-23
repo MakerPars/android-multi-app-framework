@@ -376,6 +376,3 @@ tasks
     }.configureEach {
         dependsOn(validateFlavorVersions)
     }
-
-
-
