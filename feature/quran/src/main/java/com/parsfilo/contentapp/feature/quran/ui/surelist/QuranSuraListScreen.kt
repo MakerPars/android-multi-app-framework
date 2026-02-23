@@ -1,5 +1,6 @@
 package com.parsfilo.contentapp.feature.quran.ui.surelist
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,10 +21,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +35,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,6 +93,7 @@ fun QuranSuraListScreen(
 ) {
     val meccanLabel = stringResource(R.string.quran_revelation_meccan)
     val medinanLabel = stringResource(R.string.quran_revelation_medinan)
+    var isSearchExpanded by rememberSaveable { mutableStateOf(state.query.isNotBlank()) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -94,6 +101,12 @@ fun QuranSuraListScreen(
             QuranSuraListHeader(
                 title = stringResource(R.string.quran_title),
                 onSettingsClick = onSettingsClick,
+                onSearchToggle = {
+                    if (isSearchExpanded) {
+                        onSearch("")
+                    }
+                    isSearchExpanded = !isSearchExpanded
+                },
                 onRewardsClick = onRewardsClick,
                 onBookmarksClick = onBookmarksClick,
             )
@@ -109,15 +122,17 @@ fun QuranSuraListScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = onSearch,
-                placeholder = { Text(stringResource(R.string.quran_search_placeholder)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                singleLine = true,
-            )
+            AnimatedVisibility(visible = isSearchExpanded) {
+                OutlinedTextField(
+                    value = state.query,
+                    onValueChange = onSearch,
+                    placeholder = { Text(stringResource(R.string.quran_search_placeholder)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    singleLine = true,
+                )
+            }
 
             val lastRead = state.lastRead
             if (lastRead != null) {
@@ -127,13 +142,22 @@ fun QuranSuraListScreen(
                         .fillMaxWidth()
                         .clickable { onSuraClick(lastRead.suraNumber) },
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
                             text = stringResource(R.string.quran_last_read_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stringResource(
                                 R.string.quran_last_read_format,
@@ -141,6 +165,7 @@ fun QuranSuraListScreen(
                                 lastRead.ayahNumber,
                             ),
                             style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.End,
                         )
                     }
                 }
@@ -240,11 +265,13 @@ fun QuranSuraListScreen(
 private fun QuranSuraListHeader(
     title: String,
     onSettingsClick: () -> Unit,
+    onSearchToggle: () -> Unit,
     onRewardsClick: () -> Unit,
     onBookmarksClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val dimens = LocalDimens.current
+    var menuExpanded by rememberSaveable { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
@@ -264,13 +291,11 @@ private fun QuranSuraListHeader(
                 .padding(horizontal = dimens.space6, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                HeaderIconButton(
-                    onClick = onSettingsClick,
-                    icon = Icons.Default.Settings,
-                    contentDescription = stringResource(R.string.quran_open_settings),
-                )
-            }
+            HeaderIconButton(
+                onClick = onSettingsClick,
+                icon = Icons.Default.Settings,
+                contentDescription = stringResource(R.string.quran_open_settings),
+            )
 
             Text(
                 text = title,
@@ -280,20 +305,43 @@ private fun QuranSuraListHeader(
                 ),
                 color = colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
 
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    HeaderIconButton(
-                        onClick = onRewardsClick,
-                        icon = Icons.Default.CardGiftcard,
-                        contentDescription = stringResource(R.string.quran_open_rewards),
+            Box(contentAlignment = Alignment.CenterEnd) {
+                HeaderIconButton(
+                    onClick = { menuExpanded = true },
+                    icon = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.quran_more_options),
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.quran_open_rewards)) },
+                        onClick = {
+                            menuExpanded = false
+                            onRewardsClick()
+                        },
                     )
-                    HeaderIconButton(
-                        onClick = onBookmarksClick,
-                        icon = Icons.Default.Bookmark,
-                        contentDescription = stringResource(R.string.quran_open_bookmarks),
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.quran_open_bookmarks)) },
+                        onClick = {
+                            menuExpanded = false
+                            onBookmarksClick()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.quran_toggle_search)) },
+                        onClick = {
+                            menuExpanded = false
+                            onSearchToggle()
+                        },
                     )
                 }
             }

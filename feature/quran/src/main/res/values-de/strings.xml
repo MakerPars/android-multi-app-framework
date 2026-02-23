@@ -33,4 +33,6 @@
     <string name="quran_audio_download_progress">Wird heruntergeladen %% %d</string>
     <string name="quran_ayah_actions">Versaktionen</string>
     <string name="quran_loading">Wird geladen…</string>
+    <string name="quran_toggle_search">Suche</string>
+    <string name="quran_more_options">Weitere Optionen</string>
 </resources>

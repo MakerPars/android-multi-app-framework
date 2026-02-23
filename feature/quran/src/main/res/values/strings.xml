@@ -33,4 +33,6 @@
     <string name="quran_audio_download_progress">İndiriliyor %% %d</string>
     <string name="quran_ayah_actions">Ayet işlemleri</string>
     <string name="quran_loading">Yükleniyor…</string>
+    <string name="quran_toggle_search">Arama</string>
+    <string name="quran_more_options">Daha fazla seçenek</string>
 </resources>

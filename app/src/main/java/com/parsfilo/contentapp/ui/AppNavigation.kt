@@ -219,7 +219,19 @@ fun AppNavHost(
                 composable(AppRoute.QuranSuraList.route) {
                     QuranSuraListRoute(
                         onSuraClick = { suraNumber ->
-                            navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
+                            val activity = hostActivity
+                            if (activity == null) {
+                                navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
+                            } else {
+                                coroutineScope.launch {
+                                    activity.adOrchestrator.showInterstitialIfEligible(
+                                        activity = activity,
+                                        onAdDismissed = {
+                                            navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
+                                        },
+                                    )
+                                }
+                            }
                         },
                         onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
                         onSettingsClick = {

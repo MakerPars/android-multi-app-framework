@@ -33,4 +33,6 @@
     <string name="quran_audio_download_progress">Downloading %% %d</string>
     <string name="quran_ayah_actions">Ayah actions</string>
     <string name="quran_loading">Loading…</string>
+    <string name="quran_toggle_search">Search</string>
+    <string name="quran_more_options">More options</string>
 </resources>
