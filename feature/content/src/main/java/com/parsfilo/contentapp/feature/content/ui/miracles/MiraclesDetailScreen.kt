@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.parsfilo.contentapp.feature.content.R
 import com.parsfilo.contentapp.core.designsystem.AppTheme
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalMotion
@@ -57,6 +59,7 @@ fun MiraclesDetailRoute(
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     bannerAdUnitId: String,
+    variant: MiraclesContentVariant = MiraclesContentVariant.MUCIZEDUALAR,
     viewModel: MiraclesDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,7 +69,8 @@ fun MiraclesDetailRoute(
         onSettingsClick = onSettingsClick,
         onRewardsClick = onRewardsClick,
         nativeAdContent = nativeAdContent,
-        bannerAdUnitId = bannerAdUnitId
+        bannerAdUnitId = bannerAdUnitId,
+        variant = variant,
     )
 }
 
@@ -77,7 +81,8 @@ fun MiraclesDetailScreen(
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
-    bannerAdUnitId: String
+    bannerAdUnitId: String,
+    variant: MiraclesContentVariant = MiraclesContentVariant.MUCIZEDUALAR,
 ) {
     val dimens = LocalDimens.current
     val motion = LocalMotion.current
@@ -124,7 +129,10 @@ fun MiraclesDetailScreen(
                     )
             ) {
                 MiraclesDetailHeader(
-                    prayerName = uiState.prayer.duaIsim,
+                    prayerName = when (variant) {
+                        MiraclesContentVariant.MUCIZEDUALAR -> uiState.prayer.duaIsim
+                        MiraclesContentVariant.ESMAUL_HUSNA -> uiState.prayer.duaLatinOkunus.ifBlank { uiState.prayer.duaIsim }
+                    },
                     onBackClick = onBackClick,
                     onSettingsClick = onSettingsClick,
                     onRewardsClick = onRewardsClick
@@ -150,73 +158,80 @@ fun MiraclesDetailScreen(
                         .fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = dimens.space12, vertical = dimens.space12)
                 ) {
-                    // Açıklama
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = overlayCard,
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
+                    if (variant == MiraclesContentVariant.MUCIZEDUALAR) {
+                        item {
+                            MiraclesDetailSectionCard(
+                                label = stringResource(R.string.miracles_section_description),
+                                labelAccent = true,
+                                contentBackground = overlayCard,
+                                borderColor = colorScheme.secondary.copy(alpha = 0.2f),
+                            ) {
+                                Text(
+                                    text = uiState.prayer.duaAciklama,
+                                    color = colorScheme.onSurface,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
                                 )
-                                .border(
-                                    width = dimens.stroke,
-                                    color = colorScheme.secondary.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
-                                )
-                                .padding(dimens.space16)
-                        ) {
-                            Text(
-                                text = "Açıklama",
-                                color = colorScheme.secondary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(dimens.space8))
-                            Text(
-                                text = uiState.prayer.duaAciklama,
-                                color = colorScheme.onSurface,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(dimens.space12))
-                    }
-
-                    // Besmele
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = cardBackground,
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
-                                )
-                                .border(
-                                    width = dimens.stroke,
-                                    color = colorScheme.secondary.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
-                                )
-                                .padding(dimens.space16)
-                        ) {
-                            Text(
-                                text = "Besmele",
-                                color = colorScheme.onSurface,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            }
                             Spacer(modifier = Modifier.height(dimens.space12))
-                            Text(
-                                text = uiState.prayer.duaBesmele,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.onSurface,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 26.sp,
-                                modifier = Modifier.fillMaxWidth()
-                            )
                         }
-                        Spacer(modifier = Modifier.height(dimens.space12))
+
+                        item {
+                            MiraclesDetailSectionCard(
+                                label = stringResource(R.string.miracles_section_besmele),
+                                contentBackground = cardBackground,
+                                borderColor = colorScheme.secondary.copy(alpha = 0.3f),
+                            ) {
+                                Text(
+                                    text = uiState.prayer.duaBesmele,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 26.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(dimens.space12))
+                        }
+                    } else {
+                        item {
+                            MiraclesDetailSectionCard(
+                                label = stringResource(R.string.miracles_section_arabic),
+                                contentBackground = cardBackground,
+                                borderColor = colorScheme.secondary.copy(alpha = 0.3f),
+                            ) {
+                                Text(
+                                    text = uiState.prayer.duaArapca,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorScheme.onSurface,
+                                    textAlign = TextAlign.End,
+                                    lineHeight = 34.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(dimens.space12))
+                        }
+
+                        item {
+                            MiraclesDetailSectionCard(
+                                label = stringResource(R.string.miracles_section_latin_pronunciation),
+                                contentBackground = cardBackground,
+                                borderColor = colorScheme.secondary.copy(alpha = 0.3f),
+                            ) {
+                                Text(
+                                    text = uiState.prayer.duaLatinOkunus.ifBlank { uiState.prayer.duaBesmele },
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 26.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(dimens.space12))
+                        }
                     }
 
                     // Detay ekranı ortasında 1 native reklam
@@ -227,43 +242,75 @@ fun MiraclesDetailScreen(
                         }
                     }
 
-                    // Arapça Dua
                     item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = cardBackground,
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
-                                )
-                                .border(
-                                    width = dimens.stroke,
-                                    color = colorScheme.secondary.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(dimens.radiusMedium)
-                                )
-                                .padding(dimens.space16)
+                        MiraclesDetailSectionCard(
+                            label = if (variant == MiraclesContentVariant.MUCIZEDUALAR) {
+                                stringResource(R.string.miracles_section_prayer)
+                            } else {
+                                stringResource(R.string.miracles_section_description)
+                            },
+                            contentBackground = if (variant == MiraclesContentVariant.MUCIZEDUALAR) cardBackground else overlayCard,
+                            borderColor = colorScheme.secondary.copy(alpha = if (variant == MiraclesContentVariant.MUCIZEDUALAR) 0.3f else 0.2f),
+                            labelAccent = variant == MiraclesContentVariant.ESMAUL_HUSNA,
                         ) {
-                            Text(
-                                text = "Dua",
-                                color = colorScheme.onSurface,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(dimens.space12))
-                            Text(
-                                text = uiState.prayer.duaArapca,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.onSurface,
-                                textAlign = TextAlign.End,
-                                lineHeight = 32.sp,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            if (variant == MiraclesContentVariant.MUCIZEDUALAR) {
+                                Text(
+                                    text = uiState.prayer.duaArapca,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorScheme.onSurface,
+                                    textAlign = TextAlign.End,
+                                    lineHeight = 32.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            } else {
+                                Text(
+                                    text = uiState.prayer.duaAciklama,
+                                    color = colorScheme.onSurface,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MiraclesDetailSectionCard(
+    label: String,
+    contentBackground: androidx.compose.ui.graphics.Color,
+    borderColor: androidx.compose.ui.graphics.Color,
+    labelAccent: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val dimens = LocalDimens.current
+    val colorScheme = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = contentBackground,
+                shape = RoundedCornerShape(dimens.radiusMedium)
+            )
+            .border(
+                width = dimens.stroke,
+                color = borderColor,
+                shape = RoundedCornerShape(dimens.radiusMedium)
+            )
+            .padding(dimens.space16)
+    ) {
+        Text(
+            text = label,
+            color = if (labelAccent) colorScheme.secondary else colorScheme.onSurface,
+            fontSize = if (labelAccent) 14.sp else 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(dimens.space12))
+        content()
     }
 }
 
@@ -414,7 +461,7 @@ private fun MiraclesDetailLoadingPreview() {
     AppTheme(flavorName = "mucizedualar") {
         MiraclesDetailScreen(
             uiState = MiraclesDetailUiState.Loading,
-            bannerAdUnitId = "test"
+            bannerAdUnitId = "test",
         )
     }
 }
@@ -433,7 +480,7 @@ private fun MiraclesDetailSuccessPreview() {
                 ),
                 shouldShowAds = false
             ),
-            bannerAdUnitId = "test"
+            bannerAdUnitId = "test",
         )
     }
 }

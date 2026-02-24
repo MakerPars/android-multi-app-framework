@@ -11,4 +11,11 @@
     <string name="content_retry">Retry</string>
     <string name="content_verse_copied">Verse copied to clipboard</string>
     <string name="content_share_verse_title">Share verse</string>
+    <string name="miracles_default_title">Miracle Prayers</string>
+    <string name="miracles_section_description">Description</string>
+    <string name="miracles_section_besmele">Basmala</string>
+    <string name="miracles_section_prayer">Prayer</string>
+    <string name="miracles_section_arabic">Arabic</string>
+    <string name="miracles_section_latin_pronunciation">Latin Pronunciation</string>
+    <string name="miracles_play_all_audio">Listen to All</string>
 </resources>

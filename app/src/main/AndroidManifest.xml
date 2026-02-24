@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.android.vending.BILLING" />
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
     <application
         android:name=".App"
@@ -21,7 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ContentApp"
-        tools:targetApi="31">
+        tools:targetApi="36">
 
         <!--
           Sentry SDK is initialized manually in App.kt.
@@ -29,7 +28,9 @@
         -->
         <provider
             android:name="io.sentry.android.core.SentryInitProvider"
+            android:authorities="${applicationId}.sentryinitprovider"
             tools:node="remove" />
+
 
         <activity
             android:name=".MainActivity"
@@ -47,7 +48,9 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="@string/admob_app_id" />
-
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.NATIVE_AD_DEBUGGER_ENABLED"
+            android:value="false" />
     </application>
 
 </manifest>

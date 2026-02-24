@@ -22,6 +22,7 @@ const PACKAGE_AUDIO: Record<string, string> = {
   "com.parsfilo.amenerrasulu": "amenerrasulu.mp3",
   "com.parsfilo.ayetelkursi": "ayetelkursi.mp3",
   "com.parsfilo.bereketduasi": "bereketduasi.mp3",
+  "com.parsfilo.esmaulhusna": "esmaulhusna.mp3",
   "com.parsfilo.fetihsuresi": "fetihsuresi.mp3",
   "com.parsfilo.insirahsuresi": "insirahsuresi.mp3",
   "com.parsfilo.ismiazamduasi": "ismiazamduasi.mp3",

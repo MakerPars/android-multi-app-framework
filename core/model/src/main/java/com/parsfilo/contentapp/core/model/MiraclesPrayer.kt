@@ -8,5 +8,6 @@ data class MiraclesPrayer(
     val duaIsim: String,
     val duaAciklama: String,
     val duaBesmele: String,
-    val duaArapca: String
+    val duaArapca: String,
+    val duaLatinOkunus: String = ""
 )

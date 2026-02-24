@@ -60,6 +60,7 @@ fun PrayerListRoute(
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
+    showVerseCount: Boolean = true,
     bannerAdUnitId: String,
     viewModel: PrayerListViewModel = hiltViewModel()
 ) {
@@ -70,6 +71,7 @@ fun PrayerListRoute(
         onSettingsClick = onSettingsClick,
         onRewardsClick = onRewardsClick,
         nativeAdContent = nativeAdContent,
+        showVerseCount = showVerseCount,
         bannerAdUnitId = bannerAdUnitId
     )
 }
@@ -81,6 +83,7 @@ fun PrayerListScreen(
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
+    showVerseCount: Boolean = true,
     bannerAdUnitId: String
 ) {
     val dimens = LocalDimens.current
@@ -150,6 +153,7 @@ fun PrayerListScreen(
                         PrayerListItem(
                             prayer = prayer,
                             onClick = { onPrayerClick(prayer.sureID) },
+                            showVerseCount = showVerseCount,
                         )
                         }
 
@@ -302,7 +306,8 @@ fun PrayerListHeader(
 @Composable
 fun PrayerListItem(
     prayer: Prayer,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showVerseCount: Boolean = true,
 ) {
     val dimens = LocalDimens.current
     val colorScheme = MaterialTheme.colorScheme
@@ -351,14 +356,16 @@ fun PrayerListItem(
                 fontWeight = FontWeight.Normal
             )
 
-            Spacer(modifier = Modifier.height(dimens.space4))
+            if (showVerseCount) {
+                Spacer(modifier = Modifier.height(dimens.space4))
 
-            // Ayet sayısı
-            Text(
-                text = "${prayer.ayetSayisi} Ayet",
-                color = colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
-            )
+                // Ayet sayısı
+                Text(
+                    text = "${prayer.ayetSayisi} Ayet",
+                    color = colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
         }
 
         // Chevron ikonu

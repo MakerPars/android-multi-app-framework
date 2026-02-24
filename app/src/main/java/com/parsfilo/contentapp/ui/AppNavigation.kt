@@ -36,6 +36,7 @@ import com.parsfilo.contentapp.feature.billing.ui.SubscriptionRoute
 import com.parsfilo.contentapp.feature.content.ui.ContentRoute
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesDetailRoute
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesListRoute
+import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesContentVariant
 import com.parsfilo.contentapp.feature.content.ui.prayer.PrayerDetailRoute
 import com.parsfilo.contentapp.feature.content.ui.prayer.PrayerListRoute
 import com.parsfilo.contentapp.feature.counter.ui.CounterRoute
@@ -124,7 +125,7 @@ fun AppNavHost(
                 BuildConfig.IS_PRAYER_TIMES_FLAVOR -> AppRoute.PrayerTimesHome.route
                 BuildConfig.FLAVOR == "kible" -> AppRoute.Qibla.route
                 BuildConfig.FLAVOR == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
-                BuildConfig.FLAVOR == "mucizedualar" -> AppRoute.MiraclesList.route
+                BuildConfig.FLAVOR == "mucizedualar" || BuildConfig.FLAVOR == "esmaulhusna" -> AppRoute.MiraclesList.route
                 BuildConfig.FLAVOR == "zikirmatik" -> AppRoute.ZikirCounter.route
                 BuildConfig.FLAVOR == "kuran_kerim" -> AppRoute.QuranSuraList.route
                 else -> AppRoute.Content.route
@@ -408,6 +409,7 @@ fun AppNavHost(
                     nativeAdContent = {
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
+                    showVerseCount = BuildConfig.FLAVOR != "namazsurelerivedualarsesli",
                     bannerAdUnitId = adUnitIds.banner
                 )
             }
@@ -489,6 +491,13 @@ fun AppNavHost(
                 )
             }
             composable(AppRoute.MiraclesList.route) {
+                val isEsmaFlavor = BuildConfig.FLAVOR == "esmaulhusna"
+                if (isEsmaFlavor) {
+                    LaunchedEffect(Unit) {
+                        // Esma listesi için flavor default sesine dön.
+                        audioPlayerViewModel.setOverrideAudioFileName(null)
+                    }
+                }
                 MiraclesListRoute(
                     onPrayerClick = { prayerIndex ->
                         navController.navigate(AppRoute.MiraclesDetail.createRoute(prayerIndex))
@@ -502,7 +511,35 @@ fun AppNavHost(
                     nativeAdContent = {
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
-                    bannerAdUnitId = adUnitIds.banner
+                    audioPlayerContent = if (isEsmaFlavor) {
+                        {
+                            InlineAudioPlayer(
+                                state = audioState,
+                                onPlayPause = audioPlayerViewModel::togglePlayPause,
+                                onStop = audioPlayerViewModel::stop,
+                                onSeek = audioPlayerViewModel::seekTo,
+                                onRetry = audioPlayerViewModel::retryAssetLoad,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    onPlayAllAudioClick = if (isEsmaFlavor) {
+                        {
+                            audioPlayerViewModel.setOverrideAudioFileName(null)
+                            audioPlayerViewModel.play()
+                        }
+                    } else {
+                        null
+                    },
+                    bannerAdUnitId = adUnitIds.banner,
+                    variant = if (isEsmaFlavor) {
+                        MiraclesContentVariant.ESMAUL_HUSNA
+                    } else {
+                        MiraclesContentVariant.MUCIZEDUALAR
+                    },
+                    headerTitle = stringResource(com.parsfilo.contentapp.R.string.app_name),
                 )
             }
             composable(
@@ -521,7 +558,12 @@ fun AppNavHost(
                     nativeAdContent = {
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
-                    bannerAdUnitId = adUnitIds.banner
+                    bannerAdUnitId = adUnitIds.banner,
+                    variant = if (BuildConfig.FLAVOR == "esmaulhusna") {
+                        MiraclesContentVariant.ESMAUL_HUSNA
+                    } else {
+                        MiraclesContentVariant.MUCIZEDUALAR
+                    },
                 )
             }
             composable(AppRoute.Settings.route) {

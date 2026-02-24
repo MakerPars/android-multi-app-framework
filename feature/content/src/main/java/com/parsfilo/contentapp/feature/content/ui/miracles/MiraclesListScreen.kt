@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.parsfilo.contentapp.feature.content.R
 import com.parsfilo.contentapp.core.designsystem.AppTheme
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalMotion
@@ -59,7 +62,11 @@ fun MiraclesListRoute(
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
+    audioPlayerContent: (@Composable () -> Unit)? = null,
+    onPlayAllAudioClick: (() -> Unit)? = null,
     bannerAdUnitId: String,
+    variant: MiraclesContentVariant = MiraclesContentVariant.MUCIZEDUALAR,
+    headerTitle: String = "",
     viewModel: MiraclesListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,7 +76,11 @@ fun MiraclesListRoute(
         onSettingsClick = onSettingsClick,
         onRewardsClick = onRewardsClick,
         nativeAdContent = nativeAdContent,
-        bannerAdUnitId = bannerAdUnitId
+        audioPlayerContent = audioPlayerContent,
+        onPlayAllAudioClick = onPlayAllAudioClick,
+        bannerAdUnitId = bannerAdUnitId,
+        variant = variant,
+        headerTitle = headerTitle,
     )
 }
 
@@ -80,7 +91,11 @@ fun MiraclesListScreen(
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
-    bannerAdUnitId: String
+    audioPlayerContent: (@Composable () -> Unit)? = null,
+    onPlayAllAudioClick: (() -> Unit)? = null,
+    bannerAdUnitId: String,
+    variant: MiraclesContentVariant = MiraclesContentVariant.MUCIZEDUALAR,
+    headerTitle: String = "",
 ) {
     val dimens = LocalDimens.current
     val motion = LocalMotion.current
@@ -114,6 +129,7 @@ fun MiraclesListScreen(
                     )
             ) {
                 MiraclesListHeader(
+                    title = headerTitle.ifBlank { stringResource(R.string.miracles_default_title) },
                     onSettingsClick = onSettingsClick,
                     onRewardsClick = onRewardsClick
                 )
@@ -132,6 +148,26 @@ fun MiraclesListScreen(
                     Spacer(modifier = Modifier.height(dimens.space8))
                 }
 
+                if (variant == MiraclesContentVariant.ESMAUL_HUSNA &&
+                    onPlayAllAudioClick != null &&
+                    audioPlayerContent != null
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = dimens.space12)
+                    ) {
+                        FilledTonalButton(
+                            onClick = onPlayAllAudioClick,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = stringResource(R.string.miracles_play_all_audio))
+                        }
+                        audioPlayerContent()
+                    }
+                    Spacer(modifier = Modifier.height(dimens.space8))
+                }
+
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -145,6 +181,7 @@ fun MiraclesListScreen(
                             MiraclesListItem(
                                 prayer = prayer,
                                 index = index + 1,
+                                variant = variant,
                                 onClick = { onPrayerClick(index) },
                             )
                         }
@@ -240,6 +277,7 @@ private fun rememberMiraclesListSkeletonBrush(): Brush {
 
 @Composable
 fun MiraclesListHeader(
+    title: String,
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {}
 ) {
@@ -269,7 +307,7 @@ fun MiraclesListHeader(
         }
 
         Text(
-            text = "Mucize Dualar",
+            text = title,
             color = colorScheme.onSurface,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
@@ -295,6 +333,7 @@ fun MiraclesListHeader(
 fun MiraclesListItem(
     prayer: MiraclesPrayer,
     index: Int,
+    variant: MiraclesContentVariant,
     onClick: () -> Unit
 ) {
     val dimens = LocalDimens.current
@@ -339,7 +378,10 @@ fun MiraclesListItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = prayer.duaIsim,
+                    text = when (variant) {
+                        MiraclesContentVariant.MUCIZEDUALAR -> prayer.duaIsim
+                        MiraclesContentVariant.ESMAUL_HUSNA -> prayer.duaLatinOkunus.ifBlank { prayer.duaIsim }
+                    },
                     color = colorScheme.onSurface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -349,13 +391,19 @@ fun MiraclesListItem(
 
                 Spacer(modifier = Modifier.height(dimens.space4))
 
-                Text(
-                    text = prayer.duaAciklama,
-                    color = colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                val subtitle = when (variant) {
+                    MiraclesContentVariant.MUCIZEDUALAR -> prayer.duaAciklama
+                    MiraclesContentVariant.ESMAUL_HUSNA -> prayer.duaArapca
+                }
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        color = colorScheme.onSurfaceVariant,
+                        fontSize = if (variant == MiraclesContentVariant.ESMAUL_HUSNA) 16.sp else 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
@@ -375,7 +423,8 @@ private fun MiraclesListLoadingPreview() {
         MiraclesListScreen(
             uiState = MiraclesListUiState.Loading,
             onPrayerClick = {},
-            bannerAdUnitId = "test"
+            bannerAdUnitId = "test",
+            headerTitle = "Mucize Dualar",
         )
     }
 }
@@ -404,7 +453,8 @@ private fun MiraclesListSuccessPreview() {
                 shouldShowAds = false
             ),
             onPrayerClick = {},
-            bannerAdUnitId = "test"
+            bannerAdUnitId = "test",
+            headerTitle = "Mucize Dualar",
         )
     }
 }

@@ -12,7 +12,7 @@ object AppFlavors {
         FlavorConfig("amenerrasulu", "Amenerrasulu Sesli", "com.parsfilo.amenerrasulu", "amenerrasulu.mp3"),
         FlavorConfig("ayetelkursi", "Ayetel Kursi Sesli", "com.parsfilo.ayetelkursi", "ayetelkursi.mp3"),
         FlavorConfig("bereketduasi", "Bereket Duası", "com.parsfilo.bereketduasi", "bereketduasi.mp3"),
-        FlavorConfig("esmaulhusna", "Esmaül Hüsna", "com.parsfilo.esmaulhusna"),
+        FlavorConfig("esmaulhusna", "Esmaül Hüsna", "com.parsfilo.esmaulhusna", "esmaulhusna.mp3"),
         FlavorConfig("fetihsuresi", "Fetih Suresi Sesli", "com.parsfilo.fetihsuresi", "fetihsuresi.mp3"),
         FlavorConfig("imsakiye", "İmsakiye", "com.parsfilo.imsakiye", isPrayerTimesFlavor = true),
         FlavorConfig("insirahsuresi", "İnşirah Sesli", "com.parsfilo.insirahsuresi", "insirahsuresi.mp3"),

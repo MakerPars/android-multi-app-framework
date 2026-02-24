@@ -36,7 +36,8 @@ class AssetMiraclesPrayerRepository @Inject constructor(
                         duaIsim = obj.getString("duaIsim"),
                         duaAciklama = obj.getString("duaAciklama"),
                         duaBesmele = obj.getString("duaBesmele"),
-                        duaArapca = obj.getString("duaArapca")
+                        duaArapca = obj.getString("duaArapca"),
+                        duaLatinOkunus = obj.optString("duaLatinOkunus", obj.optString("duaBesmele", ""))
                     )
                 )
             }
