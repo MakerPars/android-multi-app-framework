@@ -50,8 +50,8 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--tracks",
-        default="production,internal,beta,alpha",
-        help="Comma-separated tracks to consider (default: production,internal,beta,alpha)",
+        default="all",
+        help="Comma-separated tracks to consider or 'all' (default: all)",
     )
     p.add_argument(
         "--out-json",
@@ -191,6 +191,42 @@ def ensure_parent(path: pathlib.Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def print_version_code_summary(
+    selected: list[FlavorInfo],
+    out_apps: dict,
+    use_next: bool,
+) -> None:
+    rows: list[tuple[str, str, str, str, str]] = []
+    for fi in selected:
+        app = out_apps.get(fi.name) or {}
+        if "error" in app:
+            rows.append((fi.name, fi.package_name, "-", "-", f"ERROR: {app['error']}"))
+            continue
+        max_code = app.get("maxVersionCode")
+        if max_code is None:
+            rows.append((fi.name, fi.package_name, "-", "-", "NO_CODES"))
+            continue
+        target_code = int(max_code) + 1 if use_next else int(max_code)
+        rows.append((fi.name, fi.package_name, str(max_code), str(target_code), "OK"))
+
+    headers = ("flavor", "package", "max_on_play", "target_code", "status")
+    widths = [
+        max(len(headers[i]), *(len(r[i]) for r in rows)) if rows else len(headers[i])
+        for i in range(len(headers))
+    ]
+
+    def fmt(cols: tuple[str, str, str, str, str]) -> str:
+        return " | ".join(cols[i].ljust(widths[i]) for i in range(len(cols)))
+
+    print("")
+    print("Play versionCode summary")
+    print(fmt(headers))
+    print("-+-".join("-" * w for w in widths))
+    for row in rows:
+        print(fmt(row))
+    print("")
+
+
 def apply_codes_to_app_versions(
     app_versions_file: pathlib.Path,
     selected: list[FlavorInfo],
@@ -247,9 +283,11 @@ def main() -> int:
     flavor_file = repo_root / "buildSrc" / "src" / "main" / "kotlin" / "FlavorConfig.kt"
     flavors = read_flavors(flavor_file)
 
-    want_tracks = [t.strip() for t in (args.tracks or "").split(",") if t.strip()]
-    if not want_tracks:
+    raw_tracks = [t.strip() for t in (args.tracks or "").split(",") if t.strip()]
+    if not raw_tracks:
         raise RuntimeError("--tracks resolved to empty list")
+    use_all_tracks = len(raw_tracks) == 1 and raw_tracks[0].lower() == "all"
+    want_tracks = [] if use_all_tracks else raw_tracks
 
     wanted = args.flavors.strip()
     if wanted.lower() == "all":
@@ -268,13 +306,13 @@ def main() -> int:
     service_account_info = load_service_account_value(raw_sa)
     service = build_android_publisher(service_account_info)
 
-    out: dict[str, dict] = {"tracks": want_tracks, "apps": {}}
+    out: dict[str, dict] = {"tracks": "all" if use_all_tracks else want_tracks, "apps": {}}
 
     for fi in selected:
         pkg = fi.package_name
         try:
             track_map = fetch_tracks_version_codes(service, pkg)
-            filtered = {t: track_map.get(t, []) for t in want_tracks}
+            filtered = track_map if use_all_tracks else {t: track_map.get(t, []) for t in want_tracks}
             max_code = max((c for codes in filtered.values() for c in codes), default=None)
             out["apps"][fi.name] = {
                 "package": pkg,
@@ -305,7 +343,8 @@ def main() -> int:
             continue
         max_code = app.get("maxVersionCode")
         if max_code is None:
-            lines.append(f"# {fi.name}: No versionCodes found on selected tracks ({','.join(want_tracks)})")
+            track_note = "all" if use_all_tracks else ",".join(want_tracks)
+            lines.append(f"# {fi.name}: No versionCodes found on selected tracks ({track_note})")
             continue
         code = int(max_code) + 1 if args.suggest_next else int(max_code)
         suffix = " # next" if args.suggest_next else " # current-max"
@@ -315,6 +354,7 @@ def main() -> int:
 
     print(f"Wrote: {out_json}")
     print(f"Wrote: {out_props}")
+    print_version_code_summary(selected=selected, out_apps=out["apps"], use_next=args.suggest_next)
 
     if args.apply_to_app_versions:
         app_versions_file = (repo_root / args.app_versions_file).resolve()

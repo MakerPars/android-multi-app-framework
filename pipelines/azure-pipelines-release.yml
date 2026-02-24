@@ -32,6 +32,8 @@ variables:
   #   az pipelines run --name release --variables PUBLISH_TO_PLAY=true ...
   - name: PUBLISH_TO_PLAY
     value: false
+  - name: AUTO_BUMP_PLAY_VERSION_CODES
+    value: true
 
 stages:
   - stage: BuildRelease
@@ -54,6 +56,35 @@ stages:
           - template: templates/steps/resolve-flavors.yml
             parameters:
               targetFlavors: ${{ parameters.targetFlavors }}
+
+          - template: templates/steps/setup-secrets.yml
+            parameters:
+              needSigning: false
+              needPlayServiceAccount: true
+            condition: and(eq(variables['PUBLISH_TO_PLAY'], 'true'), eq(variables['AUTO_BUMP_PLAY_VERSION_CODES'], 'true'))
+
+          - bash: |
+              set -euo pipefail
+              if [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ] || [ ! -f "${PLAY_SERVICE_ACCOUNT_JSON}" ]; then
+                echo "PLAY_SERVICE_ACCOUNT_JSON is missing; cannot auto-bump version codes."
+                exit 1
+              fi
+
+              python3 -m pip install --quiet google-api-python-client google-auth
+
+              python3 ./scripts/ci/fetch_play_version_codes.py \
+                --flavors "${RESOLVED_FLAVORS_CSV}" \
+                --tracks all \
+                --suggest-next \
+                --apply-to-app-versions
+
+              echo "Updated app-versions.properties for publish run (versionCode auto-bump):"
+              grep -E '^('"$(echo "${RESOLVED_FLAVORS_CSV}" | tr ',' '|')"')\.versionCode=' app-versions.properties || true
+            displayName: Auto-bump Play versionCodes (selected flavors)
+            condition: and(eq(variables['PUBLISH_TO_PLAY'], 'true'), eq(variables['AUTO_BUMP_PLAY_VERSION_CODES'], 'true'))
+            env:
+              PLAY_SERVICE_ACCOUNT_JSON: $(PLAY_SERVICE_ACCOUNT_JSON)
+              RESOLVED_FLAVORS_CSV: $(RESOLVED_FLAVORS_CSV)
 
           - bash: |
               set -euo pipefail
@@ -108,7 +139,7 @@ stages:
 
           - bash: |
               set -euo pipefail
-              rm -f "$(Pipeline.Workspace)/release.jks" firebase_configs.zip
+              rm -f "$(Pipeline.Workspace)/release.jks" "$(Pipeline.Workspace)/service-account.json" firebase_configs.zip
             displayName: Cleanup Secrets
             condition: always()
 

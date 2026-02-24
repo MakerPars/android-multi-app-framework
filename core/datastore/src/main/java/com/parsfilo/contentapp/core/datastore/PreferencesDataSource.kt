@@ -75,6 +75,10 @@ class PreferencesDataSource @Inject constructor(
         it[PreferencesKeys.CUSTOM_ZIKIR_ITEMS_JSON] ?: "[]"
     }
 
+    val deletedZikirKeysJson: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.DELETED_ZIKIR_KEYS_JSON] ?: "[]"
+    }
+
     val quranSelectedReciter: Flow<String> = userPreferences.data.map {
         it[PreferencesKeys.QURAN_SELECTED_RECITER] ?: "alafasy_128"
     }
@@ -248,6 +252,10 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { it[PreferencesKeys.CUSTOM_ZIKIR_ITEMS_JSON] = value }
     }
 
+    suspend fun setDeletedZikirKeysJson(value: String) {
+        userPreferences.edit { it[PreferencesKeys.DELETED_ZIKIR_KEYS_JSON] = value }
+    }
+
     suspend fun setQuranReciter(reciterId: String) {
         userPreferences.edit { it[PreferencesKeys.QURAN_SELECTED_RECITER] = reciterId }
     }
@@ -299,6 +307,7 @@ class PreferencesDataSource @Inject constructor(
         val ZIKIR_INTERSTITIAL_SHOWN_COUNT_DAY = intPreferencesKey("zikir_interstitial_shown_count_day")
         val ZIKIR_INTERSTITIAL_DAY_KEY = stringPreferencesKey("zikir_interstitial_day_key")
         val CUSTOM_ZIKIR_ITEMS_JSON = stringPreferencesKey("custom_zikir_items_json")
+        val DELETED_ZIKIR_KEYS_JSON = stringPreferencesKey("deleted_zikir_keys_json")
 
         val QURAN_SELECTED_RECITER = stringPreferencesKey("quran_selected_reciter")
         val QURAN_DISPLAY_MODE = stringPreferencesKey("quran_display_mode")

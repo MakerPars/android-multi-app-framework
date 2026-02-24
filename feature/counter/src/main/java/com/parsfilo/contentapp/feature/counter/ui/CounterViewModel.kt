@@ -67,9 +67,14 @@ class CounterViewModel @Inject constructor(
 
     private fun loadInitialData() {
         viewModelScope.launch(Dispatchers.IO) {
+            val deletedDefaultKeys = parseDeletedZikirKeys(preferencesDataSource.deletedZikirKeysJson.first())
             val baseZikirList = zikirRepository.getZikirList()
+                .filterNot { it.key in deletedDefaultKeys }
             val customItems = parseCustomZikirItems(preferencesDataSource.customZikirItemsJson.first())
-            val zikirList = (baseZikirList + customItems).distinctBy { it.key }
+            val zikirList = mergeZikirLists(
+                baseItems = baseZikirList,
+                customItems = customItems,
+            )
             val selectedKey = preferencesDataSource.lastSelectedZikirKey.first()
             val selected = zikirList.firstOrNull { it.key == selectedKey } ?: zikirList.firstOrNull()
             _uiState.value = _uiState.value.copy(
@@ -77,7 +82,9 @@ class CounterViewModel @Inject constructor(
                 zikirList = zikirList,
                 selectedZikir = selected,
                 targetCount = selected?.defaultTarget ?: _uiState.value.targetCount,
-                showZikirSelector = zikirList.isNotEmpty(),
+                // Selector should be the default entry point; this also recovers
+                // the app when the user deletes every zikir and needs to add one back.
+                showZikirSelector = true,
             )
         }
     }
@@ -280,7 +287,12 @@ class CounterViewModel @Inject constructor(
             virtueSource = "",
         )
 
-        val updatedList = (_uiState.value.zikirList + item).distinctBy { it.key }
+        val baseItems = _uiState.value.zikirList.filterNot { it.key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX) }
+        val currentCustomItems = _uiState.value.zikirList.filter { it.key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX) }
+        val updatedList = mergeZikirLists(
+            baseItems = baseItems,
+            customItems = currentCustomItems + item,
+        )
         _uiState.value = _uiState.value.copy(
             zikirList = updatedList,
             selectedZikir = item,
@@ -294,6 +306,40 @@ class CounterViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             preferencesDataSource.setCustomZikirItemsJson(serializeCustomZikirItems(updatedList))
             preferencesDataSource.setLastSelectedZikirKey(item.key)
+        }
+    }
+
+    fun onDeleteZikir(item: ZikirItem) {
+        val state = _uiState.value
+        if (state.zikirList.none { it.key == item.key }) return
+
+        val updatedList = state.zikirList.filterNot { it.key == item.key }
+        val nextSelected = if (state.selectedZikir?.key == item.key) {
+            updatedList.firstOrNull()
+        } else {
+            state.selectedZikir
+        }
+
+        _uiState.value = state.copy(
+            zikirList = updatedList,
+            selectedZikir = nextSelected,
+            targetCount = nextSelected?.defaultTarget ?: state.targetCount,
+            currentCount = 0,
+            isSessionActive = false,
+            sessionStartTime = 0L,
+            showZikirSelector = true,
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            if (item.key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX)) {
+                preferencesDataSource.setCustomZikirItemsJson(serializeCustomZikirItems(updatedList))
+            } else {
+                val deletedDefaultKeys = parseDeletedZikirKeys(preferencesDataSource.deletedZikirKeysJson.first())
+                preferencesDataSource.setDeletedZikirKeysJson(
+                    serializeDeletedZikirKeys(deletedDefaultKeys + item.key),
+                )
+            }
+            preferencesDataSource.setLastSelectedZikirKey(nextSelected?.key ?: DEFAULT_FALLBACK_ZIKIR_KEY)
         }
     }
 
@@ -542,6 +588,48 @@ class CounterViewModel @Inject constructor(
         return array.toString()
     }
 
+    private fun parseDeletedZikirKeys(raw: String): Set<String> {
+        if (raw.isBlank()) return emptySet()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildSet {
+                for (index in 0 until array.length()) {
+                    val key = array.optString(index).trim()
+                    if (key.isBlank() || key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX)) continue
+                    add(key)
+                }
+            }
+        }.getOrDefault(emptySet())
+    }
+
+    private fun serializeDeletedZikirKeys(keys: Set<String>): String {
+        val array = JSONArray()
+        keys.asSequence()
+            .filter { it.isNotBlank() && !it.startsWith(CUSTOM_ZIKIR_KEY_PREFIX) }
+            .sorted()
+            .forEach(array::put)
+        return array.toString()
+    }
+
+    private fun mergeZikirLists(
+        baseItems: List<ZikirItem>,
+        customItems: List<ZikirItem>,
+    ): List<ZikirItem> {
+        val sortedCustomItems = customItems
+            .filter { it.key.startsWith(CUSTOM_ZIKIR_KEY_PREFIX) }
+            .distinctBy { it.key }
+            .sortedByDescending(::customZikirSortValue)
+
+        return (sortedCustomItems + baseItems).distinctBy { it.key }
+    }
+
+    private fun customZikirSortValue(item: ZikirItem): Long {
+        return item.key
+            .removePrefix(CUSTOM_ZIKIR_KEY_PREFIX)
+            .toLongOrNull()
+            ?: Long.MIN_VALUE
+    }
+
     private data class PreferenceSnapshot(
         val isHapticEnabled: Boolean,
         val isSoundEnabled: Boolean,
@@ -557,6 +645,7 @@ class CounterViewModel @Inject constructor(
         private const val MIN_INTERSTITIAL_GAP_MS = 15 * 60 * 1000L
         private const val MAX_INTERSTITIAL_PER_DAY = 2
         private const val CUSTOM_ZIKIR_KEY_PREFIX = "custom_"
+        private const val DEFAULT_FALLBACK_ZIKIR_KEY = "subhanallah"
     }
 }
 

@@ -18,12 +18,15 @@
     <string name="counter_selector_title">Zikir Seç</string>
     <string name="counter_open_zikir_list">Zikir listesine dön</string>
     <string name="counter_add_zikir">Zikir ekle</string>
+    <string name="counter_empty_zikir_list_title">Henüz zikir yok</string>
+    <string name="counter_empty_zikir_list_message">Yeni bir zikir eklemek için yukarıdaki \"Zikir ekle\" butonuna basın.</string>
     <string name="counter_add_zikir_title">Yeni zikir ekle</string>
     <string name="counter_add_zikir_arabic">Arapça metin</string>
     <string name="counter_add_zikir_latin">Okunuş (Latin)</string>
     <string name="counter_add_zikir_meaning">Anlam</string>
     <string name="counter_add_zikir_target">Hedef tekrar</string>
     <string name="counter_cancel">İptal</string>
+    <string name="counter_delete">Sil</string>
     <plurals name="counter_recommended_target">
         <item quantity="one">Önerilen: %d tekrar</item>
         <item quantity="other">Önerilen: %d tekrar</item>

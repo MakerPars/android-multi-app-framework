@@ -19,6 +19,10 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: ${{ github.event.inputs.publish_to_play == 'true' && 'play-publish-global' || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event.inputs.publish_to_play != 'true' }}
+
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
   JAVA_VERSION: '21'
@@ -31,6 +35,7 @@ jobs:
     outputs:
       resolved_flavors_json: ${{ steps.resolve.outputs.resolved_json }}
       resolved_flavors_csv: ${{ steps.resolve.outputs.resolved_csv }}
+      auto_bump_done: ${{ steps.auto_bump.outputs.done }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -111,6 +116,34 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
 
+      - name: Decode Play Service Account (for auto-bump)
+        if: github.event.inputs.publish_to_play == 'true'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
+          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Auto-bump Play versionCodes (selected flavors)
+        id: auto_bump
+        if: github.event.inputs.publish_to_play == 'true'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          set -euo pipefail
+          [ -f "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::PLAY_SERVICE_ACCOUNT_JSON missing"; exit 1; }
+          echo "::notice::Auto-bump starting (track=production, flavors=${{ steps.resolve.outputs.resolved_csv }})"
+          python3 -m pip install --quiet google-api-python-client google-auth
+          python3 ./scripts/ci/fetch_play_version_codes.py \
+            --flavors "${{ steps.resolve.outputs.resolved_csv }}" \
+            --tracks all \
+            --suggest-next \
+            --apply-to-app-versions
+          echo "::notice::Auto-bump completed (track=production, flavors=${{ steps.resolve.outputs.resolved_csv }})"
+          echo "done=true" >> "$GITHUB_OUTPUT"
+
       - name: Build Release AAB
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/release.jks
@@ -144,7 +177,7 @@ jobs:
 
       - name: Cleanup Secrets
         if: always()
-        run: rm -f "${{ runner.temp }}/release.jks"
+        run: rm -f "${{ runner.temp }}/release.jks" "${{ runner.temp }}/service-account.json"
 
   publish-production:
     name: Publish to Play Console
@@ -203,6 +236,7 @@ jobs:
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
 
       - name: Publish to Play Console
+        if: needs.build-release.outputs.auto_bump_done == 'true'
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -237,6 +271,16 @@ jobs:
 
           echo "Publishing: ${TASKS[*]}"
           ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
+
+      - name: Guard auto-bump marker before publish
+        if: always() && github.event.inputs.publish_to_play == 'true'
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.build-release.outputs.auto_bump_done }}" != "true" ]; then
+            echo "::error::Auto-bump marker missing. versionCode bump was not confirmed before Play publish."
+            echo "::error::Track=production, flavors=${{ needs.build-release.outputs.resolved_flavors_csv }}"
+            exit 1
+          fi
 
       - name: Cleanup Secrets
         if: always()

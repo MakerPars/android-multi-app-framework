@@ -34,7 +34,7 @@ on:
       - '.github/actions/firebase-config/**'
 
 concurrency:
-  group: auto-debug-ops-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ format('ci-{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
   cancel-in-progress: true
 
 env:

@@ -42,6 +42,10 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: ${{ (github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true') && 'play-publish-global' || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event.inputs.do_internal_test != 'true' && github.event.inputs.do_publish != 'true' }}
+
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false
   JAVA_VERSION: '21'
@@ -178,6 +182,45 @@ jobs:
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Auto-bump Play versionCodes (selected flavors)
+        if: >-
+          github.event.inputs.build_type == 'Release' &&
+          (github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true')
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          set -euo pipefail
+          [ -f "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::PLAY_SERVICE_ACCOUNT_JSON missing"; exit 1; }
+          TRACKS=()
+          [ "${{ github.event.inputs.do_internal_test }}" = "true" ] && TRACKS+=("internal")
+          [ "${{ github.event.inputs.do_publish }}" = "true" ] && TRACKS+=("production")
+          TRACKS_CSV="$(IFS=,; echo "${TRACKS[*]}")"
+          echo "::notice::Auto-bump starting (tracks=${TRACKS_CSV:-unknown}, flavors=${RESOLVED_FLAVORS_CSV:-unknown})"
+          python3 -m pip install --quiet google-api-python-client google-auth
+          python3 ./scripts/ci/fetch_play_version_codes.py \
+            --flavors "${RESOLVED_FLAVORS_CSV}" \
+            --tracks all \
+            --suggest-next \
+            --apply-to-app-versions
+          echo "::notice::Auto-bump completed (tracks=${TRACKS_CSV:-unknown}, flavors=${RESOLVED_FLAVORS_CSV:-unknown})"
+          echo "PLAY_VERSION_AUTO_BUMP_DONE=true" >> "$GITHUB_ENV"
+
+      - name: Guard auto-bump marker before Play publish
+        if: >-
+          github.event.inputs.build_type == 'Release' &&
+          (github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true')
+        run: |
+          set -euo pipefail
+          TRACKS=()
+          [ "${{ github.event.inputs.do_internal_test }}" = "true" ] && TRACKS+=("internal")
+          [ "${{ github.event.inputs.do_publish }}" = "true" ] && TRACKS+=("production")
+          TRACKS_CSV="$(IFS=,; echo "${TRACKS[*]}")"
+          if [ "${PLAY_VERSION_AUTO_BUMP_DONE:-}" != "true" ]; then
+            echo "::error::Auto-bump marker missing. versionCode bump step did not complete before Play publish."
+            echo "::error::Tracks=${TRACKS_CSV:-unknown}, flavors=${RESOLVED_FLAVORS_CSV:-unknown}"
+            exit 1
+          fi
 
       # ── Build ──
       - name: Build

@@ -5,7 +5,7 @@ on:
     branches: ['*']
 
 concurrency:
-  group: quality-gate-${{ github.head_ref }}
+  group: ${{ format('ci-{0}-{1}', github.workflow, github.event.pull_request.number || github.head_ref || github.ref) }}
   cancel-in-progress: true
 
 env:

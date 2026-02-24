@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
+import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.counter.R
 import com.parsfilo.contentapp.feature.counter.model.ZikirItem
@@ -43,6 +47,7 @@ fun ZikirSelectorPage(
     onSelect: (ZikirItem) -> Unit,
     onDismiss: () -> Unit,
     onAddCustomZikir: (arabicText: String, latinText: String, turkishMeaning: String, defaultTarget: Int) -> Unit,
+    onDeleteZikir: (ZikirItem) -> Unit,
     onSettingsClick: () -> Unit,
     onRewardsClick: () -> Unit,
     onReminderClick: () -> Unit,
@@ -79,56 +84,101 @@ fun ZikirSelectorPage(
             content?.invoke()
         }
 
-        LazyColumn(
+        AppButton(
+            text = stringResource(R.string.counter_add_zikir),
+            onClick = { showAddDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = d.space16),
-            contentPadding = PaddingValues(top = d.space8, bottom = d.space4),
-            verticalArrangement = Arrangement.spacedBy(d.space10),
-        ) {
-            items(zikirList, key = { it.key }) { item ->
-                val selected = item.key == selectedKey
-                AppCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(d.radiusMedium),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (selected) {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
-                    ),
-                    onClick = { onSelect(item) },
+                .padding(horizontal = d.space16)
+        )
+
+        Spacer(modifier = Modifier.height(d.space8))
+
+        if (zikirList.isEmpty()) {
+            AppCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = d.space16),
+                shape = RoundedCornerShape(d.radiusMedium),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(d.space16),
+                    verticalArrangement = Arrangement.spacedBy(d.space8),
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(d.space12),
-                        verticalArrangement = Arrangement.spacedBy(d.space4),
+                    Text(
+                        text = stringResource(R.string.counter_empty_zikir_list_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.counter_empty_zikir_list_message),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = d.space16),
+                contentPadding = PaddingValues(top = d.space8, bottom = d.space4),
+                verticalArrangement = Arrangement.spacedBy(d.space10),
+            ) {
+                items(zikirList, key = { it.key }) { item ->
+                    val selected = item.key == selectedKey
+                    AppCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(d.radiusMedium),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selected) {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        ),
+                        onClick = { onSelect(item) },
                     ) {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(d.space12),
+                            verticalArrangement = Arrangement.spacedBy(d.space4),
+                        ) {
+                            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                                Text(
+                                    text = item.arabicText,
+                                    fontSize = 24.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            Text(text = item.latinText, fontWeight = FontWeight.SemiBold)
                             Text(
-                                text = item.arabicText,
-                                fontSize = 24.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                text = item.turkishMeaning,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 14.sp,
                             )
+                            Text(
+                                text = pluralStringResource(
+                                    R.plurals.counter_recommended_target,
+                                    item.defaultTarget,
+                                    item.defaultTarget,
+                                ),
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontSize = 13.sp,
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                            ) {
+                                TextButton(onClick = { onDeleteZikir(item) }) {
+                                    Text(text = stringResource(R.string.counter_delete))
+                                }
+                            }
                         }
-                        Text(text = item.latinText, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            text = item.turkishMeaning,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp,
-                        )
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.counter_recommended_target,
-                                item.defaultTarget,
-                                item.defaultTarget,
-                            ),
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontSize = 13.sp,
-                        )
                     }
                 }
             }

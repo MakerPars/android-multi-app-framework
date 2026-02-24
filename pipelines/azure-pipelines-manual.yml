@@ -125,6 +125,28 @@ jobs:
           needSigning: ${{ and(eq(parameters.buildType, 'Release'), or(eq(parameters.doBuild, true), eq(parameters.doInternalTest, true), eq(parameters.doPublish, true))) }}
           needPlayServiceAccount: ${{ or(eq(parameters.doInternalTest, true), eq(parameters.doPublish, true)) }}
 
+      - ${{ if and(eq(parameters.buildType, 'Release'), or(eq(parameters.doInternalTest, true), eq(parameters.doPublish, true))) }}:
+        - bash: |
+            set -euo pipefail
+            if [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ] || [ ! -f "${PLAY_SERVICE_ACCOUNT_JSON}" ]; then
+              echo "PLAY_SERVICE_ACCOUNT_JSON is missing; cannot auto-bump version codes."
+              exit 1
+            fi
+
+            python3 -m pip install --quiet google-api-python-client google-auth
+
+            python3 ./scripts/ci/fetch_play_version_codes.py \
+              --flavors "${RESOLVED_FLAVORS_CSV}" \
+              --tracks all \
+              --suggest-next \
+              --apply-to-app-versions
+
+            echo "Updated app-versions.properties for publish run (versionCode auto-bump):"
+            grep -E '^('"$(echo "${RESOLVED_FLAVORS_CSV}" | tr ',' '|')"')\.versionCode=' app-versions.properties || true
+          displayName: Auto-bump Play versionCodes (selected flavors)
+          env:
+            PLAY_SERVICE_ACCOUNT_JSON: $(PLAY_SERVICE_ACCOUNT_JSON)
+
       - ${{ if eq(parameters.doBuild, true) }}:
         - template: templates/steps/build.yml
           parameters:
