@@ -136,7 +136,7 @@ class AuthManager @Inject constructor(
                         else -> {
                             Timber.i(
                                 "[Auth][$attemptId] Button flow finished with %s",
-                                explicitResult::class.java.simpleName
+                                explicitResult.logLabel()
                             )
                             explicitResult
                         }
@@ -146,7 +146,7 @@ class AuthManager @Inject constructor(
                 else -> {
                     Timber.i(
                         "[Auth][$attemptId] Sign-in finished with %s",
-                        allAccountsResult::class.java.simpleName
+                        allAccountsResult.logLabel()
                     )
                     allAccountsResult
                 }
@@ -249,7 +249,7 @@ class AuthManager @Inject constructor(
                 )
                 SignInResult.ReauthRequired
             } else {
-                Timber.w(
+                Timber.i(
                     "[Auth][$attemptId] CANCELLED by user/system. code=%s msg=%s",
                     code ?: "n/a",
                     e.message
@@ -278,7 +278,7 @@ class AuthManager @Inject constructor(
             Timber.e(e, "[Auth][$attemptId] Security exception during sign-in. msg=%s", e.message)
             SignInResult.Failure
         } catch (e: CancellationException) {
-            Timber.w(e, "[Auth][$attemptId] Sign-in coroutine cancelled")
+            Timber.i("[Auth][$attemptId] Sign-in coroutine cancelled")
             SignInResult.Cancelled
         } catch (e: java.util.concurrent.ExecutionException) {
             Timber.e(e, "[Auth][$attemptId] Credential execution failed. msg=%s", e.message)
@@ -371,7 +371,7 @@ class AuthManager @Inject constructor(
                 )
                 SignInResult.ReauthRequired
             } else {
-                Timber.w(
+                Timber.i(
                     "[Auth][$attemptId] Button flow CANCELLED. code=%s msg=%s",
                     code ?: "n/a",
                     e.message
@@ -400,7 +400,7 @@ class AuthManager @Inject constructor(
             Timber.e(e, "[Auth][$attemptId] Button flow security exception. msg=%s", e.message)
             SignInResult.Failure
         } catch (e: CancellationException) {
-            Timber.w(e, "[Auth][$attemptId] Button flow coroutine cancelled")
+            Timber.i("[Auth][$attemptId] Button flow coroutine cancelled")
             SignInResult.Cancelled
         } catch (e: java.util.concurrent.ExecutionException) {
             Timber.e(e, "[Auth][$attemptId] Button flow credential execution failed. msg=%s", e.message)
@@ -483,4 +483,12 @@ class AuthManager @Inject constructor(
     }
 
     fun isUserSignedIn(): Boolean = firebaseAuth.currentUser != null
+
+    private fun SignInResult.logLabel(): String = when (this) {
+        SignInResult.Success -> "success"
+        SignInResult.NoCredential -> "no_credential"
+        SignInResult.ReauthRequired -> "reauth_required"
+        SignInResult.Cancelled -> "cancelled"
+        SignInResult.Failure -> "failure"
+    }
 }

@@ -68,6 +68,7 @@ class BillingManager @Inject constructor(
 
         return BillingClient.newBuilder(appContext)
             .enablePendingPurchases(pendingPurchasesParams)
+            .enableAutoServiceReconnection()
             .setListener(purchasesUpdatedListener)
             .build()
     }
@@ -103,7 +104,11 @@ class BillingManager @Inject constructor(
                     queryProductDetails()
                     refreshPurchaseState()
                 } else {
-                    setError("Billing setup failed: ${billingResult.debugMessage}")
+                    handleBillingFailure(
+                        operation = "Billing setup failed",
+                        billingResult = billingResult,
+                        updateUiState = false,
+                    )
                 }
             }
 
@@ -145,7 +150,11 @@ class BillingManager @Inject constructor(
 
         val result = billingClient.launchBillingFlow(activity, flowParams)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-            setError("Satın alma başlatılamadı: ${result.debugMessage}")
+            handleBillingFailure(
+                operation = "Satın alma başlatılamadı",
+                billingResult = result,
+                updateUiState = true,
+            )
         }
     }
 
@@ -168,7 +177,11 @@ class BillingManager @Inject constructor(
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> handlePurchases(purchases)
             BillingClient.BillingResponseCode.USER_CANCELED -> queryPurchases()
-            else -> setError("Satın alma hatası: ${billingResult.debugMessage}")
+            else -> handleBillingFailure(
+                operation = "Satın alma hatası",
+                billingResult = billingResult,
+                updateUiState = true,
+            )
         }
     }
 
@@ -188,7 +201,11 @@ class BillingManager @Inject constructor(
 
         billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsResult ->
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
-                setError("Planlar alınamadı: ${billingResult.debugMessage}")
+                handleBillingFailure(
+                    operation = "Planlar alınamadı",
+                    billingResult = billingResult,
+                    updateUiState = false,
+                )
                 return@queryProductDetailsAsync
             }
 
@@ -277,7 +294,45 @@ class BillingManager @Inject constructor(
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 handlePurchases(purchases)
             } else {
-                setError("Satın alma geçmişi alınamadı: ${billingResult.debugMessage}")
+                handleBillingFailure(
+                    operation = "Satın alma geçmişi alınamadı",
+                    billingResult = billingResult,
+                    updateUiState = false,
+                )
+            }
+        }
+    }
+
+    private fun handleBillingFailure(
+        operation: String,
+        billingResult: BillingResult,
+        updateUiState: Boolean
+    ) {
+        val message = "$operation: ${billingResult.debugMessage}"
+        when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> {
+                Timber.i("%s (transient/disconnected)", message)
+                replaceBillingClient(closeCurrent = false, resetScope = false)
+                if (updateUiState) {
+                    _subscriptionState.value = SubscriptionState.Error("Ödeme servisine yeniden bağlanılıyor, tekrar deneyin")
+                }
+            }
+
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+            BillingClient.BillingResponseCode.NETWORK_ERROR,
+            BillingClient.BillingResponseCode.ERROR -> {
+                Timber.w("%s (transient)", message)
+                if (updateUiState) {
+                    _subscriptionState.value = SubscriptionState.Error(message)
+                }
+            }
+
+            else -> {
+                if (updateUiState) {
+                    setError(message)
+                } else {
+                    Timber.w(message)
+                }
             }
         }
     }
