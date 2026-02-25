@@ -82,6 +82,14 @@ jobs:
         run: |
           echo "RESOLVED_FLAVORS_JSON=${{ steps.resolve.outputs.resolved_json }}" >> "$GITHUB_ENV"
 
+      - name: Validate CI apps catalog (strict for publish flavors)
+        if: github.event.inputs.publish_to_play == 'true'
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_ci_apps_catalog.py \
+            --mode strict \
+            --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
+
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
         with:

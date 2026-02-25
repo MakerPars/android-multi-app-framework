@@ -9,6 +9,8 @@ lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.4"
 composeBom = "2026.02.00"
 hilt = "2.59.1"
+# KSP 2.x is versioned independently from Kotlin patch versions (KSP2+).
+# Keep KSP on latest stable 2.3.x and validate via smoke builds when Kotlin is updated.
 ksp = "2.3.4"
 room = "2.8.4"
 datastore = "1.2.0"

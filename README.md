@@ -77,6 +77,11 @@ This repo supports per-flavour versions via `app-versions.properties`:
 
 If a flavour is missing, build fallback is `versionCode=1` and `versionName=1.0.0`.
 
+Important:
+- GitHub Actions publish workflows use Play API auto-bump (`max versionCode + 1`) before build/publish.
+- Repo `app-versions.properties` may become stale after publish (CI bumps in runner workspace and does not auto-push back).
+- Manual repo sync is available via `.github/workflows/sync-play-version-codes.yml` (artifact-only, no direct push).
+
 ### Remote Config Endpoint Keys
 
 Endpoint values are centralized in `core/firebase/src/main/java/com/parsfilo/contentapp/core/firebase/config/EndpointsProvider.kt`.
@@ -98,6 +103,10 @@ Azure DevOps pipeline dosyaları:
 - `pipelines/azure-pipelines-release.yml`
 
 Kurulum adımları için: `docs/AZURE_DEVOPS_SETUP.md`
+
+Standards / ops docs:
+- `docs/play-publish-standards.md`
+- `docs/ci-apps-catalog-policy.md`
 
 ## Play Store Management (Listing/Metadata/Screenshots/Release Notes)
 

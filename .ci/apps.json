@@ -24,6 +24,19 @@
     }
   },
   {
+    "flavor": "bereketduasi",
+    "package": "com.parsfilo.bereketduasi",
+    "admob_app_id": "ca-app-pub-3312485084079132~4161185675",
+    "ad_units": {
+      "banner": "ca-app-pub-3312485084079132/1125217972",
+      "interstitial": "ca-app-pub-3312485084079132/2745820786",
+      "native": "ca-app-pub-3312485084079132/7499054633",
+      "rewarded": "ca-app-pub-3312485084079132/9119657445",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/1432739117",
+      "open_app": "ca-app-pub-3312485084079132/1097297810"
+    }
+  },
+  {
     "flavor": "esmaulhusna",
     "package": "com.parsfilo.esmaulhusna",
     "admob_app_id": "ca-app-pub-3312485084079132~7465066634",
@@ -93,6 +106,19 @@
       "native": "ca-app-pub-3312485084079132/5530114227",
       "rewarded": "ca-app-pub-3312485084079132/2337799084",
       "open_app": "ca-app-pub-3312485084079132/9848633188"
+    }
+  },
+  {
+    "flavor": "nazarayeti",
+    "package": "com.parsfilo.nazarayeti",
+    "admob_app_id": "ca-app-pub-3312485084079132~7557505209",
+    "ad_units": {
+      "banner": "ca-app-pub-3312485084079132/2246727958",
+      "interstitial": "ca-app-pub-3312485084079132/9992096854",
+      "native": "ca-app-pub-3312485084079132/3867330760",
+      "rewarded": "ca-app-pub-3312485084079132/7365933511",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/6158052807",
+      "open_app": "ca-app-pub-3312485084079132/1343450648"
     }
   },
   {

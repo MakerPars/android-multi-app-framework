@@ -83,6 +83,15 @@ jobs:
 
       - bash: |
           set -euo pipefail
+          MODE="warn"
+          if [ "${{ parameters.doInternalTest }}" = "true" ] || [ "${{ parameters.doPublish }}" = "true" ]; then
+            MODE="strict"
+          fi
+          python3 ./scripts/ci/validate_ci_apps_catalog.py --mode "$MODE" --target-flavors "${RESOLVED_FLAVORS_CSV}"
+        displayName: Validate CI apps catalog
+
+      - bash: |
+          set -euo pipefail
           if [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ] && [[ "${FIREBASE_CONFIGS_ZIP_BASE64}" != '$('* ]]; then
             echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
             unzip -o firebase_configs.zip
@@ -139,7 +148,8 @@ jobs:
               --flavors "${RESOLVED_FLAVORS_CSV}" \
               --tracks all \
               --suggest-next \
-              --apply-to-app-versions
+              --apply-to-app-versions \
+              --sync-version-names
 
             echo "Updated app-versions.properties for publish run (versionCode auto-bump):"
             grep -E '^('"$(echo "${RESOLVED_FLAVORS_CSV}" | tr ',' '|')"')\.versionCode=' app-versions.properties || true
