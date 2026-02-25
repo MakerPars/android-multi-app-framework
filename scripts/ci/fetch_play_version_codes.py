@@ -74,6 +74,11 @@ def parse_args() -> argparse.Namespace:
         help="Apply resolved versionCode values to app-versions.properties",
     )
     p.add_argument(
+        "--sync-version-names",
+        action="store_true",
+        help="When applying, also sync <flavor>.versionName to match target versionCode (e.g. 1.0.<code>)",
+    )
+    p.add_argument(
         "--app-versions-file",
         default="app-versions.properties",
         help="Path to app-versions.properties (default: app-versions.properties)",
@@ -232,6 +237,7 @@ def apply_codes_to_app_versions(
     selected: list[FlavorInfo],
     out_apps: dict,
     use_next: bool,
+    sync_version_names: bool,
 ) -> tuple[list[str], list[str]]:
     """
     Updates <flavor>.versionCode in app-versions.properties.
@@ -268,12 +274,52 @@ def apply_codes_to_app_versions(
                 replaced = True
                 break
         if replaced:
+            if sync_version_names:
+                sync_version_name_for_flavor(lines=lines, flavor_name=fi.name, target_code=target_code)
             updated.append(fi.name)
         else:
             skipped.append(f"{fi.name} (missing-key)")
 
     app_versions_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return updated, skipped
+
+
+def sync_version_name_for_flavor(lines: list[str], flavor_name: str, target_code: int) -> None:
+    key = f"{flavor_name}.versionName"
+    prefix = f"{key}="
+    target_suffix = str(target_code)
+
+    for idx, raw in enumerate(lines):
+        stripped = raw.strip()
+        if stripped.startswith("#") or "=" not in stripped:
+            continue
+        if not stripped.startswith(prefix):
+            continue
+
+        existing_value = stripped.split("=", 1)[1].strip()
+        # Preserve common style 1.0.<versionCode>; otherwise keep existing major.minor and replace last numeric segment.
+        match = re.match(r"^(?P<base>\d+\.\d+)\.\d+$", existing_value)
+        if match:
+            lines[idx] = f"{key}={match.group('base')}.{target_suffix}"
+            return
+
+        generic = re.match(r"^(?P<head>\d+(?:\.\d+)*)$", existing_value)
+        if generic and "." in existing_value:
+            parts = existing_value.split(".")
+            parts[-1] = target_suffix
+            lines[idx] = f"{key}={'.'.join(parts)}"
+            return
+
+        # Fallback for non-standard formats: set deterministic simple version name.
+        lines[idx] = f"{key}=1.0.{target_suffix}"
+        return
+
+
+def gh_warning(message: str) -> None:
+    if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+        print(f"::warning::{message}")
+    else:
+        print(f"WARNING: {message}")
 
 
 def main() -> int:
@@ -363,11 +409,22 @@ def main() -> int:
             selected=selected,
             out_apps=out["apps"],
             use_next=args.suggest_next,
+            sync_version_names=args.sync_version_names,
         )
         print(f"Updated app-versions file: {app_versions_file}")
         print(f"Updated flavors: {', '.join(updated) if updated else '(none)'}")
         if skipped:
             print(f"Skipped flavors: {', '.join(skipped)}")
+            for item in skipped:
+                if "no-version-on-track" in item:
+                    gh_warning(
+                        f"No Play versionCode found for {item}. Keeping existing app-versions.properties value "
+                        "(expected for brand-new flavor/apps not yet uploaded)."
+                    )
+                elif "(error)" in item:
+                    gh_warning(f"Play version lookup failed for {item}. Existing app-versions.properties value kept.")
+                elif "(missing-key)" in item:
+                    gh_warning(f"Missing versionCode key in app-versions.properties for {item}.")
 
     return 0
 

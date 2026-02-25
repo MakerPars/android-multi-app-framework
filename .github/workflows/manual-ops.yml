@@ -202,7 +202,8 @@ jobs:
             --flavors "${RESOLVED_FLAVORS_CSV}" \
             --tracks all \
             --suggest-next \
-            --apply-to-app-versions
+            --apply-to-app-versions \
+            --sync-version-names
           echo "::notice::Auto-bump completed (tracks=${TRACKS_CSV:-unknown}, flavors=${RESOLVED_FLAVORS_CSV:-unknown})"
           echo "PLAY_VERSION_AUTO_BUMP_DONE=true" >> "$GITHUB_ENV"
 
@@ -254,6 +255,16 @@ jobs:
 
           echo "Running: ${TASKS[*]}"
           ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+
+      - name: Notice release artifacts may use repo versionCodes (no Play publish selected)
+        if: >-
+          github.event.inputs.build_type == 'Release' &&
+          github.event.inputs.do_build == 'true' &&
+          github.event.inputs.do_internal_test != 'true' &&
+          github.event.inputs.do_publish != 'true'
+        run: |
+          echo "::warning::Release build artifact was created without Play auto-bump (no internal/prod publish selected)."
+          echo "::warning::Manual Play upload may fail if versionCode is already used."
 
       - name: Upload Build Outputs
         if: github.event.inputs.do_build == 'true'

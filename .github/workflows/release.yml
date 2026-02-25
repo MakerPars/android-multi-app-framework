@@ -140,9 +140,16 @@ jobs:
             --flavors "${{ steps.resolve.outputs.resolved_csv }}" \
             --tracks all \
             --suggest-next \
-            --apply-to-app-versions
+            --apply-to-app-versions \
+            --sync-version-names
           echo "::notice::Auto-bump completed (track=production, flavors=${{ steps.resolve.outputs.resolved_csv }})"
           echo "done=true" >> "$GITHUB_OUTPUT"
+
+      - name: Notice release artifact may use repo versionCodes (publish disabled)
+        if: github.event.inputs.publish_to_play != 'true'
+        run: |
+          echo "::warning::Release AAB artifact is being built without Play publish auto-bump (publish_to_play=false)."
+          echo "::warning::If you later upload this artifact manually to Play, versionCode may already be used."
 
       - name: Build Release AAB
         env:
@@ -171,7 +178,7 @@ jobs:
       - name: Upload AAB Artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: release-bundles
+          name: ${{ github.event.inputs.publish_to_play == 'true' && 'release-bundles' || 'release-bundles-nonpublishable-versioncode' }}
           path: app/build/outputs/bundle/
           retention-days: 30
 
