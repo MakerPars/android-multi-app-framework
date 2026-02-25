@@ -175,6 +175,14 @@ jobs:
           path: app/build/outputs/bundle/
           retention-days: 30
 
+      - name: Upload bumped app-versions.properties
+        if: github.event.inputs.publish_to_play == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: bumped-app-versions
+          path: app-versions.properties
+          retention-days: 7
+
       - name: Cleanup Secrets
         if: always()
         run: rm -f "${{ runner.temp }}/release.jks" "${{ runner.temp }}/service-account.json"
@@ -200,6 +208,18 @@ jobs:
         with:
           name: release-bundles
           path: app/build/outputs/bundle
+
+      - name: Download bumped app-versions.properties
+        uses: actions/download-artifact@v7
+        with:
+          name: bumped-app-versions
+          path: TEMP_OUT/release-sync
+
+      - name: Restore bumped app-versions.properties for publish
+        run: |
+          set -euo pipefail
+          cp "TEMP_OUT/release-sync/app-versions.properties" "./app-versions.properties"
+          echo "::notice::Restored bumped app-versions.properties from build job for publish"
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
@@ -234,6 +254,16 @@ jobs:
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Guard auto-bump marker before publish
+        if: github.event.inputs.publish_to_play == 'true'
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.build-release.outputs.auto_bump_done }}" != "true" ]; then
+            echo "::error::Auto-bump marker missing. versionCode bump was not confirmed before Play publish."
+            echo "::error::Track=production, flavors=${{ needs.build-release.outputs.resolved_flavors_csv }}"
+            exit 1
+          fi
 
       - name: Publish to Play Console
         if: needs.build-release.outputs.auto_bump_done == 'true'
@@ -271,16 +301,6 @@ jobs:
 
           echo "Publishing: ${TASKS[*]}"
           ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
-
-      - name: Guard auto-bump marker before publish
-        if: always() && github.event.inputs.publish_to_play == 'true'
-        run: |
-          set -euo pipefail
-          if [ "${{ needs.build-release.outputs.auto_bump_done }}" != "true" ]; then
-            echo "::error::Auto-bump marker missing. versionCode bump was not confirmed before Play publish."
-            echo "::error::Track=production, flavors=${{ needs.build-release.outputs.resolved_flavors_csv }}"
-            exit 1
-          fi
 
       - name: Cleanup Secrets
         if: always()
