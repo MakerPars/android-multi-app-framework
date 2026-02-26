@@ -33,6 +33,8 @@ interface DeviceDoc {
     notificationsEnabled: boolean;
 }
 
+const FIRESTORE_IN_QUERY_LIMIT = 10;
+
 /**
  * dispatchNotifications — Her saat başı çalışır.
  *
@@ -99,6 +101,13 @@ async function processEvent(
 
     if (newTimezones.length === 0) {
         return; // Bu saat dilimlerine zaten gönderilmiş veya eşleşen yok
+    }
+
+    if (effectiveEvent.topic?.trim()) {
+        logger.warn(
+            `Event "${effectiveEvent.name}" contains topic="${effectiveEvent.topic}" but dispatch ` +
+            "currently uses timezone/device targeting only (topic is metadata-only).",
+        );
     }
 
     // 3. Tarih/gün kontrolü
@@ -251,7 +260,9 @@ function matchesRecurrence(recurrence: string, timezone: string, now: Date): boo
 }
 
 /**
- * Belirli timezone'lardaki ve paketlerdeki cihazları Firestore'dan çeker.
+ * Belirli timezone'lardaki cihazları Firestore'dan çeker.
+ * Paket filtresi gerekiyorsa, Firestore'da ikinci bir `in` filtresi kullanmamak için
+ * uygulama tarafında filtrelenir.
  */
 async function getDevicesForTimezones(
     db: admin.firestore.Firestore,
@@ -259,26 +270,31 @@ async function getDevicesForTimezones(
     packages: string[],
 ): Promise<Array<{ token: string; locale: string }>> {
     const devices: Array<{ token: string; locale: string }> = [];
+    const hasPackageFilter = packages.length > 0 && !packages.includes("*");
+    const allowedPackages = hasPackageFilter ? new Set(packages) : null;
+    const seenTokens = new Set<string>();
 
-    // Firestore `in` sorgusu en fazla 30 değer kabul eder
-    const chunkSize = 30;
+    // Firestore `in` sorgusu en fazla 10 değer kabul eder.
+    const chunkSize = FIRESTORE_IN_QUERY_LIMIT;
     for (let i = 0; i < timezones.length; i += chunkSize) {
         const tzChunk = timezones.slice(i, i + chunkSize);
 
-        let query: admin.firestore.Query = db
+        const query: admin.firestore.Query = db
             .collection("devices")
             .where("timezone", "in", tzChunk)
             .where("notificationsEnabled", "==", true);
-
-        // Paket filtresi — ["*"] ise filtre uygulanmaz
-        if (packages.length > 0 && !packages.includes("*")) {
-            query = query.where("packageName", "in", packages);
-        }
 
         const snap = await query.get();
 
         snap.forEach((doc) => {
             const data = doc.data() as DeviceDoc;
+            if (allowedPackages && !allowedPackages.has(data.packageName)) {
+                return;
+            }
+            if (!data.fcmToken || seenTokens.has(data.fcmToken)) {
+                return;
+            }
+            seenTokens.add(data.fcmToken);
             devices.push({
                 token: data.fcmToken,
                 locale: data.locale,

@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "notificationsEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timezone",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "notificationsEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "packageName",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -4,7 +4,9 @@ compatibility_date = "2026-02-21"
 workers_dev = true
 
 [vars]
-OTHER_APPS_JSON_URL = "https://mobildev.site/other_apps.json"
+# Canonical app feed is built by Firebase `otherAppsFeed` (icon enrichment + cache).
+# Worker proxies it so Android clients keep a stable Cloudflare endpoint.
+OTHER_APPS_JSON_URL = "https://europe-west1-mobil-oaslananka-firebase.cloudfunctions.net/otherAppsFeed"
 
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
