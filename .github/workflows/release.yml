@@ -108,6 +108,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           set -euo pipefail
@@ -115,6 +116,7 @@ jobs:
           [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Missing secret: KEYSTORE_PASSWORD"; exit 1; }
           [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret: KEY_ALIAS"; exit 1; }
           [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret: KEY_PASSWORD"; exit 1; }
+          [ -n "$PUSH_REGISTRATION_URL" ] || { echo "::error::Missing secret: PUSH_REGISTRATION_URL"; exit 1; }
           [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
 
       - name: Decode Keystore
@@ -165,6 +167,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           set -euo pipefail
@@ -255,6 +258,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
           PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
@@ -263,12 +267,14 @@ jobs:
           [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Missing secret: KEYSTORE_PASSWORD"; exit 1; }
           [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret: KEY_ALIAS"; exit 1; }
           [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret: KEY_PASSWORD"; exit 1; }
+          [ -n "$PUSH_REGISTRATION_URL" ] || { echo "::error::Missing secret: PUSH_REGISTRATION_URL"; exit 1; }
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
           [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+          echo "PUSH_REGISTRATION_URL=$PUSH_REGISTRATION_URL" >> "$GITHUB_ENV"
 
       - name: Guard auto-bump marker before publish
         if: github.event.inputs.publish_to_play == 'true'
@@ -286,6 +292,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
           PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
