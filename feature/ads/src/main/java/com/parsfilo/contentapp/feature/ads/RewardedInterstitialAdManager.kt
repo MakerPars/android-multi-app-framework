@@ -94,6 +94,7 @@ class RewardedInterstitialAdManager @Inject constructor(
 
     fun showAd(
         activity: Activity,
+        onAdImpression: () -> Unit = {},
         onUserEarnedReward: (type: String, amount: Int) -> Unit,
         onAdDismissed: () -> Unit,
     ) {
@@ -128,6 +129,7 @@ class RewardedInterstitialAdManager @Inject constructor(
 
             override fun onAdImpression() {
                 Timber.d("RewardedInterstitial impression recorded")
+                onAdImpression()
                 adRevenueLogger.logImpression(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = currentPlacement,

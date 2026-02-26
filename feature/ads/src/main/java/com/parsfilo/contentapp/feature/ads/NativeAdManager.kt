@@ -10,6 +10,11 @@ import com.google.android.gms.ads.VideoOptions
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -29,10 +34,15 @@ private data class PooledNativeAd(
 class NativeAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val adRevenueLogger: AdRevenueLogger,
+    private val adGateChecker: AdGateChecker,
+    private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private val nativeAds = mutableListOf<PooledNativeAd>()
+    private val gateScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile
     private var isLoading = false
+    @Volatile
+    private var canShowAdsByGate = true
     private var currentAdUnitId: String = ""
     private var currentPlacement: AdPlacement = AdPlacement.NATIVE_DEFAULT
     private var loadBackoffState = AdLoadBackoffState()
@@ -41,8 +51,19 @@ class NativeAdManager @Inject constructor(
     val adLoadedFlow: SharedFlow<Unit> = _adLoadedFlow.asSharedFlow()
 
     companion object {
-        private const val POOL_MAX = 2
-        private const val NATIVE_TTL_MS = 30 * 60 * 1000L
+        private const val DEFAULT_POOL_MAX = 2
+        private const val DEFAULT_NATIVE_TTL_MS = 30 * 60 * 1000L
+    }
+
+    init {
+        gateScope.launch {
+            adGateChecker.shouldShowAds.collectLatest { allowed ->
+                canShowAdsByGate = allowed
+                if (!allowed) {
+                    destroyAds()
+                }
+            }
+        }
     }
 
     fun loadAds(
@@ -50,7 +71,8 @@ class NativeAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.NATIVE_DEFAULT,
         count: Int,
     ) {
-        if (!AdsConsentRuntimeState.canRequestAds.value) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!canUseNativeAds(placement, policy)) {
             destroyAds()
             return
         }
@@ -63,8 +85,9 @@ class NativeAdManager @Inject constructor(
             Timber.d("Already loading, ignoring native load request")
             return
         }
+        val poolMax = policy.nativePoolMax.takeIf { it > 0 } ?: DEFAULT_POOL_MAX
         synchronized(nativeAds) {
-            if (nativeAds.size >= POOL_MAX) {
+            if (nativeAds.size >= poolMax) {
                 Timber.d("Native pool already full (%d)", nativeAds.size)
                 return
             }
@@ -75,7 +98,7 @@ class NativeAdManager @Inject constructor(
         isLoading = true
 
         val loadedCount = AtomicInteger(0)
-        val targetCount = count.coerceIn(1, POOL_MAX)
+        val targetCount = count.coerceIn(1, poolMax)
 
         repeat(targetCount) {
             val adLoader = AdLoader.Builder(context, adUnitId)
@@ -93,7 +116,7 @@ class NativeAdManager @Inject constructor(
                         )
                     }
                     synchronized(nativeAds) {
-                        if (nativeAds.size >= POOL_MAX) {
+                        if (nativeAds.size >= poolMax) {
                             ad.destroy()
                         } else {
                             nativeAds.add(
@@ -135,25 +158,11 @@ class NativeAdManager @Inject constructor(
                     }
 
                     override fun onAdClicked() {
-                        val pooled = synchronized(nativeAds) { nativeAds.firstOrNull() }
-                        if (pooled != null) {
-                            adRevenueLogger.logClick(
-                                adFormat = AdFormat.NATIVE,
-                                placement = pooled.placement,
-                                adUnitId = pooled.adUnitId,
-                            )
-                        }
                     }
 
                     override fun onAdImpression() {
-                        val pooled = synchronized(nativeAds) { nativeAds.firstOrNull() }
-                        if (pooled != null) {
-                            adRevenueLogger.logImpression(
-                                adFormat = AdFormat.NATIVE,
-                                placement = pooled.placement,
-                                adUnitId = pooled.adUnitId,
-                            )
-                        }
+                        // Native click/impression callbacks here can't be deterministically tied to the
+                        // exact pooled ad instance after UI handoff. Use ILRD + served logs instead.
                     }
                 })
                 .withNativeAdOptions(
@@ -173,7 +182,8 @@ class NativeAdManager @Inject constructor(
     }
 
     fun getNativeAd(placement: AdPlacement = AdPlacement.NATIVE_DEFAULT): NativeAd? {
-        if (!AdsConsentRuntimeState.canRequestAds.value) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!canUseNativeAds(placement, policy)) {
             destroyAds()
             return null
         }
@@ -190,6 +200,19 @@ class NativeAdManager @Inject constructor(
             loadAds(currentAdUnitId, currentPlacement, 1)
         }
 
+        if (pooled != null) {
+            Timber.d(
+                "Native ad served placement=%s adUnit=%s",
+                pooled.placement.analyticsValue,
+                pooled.adUnitId,
+            )
+            adRevenueLogger.logServed(
+                adFormat = AdFormat.NATIVE,
+                placement = pooled.placement,
+                adUnitId = pooled.adUnitId,
+            )
+        }
+
         return pooled?.ad
     }
 
@@ -203,16 +226,27 @@ class NativeAdManager @Inject constructor(
     }
 
     private fun pruneExpiredAds() {
+        val ttlMs = adsPolicyProvider.getPolicy().nativeTtlMs.takeIf { it > 0 } ?: DEFAULT_NATIVE_TTL_MS
         val now = SystemTimeProvider.nowMillis()
         synchronized(nativeAds) {
             val iterator = nativeAds.iterator()
             while (iterator.hasNext()) {
                 val pooled = iterator.next()
-                if (now - pooled.loadedAtMillis > NATIVE_TTL_MS) {
+                if (now - pooled.loadedAtMillis > ttlMs) {
                     pooled.ad.destroy()
                     iterator.remove()
                 }
             }
         }
+    }
+
+    private fun canUseNativeAds(
+        placement: AdPlacement,
+        policy: AdsPolicyConfig = adsPolicyProvider.getPolicy(),
+    ): Boolean {
+        if (!AdsConsentRuntimeState.canRequestAds.value) return false
+        if (!canShowAdsByGate) return false
+        if (!policy.isNativePlacementEnabled(placement)) return false
+        return true
     }
 }

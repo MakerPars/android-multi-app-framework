@@ -5,6 +5,7 @@ This patch upgrades the app's AdMob/GMA/UMP integration to reduce policy risk an
 
 Primary outcomes:
 - UMP consent flow now supports age-gate-aware parameters and debug geography controls.
+- UMP consent flow now supports cross-app consent sync (`setConsentSyncId`) using Android App Set ID (when available).
 - Privacy options are always accessible in Settings.
 - ILRD (`onPaidEvent`) logging is centralized and expanded across banner/interstitial/app-open/rewarded/rewarded-interstitial/native.
 - Interstitial/App Open cooldown timestamps are recorded on impression instead of before `show()`.
@@ -15,6 +16,7 @@ Primary outcomes:
 
 ## Official References Used
 - AdMob Android privacy / UMP: https://developers.google.com/admob/android/privacy
+- Consent groups / cross-app sync: https://developers.google.com/admob/privacy/consent-groups/sync-consent-across-apps
 - GDPR: https://developers.google.com/admob/android/privacy/gdpr
 - US states privacy: https://developers.google.com/admob/android/privacy/us-states
 - Privacy options entry point: https://developers.google.com/admob/android/privacy/options
@@ -30,6 +32,7 @@ Primary outcomes:
   - Added `privacyOptionsRequired` runtime state
   - Added `showPrivacyOptions`, `showConsentFormIfRequired`, `resetConsent`, `openAdInspector`, debug geography controls
   - Applies `RequestConfiguration` based on age-gate state
+  - Applies `setConsentSyncId(...)` for AdMob consent group sync using App Set ID (graceful fallback if unavailable)
 - `core/datastore/.../PreferencesDataSource.kt`
   - Added stored age-gate fields (`adsAgeGateStatus`, `adsAgeGatePromptCompleted`)
 - `feature/settings/.../SettingsViewModel.kt`
@@ -92,6 +95,12 @@ Primary outcomes:
 - Create and publish **US states** message.
 - Confirm message scope targets correct regions.
 - Verify privacy options entry point requirement behavior on test devices.
+
+### Consent Groups (Rıza Grubu)
+- Add all target apps to the consent group only after app-side UMP + `setConsentSyncId(...)` rollout is in production.
+- For each app row, resolve `İlgilenilmesi gerekiyor` by confirming published UMP message eligibility and deployment.
+- Verify AdMob warning about missing user identifiers is cleared after upgraded app versions are live.
+- Update privacy policy to list all apps in the consent group and explain consent synchronization behavior.
 
 ### Ad Units / Placements
 - Create (optional but recommended) placement-specific ad units matching resource naming convention:

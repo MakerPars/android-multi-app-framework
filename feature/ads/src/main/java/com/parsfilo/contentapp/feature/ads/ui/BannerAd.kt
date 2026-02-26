@@ -32,13 +32,19 @@ fun BannerAd(
     modifier: Modifier = Modifier,
 ) {
     val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
-    if (!canRequestAds) return
 
     val context = LocalContext.current
     val appContext = context.applicationContext
-    val revenueLogger = remember(appContext) {
-        EntryPointAccessors.fromApplication(appContext, AdsUiEntryPoint::class.java).adRevenueLogger()
+    val entryPoint = remember(appContext) {
+        EntryPointAccessors.fromApplication(appContext, AdsUiEntryPoint::class.java)
     }
+    val revenueLogger = remember(entryPoint) { entryPoint.adRevenueLogger() }
+    val adGateChecker = remember(entryPoint) { entryPoint.adGateChecker() }
+    val adsPolicyProvider = remember(entryPoint) { entryPoint.adsPolicyProvider() }
+    val shouldShowAds by adGateChecker.shouldShowAds.collectAsState(initial = false)
+    val policy = adsPolicyProvider.getPolicy()
+    if (!canRequestAds || !shouldShowAds || !policy.isBannerPlacementEnabled(placement)) return
+
     val adRequest = remember { AdRequest.Builder().build() }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {

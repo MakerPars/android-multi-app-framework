@@ -155,6 +155,7 @@ python SECRET/ADMOB_KOTNROL/admob_checker.py --client-secret SECRET/ADMOB_KOTNRO
 - https://developers.google.com/admob/android/privacy
 - https://developers.google.com/admob/android/privacy/gdpr
 - https://developers.google.com/admob/android/privacy/options
+- https://developers.google.com/admob/privacy/consent-groups/sync-consent-across-apps
 
 ## Uyum durumu (kod + panel)
 
@@ -169,6 +170,50 @@ AdMob panelde manuel zorunlu olanlar:
 - `Privacy & messaging` altında GDPR ve US States mesajlarını oluşturup yayınlamak.
 - Her mesaj tipinde hedef ülkeler/eyaletler ve dil kapsamını doğru seçmek.
 - Test cihazlarında UMP formunun görünüp kapanabildiğini doğrulamak.
+
+## Rıza grubu (Consent Group) uyarıları — yorum ve aksiyon
+
+AdMob `Privacy & messaging > Rıza grubu` ekranındaki iki uyarı tipi farklı kaynaktan gelir:
+
+1. `İlgilenilmesi gerekiyor`
+- Genelde ilgili uygulama için publish edilmiş UMP mesajı / uygun dağıtım yöntemi / eligibility kontrolü eksik olduğu anlamına gelir.
+- Bu uyarı kod ile tek başına kapanmaz; AdMob panelde mesaj yayını ve uygulama kapsamı doğrulanmalıdır.
+
+2. `UMP SDK ile kullanıcı kimliklerini sağlamadığınız sürece...`
+- Bu uyarı uygulama tarafıyla ilgilidir.
+- Cross-app consent sync için UMP request parametrelerine bir senkronizasyon kimliği verilmelidir.
+- Bu repoda çözüm: `setConsentSyncId(...)` + Android `App Set ID` (Play Services App Set API).
+
+### Tüm uygulamalar için rıza grubu rollout checklist (Şubat 2026)
+
+1. Android uygulamaların UMP sürümünü güncel tut (`UMP SDK 4.x`).
+2. UMP request akışında `setConsentSyncId(...)` çağrısını etkinleştir (bu repo: App Set ID tabanlı).
+3. AdMob `Privacy & messaging` içinde:
+- GDPR mesajı published
+- US states mesajı published
+- Hedef bölge/dil kapsamı doğrulanmış
+4. Rıza grubuna eklenecek tüm uygulamalarda `İlgilenilmesi gerekiyor` uyarısını tek tek temizle.
+5. Gizlilik politikasında rıza grubundaki tüm uygulamaları ve consent paylaşımı/senkronizasyonunu açıkça listele.
+6. Aynı test cihazında birden fazla uygulama ile consent sync davranışını doğrula (grant/deny/change).
+
+## Reklam tuning (Remote Config) — yeni anahtarlar
+
+Kod tarafında agresif gelir profili için RC destekli reklam policy anahtarları eklendi:
+
+- `ads_banner_enabled`
+- `ads_native_enabled`
+- `ads_interstitial_frequency_cap_ms`
+- `ads_app_open_cooldown_ms`
+- `ads_rewarded_interstitial_min_interval_ms`
+- `ads_rewarded_interstitial_max_per_session`
+- `ads_native_pool_max`
+- `ads_native_ttl_ms`
+- `ads_banner_placements_disabled_csv`
+- `ads_native_placements_disabled_csv`
+
+Not:
+- Premium ve rewarded ad-free kullanıcılar için reklam kapatma kuralı RC ile override edilmez.
+- RC tuning sadece gösterim sıklığı/placement enablement optimizasyonu içindir.
 - Play Console veri güvenliği formunu bu davranışla uyumlu doldurmak.
 
 ## Android gelir/teşhis referansları

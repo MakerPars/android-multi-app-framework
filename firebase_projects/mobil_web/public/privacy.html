@@ -44,6 +44,44 @@
         reklamlar yalnızca kullanıcı onayı alındıktan sonra gösterilir. Kullanıcı tercihleri, Google tarafından sağlanan
         onay mekanizmaları aracılığıyla yönetilir.</p>
 
+    <h3>4.1 Rıza grubu (consent group) ve uygulamalar arası onay senkronizasyonu</h3>
+    <p>Bazı uygulamalarımız Google AdMob <em>Privacy &amp; messaging</em> altında aynı rıza grubuna dahil edilebilir.
+        Bu durumda, kullanıcının reklam/onay tercihleri Google User Messaging Platform (UMP SDK) üzerinden yönetilir ve
+        uygun olduğu durumlarda aynı geliştiriciye ait uygulamalar arasında senkronize edilebilir.</p>
+
+    <p>Bu senkronizasyon için Android cihazlarda Google Play Services tarafından sağlanan <strong>App Set ID</strong>
+        kullanılabilir. App Set ID, reklam onayı tercihlerinin aynı geliştirici uygulamaları arasında daha tutarlı
+        uygulanmasına yardımcı olmak için kullanılır. App Set ID alınamazsa uygulama çalışmaya devam eder; yalnızca
+        uygulamalar arası onay senkronizasyonu her durumda mümkün olmayabilir.</p>
+
+    <p>Rıza grubu kapsamı, yayınlanan onay mesajları (ör. GDPR / ABD eyaletleri mesajları) ve uygunluk durumu AdMob
+        panelindeki yapılandırmalara bağlıdır. Bu politika, ilgili uygulamalarda kullanılan reklam ve onay akışlarını
+        genel çerçevede açıklar.</p>
+
+    <h3>4.2 Rıza grubu kapsamında yönetilebilen uygulamalar (güncel ürün portföyü)</h3>
+    <p>Aşağıdaki Android uygulamalarımız, AdMob rıza grubu yapılandırmalarında birlikte yönetilebilir (nihai kapsam
+        AdMob panelindeki aktif rıza grubu seçimine göre değişebilir):</p>
+    <ul>
+        <li>Amenerrasulu Sesli — <code>com.parsfilo.amenerrasulu</code></li>
+        <li>Ayetel Kursi Sesli — <code>com.parsfilo.ayetelkursi</code></li>
+        <li>Bereket Duası — <code>com.parsfilo.bereketduasi</code></li>
+        <li>Esmaül Hüsna — <code>com.parsfilo.esmaulhusna</code></li>
+        <li>Fetih Suresi Sesli — <code>com.parsfilo.fetihsuresi</code></li>
+        <li>İmsakiye — <code>com.parsfilo.imsakiye</code></li>
+        <li>İnşirah Sesli — <code>com.parsfilo.insirahsuresi</code></li>
+        <li>İsmi Azam Sesli — <code>com.parsfilo.ismiazamduasi</code></li>
+        <li>Kenzül Arş Sesli — <code>com.parsfilo.kenzularsduasi</code></li>
+        <li>Kuran-ı Kerim — <code>com.parsfilo.kuran_kerim</code></li>
+        <li>Kıble — <code>com.parsfilo.kible</code></li>
+        <li>Mucize Dualar — <code>com.parsfilo.mucizedualar</code></li>
+        <li>Namaz Vakitleri — <code>com.parsfilo.namazvakitleri</code></li>
+        <li>Namaz Sureleri Sesli — <code>com.parsfilo.namazsurelerivedualarsesli</code></li>
+        <li>Vakıa Sesli — <code>com.parsfilo.vakiasuresi</code></li>
+        <li>Nazar Ayeti — <code>com.parsfilo.nazarayeti</code></li>
+        <li>Yasin Sesli — <code>com.parsfilo.yasinsuresi</code></li>
+        <li>Zikirmatik — <code>com.parsfilo.zikirmatik</code></li>
+    </ul>
+
     <h2>5. Veri Paylaşımı</h2>
     <p>Toplanan veriler yalnızca aşağıdaki amaçlarla üçüncü taraf hizmet sağlayıcılarla paylaşılabilir:</p>
     <ul>

@@ -7,6 +7,7 @@ import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
+import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
@@ -28,11 +29,13 @@ class AdOrchestrator @Inject constructor(
     val nativeAdManager: NativeAdManager,
     internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
     private val adGateChecker: AdGateChecker,
+    private val adsPolicyProvider: AdsPolicyProvider,
     private val preferencesDataSource: PreferencesDataSource,
 ) {
 
     // Shared main-thread scope for ad callbacks to avoid creating unbounded scopes repeatedly.
     private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
+    private var rewardedInterstitialShownThisSession: Int = 0
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
         SentryMetrics.count("ads.initialize.called")
@@ -129,8 +132,32 @@ class AdOrchestrator @Inject constructor(
             onAdDismissed()
             return
         }
+        val policy = adsPolicyProvider.getPolicy()
+        val now = System.currentTimeMillis()
+        val prefs = preferencesDataSource.userData.first()
+        if (policy.rewardedInterstitialMaxPerSession <= 0) {
+            SentryMetrics.count("ads.rewarded_interstitial.show.skipped.policy_disabled")
+            onAdDismissed()
+            return
+        }
+        if (rewardedInterstitialShownThisSession >= policy.rewardedInterstitialMaxPerSession) {
+            SentryMetrics.count("ads.rewarded_interstitial.show.skipped.session_cap")
+            onAdDismissed()
+            return
+        }
+        if (now - prefs.lastRewardedInterstitialShown < policy.rewardedInterstitialMinIntervalMs) {
+            SentryMetrics.count("ads.rewarded_interstitial.show.skipped.interval")
+            onAdDismissed()
+            return
+        }
         rewardedInterstitialAdManager.showAd(
             activity = activity,
+            onAdImpression = {
+                orchestratorScope.launch {
+                    rewardedInterstitialShownThisSession += 1
+                    preferencesDataSource.setLastRewardedInterstitialShown(System.currentTimeMillis())
+                }
+            },
             onUserEarnedReward = { _, _ ->
                 orchestratorScope.launch {
                     adGateChecker.onRewardEarned()
@@ -174,6 +201,7 @@ class AdOrchestrator @Inject constructor(
     }
 
     private fun preloadAds(activity: Activity) {
+        val policy = adsPolicyProvider.getPolicy()
         SentryMetrics.count("ads.load.requested.app_open")
         appOpenAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
@@ -194,7 +222,7 @@ class AdOrchestrator @Inject constructor(
         nativeAdManager.loadAds(
             AppAdUnitIds.resolvePlacement(activity, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
             AdPlacement.NATIVE_FEED_HOME,
-            2,
+            policy.nativePoolMax,
         )
 
         SentryMetrics.count("ads.load.requested.rewarded_interstitial")

@@ -23,6 +23,7 @@ class AppOpenAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesDataSource: PreferencesDataSource,
     private val adRevenueLogger: AdRevenueLogger,
+    private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private var appOpenAd: AppOpenAd? = null
     private var isLoadingAd = false
@@ -31,10 +32,6 @@ class AppOpenAdManager @Inject constructor(
     private var currentPlacement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT
     private var loadBackoffState = AdLoadBackoffState()
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    companion object {
-        private const val COOLDOWN_MS = 5 * 60 * 1000L
-    }
 
     fun loadAd(
         adUnitId: String,
@@ -102,7 +99,8 @@ class AppOpenAdManager @Inject constructor(
             return
         }
 
-        if (now - prefs.lastAppOpenAdShown < COOLDOWN_MS) {
+        val cooldownMs = adsPolicyProvider.getPolicy().appOpenCooldownMs
+        if (now - prefs.lastAppOpenAdShown < cooldownMs) {
             onShowComplete()
             return
         }

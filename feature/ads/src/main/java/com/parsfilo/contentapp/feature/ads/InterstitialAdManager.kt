@@ -24,6 +24,7 @@ class InterstitialAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesDataSource: PreferencesDataSource,
     private val adRevenueLogger: AdRevenueLogger,
+    private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private var interstitialAd: InterstitialAd? = null
     private var currentAdUnitId: String? = null
@@ -31,10 +32,6 @@ class InterstitialAdManager @Inject constructor(
     private var currentRoute: String? = null
     private var loadBackoffState = AdLoadBackoffState()
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    companion object {
-        private const val FREQUENCY_CAP_MS = 3 * 60 * 1000L
-    }
 
     fun loadAd(
         adUnitId: String,
@@ -121,7 +118,8 @@ class InterstitialAdManager @Inject constructor(
             return
         }
 
-        if (now - prefs.lastInterstitialShown < FREQUENCY_CAP_MS) {
+        val frequencyCapMs = adsPolicyProvider.getPolicy().interstitialFrequencyCapMs
+        if (now - prefs.lastInterstitialShown < frequencyCapMs) {
             onAdDismissed()
             return
         }

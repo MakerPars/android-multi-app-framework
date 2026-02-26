@@ -48,6 +48,7 @@ class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesDataSource: PreferencesDataSource,
     private val appAnalytics: AppAnalytics,
+    private val consentSyncIdProvider: ConsentSyncIdProvider,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val isMobileAdsInitializeCalled = AtomicBoolean(false)
@@ -275,16 +276,24 @@ class AdManager @Inject constructor(
             )
         if (isUnderAge) {
             builder.setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_T)
+        } else {
+            builder.setMaxAdContentRating(null)
         }
         MobileAds.setRequestConfiguration(builder.build())
     }
 
-    private fun buildConsentRequestParameters(
+    private suspend fun buildConsentRequestParameters(
         ageGateStatus: AdAgeGateStatus,
         debugGeography: UmpDebugGeography,
     ): ConsentRequestParameters {
         val builder = ConsentRequestParameters.Builder()
             .setTagForUnderAgeOfConsent(ageGateStatus != AdAgeGateStatus.AGE_16_OR_OVER)
+        val consentSyncId = consentSyncIdProvider.getConsentSyncIdOrNull()
+        if (!consentSyncId.isNullOrBlank()) {
+            builder.setConsentSyncId(consentSyncId)
+        } else {
+            Timber.d("Consent sync id unavailable; continuing without cross-app sync id")
+        }
 
         if (isDebugBuild() && debugGeography != UmpDebugGeography.NONE) {
             val debugSettings = ConsentDebugSettings.Builder(context)
@@ -336,7 +345,7 @@ class AdManager @Inject constructor(
 
     private fun launchWithResolvedAgeGateStatus(
         operation: String,
-        block: (AdAgeGateStatus) -> Unit,
+        block: suspend (AdAgeGateStatus) -> Unit,
     ) {
         uiScope.launch {
             val ageGateStatus =

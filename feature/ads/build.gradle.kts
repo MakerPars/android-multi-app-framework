@@ -51,7 +51,9 @@ dependencies {
     implementation(project(":core:datastore"))
 
     implementation(libs.play.services.ads)
+    implementation(libs.play.services.appset)
     implementation(libs.user.messaging.platform)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -63,5 +65,6 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     testImplementation(libs.truth)
 }

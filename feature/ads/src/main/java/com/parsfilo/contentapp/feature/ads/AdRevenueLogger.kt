@@ -100,6 +100,23 @@ class AdRevenueLogger @Inject constructor(
         )
     }
 
+    fun logServed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            "ad_served",
+            Bundle().apply {
+                putString("ad_format", adFormat.analyticsValue)
+                putString("placement", placement.analyticsValue)
+                putString("ad_unit_id", adUnitId)
+                putString("route", route ?: "unknown")
+            },
+        )
+    }
+
     fun extractResponseMeta(responseInfo: ResponseInfo?): AdResponseMeta {
         val adapterInfo = responseInfo?.loadedAdapterResponseInfo
         return AdResponseMeta(

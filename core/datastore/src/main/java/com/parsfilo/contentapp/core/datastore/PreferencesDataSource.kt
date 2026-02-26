@@ -101,6 +101,7 @@ class PreferencesDataSource @Inject constructor(
             rewardedAdFreeUntil = preferences[PreferencesKeys.REWARDED_AD_FREE_UNTIL] ?: 0L,
             rewardWatchCount = preferences[PreferencesKeys.REWARD_WATCH_COUNT] ?: 0,
             lastInterstitialShown = preferences[PreferencesKeys.LAST_INTERSTITIAL_SHOWN] ?: 0L,
+            lastRewardedInterstitialShown = preferences[PreferencesKeys.LAST_REWARDED_INTERSTITIAL_SHOWN] ?: 0L,
             notificationsEnabled = preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true,
             notificationPermissionPrompted = preferences[PreferencesKeys.NOTIFICATION_PERMISSION_PROMPTED] ?: false,
             installationId = preferences[PreferencesKeys.INSTALLATION_ID] ?: "",
@@ -161,6 +162,12 @@ class PreferencesDataSource @Inject constructor(
     suspend fun setLastInterstitialShown(timestamp: Long) {
         userPreferences.edit { preferences ->
             preferences[PreferencesKeys.LAST_INTERSTITIAL_SHOWN] = timestamp
+        }
+    }
+
+    suspend fun setLastRewardedInterstitialShown(timestamp: Long) {
+        userPreferences.edit { preferences ->
+            preferences[PreferencesKeys.LAST_REWARDED_INTERSTITIAL_SHOWN] = timestamp
         }
     }
 
@@ -285,6 +292,7 @@ class PreferencesDataSource @Inject constructor(
         val REWARDED_AD_FREE_UNTIL = longPreferencesKey("rewarded_ad_free_until")
         val REWARD_WATCH_COUNT = intPreferencesKey("reward_watch_count")
         val LAST_INTERSTITIAL_SHOWN = longPreferencesKey("last_interstitial_shown")
+        val LAST_REWARDED_INTERSTITIAL_SHOWN = longPreferencesKey("last_rewarded_interstitial_shown")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val NOTIFICATION_PERMISSION_PROMPTED = booleanPreferencesKey("notification_permission_prompted")
         val INSTALLATION_ID = stringPreferencesKey("installation_id")
@@ -324,6 +332,7 @@ data class UserPreferencesData(
     val rewardedAdFreeUntil: Long,
     val rewardWatchCount: Int,
     val lastInterstitialShown: Long,
+    val lastRewardedInterstitialShown: Long,
     val notificationsEnabled: Boolean,
     val notificationPermissionPrompted: Boolean = false,
     val installationId: String = "",
