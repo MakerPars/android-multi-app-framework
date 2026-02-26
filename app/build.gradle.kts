@@ -37,6 +37,19 @@ fun pick(name: String): String? =
 
 fun asBuildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+fun normalizedTaskName(taskName: String): String = taskName.substringAfterLast(':')
+
+fun isReleaseBuildLikeTask(taskName: String): Boolean =
+    normalizedTaskName(taskName).let { normalized ->
+        (normalized.startsWith("assemble") || normalized.startsWith("bundle") || normalized.startsWith("publish")) &&
+            normalized.contains("Release")
+    }
+
+fun isReleasePublishTask(taskName: String): Boolean =
+    normalizedTaskName(taskName).let { normalized ->
+        normalized.startsWith("publish") && normalized.contains("Release")
+    }
+
 data class ResolvedVersion(
     val versionCode: Int,
     val versionName: String,
@@ -117,6 +130,69 @@ val validateFlavorVersions =
                         appendLine("  $sampleFlavor.versionCode=123")
                         appendLine("  $sampleFlavor.versionName=1.2.3")
                     },
+                )
+            }
+        }
+    }
+
+val validateReleaseConfig =
+    tasks.register("validateReleaseConfig") {
+        group = "verification"
+        description = "Validates release/publish configuration (keystore, push URL, and Play credentials for publish tasks)."
+
+        val requestedTasks = gradle.startParameter.taskNames.toList()
+        val publishRequested = requestedTasks.any(::isReleasePublishTask)
+
+        val keystorePath = pick("KEYSTORE_FILE").orEmpty().trim()
+        val keystoreFile = keystorePath.takeIf { it.isNotBlank() }?.let { project.file(it) }
+        val keystorePassword = pick("KEYSTORE_PASSWORD").orEmpty()
+        val keyAlias = pick("KEY_ALIAS").orEmpty()
+        val keyPassword = pick("KEY_PASSWORD").orEmpty()
+        val pushRegistrationUrl = pick("PUSH_REGISTRATION_URL").orEmpty().trim()
+        val playServiceAccountJsonPath = pick("PLAY_SERVICE_ACCOUNT_JSON").orEmpty().trim()
+        val playServiceAccountJsonFile =
+            playServiceAccountJsonPath.takeIf { it.isNotBlank() }?.let { project.file(it) }
+
+        doLast {
+            val errors = mutableListOf<String>()
+
+            if (keystorePath.isBlank()) {
+                errors += "Missing KEYSTORE_FILE (required for release/publish tasks)"
+            } else if (keystoreFile?.exists() != true) {
+                errors += "KEYSTORE_FILE does not exist: $keystorePath"
+            }
+
+            if (keystorePassword.isBlank()) {
+                errors += "Missing KEYSTORE_PASSWORD (required for release/publish tasks)"
+            }
+            if (keyAlias.isBlank()) {
+                errors += "Missing KEY_ALIAS (required for release/publish tasks)"
+            }
+            if (keyPassword.isBlank()) {
+                errors += "Missing KEY_PASSWORD (required for release/publish tasks)"
+            }
+            if (pushRegistrationUrl.isBlank()) {
+                errors += "Missing PUSH_REGISTRATION_URL (required for release/publish tasks)"
+            } else if (!pushRegistrationUrl.startsWith("https://", ignoreCase = true)) {
+                errors += "PUSH_REGISTRATION_URL must start with https:// (resolved='$pushRegistrationUrl')"
+            }
+
+            if (publishRequested) {
+                if (playServiceAccountJsonPath.isBlank()) {
+                    errors += "Missing PLAY_SERVICE_ACCOUNT_JSON (required for publishRelease tasks)"
+                } else if (playServiceAccountJsonFile?.exists() != true) {
+                    errors += "PLAY_SERVICE_ACCOUNT_JSON file does not exist: $playServiceAccountJsonPath"
+                }
+            }
+
+            if (errors.isNotEmpty()) {
+                throw GradleException(
+                    buildString {
+                        appendLine("Release/publish configuration validation failed:")
+                        errors.forEach { appendLine("  - $it") }
+                        appendLine()
+                        appendLine("Tip: app/build.gradle.kts reads values from -P, .env, then System.getenv().")
+                    }
                 )
             }
         }
@@ -367,11 +443,8 @@ dependencies {
 
 tasks
     .matching { task ->
-        val taskName = task.name
-        val isReleasePublishLike =
-            (taskName.startsWith("assemble") || taskName.startsWith("bundle") || taskName.startsWith("publish")) &&
-                taskName.contains("Release")
-        isReleasePublishLike
+        isReleaseBuildLikeTask(task.name)
     }.configureEach {
         dependsOn(validateFlavorVersions)
+        dependsOn(validateReleaseConfig)
     }

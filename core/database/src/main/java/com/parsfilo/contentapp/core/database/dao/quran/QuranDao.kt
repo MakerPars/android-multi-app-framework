@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.parsfilo.contentapp.core.database.model.quran.QuranAudioCacheEntity
 import com.parsfilo.contentapp.core.database.model.quran.QuranAyahEntity
 import com.parsfilo.contentapp.core.database.model.quran.QuranBookmarkEntity
@@ -34,6 +35,17 @@ interface QuranDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAyahs(ayahs: List<QuranAyahEntity>)
+
+    @Query("DELETE FROM quran_ayahs WHERE suraNumber = :suraNumber")
+    suspend fun deleteAyahsForSura(suraNumber: Int)
+
+    @Transaction
+    suspend fun replaceAyahsForSura(suraNumber: Int, ayahs: List<QuranAyahEntity>) {
+        deleteAyahsForSura(suraNumber)
+        if (ayahs.isNotEmpty()) {
+            insertAyahs(ayahs)
+        }
+    }
 
     @Query("SELECT COUNT(*) FROM quran_ayahs WHERE suraNumber = :suraNumber")
     suspend fun getAyahCountForSura(suraNumber: Int): Int

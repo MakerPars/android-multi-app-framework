@@ -86,8 +86,18 @@ class QuranRepository @Inject constructor(
 
     suspend fun syncSuraContentIfNeeded(suraNumber: Int, force: Boolean = false): Result<Unit> =
         withContext(ioDispatcher) {
-            if (!force && quranDao.getAyahCountForSura(suraNumber) > 0) {
-                return@withContext Result.Success(Unit)
+            val expectedAyahCount = quranDao.getSura(suraNumber)?.ayahCount?.takeIf { it > 0 }
+            val currentAyahCount = quranDao.getAyahCountForSura(suraNumber)
+            if (!force) {
+                val isComplete =
+                    if (expectedAyahCount != null) {
+                        currentAyahCount == expectedAyahCount
+                    } else {
+                        currentAyahCount > 0
+                    }
+                if (isComplete) {
+                    return@withContext Result.Success(Unit)
+                }
             }
 
             return@withContext runCatching {
@@ -104,28 +114,18 @@ class QuranRepository @Inject constructor(
                     val english = englishDeferred.await()
                     val german = germanDeferred.await()
 
-                    val allAyahNumbers = (arabic.keys + latin.keys + turkish.keys + english.keys + german.keys)
-                        .toSortedSet()
-
-                    if (allAyahNumbers.isEmpty()) {
-                        error("No ayah payload for sura=$suraNumber")
-                    }
-
-                    val entities = allAyahNumbers.map { ayahNo ->
-                        QuranAyahEntity(
+                    val entities =
+                        buildValidatedSuraAyahEntities(
                             suraNumber = suraNumber,
-                            ayahNumber = ayahNo,
-                            arabic = arabic[ayahNo].orEmpty(),
-                            latin = latin[ayahNo].orEmpty(),
-                            turkish = turkish[ayahNo].orEmpty(),
-                            english = english[ayahNo].orEmpty(),
-                            german = german[ayahNo].orEmpty(),
+                            expectedAyahCount = expectedAyahCount,
+                            arabic = arabic,
+                            turkish = turkish,
+                            latin = latin,
+                            english = english,
+                            german = german,
                         )
-                    }
 
-                    entities.chunked(500).forEach { chunk ->
-                        quranDao.insertAyahs(chunk)
-                    }
+                    quranDao.replaceAyahsForSura(suraNumber = suraNumber, ayahs = entities)
                 }
                 Unit
             }.fold(
@@ -357,6 +357,48 @@ class QuranRepository @Inject constructor(
                 tempFile.delete()
             }
         }
+    }
+}
+
+internal fun buildValidatedSuraAyahEntities(
+    suraNumber: Int,
+    expectedAyahCount: Int?,
+    arabic: Map<Int, String>,
+    turkish: Map<Int, String>,
+    latin: Map<Int, String>,
+    english: Map<Int, String>,
+    german: Map<Int, String>,
+): List<QuranAyahEntity> {
+    if (arabic.isEmpty()) {
+        error("Arabic ayah payload missing for sura=$suraNumber")
+    }
+
+    if (expectedAyahCount != null && arabic.size != expectedAyahCount) {
+        error(
+            "Arabic ayah payload incomplete for sura=$suraNumber: " +
+                "expected=$expectedAyahCount actual=${arabic.size}"
+        )
+    }
+
+    val missingTurkishAyahs = arabic.keys.filterNot { turkish.containsKey(it) }
+    if (missingTurkishAyahs.isNotEmpty()) {
+        val preview = missingTurkishAyahs.take(5).joinToString(",")
+        error(
+            "Turkish ayah payload incomplete for sura=$suraNumber: " +
+                "missing=${missingTurkishAyahs.size} sample=[$preview]"
+        )
+    }
+
+    return arabic.keys.toSortedSet().map { ayahNo ->
+        QuranAyahEntity(
+            suraNumber = suraNumber,
+            ayahNumber = ayahNo,
+            arabic = arabic.getValue(ayahNo),
+            latin = latin[ayahNo].orEmpty(),
+            turkish = turkish.getValue(ayahNo),
+            english = english[ayahNo].orEmpty(),
+            german = german[ayahNo].orEmpty(),
+        )
     }
 }
 

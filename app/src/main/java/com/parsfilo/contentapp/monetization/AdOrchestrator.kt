@@ -15,7 +15,6 @@ import com.parsfilo.contentapp.observability.SentryMetrics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -55,7 +54,8 @@ class AdOrchestrator @Inject constructor(
 
     fun destroy() {
         nativeAdManager.destroyAds()
-        orchestratorScope.cancel()
+        // Keep the shared scope alive across Activity recreation (rotation/process UI lifecycle)
+        // so rewarded callbacks can still dispatch state updates after MainActivity.onDestroy().
     }
 
     suspend fun showInterstitialIfEligible(
@@ -215,4 +215,3 @@ class AdOrchestrator @Inject constructor(
         nativeAdManager.destroyAds()
     }
 }
-
