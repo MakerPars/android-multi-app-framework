@@ -85,6 +85,7 @@ cloudflare/**/.env.*
 cloudflare/**/dist/
 
 admin-notifications/**/node_modules/
+admin-notifications/dist/
 **/node_modules/
 
 project-no-assets.zip
