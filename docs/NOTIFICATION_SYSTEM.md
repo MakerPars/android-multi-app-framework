@@ -35,7 +35,7 @@ Mobil Uygulama                          Sunucu (Firebase)
 
 ```
 functions/
-├── package.json              # Node 20, firebase-admin 13.x, firebase-functions 6.x
+├── package.json              # Node 22, firebase-admin 13.x, firebase-functions 7.x
 ├── tsconfig.json
 ├── .gitignore
 └── src/
@@ -127,6 +127,8 @@ Mobil uygulamadan her uygulama açılışında (`app_start`) otomatik çağrıl�
 > - `weekly:*` için her 7 günde bir
 > scheduler tarafından reset yapılır ve `lastResetAt` güncellenir.
 > Manuel reset gerekmez.
+>
+> ℹ️ `topic` alanı şu an **metadata-only** tutulur. Scheduler gönderimi timezone + device hedefleme ile yapar.
 
 ### `recurrence` Değerleri
 
@@ -156,6 +158,31 @@ Mobil uygulamadan her uygulama açılışında (`app_start`) otomatik çağrıl�
 PUSH_REGISTRATION_URL=https://europe-west1-mobil-oaslananka-firebase.cloudfunctions.net/registerDevice
 ```
 
+### Admin Panel (admin-notifications) — Local Env
+
+`admin-notifications` Vite uygulaması Firebase Web config ister. Baslangic icin:
+
+```powershell
+Copy-Item .\admin-notifications\.env.example .\admin-notifications\.env
+```
+
+Gerekli alanlar:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_APP_ID`
+
+Opsiyonel:
+
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+
+Notlar:
+
+- `admin-notifications/vite.config.ts` repo root `.env` dosyasini da okur (`envDir = ".."`).
+- Geriye donuk uyumluluk icin sadece `FIREBASE_WEB_API_KEY` fallback olarak desteklenir; diger Firebase Web alanlari `VITE_` prefix ile verilmelidir.
+
 ### Otomatik Çalışan Bileşenler
 
 | Bileşen | Nerede | Ne Yapar |
@@ -176,12 +203,15 @@ firebase deploy --only functions
 # Firestore rules deploy
 firebase deploy --only firestore:rules
 
+# Firestore composite indexes deploy (repo-declared)
+firebase deploy --only firestore:indexes
+
 # Function loglarını izle
 firebase functions:log --only registerDevice
 firebase functions:log --only dispatchNotifications
 
 # Functions'ı yeniden build et
-npm run build --prefix functions
+npm run build --prefix firebase_projects/functions
 ```
 
 ---
@@ -202,4 +232,6 @@ npm run build --prefix functions
 - `devices/` ve `scheduled_events/` koleksiyonlarına client erişimi **kapalı** (`allow: false`)
 - Cloud Functions Admin SDK kuralları bypass eder
 - Event ekleme sadece **Firebase Console** veya **Admin SDK** ile yapılabilir
-- `PUSH_REGISTRATION_URL` endpoint'i rate limiting için Cloud Functions'ın varsayılan limitleri geçerli
+- `registerDevice` endpoint'i payload doğrulama + sanitizasyon uygular
+- Opsiyonel App Check zorlamasi: `REGISTER_DEVICE_REQUIRE_APP_CHECK=true` (header: `x-firebase-appcheck`)
+- `PUSH_REGISTRATION_URL` endpoint'i icin ilave WAF/rate-limit (Cloud Armor / API Gateway) dusunulmelidir

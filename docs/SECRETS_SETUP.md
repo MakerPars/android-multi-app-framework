@@ -84,13 +84,18 @@ Azure YAML dosyaları:
 
 ## Lokal Geliştirme — `.env` Dosyası
 
-Proje kökünde `.env` dosyası oluşturun (`.gitignore`'da zaten tanımlı, repo'ya girmez):
+Repo kökündeki `.env.template` dosyasını `.env` olarak kopyalayın ve doldurun
+(`.gitignore`'da zaten tanımlı, repo'ya girmez):
 
 ```properties
 KEYSTORE_FILE=C:/Users/KULLANICI/path/to/release.jks
 KEYSTORE_PASSWORD=senin_keystore_sifren
 KEY_ALIAS=upload
 KEY_PASSWORD=senin_key_sifren
+PUSH_REGISTRATION_URL=https://your-api.example.com/register-device
+
+# Sadece publishRelease* görevleri için gerekir
+PLAY_SERVICE_ACCOUNT_JSON=C:/Users/KULLANICI/path/to/play-service-account.json
 ```
 
 > **Not:** Lokalde `KEYSTORE_BASE64` gerekmez — direkt dosya yolu kullanılır.

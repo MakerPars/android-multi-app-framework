@@ -48,6 +48,14 @@ KEYSTORE_FILE=C:/path/to/keystore.jks
 KEYSTORE_PASSWORD=***
 KEY_ALIAS=***
 KEY_PASSWORD=***
+PUSH_REGISTRATION_URL=https://your-api.example.com/register-device
+
+# publishRelease* tasks only
+PLAY_SERVICE_ACCOUNT_JSON=C:/path/to/play-service-account.json
+
+# optional
+SENTRY_AUTH_TOKEN=***
+SENTRY_DSN=***
 
 ```
 
