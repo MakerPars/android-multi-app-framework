@@ -1,0 +1,831 @@
+{
+  "status": "success",
+  "result": {
+    "conditions": [
+      {
+        "name": "app_is_zikirmatik",
+        "expression": "app.id == '1:949743839540:android:a130c5985b6d746758dd61'"
+      },
+      {
+        "name": "app_is_amenerrasulu",
+        "expression": "app.id == '1:949743839540:android:92a43a0b6ee1280058dd61'"
+      },
+      {
+        "name": "app_is_ayetelkursi",
+        "expression": "app.id == '1:949743839540:android:0a6c6787cf32d12458dd61'"
+      },
+      {
+        "name": "app_is_bereketduasi",
+        "expression": "app.id == '1:949743839540:android:064076d72539458c58dd61'"
+      },
+      {
+        "name": "app_is_esmaulhusna",
+        "expression": "app.id == '1:949743839540:android:f6a8efa666ffdafd58dd61'"
+      },
+      {
+        "name": "app_is_fetihsuresi",
+        "expression": "app.id == '1:949743839540:android:4050a8fd80529add58dd61'"
+      },
+      {
+        "name": "app_is_imsakiye",
+        "expression": "app.id == '1:949743839540:android:67d761805c824ee258dd61'"
+      },
+      {
+        "name": "app_is_insirahsuresi",
+        "expression": "app.id == '1:949743839540:android:faeb9dc068295dfb58dd61'"
+      },
+      {
+        "name": "app_is_ismiazamduasi",
+        "expression": "app.id == '1:949743839540:android:23067a717bd6666458dd61'"
+      },
+      {
+        "name": "app_is_kenzularsduasi",
+        "expression": "app.id == '1:949743839540:android:2bf9fcbeacbfcf6558dd61'"
+      },
+      {
+        "name": "app_is_kible",
+        "expression": "app.id == '1:949743839540:android:ee2f3af758459f2a58dd61'"
+      },
+      {
+        "name": "app_is_kuran_kerim",
+        "expression": "app.id == '1:949743839540:android:65cff2dc0ab9e22e58dd61'"
+      },
+      {
+        "name": "app_is_mucizedualar",
+        "expression": "app.id == '1:949743839540:android:d58c9fdd3481836e58dd61'"
+      },
+      {
+        "name": "app_is_namazsurelerivedualarsesli",
+        "expression": "app.id == '1:949743839540:android:187c95bf6c4abdfc58dd61'"
+      },
+      {
+        "name": "app_is_namazvakitleri",
+        "expression": "app.id == '1:949743839540:android:1ecf78650d9caa4e58dd61'"
+      },
+      {
+        "name": "app_is_nazarayeti",
+        "expression": "app.id == '1:949743839540:android:718e4e75029f211958dd61'"
+      },
+      {
+        "name": "app_is_vakiasuresi",
+        "expression": "app.id == '1:949743839540:android:9991e13a207b6fc058dd61'"
+      },
+      {
+        "name": "app_is_yasinsuresi",
+        "expression": "app.id == '1:949743839540:android:d009c480afaeb4f858dd61'"
+      }
+    ],
+    "parameters": {
+      "update_button_en": {
+        "defaultValue": {
+          "value": "Update"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Update"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "update_message_en": {
+        "defaultValue": {
+          "value": "Please update the app to continue."
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Please update the app to continue."
+          }
+        },
+        "valueType": "STRING"
+      },
+      "update_button_tr": {
+        "defaultValue": {
+          "value": "Güncelle"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Güncelle"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "later_button_en": {
+        "defaultValue": {
+          "value": "Later"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Later"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "update_mode": {
+        "defaultValue": {
+          "value": "none"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "none"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "update_title_en": {
+        "defaultValue": {
+          "value": "Update required"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Update required"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "latest_version_code": {
+        "defaultValue": {
+          "value": "1"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "5"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "min_supported_version_code": {
+        "defaultValue": {
+          "value": "1"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "5"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "update_message_tr": {
+        "defaultValue": {
+          "value": "Devam etmek için lütfen uygulamayı güncelleyin."
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Devam etmek için lütfen uygulamayı güncelleyin."
+          }
+        },
+        "valueType": "STRING"
+      },
+      "update_title_tr": {
+        "defaultValue": {
+          "value": "Güncelleme gerekli"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Güncelleme gerekli"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "later_button_tr": {
+        "defaultValue": {
+          "value": "Daha sonra"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "Daha sonra"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "ads_banner_enabled": {
+        "defaultValue": {
+          "value": "true"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "true"
+          },
+          "app_is_amenerrasulu": {
+            "value": "true"
+          },
+          "app_is_ayetelkursi": {
+            "value": "true"
+          },
+          "app_is_bereketduasi": {
+            "value": "true"
+          },
+          "app_is_esmaulhusna": {
+            "value": "true"
+          },
+          "app_is_fetihsuresi": {
+            "value": "true"
+          },
+          "app_is_imsakiye": {
+            "value": "true"
+          },
+          "app_is_insirahsuresi": {
+            "value": "true"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "true"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "true"
+          },
+          "app_is_kible": {
+            "value": "true"
+          },
+          "app_is_kuran_kerim": {
+            "value": "true"
+          },
+          "app_is_mucizedualar": {
+            "value": "true"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "true"
+          },
+          "app_is_namazvakitleri": {
+            "value": "true"
+          },
+          "app_is_nazarayeti": {
+            "value": "true"
+          },
+          "app_is_vakiasuresi": {
+            "value": "true"
+          },
+          "app_is_yasinsuresi": {
+            "value": "true"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "ads_native_enabled": {
+        "defaultValue": {
+          "value": "true"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "true"
+          },
+          "app_is_amenerrasulu": {
+            "value": "true"
+          },
+          "app_is_ayetelkursi": {
+            "value": "true"
+          },
+          "app_is_bereketduasi": {
+            "value": "true"
+          },
+          "app_is_esmaulhusna": {
+            "value": "true"
+          },
+          "app_is_fetihsuresi": {
+            "value": "true"
+          },
+          "app_is_imsakiye": {
+            "value": "true"
+          },
+          "app_is_insirahsuresi": {
+            "value": "true"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "true"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "true"
+          },
+          "app_is_kible": {
+            "value": "true"
+          },
+          "app_is_kuran_kerim": {
+            "value": "true"
+          },
+          "app_is_mucizedualar": {
+            "value": "true"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "true"
+          },
+          "app_is_namazvakitleri": {
+            "value": "true"
+          },
+          "app_is_nazarayeti": {
+            "value": "true"
+          },
+          "app_is_vakiasuresi": {
+            "value": "true"
+          },
+          "app_is_yasinsuresi": {
+            "value": "true"
+          }
+        },
+        "valueType": "STRING"
+      },
+      "ads_interstitial_frequency_cap_ms": {
+        "defaultValue": {
+          "value": "150000"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "150000"
+          },
+          "app_is_amenerrasulu": {
+            "value": "150000"
+          },
+          "app_is_ayetelkursi": {
+            "value": "150000"
+          },
+          "app_is_bereketduasi": {
+            "value": "150000"
+          },
+          "app_is_esmaulhusna": {
+            "value": "150000"
+          },
+          "app_is_fetihsuresi": {
+            "value": "150000"
+          },
+          "app_is_imsakiye": {
+            "value": "150000"
+          },
+          "app_is_insirahsuresi": {
+            "value": "150000"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "150000"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "150000"
+          },
+          "app_is_kible": {
+            "value": "150000"
+          },
+          "app_is_kuran_kerim": {
+            "value": "150000"
+          },
+          "app_is_mucizedualar": {
+            "value": "150000"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "150000"
+          },
+          "app_is_namazvakitleri": {
+            "value": "150000"
+          },
+          "app_is_nazarayeti": {
+            "value": "150000"
+          },
+          "app_is_vakiasuresi": {
+            "value": "150000"
+          },
+          "app_is_yasinsuresi": {
+            "value": "150000"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_app_open_cooldown_ms": {
+        "defaultValue": {
+          "value": "240000"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "240000"
+          },
+          "app_is_amenerrasulu": {
+            "value": "240000"
+          },
+          "app_is_ayetelkursi": {
+            "value": "240000"
+          },
+          "app_is_bereketduasi": {
+            "value": "240000"
+          },
+          "app_is_esmaulhusna": {
+            "value": "240000"
+          },
+          "app_is_fetihsuresi": {
+            "value": "240000"
+          },
+          "app_is_imsakiye": {
+            "value": "240000"
+          },
+          "app_is_insirahsuresi": {
+            "value": "240000"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "240000"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "240000"
+          },
+          "app_is_kible": {
+            "value": "240000"
+          },
+          "app_is_kuran_kerim": {
+            "value": "240000"
+          },
+          "app_is_mucizedualar": {
+            "value": "240000"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "240000"
+          },
+          "app_is_namazvakitleri": {
+            "value": "240000"
+          },
+          "app_is_nazarayeti": {
+            "value": "240000"
+          },
+          "app_is_vakiasuresi": {
+            "value": "240000"
+          },
+          "app_is_yasinsuresi": {
+            "value": "240000"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_rewarded_interstitial_min_interval_ms": {
+        "defaultValue": {
+          "value": "900000"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "900000"
+          },
+          "app_is_amenerrasulu": {
+            "value": "900000"
+          },
+          "app_is_ayetelkursi": {
+            "value": "900000"
+          },
+          "app_is_bereketduasi": {
+            "value": "900000"
+          },
+          "app_is_esmaulhusna": {
+            "value": "900000"
+          },
+          "app_is_fetihsuresi": {
+            "value": "900000"
+          },
+          "app_is_imsakiye": {
+            "value": "900000"
+          },
+          "app_is_insirahsuresi": {
+            "value": "900000"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "900000"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "900000"
+          },
+          "app_is_kible": {
+            "value": "900000"
+          },
+          "app_is_kuran_kerim": {
+            "value": "900000"
+          },
+          "app_is_mucizedualar": {
+            "value": "900000"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "900000"
+          },
+          "app_is_namazvakitleri": {
+            "value": "900000"
+          },
+          "app_is_nazarayeti": {
+            "value": "900000"
+          },
+          "app_is_vakiasuresi": {
+            "value": "900000"
+          },
+          "app_is_yasinsuresi": {
+            "value": "900000"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_rewarded_interstitial_max_per_session": {
+        "defaultValue": {
+          "value": "2"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "2"
+          },
+          "app_is_amenerrasulu": {
+            "value": "2"
+          },
+          "app_is_ayetelkursi": {
+            "value": "2"
+          },
+          "app_is_bereketduasi": {
+            "value": "2"
+          },
+          "app_is_esmaulhusna": {
+            "value": "2"
+          },
+          "app_is_fetihsuresi": {
+            "value": "2"
+          },
+          "app_is_imsakiye": {
+            "value": "2"
+          },
+          "app_is_insirahsuresi": {
+            "value": "2"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "2"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "2"
+          },
+          "app_is_kible": {
+            "value": "2"
+          },
+          "app_is_kuran_kerim": {
+            "value": "2"
+          },
+          "app_is_mucizedualar": {
+            "value": "2"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "2"
+          },
+          "app_is_namazvakitleri": {
+            "value": "2"
+          },
+          "app_is_nazarayeti": {
+            "value": "2"
+          },
+          "app_is_vakiasuresi": {
+            "value": "2"
+          },
+          "app_is_yasinsuresi": {
+            "value": "2"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_native_pool_max": {
+        "defaultValue": {
+          "value": "2"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "2"
+          },
+          "app_is_amenerrasulu": {
+            "value": "2"
+          },
+          "app_is_ayetelkursi": {
+            "value": "2"
+          },
+          "app_is_bereketduasi": {
+            "value": "2"
+          },
+          "app_is_esmaulhusna": {
+            "value": "2"
+          },
+          "app_is_fetihsuresi": {
+            "value": "2"
+          },
+          "app_is_imsakiye": {
+            "value": "2"
+          },
+          "app_is_insirahsuresi": {
+            "value": "2"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "2"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "2"
+          },
+          "app_is_kible": {
+            "value": "2"
+          },
+          "app_is_kuran_kerim": {
+            "value": "2"
+          },
+          "app_is_mucizedualar": {
+            "value": "2"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "2"
+          },
+          "app_is_namazvakitleri": {
+            "value": "2"
+          },
+          "app_is_nazarayeti": {
+            "value": "2"
+          },
+          "app_is_vakiasuresi": {
+            "value": "2"
+          },
+          "app_is_yasinsuresi": {
+            "value": "2"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_native_ttl_ms": {
+        "defaultValue": {
+          "value": "1800000"
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": "1800000"
+          },
+          "app_is_amenerrasulu": {
+            "value": "1800000"
+          },
+          "app_is_ayetelkursi": {
+            "value": "1800000"
+          },
+          "app_is_bereketduasi": {
+            "value": "1800000"
+          },
+          "app_is_esmaulhusna": {
+            "value": "1800000"
+          },
+          "app_is_fetihsuresi": {
+            "value": "1800000"
+          },
+          "app_is_imsakiye": {
+            "value": "1800000"
+          },
+          "app_is_insirahsuresi": {
+            "value": "1800000"
+          },
+          "app_is_ismiazamduasi": {
+            "value": "1800000"
+          },
+          "app_is_kenzularsduasi": {
+            "value": "1800000"
+          },
+          "app_is_kible": {
+            "value": "1800000"
+          },
+          "app_is_kuran_kerim": {
+            "value": "1800000"
+          },
+          "app_is_mucizedualar": {
+            "value": "1800000"
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": "1800000"
+          },
+          "app_is_namazvakitleri": {
+            "value": "1800000"
+          },
+          "app_is_nazarayeti": {
+            "value": "1800000"
+          },
+          "app_is_vakiasuresi": {
+            "value": "1800000"
+          },
+          "app_is_yasinsuresi": {
+            "value": "1800000"
+          }
+        },
+        "valueType": "NUMBER"
+      },
+      "ads_banner_placements_disabled_csv": {
+        "defaultValue": {
+          "value": ""
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": ""
+          },
+          "app_is_amenerrasulu": {
+            "value": ""
+          },
+          "app_is_ayetelkursi": {
+            "value": ""
+          },
+          "app_is_bereketduasi": {
+            "value": ""
+          },
+          "app_is_esmaulhusna": {
+            "value": ""
+          },
+          "app_is_fetihsuresi": {
+            "value": ""
+          },
+          "app_is_imsakiye": {
+            "value": ""
+          },
+          "app_is_insirahsuresi": {
+            "value": ""
+          },
+          "app_is_ismiazamduasi": {
+            "value": ""
+          },
+          "app_is_kenzularsduasi": {
+            "value": ""
+          },
+          "app_is_kible": {
+            "value": ""
+          },
+          "app_is_kuran_kerim": {
+            "value": ""
+          },
+          "app_is_mucizedualar": {
+            "value": ""
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": ""
+          },
+          "app_is_namazvakitleri": {
+            "value": ""
+          },
+          "app_is_nazarayeti": {
+            "value": ""
+          },
+          "app_is_vakiasuresi": {
+            "value": ""
+          },
+          "app_is_yasinsuresi": {
+            "value": ""
+          }
+        },
+        "valueType": "STRING"
+      },
+      "ads_native_placements_disabled_csv": {
+        "defaultValue": {
+          "value": ""
+        },
+        "conditionalValues": {
+          "app_is_zikirmatik": {
+            "value": ""
+          },
+          "app_is_amenerrasulu": {
+            "value": ""
+          },
+          "app_is_ayetelkursi": {
+            "value": ""
+          },
+          "app_is_bereketduasi": {
+            "value": ""
+          },
+          "app_is_esmaulhusna": {
+            "value": ""
+          },
+          "app_is_fetihsuresi": {
+            "value": ""
+          },
+          "app_is_imsakiye": {
+            "value": ""
+          },
+          "app_is_insirahsuresi": {
+            "value": ""
+          },
+          "app_is_ismiazamduasi": {
+            "value": ""
+          },
+          "app_is_kenzularsduasi": {
+            "value": ""
+          },
+          "app_is_kible": {
+            "value": ""
+          },
+          "app_is_kuran_kerim": {
+            "value": ""
+          },
+          "app_is_mucizedualar": {
+            "value": ""
+          },
+          "app_is_namazsurelerivedualarsesli": {
+            "value": ""
+          },
+          "app_is_namazvakitleri": {
+            "value": ""
+          },
+          "app_is_nazarayeti": {
+            "value": ""
+          },
+          "app_is_vakiasuresi": {
+            "value": ""
+          },
+          "app_is_yasinsuresi": {
+            "value": ""
+          }
+        },
+        "valueType": "STRING"
+      }
+    },
+    "version": {
+      "versionNumber": "4",
+      "updateTime": "2026-02-26T20:19:15.415914Z",
+      "updateUser": {
+        "email": "oaslananka@gmail.com"
+      },
+      "updateOrigin": "REST_API",
+      "updateType": "INCREMENTAL_UPDATE"
+    }
+  }
+}
