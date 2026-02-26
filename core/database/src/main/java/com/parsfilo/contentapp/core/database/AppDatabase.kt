@@ -195,7 +195,6 @@ abstract class AppDatabase : RoomDatabase() {
                         "`note` TEXT NOT NULL, " +
                         "PRIMARY KEY(`suraNumber`, `ayahNumber`))"
                 )
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_quran_bookmarks_savedAt` ON `quran_bookmarks` (`savedAt`)")
 
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `quran_last_read` (" +

@@ -84,5 +84,9 @@ cloudflare/**/.env
 cloudflare/**/.env.*
 cloudflare/**/dist/
 
+admin-notifications/**/node_modules/
+**/node_modules/
 
 project-no-assets.zip
+.wrangler/cache/pages.json
+.wrangler/cache/wrangler-account.json
