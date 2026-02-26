@@ -8,7 +8,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/ui/RewardsScreen.kt"
-            line="337"
+            line="343"
             column="20"/>
     </issue>
 
@@ -19,7 +19,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/notifications/ui/NotificationsScreen.kt"
-            line="209"
+            line="206"
             column="61"/>
     </issue>
 
@@ -30,44 +30,22 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/notifications/ui/NotificationsScreen.kt"
-            line="210"
+            line="207"
             column="54"/>
-    </issue>
-
-    <issue
-        id="InlinedApi"
-        message="Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_APP_NOTIFICATION_SETTINGS`"
-        errorLine1="    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="505"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="InlinedApi"
-        message="Field requires API level 26 (current min is 24): `android.provider.Settings#EXTRA_APP_PACKAGE`"
-        errorLine1="        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
-        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="506"
-            column="18"/>
     </issue>
 
     <issue
         id="InvalidPackage"
         message="Invalid package reference in library; not included in Android: `javax.naming.directory`. Referenced from `io.grpc.internal.JndiResourceResolverFactory.JndiRecordFetcher`.">
         <location
-            file="../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
+            file="../../../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
     </issue>
 
     <issue
         id="InvalidPackage"
         message="Invalid package reference in library; not included in Android: `javax.naming`. Referenced from `io.grpc.internal.JndiResourceResolverFactory.JndiRecordFetcher`.">
         <location
-            file="../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
+            file="../../../../../.gradle/caches/modules-2/files-2.1/io.grpc/grpc-core/1.62.2/5808049a5e33eba6f248a68d58e75399a68f2784/grpc-core-1.62.2.jar"/>
     </issue>
 
     <issue
@@ -77,19 +55,41 @@
         errorLine2="                                 ~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="342"
+            line="624"
             column="34"/>
     </issue>
 
     <issue
-        id="NoOp"
-        message="This call result is unused: valueOf"
-        errorLine1="                com.parsfilo.contentapp.core.model.DisplayMode.valueOf(mode)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger.hilt.android than 2.59.1 is available: 2.59.2"
+        errorLine1="hilt = &quot;2.59.1&quot;"
+        errorLine2="       ~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/core/datastore/PreferencesDataSource.kt"
-            line="50"
-            column="17"/>
+            file="../gradle/libs.versions.toml"
+            line="11"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-android than 2.59.1 is available: 2.59.2"
+        errorLine1="hilt = &quot;2.59.1&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="11"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-compiler than 2.59.1 is available: 2.59.2"
+        errorLine1="hilt = &quot;2.59.1&quot;"
+        errorLine2="       ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="11"
+            column="8"/>
     </issue>
 
     <issue
@@ -99,63 +99,151 @@
         errorLine2="                                                                         ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/ui/AppNavigation.kt"
-            line="76"
+            line="108"
             column="74"/>
     </issue>
 
     <issue
-        id="ConfigurationScreenWidthHeight"
-        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
-        errorLine1="    val screenWidthDp = configuration.screenWidthDp"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    actions: (@Composable RowScope.() -> Unit)? = null,"
+        errorLine2="    ~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/ads/ui/BannerAd.kt"
-            line="28"
-            column="25"/>
+            file="src/main/java/com/parsfilo/contentapp/core/designsystem/component/AppTopBar.kt"
+            line="26"
+            column="5"/>
     </issue>
 
     <issue
-        id="LocalContextGetResourceValueCall"
-        message="Querying resource values using LocalContext.current"
-        errorLine1="                                        context.getString(R.string.settings_device_id_copied),"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="370"
-            column="41"/>
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/miracles/MiraclesDetailScreen.kt"
+            line="60"
+            column="5"/>
     </issue>
 
     <issue
-        id="LocalContextGetResourceValueCall"
-        message="Querying resource values using LocalContext.current"
-        errorLine1="                                                            context.getString(R.string.settings_fcm_debug_refreshed),"
-        errorLine2="                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="440"
-            column="61"/>
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/miracles/MiraclesDetailScreen.kt"
+            line="83"
+            column="5"/>
     </issue>
 
     <issue
-        id="LocalContextGetResourceValueCall"
-        message="Querying resource values using LocalContext.current"
-        errorLine1="                                                        ?: context.getString(R.string.settings_fcm_debug_error)"
-        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="446"
-            column="60"/>
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/prayer/PrayerListScreen.kt"
+            line="62"
+            column="5"/>
     </issue>
 
     <issue
-        id="LocalContextGetResourceValueCall"
-        message="Querying resource values using LocalContext.current"
-        errorLine1="                                            context.getString(R.string.settings_fcm_debug_copied),"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="473"
-            column="45"/>
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/prayer/PrayerListScreen.kt"
+            line="85"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    bannerAdContent: (@Composable () -> Unit)? = null,"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/prayertimes/ui/PrayerLocationPickerScreen.kt"
+            line="59"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterNaming"
+        message="Composable lambda parameter should be named `content`"
+        errorLine1="    bannerAdContent: (@Composable () -> Unit)? = null,"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/prayertimes/ui/PrayerLocationPickerScreen.kt"
+            line="91"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    actions: (@Composable RowScope.() -> Unit)? = null,"
+        errorLine2="    ~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/designsystem/component/AppTopBar.kt"
+            line="26"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/miracles/MiraclesDetailScreen.kt"
+            line="60"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/miracles/MiraclesDetailScreen.kt"
+            line="83"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/prayer/PrayerListScreen.kt"
+            line="62"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    nativeAdContent: @Composable () -> Unit = {},"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/content/ui/prayer/PrayerListScreen.kt"
+            line="85"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableLambdaParameterPosition"
+        message="Composable lambda parameter should be the last parameter so it can be used as a trailing lambda"
+        errorLine1="    bannerAdContent: (@Composable () -> Unit)? = null,"
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/prayertimes/ui/PrayerLocationPickerScreen.kt"
+            line="59"
+            column="5"/>
     </issue>
 
     <issue
@@ -165,7 +253,18 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/core/designsystem/component/AppTopBar.kt"
-            line="25"
+            line="27"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier,"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/ads/ui/BannerAd.kt"
+            line="32"
             column="5"/>
     </issue>
 
@@ -176,151 +275,19 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/MiniAudioPlayer.kt"
-            line="49"
+            line="50"
             column="5"/>
     </issue>
 
     <issue
-        id="MissingTranslation"
-        message="&quot;admob_app_id&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;admob_app_id&quot;>ca-app-pub-3312485084079132~4012562548&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        id="DiscouragedApi"
+        message="Use of this function is discouraged because resource reflection makes it harder to perform build optimizations and compile-time verification of code. It is much more efficient to retrieve resources by identifier (e.g. `R.foo.bar`) than by name (e.g. `getIdentifier(&quot;bar&quot;, &quot;foo&quot;, null)`)."
+        errorLine1="        val resId = context.resources.getIdentifier(name, &quot;string&quot;, context.packageName)"
+        errorLine2="                                      ~~~~~~~~~~~~~">
         <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="3"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;admob_app_id&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;admob_app_id&quot;>ca-app-pub-3940256099942544~3347511713&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="3"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_banner&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3312485084079132/5773559718&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="4"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_banner&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3940256099942544/6300978111&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="4"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_interstitial&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3312485084079132/9095252852&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="5"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_interstitial&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3940256099942544/1033173712&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="5"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_native&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3312485084079132/8502830681&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="6"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_native&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3940256099942544/2247696110&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="6"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_rewarded&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3312485084079132/1834314703&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="7"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_rewarded&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3940256099942544/5224354917&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="7"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_open_app&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3312485084079132/5170924485&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="8"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;ad_unit_open_app&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3940256099942544/3419835294&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/res/values/ads.xml"
-            line="8"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="MissingTranslation"
-        message="&quot;app_name&quot; is not translated in &quot;de&quot; (German) or &quot;en&quot; (English)"
-        errorLine1="    &lt;string name=&quot;app_name&quot;>Placeholder amenerrasulu&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/strings.xml"
-            line="2"
-            column="13"/>
+            file="src/main/java/com/parsfilo/contentapp/monetization/AppAdUnitIds.kt"
+            line="83"
+            column="39"/>
     </issue>
 
     <issue
@@ -401,131 +368,109 @@
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.string.ad_unit_banner` appears to be unused"
-        errorLine1="    &lt;string name=&quot;ad_unit_banner&quot;>ca-app-pub-3312485084079132/5773559718&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;ayet&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;quran_verses_count&quot;>%d ayet&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="4"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.ad_unit_interstitial` appears to be unused"
-        errorLine1="    &lt;string name=&quot;ad_unit_interstitial&quot;>ca-app-pub-3312485084079132/9095252852&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="5"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.ad_unit_native` appears to be unused"
-        errorLine1="    &lt;string name=&quot;ad_unit_native&quot;>ca-app-pub-3312485084079132/8502830681&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
-            line="6"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.ad_unit_rewarded` appears to be unused"
-        errorLine1="    &lt;string name=&quot;ad_unit_rewarded&quot;>ca-app-pub-3312485084079132/1834314703&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/amenerrasulu/res/values/ads.xml"
+            file="src/main/res/values/strings.xml"
             line="7"
-            column="13"/>
+            column="5"/>
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.string.ad_unit_open_app` appears to be unused"
-        errorLine1="    &lt;string name=&quot;ad_unit_open_app&quot;>ca-app-pub-3312485084079132/5170924485&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;verses&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;quran_verses_count&quot;>%d verses&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/amenerrasulu/res/values/ads.xml"
+            file="src/main/res/values-en/strings.xml"
+            line="7"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;tamamlandı&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;counter_daily_goal_progress&quot;>%1$s / %2$s · %3$d tamamlandı&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
             line="8"
-            column="13"/>
+            column="5"/>
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.color.purple_200` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_200&quot;>#FFBB86FC&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;sec&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;counter_duration_minutes_seconds&quot;>%1$d min %2$d sec&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/res/values/colors.xml"
-            line="3"
-            column="12"/>
+            file="src/main/res/values-en/strings.xml"
+            line="41"
+            column="5"/>
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.color.purple_500` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_500&quot;>#FF6200EE&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;kez&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;share_text_template&quot;>🤲 %1$d kez %2$s zikri yaptım\n%3$s\n\n📊 Bugün toplam: %4$s zikir\n\n📿 Zikirmatik uygulamasıyla zikir alışkanlığı edinin\nhttps://play.google.com/store/apps/details?id=com.parsfilo.zikirmatik&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/res/values/colors.xml"
-            line="4"
-            column="12"/>
+            file="src/main/res/values/strings.xml"
+            line="92"
+            column="5"/>
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.color.purple_700` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_700&quot;>#FF3700B3&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `#132435` with a theme that also paints a background (inferred theme is `@android:style/Theme.Holo`)"
+        errorLine1="    android:background=&quot;#132435&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/res/values/colors.xml"
+            file="src/main/res/layout/prayer_times_widget_loading.xml"
             line="5"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.teal_200` appears to be unused"
-        errorLine1="    &lt;color name=&quot;teal_200&quot;>#FF03DAC5&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="6"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.teal_700` appears to be unused"
-        errorLine1="    &lt;color name=&quot;teal_700&quot;>#FF018786&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="7"
-            column="12"/>
+            column="5"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.color.black` appears to be unused"
-        errorLine1="    &lt;color name=&quot;black&quot;>#FF000000&lt;/color>"
+        errorLine1="    &lt;color name=&quot;black&quot;>#FF0A0A0F&lt;/color>"
         errorLine2="           ~~~~~~~~~~~~">
         <location
             file="src/main/res/values/colors.xml"
-            line="8"
+            line="4"
             column="12"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.color.white` appears to be unused"
-        errorLine1="    &lt;color name=&quot;white&quot;>#FFFFFFFF&lt;/color>"
+        errorLine1="    &lt;color name=&quot;white&quot;>#FFFAF9F6&lt;/color>"
         errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="5"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.premium_dark_bg` appears to be unused"
+        errorLine1="    &lt;color name=&quot;premium_dark_bg&quot;>#FF080A0F&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="8"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.premium_surface` appears to be unused"
+        errorLine1="    &lt;color name=&quot;premium_surface&quot;>#FF0E1018&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/colors.xml"
             line="9"
@@ -534,9 +479,9 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.color.dark_green_bg` appears to be unused"
-        errorLine1="    &lt;color name=&quot;dark_green_bg&quot;>#FF1F4435&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~">
+        message="The resource `R.color.premium_gold` appears to be unused"
+        errorLine1="    &lt;color name=&quot;premium_gold&quot;>#FFBF9B3A&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/colors.xml"
             line="10"
@@ -545,45 +490,12 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.color.gold_accent` appears to be unused"
-        errorLine1="    &lt;color name=&quot;gold_accent&quot;>#FFCDA434&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~">
+        message="The resource `R.color.premium_cream` appears to be unused"
+        errorLine1="    &lt;color name=&quot;premium_cream&quot;>#FFFFF8E8&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/colors.xml"
             line="11"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.cream_white` appears to be unused"
-        errorLine1="    &lt;color name=&quot;cream_white&quot;>#FFFFF8E7&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="12"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.dark_green_card` appears to be unused"
-        errorLine1="    &lt;color name=&quot;dark_green_card&quot;>#FF2D5A3F&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="13"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.nav_bar_dark_green` appears to be unused"
-        errorLine1="    &lt;color name=&quot;nav_bar_dark_green&quot;>#FF1B3D2F&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="14"
             column="12"/>
     </issue>
 
@@ -611,13 +523,35 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.color.ic_launcher_background` appears to be unused"
-        errorLine1="    &lt;color name=&quot;ic_launcher_background&quot;>#A7B333&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="The resource `R.string.content_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;content_error&quot;>Hata: %s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/amenerrasulu/res/values/launcher_colors.xml"
-            line="3"
-            column="12"/>
+            file="../feature/content/src/main/res/values/strings.xml"
+            line="2"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_title&quot;>Namaz Vakitleri&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="2"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.qibla_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;qibla_title&quot;>Kıble Pusulası&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/qibla/src/main/res/values/strings.xml"
+            line="2"
+            column="13"/>
     </issue>
 
     <issue
@@ -633,12 +567,45 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.imsakiye_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;imsakiye_title&quot;>İmsakiye&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="3"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.qibla_back` appears to be unused"
+        errorLine1="    &lt;string name=&quot;qibla_back&quot;>Geri&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/qibla/src/main/res/values/strings.xml"
+            line="3"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_next_prayer` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_next_prayer&quot;>Sıradaki vakit: %1$s (%2$s)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.settings_font_size` appears to be unused"
         errorLine1="    &lt;string name=&quot;settings_font_size&quot;>Yazı Boyutu&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="../feature/settings/src/main/res/values/strings.xml"
-            line="4"
+            line="5"
             column="13"/>
     </issue>
 
@@ -655,6 +622,39 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.prayertimes_refresh` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_refresh&quot;>Yenile&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_verses_count` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_verses_count&quot;>%d ayet&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="7"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.messages_has_reply` appears to be unused"
+        errorLine1="    &lt;string name=&quot;messages_has_reply&quot;>Yanıt var&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/messages/src/main/res/values/strings.xml"
+            line="9"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.bismillah` appears to be unused"
         errorLine1="    &lt;string name=&quot;bismillah&quot;>بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~">
@@ -666,11 +666,55 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.prayertimes_location_not_set` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_location_not_set&quot;>Konum seçilmedi&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="12"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.content_share_verse_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;content_share_verse_title&quot;>Ayeti paylaş&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/content/src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.loading` appears to be unused"
         errorLine1="    &lt;string name=&quot;loading&quot;>Yükleniyor…&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_location_label` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_location_label&quot;>Konum: %1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="13"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_whatsapp_not_found` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_whatsapp_not_found&quot;>WhatsApp yüklü değil.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/settings/src/main/res/values/strings.xml"
             line="13"
             column="13"/>
     </issue>
@@ -688,11 +732,44 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.prayertimes_loading` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_loading&quot;>Yükleniyor…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="14"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_streak_none` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_streak_none&quot;>Bugün zikir yap, serin başlasın&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.error_network` appears to be unused"
         errorLine1="    &lt;string name=&quot;error_network&quot;>İnternet bağlantısı yok&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
+            line="15"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_error&quot;>Veri alınamadı, son cache gösteriliyor olabilir.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
             line="15"
             column="13"/>
     </issue>
@@ -710,12 +787,67 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.qibla_permission_required` appears to be unused"
+        errorLine1="    &lt;string name=&quot;qibla_permission_required&quot;>Doğru kıble için konum izni gerekli.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/qibla/src/main/res/values/strings.xml"
+            line="16"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_reciter` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_reciter&quot;>Kari&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="17"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_selector_title` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_selector_title&quot;>Zikir Seç&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="18"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_change_country` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_change_country&quot;>Ülkeyi değiştir&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="19"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.share_app_message` appears to be unused"
         errorLine1="    &lt;string name=&quot;share_app_message&quot;>📖 %1$s uygulamasını kullanıyorum, çok beğendim!\n\nSen de indir: %2$s&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
             line="19"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_change_city` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_change_city&quot;>Şehri değiştir&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="20"
             column="13"/>
     </issue>
 
@@ -743,6 +875,50 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.prayertimes_select_required` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_select_required&quot;>Lütfen ülke, şehir ve ilçe seçin.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="22"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_audio_play` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_audio_play&quot;>Oynat&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="22"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_saved` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_saved&quot;>Konum kaydedildi.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_audio_pause` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_audio_pause&quot;>Duraklat&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.audio_loading` appears to be unused"
         errorLine1="    &lt;string name=&quot;audio_loading&quot;>Ses yükleniyor…&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
@@ -754,11 +930,33 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.quran_audio_download` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_audio_download&quot;>İndir&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="24"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.audio_play` appears to be unused"
         errorLine1="    &lt;string name=&quot;audio_play&quot;>Oynat&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
+            line="25"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_audio_downloaded` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_audio_downloaded&quot;>İndirildi&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
             line="25"
             column="13"/>
     </issue>
@@ -781,6 +979,17 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
+            line="27"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_ayah_label` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_ayah_label&quot;>Ayet %d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
             line="27"
             column="13"/>
     </issue>
@@ -820,6 +1029,28 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.quran_audio_download_progress` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_audio_download_progress&quot;>İndiriliyor %% %d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="33"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.quran_ayah_actions` appears to be unused"
+        errorLine1="    &lt;string name=&quot;quran_ayah_actions&quot;>Ayet işlemleri&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/quran/src/main/res/values/strings.xml"
+            line="34"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.settings_font_size` appears to be unused"
         errorLine1="    &lt;string name=&quot;settings_font_size&quot;>Yazı Boyutu&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -842,6 +1073,17 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.string.prayertimes_gunes` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_gunes&quot;>Güneş&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="40"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.string.sign_in_description` appears to be unused"
         errorLine1="    &lt;string name=&quot;sign_in_description&quot;>Mesaj göndermek ve yanıtları görmek için Google hesabınızla giriş yapın.&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -859,6 +1101,50 @@
         <location
             file="src/main/res/values/strings.xml"
             line="41"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_privacy_options_desc` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_privacy_options_desc&quot;>Reklam onay tercihlerini yönet&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/settings/src/main/res/values/strings.xml"
+            line="42"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_today` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_today&quot;>Bugün&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="47"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.prayertimes_next_7_days` appears to be unused"
+        errorLine1="    &lt;string name=&quot;prayertimes_next_7_days&quot;>Önümüzdeki 7 Gün&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/prayertimes/src/main/res/values/strings.xml"
+            line="48"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.messages_has_reply` appears to be unused"
+        errorLine1="    &lt;string name=&quot;messages_has_reply&quot;>Yanıt var&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="50"
             column="13"/>
     </issue>
 
@@ -940,13 +1226,79 @@
     </issue>
 
     <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_share_preview_subtitle` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_share_preview_subtitle&quot;>Bu metni kopyalayabilir veya doğrudan paylaşabilirsiniz.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="94"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_target_1000` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_target_1000&quot;>1000 tekrar&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="103"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_target_custom` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_target_custom&quot;>Özel…&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="104"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_select_time` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_select_time&quot;>Saat seçin&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="111"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.plurals.counter_content_description_streak` appears to be unused"
+        errorLine1="    &lt;plurals name=&quot;counter_content_description_streak&quot;>"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="117"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.counter_content_description_share` appears to be unused"
+        errorLine1="    &lt;string name=&quot;counter_content_description_share&quot;>Zikir sonucunu paylaş&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../feature/counter/src/main/res/values/strings.xml"
+            line="121"
+            column="13"/>
+    </issue>
+
+    <issue
         id="SyntheticAccessor"
         message="Access to `private` method `updateState` of class `AudioPlayerViewModel` requires synthetic accessor"
         errorLine1="                updateState()"
         errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="301"
+            line="583"
             column="17"/>
     </issue>
 
@@ -957,7 +1309,7 @@
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="303"
+            line="585"
             column="21"/>
     </issue>
 
@@ -968,7 +1320,7 @@
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="306"
+            line="588"
             column="21"/>
     </issue>
 
@@ -979,7 +1331,7 @@
         errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="311"
+            line="593"
             column="17"/>
     </issue>
 
@@ -990,7 +1342,7 @@
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="313"
+            line="595"
             column="21"/>
     </issue>
 
@@ -1001,7 +1353,7 @@
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
-            line="315"
+            line="597"
             column="21"/>
     </issue>
 
@@ -1012,30 +1364,41 @@
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
-            line="83"
+            line="104"
             column="21"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
-        message="Access to `private` method `queryPurchases` of class `BillingManager` requires synthetic accessor"
-        errorLine1="                    queryPurchases()"
-        errorLine2="                    ~~~~~~~~~~~~~~">
+        message="Access to `private` method `handleBillingFailure` of class `BillingManager` requires synthetic accessor"
+        errorLine1="                    handleBillingFailure("
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
-            line="84"
+            line="107"
             column="21"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
-        message="Access to `private` method `setError` of class `BillingManager` requires synthetic accessor"
-        errorLine1="                    setError(&quot;Billing setup failed: ${billingResult.debugMessage}&quot;)"
-        errorLine2="                    ~~~~~~~~">
+        message="Access to `private` method `replaceBillingClient` of class `BillingManager` requires synthetic accessor"
+        errorLine1="                replaceBillingClient(closeCurrent = false, resetScope = false)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/billing/BillingManager.kt"
-            line="86"
-            column="21"/>
+            line="122"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toJson` of class `HttpPushRegistrationSenderKt` requires synthetic accessor"
+        errorLine1="        val payloadJson = payload.toJson().toString()"
+        errorLine2="                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/HttpPushRegistrationSender.kt"
+            line="35"
+            column="27"/>
     </issue>
 
     <issue
@@ -1045,63 +1408,85 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/core/firebase/push/HttpPushRegistrationSender.kt"
-            line="37"
+            line="79"
             column="13"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
-        message="Access to `private` method `toJson` of class `HttpPushRegistrationSenderKt` requires synthetic accessor"
-        errorLine1="                val body = payload.toJson().toString()"
-        errorLine2="                           ~~~~~~~~~~~~~~">
+        message="Access to `private` method `readBodySnippet` of class `HttpPushRegistrationSenderKt` requires synthetic accessor"
+        errorLine1="                val bodySnippet = readBodySnippet(it, statusCode)"
+        errorLine2="                                  ~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/core/firebase/push/HttpPushRegistrationSender.kt"
-            line="38"
-            column="28"/>
+            line="85"
+            column="35"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
         message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
-        errorLine1="                    maybeReload()"
-        errorLine2="                    ~~~~~~~~~~~">
+        errorLine1="                maybeReload()"
+        errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
-            line="76"
-            column="21"/>
+            line="144"
+            column="17"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
         message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
-        errorLine1="                    maybeReload()"
-        errorLine2="                    ~~~~~~~~~~~">
+        errorLine1="                maybeReload()"
+        errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
-            line="76"
-            column="21"/>
+            line="144"
+            column="17"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
         message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
-        errorLine1="                    maybeReload()"
-        errorLine2="                    ~~~~~~~~~~~">
+        errorLine1="                maybeReload()"
+        errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
-            line="82"
-            column="21"/>
+            line="151"
+            column="17"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
         message="Access to `private` method `maybeReload` of class `InterstitialAdManager` requires synthetic accessor"
-        errorLine1="                    maybeReload()"
-        errorLine2="                    ~~~~~~~~~~~">
+        errorLine1="                maybeReload()"
+        errorLine2="                ~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/ads/InterstitialAdManager.kt"
-            line="82"
-            column="21"/>
+            line="151"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `getValueAsString` of class `MainActivityKt` requires synthetic accessor"
+        errorLine1="                    .joinToString(&quot;|&quot;) { key -> &quot;$key=${extras.getValueAsString(key)}&quot; }"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/MainActivity.kt"
+            line="177"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `getValueAsString` of class `MainActivityKt` requires synthetic accessor"
+        errorLine1="                put(key, extras.getValueAsString(key) ?: JSONObject.NULL)"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/MainActivity.kt"
+            line="183"
+            column="26"/>
     </issue>
 
     <issue
@@ -1111,8 +1496,30 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/feature/otherapps/data/NetworkCachedOtherAppsRepository.kt"
-            line="129"
+            line="141"
             column="13"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `asUi` of class `PrayerTimesViewModelKt` requires synthetic accessor"
+        errorLine1="                    nextPrayer = nextPrayer?.asUi(),"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/prayertimes/ui/PrayerTimesViewModel.kt"
+            line="170"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `subscribeToTopicSuspend` of class `PushRegistrationManagerKt` requires synthetic accessor"
+        errorLine1="                firebaseMessaging.subscribeToTopicSuspend(topic)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/core/firebase/push/PushRegistrationManager.kt"
+            line="35"
+            column="17"/>
     </issue>
 
     <issue
@@ -1122,19 +1529,111 @@
         errorLine2="                                 ~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/core/firebase/push/PushRegistrationManager.kt"
-            line="43"
+            line="57"
             column="34"/>
     </issue>
 
     <issue
         id="SyntheticAccessor"
         message="Access to `private` method `fetchTokenSuspend` of class `PushRegistrationManagerKt` requires synthetic accessor"
-        errorLine1="        return runCatching { firebaseMessaging.fetchTokenSuspend() }"
+        errorLine1="        return runCatching { firebaseMessaging.fetchTokenSuspend() }.onFailure {"
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/parsfilo/contentapp/core/firebase/push/PushRegistrationManager.kt"
-            line="63"
+            line="77"
             column="30"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toModel` of class `QuranRepositoryKt` requires synthetic accessor"
+        errorLine1="        quranDao.observeAllSuras().map { entities -> entities.map { it.toModel() } }"
+        errorLine2="                                                                    ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/quran/data/QuranRepository.kt"
+            line="43"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toModel` of class `QuranRepositoryKt` requires synthetic accessor"
+        errorLine1="        quranDao.observeSura(suraNumber).map { entity -> entity?.toModel() }"
+        errorLine2="                                                         ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/quran/data/QuranRepository.kt"
+            line="46"
+            column="58"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toModel` of class `QuranRepositoryKt` requires synthetic accessor"
+        errorLine1="        quranDao.observeAyahsForSura(suraNumber).map { entities -> entities.map { it.toModel() } }"
+        errorLine2="                                                                                  ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/quran/data/QuranRepository.kt"
+            line="49"
+            column="83"/>
+    </issue>
+
+    <issue
+        id="SyntheticAccessor"
+        message="Access to `private` method `toRevelationTypeName` of class `QuranRepositoryKt` requires synthetic accessor"
+        errorLine1="                            revelationType = chapter.optString(&quot;revelation&quot;).toRevelationTypeName(),"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/quran/data/QuranRepository.kt"
+            line="70"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Gebetszeiten`, used in `prayertimes_title` and `prayertimes_widget_title`"
+        errorLine1="    &lt;string name=&quot;prayertimes_title&quot;>Gebetszeiten&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="2"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="81"
+            column="5"
+            message="Duplicates value in `prayertimes_title`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Namaz Vakitleri`, used in `prayertimes_title` and `prayertimes_widget_title`"
+        errorLine1="    &lt;string name=&quot;prayertimes_title&quot;>Namaz Vakitleri&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="2"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="87"
+            column="5"
+            message="Duplicates value in `prayertimes_title`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Prayer Times`, used in `prayertimes_title` and `prayertimes_widget_title`"
+        errorLine1="    &lt;string name=&quot;prayertimes_title&quot;>Prayer Times&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="2"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="81"
+            column="5"
+            message="Duplicates value in `prayertimes_title`"/>
     </issue>
 
     <issue
@@ -1199,6 +1698,38 @@
             line="48"
             column="5"
             message="Duplicates value in `nav_premium`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Bookmarks`, used in `quran_bookmarks_title` and `quran_open_bookmarks`"
+        errorLine1="    &lt;string name=&quot;quran_bookmarks_title&quot;>Bookmarks&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="4"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="28"
+            column="5"
+            message="Duplicates value in `quran_bookmarks_title`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Lesezeichen`, used in `quran_bookmarks_title` and `quran_open_bookmarks`"
+        errorLine1="    &lt;string name=&quot;quran_bookmarks_title&quot;>Lesezeichen&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="4"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="28"
+            column="5"
+            message="Duplicates value in `quran_bookmarks_title`"/>
     </issue>
 
     <issue
@@ -1283,6 +1814,54 @@
 
     <issue
         id="DuplicateStrings"
+        message="Duplicate string value `Arabic`, used in `content_mode_arabic` and `miracles_section_arabic`"
+        errorLine1="    &lt;string name=&quot;content_mode_arabic&quot;>Arabic&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="7"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="18"
+            column="5"
+            message="Duplicates value in `content_mode_arabic`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Arabisch`, used in `content_mode_arabic` and `miracles_section_arabic`"
+        errorLine1="    &lt;string name=&quot;content_mode_arabic&quot;>Arabisch&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="7"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="18"
+            column="5"
+            message="Duplicates value in `content_mode_arabic`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Arapça`, used in `content_mode_arabic` and `miracles_section_arabic`"
+        errorLine1="    &lt;string name=&quot;content_mode_arabic&quot;>Arapça&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="7"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="18"
+            column="5"
+            message="Duplicates value in `content_mode_arabic`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
         message="Duplicate string value `Mesajlar`, used in `messages_title` and `nav_messages`"
         errorLine1="    &lt;string name=&quot;nav_messages&quot;>Mesajlar&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -1314,267 +1893,230 @@
     </issue>
 
     <issue
-        id="TypographyEllipsis"
-        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
-        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Token wird abgerufen...&lt;/string>"
-        errorLine2="                                               ~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-de/strings.xml"
-            line="21"
-            column="48"/>
-    </issue>
-
-    <issue
-        id="TypographyEllipsis"
-        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
-        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Fetching token...&lt;/string>"
-        errorLine2="                                               ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-en/strings.xml"
-            line="21"
-            column="48"/>
-    </issue>
-
-    <issue
-        id="TypographyEllipsis"
-        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
-        errorLine1="    &lt;string name=&quot;settings_fcm_debug_fetching&quot;>Token alınıyor...&lt;/string>"
-        errorLine2="                                               ~~~~~~~~~~~~~~~~~">
+        id="DuplicateStrings"
+        message="Duplicate string value `Bugün: %s zikir`, used in `counter_today_summary` and `counter_today_total`"
+        errorLine1="    &lt;string name=&quot;counter_today_total&quot;>Bugün: %s zikir&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="21"
-            column="48"/>
+            line="16"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="38"
+            column="5"
+            message="Duplicates value in `counter_today_total`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Heute: %s Dhikr`, used in `counter_today_summary` and `counter_today_total`"
+        errorLine1="    &lt;string name=&quot;counter_today_total&quot;>Heute: %s Dhikr&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="16"
+            column="5"/>
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="38"
+            column="5"
+            message="Duplicates value in `counter_today_total`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Today: %s dhikr`, used in `counter_today_summary` and `counter_today_total`"
+        errorLine1="    &lt;string name=&quot;counter_today_total&quot;>Today: %s dhikr&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="16"
+            column="5"/>
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="38"
+            column="5"
+            message="Duplicates value in `counter_today_total`"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;billing_plans_loading&quot;>Pläne werden geladen...&lt;/string>"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="9"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;billing_plans_loading&quot;>Loading plans...&lt;/string>"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="9"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;billing_plans_loading&quot;>Planlar yükleniyor...&lt;/string>"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="9"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="TypographyFractions"
+        message="Use fraction character ⅓ (&amp;#8531;) instead of 1/3?"
+        errorLine1="    &lt;string name=&quot;prayertimes_step_country&quot;>1/3 Land&lt;/string>"
+        errorLine2="                                            ~~~~~~~~">
+        <location
+            file="src/main/res/values-de/strings.xml"
+            line="57"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyFractions"
+        message="Use fraction character ⅓ (&amp;#8531;) instead of 1/3?"
+        errorLine1="    &lt;string name=&quot;prayertimes_step_country&quot;>1/3 Country&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="57"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyFractions"
+        message="Use fraction character ⅓ (&amp;#8531;) instead of 1/3?"
+        errorLine1="    &lt;string name=&quot;prayertimes_step_country&quot;>1/3 Ülke seçimi&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="60"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyQuotes"
+        message="Replace straight quotes (&quot;) with directional quotes (“”, &amp;#8220; and &amp;#8221;) ?"
+        errorLine1="    &lt;string name=&quot;counter_empty_zikir_list_message&quot;>Tap the \&quot;Add dhikr\&quot; button above to create a new dhikr.&lt;/string>"
+        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="22"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="TypographyQuotes"
+        message="Replace straight quotes (&quot;) with directional quotes (“”, &amp;#8220; and &amp;#8221;) ?"
+        errorLine1="    &lt;string name=&quot;counter_empty_zikir_list_message&quot;>Yeni bir zikir eklemek için yukarıdaki \&quot;Zikir ekle\&quot; butonuna basın.&lt;/string>"
+        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="22"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="TypographyQuotes"
+        message="Replace apostrophe (&apos;) with typographic apostrophe (’, &amp;#8217;) ?"
+        errorLine1="    &lt;string name=&quot;settings_privacy_options_not_required_now&quot;>Privacy options aren\&apos;t required in your region right now.&lt;/string>"
+        errorLine2="                                                                                  ~">
+        <location
+            file="src/main/res/values-en/strings.xml"
+            line="49"
+            column="83"/>
+    </issue>
+
+    <issue
+        id="TypographyQuotes"
+        message="Replace apostrophe (&apos;) with typographic apostrophe (’, &amp;#8217;) ?"
+        errorLine1="    &lt;string name=&quot;settings_ads_debug_geo_set_reset_hint&quot;>UMP debug geography: %1$s. Consent sıfırlandı. Test için Consent Formunu Göster\&apos;e basın.&lt;/string>"
+        errorLine2="                                                                                                                                         ~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="66"
+            column="138"/>
     </issue>
 
     <issue
         id="ConvertToWebp"
         message="One or more images in this project can be converted to the WebP format which typically results in smaller file sizes, even for lossless conversion">
         <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
+            file="src/main/res/drawable/kabe.png"/>
     </issue>
 
     <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-hdpi/ic_launcher_monochrome.png`: expected 72x72, but was 162x162">
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/kabe.png` in densityless folder">
         <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-mdpi/ic_launcher_monochrome.png`: expected 48x48, but was 108x108">
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xhdpi/ic_launcher_monochrome.png`: expected 96x96, but was 216x216">
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xxhdpi/ic_launcher_monochrome.png`: expected 144x144, but was 324x324">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xxxhdpi/ic_launcher_monochrome.png`: expected 192x192, but was 432x432">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-hdpi/ic_launcher_round_monochrome.png`: expected 72x72, but was 162x162">
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-mdpi/ic_launcher_round_monochrome.png`: expected 48x48, but was 108x108">
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xhdpi/ic_launcher_round_monochrome.png`: expected 96x96, but was 216x216">
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xxhdpi/ic_launcher_round_monochrome.png`: expected 144x144, but was 324x324">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconExpectedSize"
-        message="Incorrect icon size for `mipmap-xxxhdpi/ic_launcher_round_monochrome.png`: expected 192x192, but was 432x432">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_background.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_background.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_background.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_background.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_background.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_background.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_background.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_background.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_background.png, ic_launcher_round_background.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_background.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_background.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_round_foreground.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-hdpi/ic_launcher_foreground.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_round_foreground.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-mdpi/ic_launcher_foreground.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_round_foreground.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xhdpi/ic_launcher_foreground.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_round_foreground.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxhdpi/ic_launcher_foreground.png"/>
-    </issue>
-
-    <issue
-        id="IconDuplicates"
-        message="The following unrelated icon files have identical contents: ic_launcher_foreground.png, ic_launcher_monochrome.png, ic_launcher_round_foreground.png, ic_launcher_round_monochrome.png">
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_round_foreground.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_monochrome.png"/>
-        <location
-            file="src/amenerrasulu/res/mipmap-xxxhdpi/ic_launcher_foreground.png"/>
+            file="src/main/res/drawable/kabe.png"/>
     </issue>
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                            Intent(Intent.ACTION_VIEW, Uri.parse(&quot;market://details?id=${app.packageName}&quot;))"
-        errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putBoolean(completionKey, true).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
-            line="104"
-            column="56"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                                Uri.parse(&quot;https://play.google.com/store/apps/details?id=${app.packageName}&quot;)"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
-            line="110"
-            column="33"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            Uri.parse(&quot;https://wa.me/?text=$encodedText&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="521"
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/data/AudioCachePrefetcher.kt"
+            line="86"
             column="13"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                Uri.parse(&quot;market://details?id=com.whatsapp&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        val mediaItem = MediaItem.fromUri(Uri.parse(url))"
+        errorLine2="                                          ~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/parsfilo/contentapp/feature/settings/ui/SettingsScreen.kt"
-            line="545"
-            column="17"/>
+            file="src/main/java/com/parsfilo/contentapp/feature/audio/ui/AudioPlayerViewModel.kt"
+            line="660"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                        Intent(Intent.ACTION_VIEW, Uri.parse(&quot;market://details?id=${app.packageName}&quot;))"
+        errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
+            line="155"
+            column="68"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                            Uri.parse(&quot;https://play.google.com/store/apps/details?id=${app.packageName}&quot;)"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/otherapps/ui/OtherAppsScreen.kt"
+            line="161"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            ?.let { runCatching { Uri.parse(it) }.getOrNull() }"
+        errorLine2="                                  ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/parsfilo/contentapp/feature/prayertimes/alarm/PrayerAlarmSoundPlayer.kt"
+            line="58"
+            column="35"/>
     </issue>
 
 </issues>
