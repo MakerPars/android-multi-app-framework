@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -18,7 +19,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import ciApps from "@ciapps";
-import { auth, firestore, googleProvider } from "./firebase";
+import { auth, firestore, functionsBaseUrl, googleProvider } from "./firebase";
 import {
   DEFAULT_FORM,
   WEEKDAYS,
@@ -31,6 +32,19 @@ import {
 type LoadState = "loading" | "ready" | "error";
 
 type AdminState = "checking" | "authorized" | "unauthorized";
+type TestPushTargetMode = "installationId" | "token";
+
+type DeviceFinderItem = {
+  id: string;
+  packageName: string;
+  locale: string;
+  timezone: string;
+  notificationsEnabled: boolean;
+  deviceModel?: string;
+  appVersion?: string;
+  updatedAt?: Date | null;
+  hasValidToken: boolean;
+};
 
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
 
@@ -54,6 +68,22 @@ function parseLocaleMap(value: unknown): Record<LocaleKey, string> {
     tr: typeof input.tr === "string" ? input.tr : "",
     en: typeof input.en === "string" ? input.en : "",
     de: typeof input.de === "string" ? input.de : "",
+  };
+}
+
+function parseDeviceFinderItem(docId: string, raw: DocumentData): DeviceFinderItem {
+  const token = typeof raw.fcmToken === "string" ? raw.fcmToken.trim() : "";
+  return {
+    id: docId,
+    packageName: typeof raw.packageName === "string" ? raw.packageName : "",
+    locale: typeof raw.locale === "string" ? raw.locale : "",
+    timezone: typeof raw.timezone === "string" ? raw.timezone : "",
+    notificationsEnabled:
+      typeof raw.notificationsEnabled === "boolean" ? raw.notificationsEnabled : true,
+    deviceModel: typeof raw.deviceModel === "string" ? raw.deviceModel : undefined,
+    appVersion: typeof raw.appVersion === "string" ? raw.appVersion : undefined,
+    updatedAt: toDate(raw.updatedAt),
+    hasValidToken: token.length >= 80,
   };
 }
 
@@ -181,6 +211,45 @@ function validateForm(form: ScheduledEventForm): string | null {
   return null;
 }
 
+function parseTestPushDataInput(raw: string): { data: Record<string, string> | null; error: string | null } {
+  const lines = raw
+    .split(/\r?\n/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return { data: null, error: null };
+  }
+
+  const data: Record<string, string> = {};
+  for (const line of lines) {
+    const idx = line.indexOf("=");
+    if (idx <= 0) {
+      return { data: null, error: `Invalid data line (expected key=value): ${line}` };
+    }
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1);
+    if (!key) {
+      return { data: null, error: `Invalid empty data key: ${line}` };
+    }
+    data[key] = value;
+  }
+
+  return { data, error: null };
+}
+
+function summarizeApiError(errorPayload: unknown, fallback: string): string {
+  if (
+    errorPayload &&
+    typeof errorPayload === "object" &&
+    "error" in errorPayload &&
+    typeof (errorPayload as { error?: unknown }).error === "string"
+  ) {
+    return (errorPayload as { error: string }).error;
+  }
+  return fallback;
+}
+
 function formatDateTime(date?: Date | null): string {
   if (!date) return "-";
   return new Intl.DateTimeFormat(undefined, {
@@ -216,6 +285,28 @@ export default function App() {
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [previewByPackage, setPreviewByPackage] = useState<Record<string, number>>({});
   const [previewError, setPreviewError] = useState<string>("");
+  const [testPushTargetMode, setTestPushTargetMode] = useState<TestPushTargetMode>("installationId");
+  const [testPushInstallationId, setTestPushInstallationId] = useState("");
+  const [testPushToken, setTestPushToken] = useState("");
+  const [testPushTitle, setTestPushTitle] = useState("Test Bildirim");
+  const [testPushBody, setTestPushBody] = useState("Admin panel test bildirimi");
+  const [testPushDataInput, setTestPushDataInput] = useState("type=test");
+  const [testPushIncludeNotification, setTestPushIncludeNotification] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
+  const [testPushError, setTestPushError] = useState("");
+  const [deviceFinderLoading, setDeviceFinderLoading] = useState(false);
+  const [deviceFinderError, setDeviceFinderError] = useState("");
+  const [deviceFinderMessage, setDeviceFinderMessage] = useState("");
+  const [deviceFinderSearch, setDeviceFinderSearch] = useState("");
+  const [deviceFinderResults, setDeviceFinderResults] = useState<DeviceFinderItem[]>([]);
+  const [testPushResult, setTestPushResult] = useState<{
+    messageId: string;
+    mode: string;
+    targetType: TestPushTargetMode;
+    installationId?: string | null;
+    packageName?: string | null;
+    locale?: string | null;
+  } | null>(null);
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
 
@@ -286,6 +377,16 @@ export default function App() {
     () => events.find((event) => event.id === selectedId) ?? null,
     [events, selectedId],
   );
+  const filteredDeviceFinderResults = useMemo(() => {
+    const needle = deviceFinderSearch.trim().toLowerCase();
+    if (!needle) return deviceFinderResults;
+    return deviceFinderResults.filter((item) =>
+      item.id.toLowerCase().includes(needle) ||
+      item.packageName.toLowerCase().includes(needle) ||
+      (item.deviceModel ?? "").toLowerCase().includes(needle) ||
+      (item.locale ?? "").toLowerCase().includes(needle),
+    );
+  }, [deviceFinderResults, deviceFinderSearch]);
 
   const isCreateMode = selectedId === null;
 
@@ -420,6 +521,162 @@ export default function App() {
       );
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const useDeviceForTestPush = (device: DeviceFinderItem) => {
+    setTestPushTargetMode("installationId");
+    setTestPushInstallationId(device.id);
+    setDeviceFinderMessage(
+      `Selected ${device.id}${device.packageName ? ` (${device.packageName})` : ""}`,
+    );
+    setTestPushError("");
+    setTestPushResult(null);
+  };
+
+  const lookupDeviceByInstallationId = async () => {
+    const installationId = testPushInstallationId.trim();
+    if (!installationId) {
+      setDeviceFinderError("Enter a Cihaz Kimliği (installationId) first.");
+      return;
+    }
+
+    setDeviceFinderLoading(true);
+    setDeviceFinderError("");
+    setDeviceFinderMessage("");
+    try {
+      const snap = await getDoc(doc(firestore, "devices", installationId));
+      if (!snap.exists()) {
+        setDeviceFinderResults([]);
+        setDeviceFinderError(`No device found for installationId: ${installationId}`);
+        return;
+      }
+
+      const item = parseDeviceFinderItem(snap.id, snap.data());
+      setDeviceFinderResults([item]);
+      setDeviceFinderMessage(
+        `Device found${item.hasValidToken ? "" : " (warning: no valid FCM token on record)"}.`,
+      );
+    } catch (e) {
+      console.error(e);
+      setDeviceFinderError("Failed to lookup device by installationId.");
+    } finally {
+      setDeviceFinderLoading(false);
+    }
+  };
+
+  const loadRecentDevices = async () => {
+    setDeviceFinderLoading(true);
+    setDeviceFinderError("");
+    setDeviceFinderMessage("");
+    try {
+      const snap = await getDocs(
+        query(collection(firestore, "devices"), orderBy("updatedAt", "desc"), limit(30)),
+      );
+      const items = snap.docs.map((d) => parseDeviceFinderItem(d.id, d.data()));
+      setDeviceFinderResults(items);
+      setDeviceFinderMessage(`Loaded ${items.length} recent device record(s).`);
+    } catch (e) {
+      console.error(e);
+      setDeviceFinderError(
+        "Failed to load recent devices. Check Firestore rules or indexes if this persists.",
+      );
+    } finally {
+      setDeviceFinderLoading(false);
+    }
+  };
+
+  const sendTestPushToSingleDevice = async () => {
+    if (!user) return;
+
+    const token = testPushToken.trim();
+    const installationId = testPushInstallationId.trim();
+    const targetValue = testPushTargetMode === "token" ? token : installationId;
+    if (!targetValue) {
+      setTestPushError(
+        testPushTargetMode === "token"
+          ? "Device token is required."
+          : "Cihaz Kimliği (installationId) is required.",
+      );
+      setTestPushResult(null);
+      return;
+    }
+
+    const parsedData = parseTestPushDataInput(testPushDataInput);
+    if (parsedData.error) {
+      setTestPushError(parsedData.error);
+      setTestPushResult(null);
+      return;
+    }
+
+    setTestPushLoading(true);
+    setTestPushError("");
+    setTestPushResult(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/sendTestNotification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          ...(testPushTargetMode === "token" ? { token } : { installationId }),
+          title: testPushTitle,
+          body: testPushBody,
+          data: parsedData.data ?? undefined,
+          useNotificationPayload: testPushIncludeNotification,
+        }),
+      });
+
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to send test push`),
+        );
+      }
+
+      const payload = responseBody as {
+        messageId?: unknown;
+        mode?: unknown;
+        targetType?: unknown;
+        installationId?: unknown;
+        packageName?: unknown;
+        locale?: unknown;
+      };
+      const messageId = typeof payload.messageId === "string" ? payload.messageId : "(unknown)";
+      const mode = typeof payload.mode === "string" ? payload.mode : "data-only";
+      const targetType =
+        payload.targetType === "token" || payload.targetType === "installationId"
+          ? payload.targetType
+          : testPushTargetMode;
+      setTestPushResult({
+        messageId,
+        mode,
+        targetType,
+        installationId:
+          typeof payload.installationId === "string" || payload.installationId === null
+            ? payload.installationId
+            : null,
+        packageName:
+          typeof payload.packageName === "string" || payload.packageName === null
+            ? payload.packageName
+            : null,
+        locale: typeof payload.locale === "string" || payload.locale === null ? payload.locale : null,
+      });
+    } catch (e) {
+      console.error(e);
+      const message = e instanceof Error ? e.message : "Failed to send test push.";
+      setTestPushError(message);
+    } finally {
+      setTestPushLoading(false);
     }
   };
 
@@ -565,12 +822,15 @@ export default function App() {
             </label>
 
             <label>
-              Topic (optional)
+              Topic (optional, metadata-only for now)
               <input
                 value={form.topic}
                 onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
                 placeholder="dini-bildirim"
               />
+              <small className="muted">
+                Scheduler currently uses timezone/device targeting. Topic is stored for future use / manual sends.
+              </small>
             </label>
 
             <label>
@@ -676,6 +936,192 @@ export default function App() {
                         ))}
                       </ul>
                     )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="subsection">
+            <div className="test-push-box">
+              <div className="device-preview-header">
+                <strong>Single-device test push</strong>
+                <button
+                  type="button"
+                  onClick={sendTestPushToSingleDevice}
+                  disabled={testPushLoading}
+                >
+                  {testPushLoading ? "Sending…" : "Send test push"}
+                </button>
+              </div>
+
+              <p className="muted device-preview-note">
+                Sends a test push to exactly one device via admin-only Cloud Function (FCM token or
+                Cihaz Kimliği / installationId).
+              </p>
+
+              <div className="test-push-grid">
+                <label>
+                  Target type
+                  <select
+                    value={testPushTargetMode}
+                    onChange={(e) =>
+                      setTestPushTargetMode(e.target.value as TestPushTargetMode)
+                    }
+                  >
+                    <option value="installationId">Cihaz Kimliği (installationId)</option>
+                    <option value="token">FCM device token</option>
+                  </select>
+                </label>
+
+                <label className="test-push-token">
+                  {testPushTargetMode === "token"
+                    ? "FCM device token"
+                    : "Cihaz Kimliği (installationId)"}
+                  <textarea
+                    rows={3}
+                    value={testPushTargetMode === "token" ? testPushToken : testPushInstallationId}
+                    onChange={(e) =>
+                      testPushTargetMode === "token"
+                        ? setTestPushToken(e.target.value)
+                        : setTestPushInstallationId(e.target.value)
+                    }
+                    placeholder={
+                      testPushTargetMode === "token"
+                        ? "FCM registration token"
+                        : "Uygulama içindeki 'Cihaz Kimliği' değeri"
+                    }
+                  />
+                </label>
+
+                <div className="device-finder-box">
+                  <div className="device-finder-header">
+                    <strong>Device finder (Firestore `devices`)</strong>
+                    <div className="device-finder-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={lookupDeviceByInstallationId}
+                        disabled={deviceFinderLoading}
+                      >
+                        {deviceFinderLoading ? "Checking…" : "Find by Cihaz Kimliği"}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={loadRecentDevices}
+                        disabled={deviceFinderLoading}
+                      >
+                        {deviceFinderLoading ? "Loading…" : "Load recent devices"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <label>
+                    Filter results
+                    <input
+                      value={deviceFinderSearch}
+                      onChange={(e) => setDeviceFinderSearch(e.target.value)}
+                      placeholder="installationId / package / model / locale"
+                    />
+                  </label>
+
+                  {deviceFinderError && <p className="inline-error">{deviceFinderError}</p>}
+                  {deviceFinderMessage && !deviceFinderError && (
+                    <p className="muted">{deviceFinderMessage}</p>
+                  )}
+
+                  {filteredDeviceFinderResults.length > 0 && (
+                    <div className="device-finder-list">
+                      {filteredDeviceFinderResults.map((device) => (
+                        <div key={device.id} className="device-finder-item">
+                          <div className="device-finder-item-main">
+                            <code>{device.id}</code>
+                            <span>
+                              {device.packageName || "(no package)"} · {device.locale || "-"} ·{" "}
+                              {device.timezone || "-"}
+                            </span>
+                            <small>
+                              {device.deviceModel || "Unknown device"} · v
+                              {device.appVersion || "?"} · updated {formatDateTime(device.updatedAt)}
+                            </small>
+                            {!device.hasValidToken && (
+                              <small className="inline-error">
+                                Warning: record has no valid FCM token
+                              </small>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="secondary"
+                            onClick={() => useDeviceForTestPush(device)}
+                          >
+                            Use this device
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <label>
+                  Title
+                  <input
+                    value={testPushTitle}
+                    onChange={(e) => setTestPushTitle(e.target.value)}
+                    placeholder="Test Bildirim"
+                  />
+                </label>
+
+                <label>
+                  Body
+                  <textarea
+                    rows={3}
+                    value={testPushBody}
+                    onChange={(e) => setTestPushBody(e.target.value)}
+                    placeholder="Admin panel test bildirimi"
+                  />
+                </label>
+
+                <label>
+                  Data payload (key=value per line)
+                  <textarea
+                    rows={4}
+                    value={testPushDataInput}
+                    onChange={(e) => setTestPushDataInput(e.target.value)}
+                    placeholder={"type=test\nsource=admin-panel"}
+                  />
+                </label>
+
+                <label className="checkbox-row test-push-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={testPushIncludeNotification}
+                    onChange={(e) => setTestPushIncludeNotification(e.target.checked)}
+                  />
+                  <span>Include notification payload (otherwise data-only)</span>
+                  <small>
+                    Data-only is recommended for in-app persistence checks. Notification+data tests system UI behavior.
+                  </small>
+                </label>
+              </div>
+
+              {testPushError && <p className="inline-error">{testPushError}</p>}
+              {testPushResult && !testPushError && (
+                <div className="test-push-result">
+                  <span>Sent successfully</span>
+                  <strong>{testPushResult.mode}</strong>
+                  <div>
+                    target={testPushResult.targetType}
+                    {testPushResult.installationId ? ` · installationId=${testPushResult.installationId}` : ""}
+                  </div>
+                  {(testPushResult.packageName || testPushResult.locale) && (
+                    <div>
+                      {testPushResult.packageName ? `pkg=${testPushResult.packageName}` : "pkg=-"}
+                      {" · "}
+                      {testPushResult.locale ? `locale=${testPushResult.locale}` : "locale=-"}
+                    </div>
+                  )}
+                  <code>{testPushResult.messageId}</code>
                 </div>
               )}
             </div>

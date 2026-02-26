@@ -356,6 +356,113 @@ textarea {
   gap: 12px;
 }
 
+.test-push-box {
+  border: 1px solid #e0e8f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafcff;
+}
+
+.test-push-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.test-push-grid label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.test-push-token {
+  grid-column: 1 / -1;
+}
+
+.device-finder-box {
+  grid-column: 1 / -1;
+  border: 1px solid #e0e8f2;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbff;
+  display: grid;
+  gap: 10px;
+}
+
+.device-finder-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.device-finder-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.device-finder-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.device-finder-item {
+  border: 1px solid #dde7f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.device-finder-item-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.device-finder-item-main code {
+  overflow-wrap: anywhere;
+}
+
+.device-finder-item-main span,
+.device-finder-item-main small {
+  color: #5b687b;
+}
+
+.test-push-checkbox {
+  grid-column: 1 / -1;
+  background: #f6f9fe;
+}
+
+.test-push-checkbox span {
+  font-weight: 600;
+}
+
+.test-push-result {
+  margin-top: 10px;
+  border: 1px solid #cde8d8;
+  background: #eefaf3;
+  color: #195f32;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.test-push-result code {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  padding: 4px 6px;
+  overflow-wrap: anywhere;
+}
+
 .preview-cards {
   display: grid;
   gap: 8px;
@@ -420,7 +527,8 @@ textarea {
   .locale-grid,
   .preview-grid,
   .form-grid,
-  .checkbox-grid {
+  .checkbox-grid,
+  .test-push-grid {
     grid-template-columns: 1fr;
   }
 
@@ -431,5 +539,10 @@ textarea {
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .device-finder-header,
+  .device-finder-item {
+    flex-direction: column;
   }
 }
