@@ -11,12 +11,6 @@ on:
         description: "Pages branch/environment name (e.g. production, preview)"
         required: false
         default: "production"
-  push:
-    branches:
-      - main
-    paths:
-      - 'admin-notifications/**'
-      - '.github/workflows/deploy-admin-notifications.yml'
 
 concurrency:
   group: ${{ format('ci-admin-notifications-pages-{0}', github.ref) }}
@@ -85,4 +79,3 @@ jobs:
           npx wrangler@4 pages deploy admin-notifications/dist \
             --project-name "${PAGES_PROJECT}" \
             --branch "${PAGES_BRANCH}"
-
