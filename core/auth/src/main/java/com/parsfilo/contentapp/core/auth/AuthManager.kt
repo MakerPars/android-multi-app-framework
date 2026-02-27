@@ -416,7 +416,22 @@ class AuthManager @Inject constructor(
     }
 
     private fun resolveServerClientId(): String {
-        return context.getString(R.string.web_client_id).trim()
+        val fromLocalProperties = runCatching {
+            context.getString(R.string.web_client_id).trim()
+        }.getOrDefault("")
+        if (fromLocalProperties.isNotBlank()) return fromLocalProperties
+
+        // Fallback to google-services generated resource when WEB_CLIENT_ID is missing.
+        val fromGoogleServices = optionalStringResource("default_web_client_id")
+        if (fromGoogleServices.isNotBlank()) return fromGoogleServices
+
+        return ""
+    }
+
+    private fun optionalStringResource(name: String): String {
+        val resId = context.resources.getIdentifier(name, "string", context.packageName)
+        if (resId == 0) return ""
+        return runCatching { context.getString(resId).trim() }.getOrDefault("")
     }
 
     private suspend fun clearCredentialStateOnce(
