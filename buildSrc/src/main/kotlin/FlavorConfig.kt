@@ -18,15 +18,14 @@ object AppFlavors {
         FlavorConfig("insirahsuresi", "İnşirah Sesli", "com.parsfilo.insirahsuresi", "insirahsuresi.mp3"),
         FlavorConfig("ismiazamduasi", "İsmi Azam Sesli", "com.parsfilo.ismiazamduasi", "ismiazamduasi.mp3"),
         FlavorConfig("kenzularsduasi", "Kenzül Arş Sesli", "com.parsfilo.kenzularsduasi", "kenzularsduasi.mp3"),
-        FlavorConfig("kuran_kerim", "Kuran-ı Kerim", "com.parsfilo.kuran_kerim", audioFileName = null),
         FlavorConfig("kible", "Kıble", "com.parsfilo.kible"),
+        FlavorConfig("kuran_kerim", "Kuran-ı Kerim", "com.parsfilo.kuran_kerim", audioFileName = null),
         FlavorConfig("mucizedualar", "Mucize Dualar", "com.parsfilo.mucizedualar"),
-        FlavorConfig("namazvakitleri", "Namaz Vakitleri", "com.parsfilo.namazvakitleri", isPrayerTimesFlavor = true),
         FlavorConfig("namazsurelerivedualarsesli", "Namaz Sureleri Sesli", "com.parsfilo.namazsurelerivedualarsesli", "fatiha.mp3"),
-        FlavorConfig("vakiasuresi", "Vakıa Sesli", "com.parsfilo.vakiasuresi", "vakiasuresi.mp3"),
+        FlavorConfig("namazvakitleri", "Namaz Vakitleri", "com.parsfilo.namazvakitleri", isPrayerTimesFlavor = true),
         FlavorConfig("nazarayeti", "Nazar Ayeti", "com.parsfilo.nazarayeti", "nazarayeti.mp3"),
+        FlavorConfig("vakiasuresi", "Vakıa Sesli", "com.parsfilo.vakiasuresi", "vakiasuresi.mp3"),
         FlavorConfig("yasinsuresi", "Yasin Sesli", "com.parsfilo.yasinsuresi", "yasinsuresi.mp3"),
         FlavorConfig("zikirmatik", "Zikirmatik", "com.parsfilo.zikirmatik")
     )
 }
-
