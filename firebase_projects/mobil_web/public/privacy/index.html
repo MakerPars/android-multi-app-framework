@@ -2,112 +2,235 @@
 <html lang="tr">
 
 <head>
-    <meta charset="utf-8">
-    <title>Gizlilik Politikası</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy | Gizlilik Politikası</title>
+  <meta name="description" content="MobilDev privacy policy for Android applications.">
+  <link rel="canonical" href="https://mobildev.site/privacy/">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --accent: #1d4ed8;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 920px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .lang-switch {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .lang-btn {
+      border: 0;
+      background: #fff;
+      color: var(--muted);
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    h1, h2, h3 {
+      margin-top: 1.2em;
+      margin-bottom: 0.4em;
+      line-height: 1.3;
+    }
+    h1 { margin-top: 0; }
+    p, li { color: #1e293b; }
+    code {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: 0.92em;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0 0 14px;
+    }
+    [data-lang] { display: none; }
+    [data-lang].visible { display: block; }
+  </style>
 </head>
 
 <body>
+  <main class="container">
+    <section class="card">
+      <div class="header">
+        <h1 id="page-title">Gizlilik Politikası</h1>
+        <div class="lang-switch" role="group" aria-label="Language selector">
+          <button id="btn-tr" class="lang-btn" data-lang-target="tr" type="button">TR</button>
+          <button id="btn-en" class="lang-btn" data-lang-target="en" type="button">EN</button>
+        </div>
+      </div>
 
-    <h1>Gizlilik Politikası</h1>
+      <p id="last-updated" class="meta"></p>
 
-    <p>Bu gizlilik politikası, mobil uygulamalarımızın kullanıcılarından hangi verilerin, hangi amaçlarla toplandığını
-        ve işlendiğini açıklar.</p>
+      <article data-lang="tr">
+        <p>Bu gizlilik politikası, mobil uygulamalarımızın kullanıcılarından hangi verilerin, hangi amaçlarla toplandığını ve işlendiğini açıklar.</p>
+        <h2>1. Toplanan Veriler</h2>
+        <p>Uygulamalarımız aşağıdaki veri türlerini toplayabilir:</p>
+        <ul>
+          <li>Cihaz bilgileri (cihaz modeli, işletim sistemi sürümü, uygulama sürümü)</li>
+          <li>Reklam kimliği (Advertising ID)</li>
+          <li>Uygulama kullanım ve etkileşim verileri</li>
+          <li>Hata ve çökme kayıtları</li>
+          <li>Push bildirim kayıt/senkronizasyon bilgileri (ör. installation ID, push token)</li>
+        </ul>
+        <p>Konum verisi yalnızca kullanıcı açıkça izin verdiğinde ve uygulama işlevi gerektirdiğinde kullanılır.</p>
 
-    <h2>1. Toplanan Veriler</h2>
-    <p>Uygulamalarımız aşağıdaki veri türlerini toplayabilir:</p>
-    <ul>
-        <li>Cihaz bilgileri (cihaz modeli, işletim sistemi sürümü, uygulama sürümü)</li>
-        <li>Reklam kimliği (Advertising ID)</li>
-        <li>Uygulama kullanım ve etkileşim verileri</li>
-        <li>Hata ve çökme kayıtları</li>
-    </ul>
+        <h2>2. Reklamlar (Google AdMob)</h2>
+        <p>Google AdMob reklam hizmeti kullanılmaktadır. Reklam sunumu, ölçümleme, sıklık sınırlandırması ve sahtekarlık önleme amaçlarıyla belirli sinyaller işlenebilir.</p>
+        <p>Yetkili satıcılar <code>https://mobildev.site/app-ads.txt</code> dosyasında listelenir.</p>
 
-    <p>Uygulamalarımız <strong>konum verisini yalnızca kullanıcı açıkça izin verdiğinde</strong> ve uygulama işlevi
-        gerektirdiğinde kullanır. Konum izni verilmediği sürece konum verisi toplanmaz.</p>
+        <h2>3. Analitik ve Altyapı (Firebase / Google Cloud)</h2>
+        <p>Uygulamalar analiz, performans ve hata ayıklama için Firebase/Google Cloud hizmetlerini kullanabilir. Veriler mümkün oldukça anonim veya toplu olarak işlenir.</p>
 
-    <h2>2. Reklamlar (Google AdMob)</h2>
-    <p>Uygulamalarımızda Google AdMob reklam hizmeti kullanılmaktadır. AdMob; reklamların sunulması, ölçülmesi, sıklık
-        sınırlandırması ve sahtekârlık önleme amaçlarıyla reklam kimliği ve kullanım sinyallerini işleyebilir.</p>
+        <h2>4. Onay, Privacy Options ve Uygulamalar Arası Senkronizasyon</h2>
+        <p>EEA/Birleşik Krallık/İsviçre bölgelerinde kişiselleştirilmiş reklamlar yalnızca gerekli onay alındığında gösterilir. Onay tercihleri UMP (User Messaging Platform) ile yönetilir.</p>
+        <p>Bazı uygulamalar aynı AdMob rıza grubunda olabilir. Uygun koşullarda tercih senkronizasyonu için Android App Set ID kullanılabilir. App Set ID alınamazsa uygulama çalışmaya devam eder, senkronizasyon tutarlılığı azalabilir.</p>
 
-    <p>Geliştirici web sitemizde Google tarafından yetkilendirilmiş satıcıları bildiren <code>app-ads.txt</code> dosyası
-        yayınlanmaktadır.</p>
+        <h2>5. Veri Paylaşımı</h2>
+        <p>Veriler aşağıdaki amaçlarla hizmet sağlayıcılarla paylaşılabilir:</p>
+        <ul>
+          <li>Reklam gösterimi ve ölçümü</li>
+          <li>Uygulama performansı ve güvenlik</li>
+          <li>Hata tespiti ve operasyonel izleme</li>
+        </ul>
 
-    <h2>3. Analitik ve Altyapı Hizmetleri (Firebase)</h2>
-    <p>Uygulamalarımız; analiz, performans ölçümü ve hata ayıklama amaçlarıyla Firebase hizmetlerini kullanabilir. Bu
-        kapsamda anonim veya toplu kullanım verileri işlenebilir.</p>
+        <h2>6. Veri Saklama</h2>
+        <p>Veriler, işleme amaçları için gerekli süre boyunca ve yasal yükümlülükler kapsamında saklanır.</p>
 
-    <p>Toplanan veriler, Google Play Console üzerinden beyan edilen <em>Data Safety</em> bilgileriyle uyumludur.</p>
+        <h2>7. Çocukların Gizliliği</h2>
+        <p>Çocuklara yönelik uygulamalarda reklam/veri ayarları Google Play ve AdMob politikalarına uygun yapılandırılır.</p>
 
-    <h2>4. Kişiselleştirilmiş Reklamlar ve Onay</h2>
-    <p>Avrupa Ekonomik Alanı (EEA), Birleşik Krallık ve İsviçre’de bulunan kullanıcılar için, kişiselleştirilmiş
-        reklamlar yalnızca kullanıcı onayı alındıktan sonra gösterilir. Kullanıcı tercihleri, Google tarafından sağlanan
-        onay mekanizmaları aracılığıyla yönetilir.</p>
+        <h2>8. Kullanıcı Hakları</h2>
+        <p>Erişim/silme talepleri için: <strong>support@mobildev.site</strong></p>
 
-    <h3>4.1 Rıza grubu (consent group) ve uygulamalar arası onay senkronizasyonu</h3>
-    <p>Bazı uygulamalarımız Google AdMob <em>Privacy &amp; messaging</em> altında aynı rıza grubuna dahil edilebilir.
-        Bu durumda, kullanıcının reklam/onay tercihleri Google User Messaging Platform (UMP SDK) üzerinden yönetilir ve
-        uygun olduğu durumlarda aynı geliştiriciye ait uygulamalar arasında senkronize edilebilir.</p>
+        <h2>9. Değişiklikler</h2>
+        <p>Politika güncellenebilir; en güncel sürüm her zaman bu URL'de yayınlanır.</p>
+      </article>
 
-    <p>Bu senkronizasyon için Android cihazlarda Google Play Services tarafından sağlanan <strong>App Set ID</strong>
-        kullanılabilir. App Set ID, reklam onayı tercihlerinin aynı geliştirici uygulamaları arasında daha tutarlı
-        uygulanmasına yardımcı olmak için kullanılır. App Set ID alınamazsa uygulama çalışmaya devam eder; yalnızca
-        uygulamalar arası onay senkronizasyonu her durumda mümkün olmayabilir.</p>
+      <article data-lang="en">
+        <p>This privacy policy explains what data is collected from users of our mobile applications, for which purposes, and how it is processed.</p>
+        <h2>1. Data We May Collect</h2>
+        <p>Our applications may collect:</p>
+        <ul>
+          <li>Device information (model, OS version, app version)</li>
+          <li>Advertising ID</li>
+          <li>App usage and interaction data</li>
+          <li>Error and crash diagnostics</li>
+          <li>Push registration/sync data (for example installation ID, push token)</li>
+        </ul>
+        <p>Location data is used only when the user explicitly grants permission and the feature requires it.</p>
 
-    <p>Rıza grubu kapsamı, yayınlanan onay mesajları (ör. GDPR / ABD eyaletleri mesajları) ve uygunluk durumu AdMob
-        panelindeki yapılandırmalara bağlıdır. Bu politika, ilgili uygulamalarda kullanılan reklam ve onay akışlarını
-        genel çerçevede açıklar.</p>
+        <h2>2. Ads (Google AdMob)</h2>
+        <p>We use Google AdMob for advertising. Certain signals may be processed for ad delivery, measurement, frequency capping, and fraud prevention.</p>
+        <p>Authorized sellers are listed at <code>https://mobildev.site/app-ads.txt</code>.</p>
 
-    <h3>4.2 Rıza grubu kapsamında yönetilebilen uygulamalar (güncel ürün portföyü)</h3>
-    <p>Aşağıdaki Android uygulamalarımız, AdMob rıza grubu yapılandırmalarında birlikte yönetilebilir (nihai kapsam
-        AdMob panelindeki aktif rıza grubu seçimine göre değişebilir):</p>
-    <ul>
-        <li>Amenerrasulu Sesli — <code>com.parsfilo.amenerrasulu</code></li>
-        <li>Ayetel Kursi Sesli — <code>com.parsfilo.ayetelkursi</code></li>
-        <li>Bereket Duası — <code>com.parsfilo.bereketduasi</code></li>
-        <li>Esmaül Hüsna — <code>com.parsfilo.esmaulhusna</code></li>
-        <li>Fetih Suresi Sesli — <code>com.parsfilo.fetihsuresi</code></li>
-        <li>İmsakiye — <code>com.parsfilo.imsakiye</code></li>
-        <li>İnşirah Sesli — <code>com.parsfilo.insirahsuresi</code></li>
-        <li>İsmi Azam Sesli — <code>com.parsfilo.ismiazamduasi</code></li>
-        <li>Kenzül Arş Sesli — <code>com.parsfilo.kenzularsduasi</code></li>
-        <li>Kuran-ı Kerim — <code>com.parsfilo.kuran_kerim</code></li>
-        <li>Kıble — <code>com.parsfilo.kible</code></li>
-        <li>Mucize Dualar — <code>com.parsfilo.mucizedualar</code></li>
-        <li>Namaz Vakitleri — <code>com.parsfilo.namazvakitleri</code></li>
-        <li>Namaz Sureleri Sesli — <code>com.parsfilo.namazsurelerivedualarsesli</code></li>
-        <li>Vakıa Sesli — <code>com.parsfilo.vakiasuresi</code></li>
-        <li>Nazar Ayeti — <code>com.parsfilo.nazarayeti</code></li>
-        <li>Yasin Sesli — <code>com.parsfilo.yasinsuresi</code></li>
-        <li>Zikirmatik — <code>com.parsfilo.zikirmatik</code></li>
-    </ul>
+        <h2>3. Analytics and Infrastructure (Firebase / Google Cloud)</h2>
+        <p>Our apps may use Firebase/Google Cloud services for analytics, performance monitoring, and crash diagnostics. Data is processed in aggregated or pseudonymized form where possible.</p>
 
-    <h2>5. Veri Paylaşımı</h2>
-    <p>Toplanan veriler yalnızca aşağıdaki amaçlarla üçüncü taraf hizmet sağlayıcılarla paylaşılabilir:</p>
-    <ul>
-        <li>Reklam gösterimi ve ölçümü</li>
-        <li>Uygulama performansının iyileştirilmesi</li>
-        <li>Hata tespiti ve güvenliğin sağlanması</li>
-    </ul>
+        <h2>4. Consent, Privacy Options, and Cross-App Sync</h2>
+        <p>For users in the EEA/UK/Switzerland, personalized ads are shown only after required consent is obtained. Consent is managed via UMP (User Messaging Platform).</p>
+        <p>Some apps may be part of the same AdMob consent group. Where supported, Android App Set ID may be used to improve cross-app consent consistency. If App Set ID is unavailable, the app still works, but consent synchronization may be limited.</p>
 
-    <h2>6. Veri Saklama</h2>
-    <p>Veriler, işleme amaçları için gerekli olduğu sürece ve yasal yükümlülükler kapsamında saklanır.</p>
+        <h2>5. Data Sharing</h2>
+        <p>Data may be shared with service providers for:</p>
+        <ul>
+          <li>Ad serving and measurement</li>
+          <li>App performance and security</li>
+          <li>Error diagnostics and operations monitoring</li>
+        </ul>
 
-    <h2>7. Çocukların Gizliliği</h2>
-    <p>Uygulamalar çocuklara yönelik olarak sunuluyorsa, reklam ve veri işleme ayarları Google Play ve AdMob
-        politikalarına uygun şekilde yapılandırılır.</p>
+        <h2>6. Data Retention</h2>
+        <p>Data is retained only as long as needed for the processing purposes and legal obligations.</p>
 
-    <h2>8. Kullanıcı Hakları</h2>
-    <p>Kullanıcılar, verilerine erişim veya veri silme taleplerini aşağıdaki iletişim adresi üzerinden iletebilir.</p>
+        <h2>7. Children's Privacy</h2>
+        <p>For child-directed apps, ad and data handling settings are configured in line with Google Play and AdMob requirements.</p>
 
-    <h2>9. Değişiklikler</h2>
-    <p>Bu gizlilik politikası zaman zaman güncellenebilir. Güncel sürüm her zaman bu sayfada yayınlanır.</p>
+        <h2>8. User Rights</h2>
+        <p>For access/deletion requests, contact: <strong>support@mobildev.site</strong></p>
 
-    <h2>İletişim</h2>
-    <p>
-        E-posta: <strong>support@mobildev.site</strong>
-    </p>
+        <h2>9. Updates</h2>
+        <p>This policy may be updated from time to time. The latest version is always available at this URL.</p>
+      </article>
+    </section>
+  </main>
 
+  <script>
+    (function () {
+      const PARAM = "lang";
+      const supported = { tr: true, en: true };
+      const browser = (navigator.language || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+      const url = new URL(window.location.href);
+      const fromQuery = (url.searchParams.get(PARAM) || "").toLowerCase();
+      const initial = supported[fromQuery] ? fromQuery : browser;
+
+      const sections = document.querySelectorAll("[data-lang]");
+      const trBtn = document.getElementById("btn-tr");
+      const enBtn = document.getElementById("btn-en");
+      const title = document.getElementById("page-title");
+      const updated = document.getElementById("last-updated");
+
+      function setLang(lang, updateQuery) {
+        sections.forEach((el) => {
+          el.classList.toggle("visible", el.getAttribute("data-lang") === lang);
+        });
+        trBtn.classList.toggle("active", lang === "tr");
+        enBtn.classList.toggle("active", lang === "en");
+        document.documentElement.lang = lang;
+        if (lang === "en") {
+          title.textContent = "Privacy Policy";
+          updated.textContent = "Last updated: February 27, 2026";
+        } else {
+          title.textContent = "Gizlilik Politikası";
+          updated.textContent = "Son güncelleme: 27 Şubat 2026";
+        }
+        if (updateQuery) {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set(PARAM, lang);
+          history.replaceState(null, "", currentUrl.toString());
+        }
+      }
+
+      trBtn.addEventListener("click", function () { setLang("tr", true); });
+      enBtn.addEventListener("click", function () { setLang("en", true); });
+      setLang(initial, false);
+    })();
+  </script>
 </body>
 
 </html>
