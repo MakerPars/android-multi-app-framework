@@ -20,7 +20,6 @@ jobs:
     outputs:
       has_code: ${{ steps.setvars.outputs.has_code }}
       flavours_json: ${{ steps.setvars.outputs.flavours_json }}
-      all_flavours_json: ${{ steps.setvars.outputs.all_flavours_json }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -116,8 +115,6 @@ jobs:
             echo "printFlavors returned empty list."
             exit 1
           fi
-          echo "all_flavours_json=$ALL_FLAVOURS_JSON" >> "$GITHUB_OUTPUT"
-
           mapfile -t ALL_FLAVOURS < <(
             echo "$ALL_FLAVOURS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
           )
@@ -196,9 +193,29 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
 
       - name: Run Unit Tests
+        env:
+          FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}
         run: |
+          set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew testDebugUnitTest --stacktrace --no-daemon --max-workers=2
+          mapfile -t FLAVOURS < <(
+            echo "$FLAVOURS_JSON" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'
+          )
+
+          TASKS=()
+          for flavour in "${FLAVOURS[@]}"; do
+            [ -z "$flavour" ] && continue
+            FLAVOUR_CAP="$(tr '[:lower:]' '[:upper:]' <<< "${flavour:0:1}")${flavour:1}"
+            TASKS+=("test${FLAVOUR_CAP}DebugUnitTest")
+          done
+
+          if [ "${#TASKS[@]}" -eq 0 ]; then
+            echo "No changed flavors detected for unit tests."
+            exit 0
+          fi
+
+          echo "Running unit test tasks: ${TASKS[*]}"
+          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
 
       - name: Publish Test Results
         uses: mikepenz/action-junit-report@v4

@@ -81,6 +81,7 @@ jobs:
       - name: Export resolved flavors env
         run: |
           echo "RESOLVED_FLAVORS_JSON=${{ steps.resolve.outputs.resolved_json }}" >> "$GITHUB_ENV"
+          echo "RESOLVED_FLAVORS_CSV=${{ steps.resolve.outputs.resolved_csv }}" >> "$GITHUB_ENV"
 
       - name: Validate CI apps catalog (strict for publish flavors)
         if: github.event.inputs.publish_to_play == 'true'
@@ -221,6 +222,8 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      - uses: gradle/actions/setup-gradle@v5
+
       - name: Download AAB Artifacts
         uses: actions/download-artifact@v7
         with:
@@ -322,7 +325,34 @@ jobs:
           done
 
           echo "Publishing: ${TASKS[*]}"
-          ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2
+          max_attempts=3
+          attempt=1
+          delay_seconds=20
+          while true; do
+            log_file="$(mktemp)"
+            set +e
+            ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then
+              rm -f "$log_file"
+              break
+            fi
+            if ! grep -Eiq "Connection reset|SocketException|Read timed out|timed out|HTTP 429|HTTP 5[0-9]{2}" "$log_file"; then
+              echo "Publish failed with non-transient error. Not retrying."
+              rm -f "$log_file"
+              exit "$status"
+            fi
+            rm -f "$log_file"
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Publish failed after ${max_attempts} attempts."
+              exit "$status"
+            fi
+            echo "Transient publish error detected. Retrying in ${delay_seconds}s (attempt ${attempt}/${max_attempts})..."
+            sleep "$delay_seconds"
+            attempt=$((attempt + 1))
+            delay_seconds=$((delay_seconds * 2))
+          done
 
       - name: Cleanup Secrets
         if: always()
