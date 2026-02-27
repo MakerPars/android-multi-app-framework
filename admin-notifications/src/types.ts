@@ -10,6 +10,7 @@ export interface ScheduledEventRecord {
   type: string;
   status: EventStatus;
   localDeliveryTime: string;
+  targetTimezones?: string[];
   topic: string;
   packages: string[];
   title: Record<LocaleKey, string>;
@@ -30,6 +31,7 @@ export interface ScheduledEventForm {
   type: string;
   status: EventStatus;
   localDeliveryTime: string;
+  targetTimezonesInput: string;
   topic: string;
   packages: string[];
   scheduleMode: ScheduleMode;
@@ -63,6 +65,7 @@ export const DEFAULT_FORM: ScheduledEventForm = {
   type: "campaign",
   status: "scheduled",
   localDeliveryTime: "21:00",
+  targetTimezonesInput: "",
   topic: "",
   packages: ["*"],
   scheduleMode: "daily",
@@ -71,4 +74,3 @@ export const DEFAULT_FORM: ScheduledEventForm = {
   title: { tr: "", en: "", de: "" },
   body: { tr: "", en: "", de: "" },
 };
-

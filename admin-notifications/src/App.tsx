@@ -110,6 +110,9 @@ function parseEvent(docId: string, raw: DocumentData): ScheduledEventRecord {
     status: parseEventStatus(raw.status),
     localDeliveryTime:
       typeof raw.localDeliveryTime === "string" ? raw.localDeliveryTime : "21:00",
+    targetTimezones: Array.isArray(raw.targetTimezones)
+      ? raw.targetTimezones.filter((x: unknown): x is string => typeof x === "string")
+      : undefined,
     topic: typeof raw.topic === "string" ? raw.topic : "",
     packages: Array.isArray(raw.packages)
       ? raw.packages.filter((x: unknown): x is string => typeof x === "string")
@@ -150,6 +153,7 @@ function formFromRecord(record: ScheduledEventRecord): ScheduledEventForm {
     type: record.type,
     status: record.status,
     localDeliveryTime: record.localDeliveryTime,
+    targetTimezonesInput: (record.targetTimezones ?? []).join(", "),
     topic: record.topic,
     packages: record.packages.length > 0 ? record.packages : ["*"],
     scheduleMode,
@@ -161,11 +165,13 @@ function formFromRecord(record: ScheduledEventRecord): ScheduledEventForm {
 }
 
 function buildPayload(form: ScheduledEventForm, user: User, isCreate: boolean) {
+  const targetTimezones = parseTargetTimezonesInput(form.targetTimezonesInput);
   const base: Record<string, unknown> = {
     name: form.name.trim(),
     type: form.type.trim(),
     status: form.status,
     localDeliveryTime: form.localDeliveryTime.trim(),
+    targetTimezones: targetTimezones.length > 0 ? targetTimezones : null,
     topic: form.topic.trim() || null,
     packages: normalizePackages(form.packages),
     title: {
@@ -209,6 +215,17 @@ function normalizePackages(packages: string[]): string[] {
   return [...new Set(packages)].sort();
 }
 
+function parseTargetTimezonesInput(input: string): string[] {
+  return Array.from(
+    new Set(
+      input
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
 function validateForm(form: ScheduledEventForm): string | null {
   if (!form.name.trim()) return "Event name is required.";
   if (!form.type.trim()) return "Type is required.";
@@ -222,6 +239,11 @@ function validateForm(form: ScheduledEventForm): string | null {
   if (!form.body.tr.trim()) return "TR body is required.";
   if (normalizePackages(form.packages).length === 0) {
     return "At least one target package or '*' is required.";
+  }
+  const targetTimezones = parseTargetTimezonesInput(form.targetTimezonesInput);
+  const invalidTimezone = targetTimezones.find((item) => !item.includes("/"));
+  if (invalidTimezone) {
+    return `Invalid timezone format: ${invalidTimezone}`;
   }
   return null;
 }
@@ -1109,6 +1131,18 @@ export default function App() {
                 value={form.localDeliveryTime}
                 onChange={(e) => setForm((p) => ({ ...p, localDeliveryTime: e.target.value }))}
               />
+            </label>
+
+            <label>
+              Target timezones (optional, comma-separated)
+              <input
+                value={form.targetTimezonesInput}
+                onChange={(e) => setForm((p) => ({ ...p, targetTimezonesInput: e.target.value }))}
+                placeholder="Europe/Istanbul, Europe/Berlin"
+              />
+              <small className="muted">
+                Leave empty to send globally using current timezone matching behavior.
+              </small>
             </label>
 
             <label>

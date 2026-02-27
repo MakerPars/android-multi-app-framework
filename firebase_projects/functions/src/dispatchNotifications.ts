@@ -13,6 +13,7 @@ interface ScheduledEvent {
     date?: string;             // "2026-02-27" (tek seferlik) veya undefined (tekrarlayan)
     recurrence?: string;       // "weekly:friday", "daily", undefined
     localDeliveryTime: string; // "21:00"
+    targetTimezones?: string[]; // boşsa global timezone seti
     topic?: string;            // "dini-bildirim"
     packages: string[];        // ["*"] veya ["com.parsfilo.yasinsuresi"]
     title: Record<string, string>;  // { "tr": "...", "en": "...", "ar": "..." }
@@ -90,9 +91,11 @@ async function processEvent(
     const now = new Date();
     const effectiveEvent = await resetSentTimezonesIfPeriodElapsed(db, eventId, event, now);
     const sentTimezones = effectiveEvent.sentTimezones ?? [];
+    const targetTimezones = normalizeTargetTimezones(effectiveEvent.targetTimezones);
 
     // 2. Hedef teslimat saatine uyan timezone'ları bul
-    const matchingTimezones = getMatchingTimezones(effectiveEvent.localDeliveryTime, now);
+    const matchingTimezones = getMatchingTimezones(effectiveEvent.localDeliveryTime, now)
+        .filter((tz) => targetTimezones.length === 0 || targetTimezones.includes(tz));
 
     // Daha önce gönderilenleri çıkar
     const newTimezones = matchingTimezones.filter(
@@ -384,4 +387,16 @@ async function cleanupInvalidTokens(
     if (totalCleaned > 0) {
         logger.info(`Cleaned up ${totalCleaned} invalid device(s).`);
     }
+}
+
+function normalizeTargetTimezones(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return Array.from(
+        new Set(
+            value
+                .filter((item): item is string => typeof item === "string")
+                .map((item) => item.trim())
+                .filter((item) => item.length > 0),
+        ),
+    );
 }
