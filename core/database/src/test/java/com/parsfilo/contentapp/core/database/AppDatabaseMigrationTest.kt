@@ -33,6 +33,33 @@ class AppDatabaseMigrationTest {
         assertThat(queryTableExists(db, "quran_bookmarks")).isTrue()
     }
 
+    @Test
+    fun `migration 4 to 5 repairs legacy quran_bookmarks schema and removes savedAt index`() {
+        val db = createDatabase()
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `quran_bookmarks` (" +
+                "`suraNumber` INTEGER NOT NULL, " +
+                "`ayahNumber` INTEGER NOT NULL, " +
+                "`savedAt` INTEGER NOT NULL, " +
+                "`note` TEXT, " +
+                "PRIMARY KEY(`suraNumber`, `ayahNumber`))"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_quran_bookmarks_savedAt` " +
+                "ON `quran_bookmarks` (`savedAt`)"
+        )
+        db.execSQL(
+            "INSERT INTO `quran_bookmarks` (`suraNumber`, `ayahNumber`, `savedAt`, `note`) " +
+                "VALUES (1, 1, 1000, NULL)"
+        )
+
+        AppDatabase.MIGRATION_4_5.migrate(db)
+
+        assertThat(queryIndexNames(db, "quran_bookmarks")).doesNotContain("index_quran_bookmarks_savedAt")
+        assertThat(queryColumnNotNull(db, "quran_bookmarks", "note")).isTrue()
+        assertThat(queryBookmarkNote(db, 1, 1)).isEqualTo("")
+    }
+
     private fun createDatabase(): SupportSQLiteDatabase {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val config = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -81,5 +108,38 @@ class AppDatabaseMigrationTest {
             arrayOf(tableName),
         )
         cursor.use { return it.moveToFirst() }
+    }
+
+    private fun queryColumnNotNull(
+        db: SupportSQLiteDatabase,
+        tableName: String,
+        columnName: String,
+    ): Boolean {
+        val cursor = db.query("PRAGMA table_info(`$tableName`)")
+        cursor.use {
+            val nameIndex = it.getColumnIndex("name")
+            val notNullIndex = it.getColumnIndex("notnull")
+            while (it.moveToNext()) {
+                if (nameIndex >= 0 && it.getString(nameIndex) == columnName) {
+                    return notNullIndex >= 0 && it.getInt(notNullIndex) == 1
+                }
+            }
+        }
+        return false
+    }
+
+    private fun queryBookmarkNote(
+        db: SupportSQLiteDatabase,
+        sura: Int,
+        ayah: Int,
+    ): String? {
+        val cursor = db.query(
+            "SELECT note FROM quran_bookmarks WHERE suraNumber=? AND ayahNumber=?",
+            arrayOf(sura, ayah),
+        )
+        cursor.use {
+            if (!it.moveToFirst()) return null
+            return it.getString(0)
+        }
     }
 }

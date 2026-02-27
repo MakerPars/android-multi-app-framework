@@ -39,7 +39,7 @@ import com.parsfilo.contentapp.core.database.model.zikir.ZikirStreakEntity
         QuranBookmarkEntity::class,
         QuranLastReadEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -204,6 +204,39 @@ abstract class AppDatabase : RoomDatabase() {
                         "`savedAt` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`id`))"
                 )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Repair legacy v4 installs that may contain incompatible bookmark schema/index.
+                val hasOldBookmarksTable = db.query(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='quran_bookmarks'"
+                ).use { cursor -> cursor.moveToFirst() }
+
+                db.execSQL("DROP INDEX IF EXISTS `index_quran_bookmarks_savedAt`")
+                db.execSQL("DROP TABLE IF EXISTS `quran_bookmarks_new`")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `quran_bookmarks_new` (" +
+                        "`suraNumber` INTEGER NOT NULL, " +
+                        "`ayahNumber` INTEGER NOT NULL, " +
+                        "`savedAt` INTEGER NOT NULL, " +
+                        "`note` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`suraNumber`, `ayahNumber`))"
+                )
+
+                if (hasOldBookmarksTable) {
+                    db.execSQL(
+                        "INSERT OR REPLACE INTO `quran_bookmarks_new` (`suraNumber`, `ayahNumber`, `savedAt`, `note`) " +
+                            "SELECT `suraNumber`, `ayahNumber`, " +
+                            "COALESCE(`savedAt`, CAST(strftime('%s','now') AS INTEGER) * 1000), " +
+                            "COALESCE(`note`, '') " +
+                            "FROM `quran_bookmarks`"
+                    )
+                    db.execSQL("DROP TABLE `quran_bookmarks`")
+                }
+
+                db.execSQL("ALTER TABLE `quran_bookmarks_new` RENAME TO `quran_bookmarks`")
             }
         }
     }

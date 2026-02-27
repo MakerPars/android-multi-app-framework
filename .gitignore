@@ -10,6 +10,7 @@
 **/build/
 .kotlin/
 TEMP_FOLDER/
+TEMP_*/
 SECRET/
 
 # Local config
@@ -51,6 +52,7 @@ secrets/
 # Temporary outputs
 firebase_configs.zip
 TEMP_OUT/
+TEMP_OUT_rc/
 captures/
 .azext/
 .azext_temp/
