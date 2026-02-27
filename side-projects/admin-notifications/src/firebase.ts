@@ -57,10 +57,10 @@ const firebaseConfig = {
 if (missingFirebaseEnv.length > 0) {
   throw new Error(
     [
-      "admin-notifications Firebase env is incomplete.",
+      "side-projects/admin-notifications Firebase env is incomplete.",
       "Missing:",
       ...missingFirebaseEnv.map((item) => `- ${item}`),
-      "Create `admin-notifications/.env` from `admin-notifications/.env.example`.",
+      "Create `side-projects/admin-notifications/.env` from `side-projects/admin-notifications/.env.example`.",
     ].join("\n"),
   );
 }

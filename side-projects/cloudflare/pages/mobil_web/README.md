@@ -1,9 +1,9 @@
 # Cloudflare Pages - mobil_web
 
-Bu klasor, `firebase_projects/mobil_web/public` iceriginin Cloudflare Pages hedefi icin ayrildi.
+Bu klasor, `side-projects/firebase/mobil_web/public` iceriginin Cloudflare Pages hedefi icin ayrildi.
 
 ## Simdilik
-- Kaynak icerik Firebase tarafindaki `firebase_projects/mobil_web/public` altinda.
+- Kaynak icerik Firebase tarafindaki `side-projects/firebase/mobil_web/public` altinda.
 - Gecis sirasinda bu klasore kopyalama/sync adimi eklenecek.
 
 ## Onerilen sonraki adim

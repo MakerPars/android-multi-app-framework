@@ -97,13 +97,13 @@ Bu çalışma ile overengineering yapmadan 6 yüksek ROI iyileştirme uygulandı
 
 **Değişen dosyalar**
 - `docs/NOTIFICATION_SYSTEM.md`
-- `firebase_projects/functions/package.json`
-- `firebase_projects/functions/scripts/test-reset-logic.js`
-- `firebase_projects/functions/src/dispatchNotifications.ts`
+- `side-projects/firebase/functions/package.json`
+- `side-projects/firebase/functions/scripts/test-reset-logic.js`
+- `side-projects/firebase/functions/src/dispatchNotifications.ts`
 
 **Nasıl test edilir?**
-- `cd firebase_projects/functions && npm run build`
-- `cd firebase_projects/functions && npm run test:reset-logic`
+- `cd side-projects/firebase/functions && npm run build`
+- `cd side-projects/firebase/functions && npm run test:reset-logic`
 
 **Kabul kriteri doğrulaması**
 - Manual reset ihtiyacı kaldırıldı.

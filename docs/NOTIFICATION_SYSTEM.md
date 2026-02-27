@@ -34,7 +34,7 @@ Mobil Uygulama                          Sunucu (Firebase)
 ## Dosya Yapısı
 
 ```
-functions/
+side-projects/firebase/functions/
 ├── package.json              # Node 22, firebase-admin 13.x, firebase-functions 7.x
 ├── tsconfig.json
 ├── .gitignore
@@ -158,12 +158,12 @@ Mobil uygulamadan her uygulama açılışında (`app_start`) otomatik çağrıl�
 PUSH_REGISTRATION_URL=https://europe-west1-mobil-oaslananka-firebase.cloudfunctions.net/registerDevice
 ```
 
-### Admin Panel (admin-notifications) — Local Env
+### Admin Panel (side-projects/admin-notifications) — Local Env
 
-`admin-notifications` Vite uygulaması Firebase Web config ister. Baslangic icin:
+`side-projects/admin-notifications` Vite uygulaması Firebase Web config ister. Baslangic icin:
 
 ```powershell
-Copy-Item .\admin-notifications\.env.example .\admin-notifications\.env
+Copy-Item .\side-projects\admin-notifications\.env.example .\side-projects\admin-notifications\.env
 ```
 
 Gerekli alanlar:
@@ -180,7 +180,7 @@ Opsiyonel:
 
 Notlar:
 
-- `admin-notifications/vite.config.ts` repo root `.env` dosyasini da okur (`envDir = ".."`).
+- `side-projects/admin-notifications/vite.config.ts` repo root `.env` dosyasini da okur (`envDir = ".."`).
 - Geriye donuk uyumluluk icin sadece `FIREBASE_WEB_API_KEY` fallback olarak desteklenir; diger Firebase Web alanlari `VITE_` prefix ile verilmelidir.
 
 ### Otomatik Çalışan Bileşenler
@@ -211,7 +211,7 @@ firebase functions:log --only registerDevice
 firebase functions:log --only dispatchNotifications
 
 # Functions'ı yeniden build et
-npm run build --prefix firebase_projects/functions
+npm run build --prefix side-projects/firebase/functions
 ```
 
 ---

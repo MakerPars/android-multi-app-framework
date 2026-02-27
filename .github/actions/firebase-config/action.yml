@@ -38,7 +38,7 @@ runs:
         if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
           export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
           export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
-          npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config cloudflare/workers/content-api/wrangler.toml
+          npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config side-projects/cloudflare/workers/content-api/wrangler.toml
           unzip -o firebase_configs.zip
           rm -f firebase_configs.zip
           echo "Firebase configs restored from R2."

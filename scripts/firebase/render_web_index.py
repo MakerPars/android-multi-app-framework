@@ -10,15 +10,15 @@ PLACEHOLDER = "__FIREBASE_WEB_API_KEY__"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render mobil_web index.html from template")
+    parser = argparse.ArgumentParser(description="Render Firebase mobil_web index.html from template")
     parser.add_argument(
         "--template",
-        default="firebase_projects/mobil_web/public/index.template.html",
+        default="side-projects/firebase/mobil_web/public/index.template.html",
         help="Template HTML path",
     )
     parser.add_argument(
         "--output",
-        default="firebase_projects/mobil_web/public/index.html",
+        default="side-projects/firebase/mobil_web/public/index.html",
         help="Rendered output path",
     )
     parser.add_argument(

@@ -228,4 +228,4 @@ export FIREBASE_WEB_API_KEY="YOUR_KEY"
 python scripts/firebase/render_web_index.py
 ```
 
-Not: `firebase_projects/mobil_web/public/index.html` repoda placeholder ile tutulur.
+Not: `side-projects/firebase/mobil_web/public/index.html` repoda placeholder ile tutulur.

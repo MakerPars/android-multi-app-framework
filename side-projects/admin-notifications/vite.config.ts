@@ -2,10 +2,10 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
-const ROOT_DIR = path.resolve(__dirname, "..");
+const ROOT_DIR = path.resolve(__dirname, "../..");
 
 export default defineConfig(({ mode }) => {
-  // Support both admin-notifications/.env and repo root .env.
+  // Support both side-projects/admin-notifications/.env and repo root .env.
   const rootEnv = loadEnv(mode, ROOT_DIR, "");
   const localEnv = loadEnv(mode, __dirname, "");
   const mergedEnv = { ...rootEnv, ...localEnv };
@@ -26,12 +26,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        "@ciapps": path.resolve(__dirname, "../.ci/apps.json"),
+        "@ciapps": path.resolve(__dirname, "../../.ci/apps.json"),
       },
     },
     server: {
       fs: {
-        allow: [".."],
+        allow: [ROOT_DIR],
       },
     },
   };
