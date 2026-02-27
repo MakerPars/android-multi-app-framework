@@ -68,20 +68,29 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
             dataPayloadJson = remoteMessage.data.toString()
         )
 
-        scope.launch {
-            notificationDao.insertNotification(entity)
-        }
-
         // Analytics: push_received
         analytics.logPushReceived(type)
 
         scope.launch {
+            val rowId = persistNotification(entity)
             if (shouldShowSystemNotification()) {
-                showNotification(title, body, notificationId.hashCode())
+                showNotification(
+                    title = title,
+                    body = body,
+                    id = notificationId.hashCode(),
+                    notificationRowId = rowId,
+                    notificationExternalId = notificationId,
+                )
             } else {
                 Timber.d("Skipping system notification (permission/settings disabled).")
             }
         }
+    }
+
+    private suspend fun persistNotification(entity: NotificationEntity): Long? {
+        val inserted = notificationDao.insertNotification(entity)
+        if (inserted > 0L) return inserted
+        return notificationDao.getByNotificationId(entity.notificationId)?.id
     }
 
     private suspend fun shouldShowSystemNotification(): Boolean {
@@ -94,7 +103,13 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun showNotification(title: String, body: String, id: Int) {
+    private fun showNotification(
+        title: String,
+        body: String,
+        id: Int,
+        notificationRowId: Long?,
+        notificationExternalId: String,
+    ) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         // Create notification channel for Android O+
@@ -116,10 +131,14 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(NotificationIntentKeys.EXTRA_OPEN_NOTIFICATIONS, true)
+            notificationRowId?.let {
+                putExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, it)
+            }
+            putExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID, notificationExternalId)
         }
         val pendingIntent = intent?.let {
             PendingIntent.getActivity(
-                this, 0, it,
+                this, id, it,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }

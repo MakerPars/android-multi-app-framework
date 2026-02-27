@@ -13,6 +13,7 @@ import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.appcheck.FirebaseAppCheckInstaller
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
+import com.parsfilo.contentapp.core.firebase.push.PushRegistrationSyncWorker
 import com.parsfilo.contentapp.feature.audio.data.AudioCachePrefetcher
 import com.parsfilo.contentapp.feature.billing.BillingManager
 import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
@@ -120,6 +121,7 @@ class App : Application() {
                 SentryMetrics.count("push.topics.subscribe.failure")
             }
         }
+        PushRegistrationSyncWorker.schedule(this)
 
         // Audio flavors: download once after first launch and keep local for offline playback.
         if (BuildConfig.AUDIO_FILE_NAME != "content_audio.mp3") {

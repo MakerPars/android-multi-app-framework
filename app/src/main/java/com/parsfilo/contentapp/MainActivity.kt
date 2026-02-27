@@ -26,13 +26,15 @@ import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.monetization.AdOrchestrator
+import com.parsfilo.contentapp.navigation.NotificationOpenRequest
 import com.parsfilo.contentapp.ui.ContentApp
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -56,7 +58,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var prayerPreferencesDataSource: PrayerPreferencesDataSource
 
-    private val openNotificationsEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val openNotificationsEventsChannel =
+        Channel<NotificationOpenRequest>(capacity = Channel.BUFFERED)
+    private val openNotificationsEvents = openNotificationsEventsChannel.receiveAsFlow()
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -128,14 +132,11 @@ class MainActivity : ComponentActivity() {
             sourceIntent
         )
 
-        lifecycleScope.launch {
-            if (shouldOpenNotifications) {
-                persistNotificationFromIntentIfPossible(sourceIntent)
-            }
-        }
+        if (!shouldOpenNotifications) return
 
-        if (shouldOpenNotifications) {
-            openNotificationsEvents.tryEmit(Unit)
+        lifecycleScope.launch {
+            val openRequest = resolveNotificationOpenRequest(sourceIntent)
+            openNotificationsEventsChannel.trySend(openRequest)
         }
     }
 
@@ -149,8 +150,44 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun persistNotificationFromIntentIfPossible(sourceIntent: Intent) {
-        val extras = sourceIntent.extras ?: return
+    private suspend fun resolveNotificationOpenRequest(sourceIntent: Intent): NotificationOpenRequest {
+        val explicitRowId = sourceIntent
+            .getLongExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, -1L)
+            .takeIf { it > 0L }
+        if (explicitRowId != null) {
+            return NotificationOpenRequest(
+                target = NotificationOpenRequest.Target.DETAIL,
+                notificationRowId = explicitRowId,
+            )
+        }
+
+        val explicitExternalId = sourceIntent
+            .getStringExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID)
+            ?.trim()
+            .orEmpty()
+        if (explicitExternalId.isNotBlank()) {
+            val existing = notificationDao.getByNotificationId(explicitExternalId)
+            if (existing != null) {
+                return NotificationOpenRequest(
+                    target = NotificationOpenRequest.Target.DETAIL,
+                    notificationRowId = existing.id,
+                )
+            }
+        }
+
+        val persistedRowId = persistNotificationFromIntentIfPossible(sourceIntent)
+        return if (persistedRowId != null) {
+            NotificationOpenRequest(
+                target = NotificationOpenRequest.Target.DETAIL,
+                notificationRowId = persistedRowId,
+            )
+        } else {
+            NotificationOpenRequest(target = NotificationOpenRequest.Target.LIST)
+        }
+    }
+
+    private suspend fun persistNotificationFromIntentIfPossible(sourceIntent: Intent): Long? {
+        val extras = sourceIntent.extras ?: return null
 
         val hasFcmMarkers = extras.keySet().any { key ->
             key.startsWith("google.") || key.startsWith("gcm.") || key == "from"
@@ -167,7 +204,7 @@ class MainActivity : ComponentActivity() {
         val imageUrl = extras.getString("gcm.notification.image") ?: extras.getString("image")
 
         if (!hasFcmMarkers && title == getString(R.string.notifications_title) && body.isBlank()) {
-            return
+            return null
         }
 
         val notificationId =
@@ -184,7 +221,7 @@ class MainActivity : ComponentActivity() {
             }
         }.toString()
 
-        notificationDao.insertNotification(
+        val insertedRowId = notificationDao.insertNotification(
             NotificationEntity(
                 notificationId = notificationId,
                 title = title,
@@ -196,6 +233,10 @@ class MainActivity : ComponentActivity() {
                 dataPayloadJson = payloadJson
             )
         )
+        if (insertedRowId > 0L) {
+            return insertedRowId
+        }
+        return notificationDao.getByNotificationId(notificationId)?.id
     }
 
     private fun setComposeContentSafely() {
@@ -367,6 +408,3 @@ private fun Bundle.getValueAsString(key: String): String? {
 
     return resolved
 }
-
-
-

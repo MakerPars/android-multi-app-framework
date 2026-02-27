@@ -32,6 +32,7 @@ import {
 type LoadState = "loading" | "ready" | "error";
 
 type AdminState = "checking" | "authorized" | "unauthorized";
+type AdminTab = "events" | "test-push";
 type TestPushTargetMode = "installationId" | "token";
 
 type DeviceFinderItem = {
@@ -44,6 +45,20 @@ type DeviceFinderItem = {
   appVersion?: string;
   updatedAt?: Date | null;
   hasValidToken: boolean;
+};
+
+type CoverageItem = {
+  packageName: string;
+  activeDeviceCount: number;
+  totalDeviceCount: number;
+};
+
+type DeviceCoverageReport = {
+  days: number;
+  generatedAt: string;
+  byPackage: CoverageItem[];
+  missingPackages: string[];
+  stalePackages: string[];
 };
 
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
@@ -275,6 +290,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<LoadState>("loading");
   const [adminState, setAdminState] = useState<AdminState>("checking");
+  const [activeTab, setActiveTab] = useState<AdminTab>("events");
   const [events, setEvents] = useState<ScheduledEventRecord[]>([]);
   const [eventsState, setEventsState] = useState<LoadState>("loading");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -299,6 +315,10 @@ export default function App() {
   const [deviceFinderMessage, setDeviceFinderMessage] = useState("");
   const [deviceFinderSearch, setDeviceFinderSearch] = useState("");
   const [deviceFinderResults, setDeviceFinderResults] = useState<DeviceFinderItem[]>([]);
+  const [coverageDays, setCoverageDays] = useState(14);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState("");
+  const [coverageReport, setCoverageReport] = useState<DeviceCoverageReport | null>(null);
   const [testPushResult, setTestPushResult] = useState<{
     messageId: string;
     mode: string;
@@ -309,6 +329,23 @@ export default function App() {
   } | null>(null);
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "events" || tab === "test-push") {
+      setActiveTab(tab);
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") !== activeTab) {
+      params.set("tab", activeTab);
+      const next = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", next);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(
@@ -387,6 +424,7 @@ export default function App() {
       (item.locale ?? "").toLowerCase().includes(needle),
     );
   }, [deviceFinderResults, deviceFinderSearch]);
+  const allPackages = useMemo(() => sortedApps.map((app) => app.package), []);
 
   const isCreateMode = selectedId === null;
 
@@ -680,6 +718,236 @@ export default function App() {
     }
   };
 
+  const loadDeviceCoverageReport = async () => {
+    if (!user) return;
+    const normalizedDays = Math.max(1, Math.min(90, Math.floor(coverageDays || 14)));
+    setCoverageLoading(true);
+    setCoverageError("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/deviceCoverageReport`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          days: normalizedDays,
+          packages: allPackages,
+        }),
+      });
+
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to fetch coverage report`),
+        );
+      }
+
+      const payload = responseBody as DeviceCoverageReport;
+      setCoverageReport(payload);
+    } catch (e) {
+      console.error(e);
+      setCoverageError(e instanceof Error ? e.message : "Failed to fetch coverage report.");
+    } finally {
+      setCoverageLoading(false);
+    }
+  };
+
+  const testPushSection = (
+    <section className="subsection">
+      <div className="test-push-box">
+        <div className="device-preview-header">
+          <strong>Single-device test push</strong>
+          <button
+            type="button"
+            onClick={sendTestPushToSingleDevice}
+            disabled={testPushLoading}
+          >
+            {testPushLoading ? "Sending…" : "Send test push"}
+          </button>
+        </div>
+
+        <p className="muted device-preview-note">
+          Sends a test push to exactly one device via admin-only Cloud Function (FCM token or
+          Cihaz Kimliği / installationId).
+        </p>
+
+        <div className="test-push-grid">
+          <label>
+            Target type
+            <select
+              value={testPushTargetMode}
+              onChange={(e) =>
+                setTestPushTargetMode(e.target.value as TestPushTargetMode)
+              }
+            >
+              <option value="installationId">Cihaz Kimliği (installationId)</option>
+              <option value="token">FCM device token</option>
+            </select>
+          </label>
+
+          <label className="test-push-token">
+            {testPushTargetMode === "token"
+              ? "FCM device token"
+              : "Cihaz Kimliği (installationId)"}
+            <textarea
+              rows={3}
+              value={testPushTargetMode === "token" ? testPushToken : testPushInstallationId}
+              onChange={(e) =>
+                testPushTargetMode === "token"
+                  ? setTestPushToken(e.target.value)
+                  : setTestPushInstallationId(e.target.value)
+              }
+              placeholder={
+                testPushTargetMode === "token"
+                  ? "FCM registration token"
+                  : "Uygulama içindeki 'Cihaz Kimliği' değeri"
+              }
+            />
+          </label>
+
+          <div className="device-finder-box">
+            <div className="device-finder-header">
+              <strong>Device finder (Firestore `devices`)</strong>
+              <div className="device-finder-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={lookupDeviceByInstallationId}
+                  disabled={deviceFinderLoading}
+                >
+                  {deviceFinderLoading ? "Checking…" : "Find by Cihaz Kimliği"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={loadRecentDevices}
+                  disabled={deviceFinderLoading}
+                >
+                  {deviceFinderLoading ? "Loading…" : "Load recent devices"}
+                </button>
+              </div>
+            </div>
+
+            <label>
+              Filter results
+              <input
+                value={deviceFinderSearch}
+                onChange={(e) => setDeviceFinderSearch(e.target.value)}
+                placeholder="installationId / package / model / locale"
+              />
+            </label>
+
+            {deviceFinderError && <p className="inline-error">{deviceFinderError}</p>}
+            {deviceFinderMessage && !deviceFinderError && (
+              <p className="muted">{deviceFinderMessage}</p>
+            )}
+
+            {filteredDeviceFinderResults.length > 0 && (
+              <div className="device-finder-list">
+                {filteredDeviceFinderResults.map((device) => (
+                  <div key={device.id} className="device-finder-item">
+                    <div className="device-finder-item-main">
+                      <code>{device.id}</code>
+                      <span>
+                        {device.packageName || "(no package)"} · {device.locale || "-"} ·{" "}
+                        {device.timezone || "-"}
+                      </span>
+                      <small>
+                        {device.deviceModel || "Unknown device"} · v
+                        {device.appVersion || "?"} · updated {formatDateTime(device.updatedAt)}
+                      </small>
+                      {!device.hasValidToken && (
+                        <small className="inline-error">
+                          Warning: record has no valid FCM token
+                        </small>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => useDeviceForTestPush(device)}
+                    >
+                      Use this device
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <label>
+            Title
+            <input
+              value={testPushTitle}
+              onChange={(e) => setTestPushTitle(e.target.value)}
+              placeholder="Test Bildirim"
+            />
+          </label>
+
+          <label>
+            Body
+            <textarea
+              rows={3}
+              value={testPushBody}
+              onChange={(e) => setTestPushBody(e.target.value)}
+              placeholder="Admin panel test bildirimi"
+            />
+          </label>
+
+          <label>
+            Data payload (key=value per line)
+            <textarea
+              rows={4}
+              value={testPushDataInput}
+              onChange={(e) => setTestPushDataInput(e.target.value)}
+              placeholder={"type=test\nsource=admin-panel"}
+            />
+          </label>
+
+          <label className="checkbox-row test-push-checkbox">
+            <input
+              type="checkbox"
+              checked={testPushIncludeNotification}
+              onChange={(e) => setTestPushIncludeNotification(e.target.checked)}
+            />
+            <span>Include notification payload (otherwise data-only)</span>
+            <small>
+              Data-only is recommended for in-app persistence checks. Notification+data tests system UI behavior.
+            </small>
+          </label>
+        </div>
+
+        {testPushError && <p className="inline-error">{testPushError}</p>}
+        {testPushResult && !testPushError && (
+          <div className="test-push-result">
+            <span>Sent successfully</span>
+            <strong>{testPushResult.mode}</strong>
+            <div>
+              target={testPushResult.targetType}
+              {testPushResult.installationId ? ` · installationId=${testPushResult.installationId}` : ""}
+            </div>
+            {(testPushResult.packageName || testPushResult.locale) && (
+              <div>
+                {testPushResult.packageName ? `pkg=${testPushResult.packageName}` : "pkg=-"}
+                {" · "}
+                {testPushResult.locale ? `locale=${testPushResult.locale}` : "locale=-"}
+              </div>
+            )}
+            <code>{testPushResult.messageId}</code>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+
   if (authState === "loading") {
     return <div className="center-screen">Loading Firebase Auth…</div>;
   }
@@ -737,6 +1005,28 @@ export default function App() {
         </div>
       )}
 
+      <div className="admin-tabs" role="tablist" aria-label="Admin sections">
+        <button
+          type="button"
+          role="tab"
+          className={`tab-btn ${activeTab === "events" ? "active" : ""}`}
+          aria-selected={activeTab === "events"}
+          onClick={() => setActiveTab("events")}
+        >
+          Events
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`tab-btn ${activeTab === "test-push" ? "active" : ""}`}
+          aria-selected={activeTab === "test-push"}
+          onClick={() => setActiveTab("test-push")}
+        >
+          Test Push
+        </button>
+      </div>
+
+      {activeTab === "events" ? (
       <div className="content-grid">
         <aside className="panel list-panel">
           <div className="panel-header">
@@ -941,192 +1231,6 @@ export default function App() {
             </div>
           </section>
 
-          <section className="subsection">
-            <div className="test-push-box">
-              <div className="device-preview-header">
-                <strong>Single-device test push</strong>
-                <button
-                  type="button"
-                  onClick={sendTestPushToSingleDevice}
-                  disabled={testPushLoading}
-                >
-                  {testPushLoading ? "Sending…" : "Send test push"}
-                </button>
-              </div>
-
-              <p className="muted device-preview-note">
-                Sends a test push to exactly one device via admin-only Cloud Function (FCM token or
-                Cihaz Kimliği / installationId).
-              </p>
-
-              <div className="test-push-grid">
-                <label>
-                  Target type
-                  <select
-                    value={testPushTargetMode}
-                    onChange={(e) =>
-                      setTestPushTargetMode(e.target.value as TestPushTargetMode)
-                    }
-                  >
-                    <option value="installationId">Cihaz Kimliği (installationId)</option>
-                    <option value="token">FCM device token</option>
-                  </select>
-                </label>
-
-                <label className="test-push-token">
-                  {testPushTargetMode === "token"
-                    ? "FCM device token"
-                    : "Cihaz Kimliği (installationId)"}
-                  <textarea
-                    rows={3}
-                    value={testPushTargetMode === "token" ? testPushToken : testPushInstallationId}
-                    onChange={(e) =>
-                      testPushTargetMode === "token"
-                        ? setTestPushToken(e.target.value)
-                        : setTestPushInstallationId(e.target.value)
-                    }
-                    placeholder={
-                      testPushTargetMode === "token"
-                        ? "FCM registration token"
-                        : "Uygulama içindeki 'Cihaz Kimliği' değeri"
-                    }
-                  />
-                </label>
-
-                <div className="device-finder-box">
-                  <div className="device-finder-header">
-                    <strong>Device finder (Firestore `devices`)</strong>
-                    <div className="device-finder-actions">
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={lookupDeviceByInstallationId}
-                        disabled={deviceFinderLoading}
-                      >
-                        {deviceFinderLoading ? "Checking…" : "Find by Cihaz Kimliği"}
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={loadRecentDevices}
-                        disabled={deviceFinderLoading}
-                      >
-                        {deviceFinderLoading ? "Loading…" : "Load recent devices"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <label>
-                    Filter results
-                    <input
-                      value={deviceFinderSearch}
-                      onChange={(e) => setDeviceFinderSearch(e.target.value)}
-                      placeholder="installationId / package / model / locale"
-                    />
-                  </label>
-
-                  {deviceFinderError && <p className="inline-error">{deviceFinderError}</p>}
-                  {deviceFinderMessage && !deviceFinderError && (
-                    <p className="muted">{deviceFinderMessage}</p>
-                  )}
-
-                  {filteredDeviceFinderResults.length > 0 && (
-                    <div className="device-finder-list">
-                      {filteredDeviceFinderResults.map((device) => (
-                        <div key={device.id} className="device-finder-item">
-                          <div className="device-finder-item-main">
-                            <code>{device.id}</code>
-                            <span>
-                              {device.packageName || "(no package)"} · {device.locale || "-"} ·{" "}
-                              {device.timezone || "-"}
-                            </span>
-                            <small>
-                              {device.deviceModel || "Unknown device"} · v
-                              {device.appVersion || "?"} · updated {formatDateTime(device.updatedAt)}
-                            </small>
-                            {!device.hasValidToken && (
-                              <small className="inline-error">
-                                Warning: record has no valid FCM token
-                              </small>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => useDeviceForTestPush(device)}
-                          >
-                            Use this device
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <label>
-                  Title
-                  <input
-                    value={testPushTitle}
-                    onChange={(e) => setTestPushTitle(e.target.value)}
-                    placeholder="Test Bildirim"
-                  />
-                </label>
-
-                <label>
-                  Body
-                  <textarea
-                    rows={3}
-                    value={testPushBody}
-                    onChange={(e) => setTestPushBody(e.target.value)}
-                    placeholder="Admin panel test bildirimi"
-                  />
-                </label>
-
-                <label>
-                  Data payload (key=value per line)
-                  <textarea
-                    rows={4}
-                    value={testPushDataInput}
-                    onChange={(e) => setTestPushDataInput(e.target.value)}
-                    placeholder={"type=test\nsource=admin-panel"}
-                  />
-                </label>
-
-                <label className="checkbox-row test-push-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={testPushIncludeNotification}
-                    onChange={(e) => setTestPushIncludeNotification(e.target.checked)}
-                  />
-                  <span>Include notification payload (otherwise data-only)</span>
-                  <small>
-                    Data-only is recommended for in-app persistence checks. Notification+data tests system UI behavior.
-                  </small>
-                </label>
-              </div>
-
-              {testPushError && <p className="inline-error">{testPushError}</p>}
-              {testPushResult && !testPushError && (
-                <div className="test-push-result">
-                  <span>Sent successfully</span>
-                  <strong>{testPushResult.mode}</strong>
-                  <div>
-                    target={testPushResult.targetType}
-                    {testPushResult.installationId ? ` · installationId=${testPushResult.installationId}` : ""}
-                  </div>
-                  {(testPushResult.packageName || testPushResult.locale) && (
-                    <div>
-                      {testPushResult.packageName ? `pkg=${testPushResult.packageName}` : "pkg=-"}
-                      {" · "}
-                      {testPushResult.locale ? `locale=${testPushResult.locale}` : "locale=-"}
-                    </div>
-                  )}
-                  <code>{testPushResult.messageId}</code>
-                </div>
-              )}
-            </div>
-          </section>
-
           <section className="subsection locale-grid">
             {(["tr", "en", "de"] as LocaleKey[]).map((locale) => (
               <div key={locale} className="locale-card">
@@ -1204,6 +1308,74 @@ export default function App() {
           </div>
         </main>
       </div>
+      ) : (
+      <div className="single-panel-grid">
+        <main className="panel form-panel">
+          <div className="panel-header">
+            <h2>Single-device test push</h2>
+          </div>
+          {testPushSection}
+          <section className="subsection">
+            <div className="coverage-box">
+              <div className="device-preview-header">
+                <strong>Device coverage (last N days)</strong>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={loadDeviceCoverageReport}
+                  disabled={coverageLoading}
+                >
+                  {coverageLoading ? "Loading…" : "Refresh coverage"}
+                </button>
+              </div>
+
+              <label className="coverage-days">
+                Days
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={coverageDays}
+                  onChange={(e) => setCoverageDays(Number(e.target.value || 14))}
+                />
+              </label>
+
+              {coverageError && <p className="inline-error">{coverageError}</p>}
+
+              {coverageReport && !coverageError && (
+                <div className="coverage-result">
+                  <p className="muted">
+                    generatedAt={coverageReport.generatedAt} · days={coverageReport.days}
+                  </p>
+                  <ul className="coverage-list">
+                    {coverageReport.byPackage.map((item) => (
+                      <li key={item.packageName}>
+                        <code>{item.packageName}</code>
+                        <span>
+                          active={item.activeDeviceCount} / total={item.totalDeviceCount}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {coverageReport.missingPackages.length > 0 && (
+                    <div className="coverage-alert">
+                      <strong>Missing packages</strong>
+                      <div>{coverageReport.missingPackages.join(", ")}</div>
+                    </div>
+                  )}
+                  {coverageReport.stalePackages.length > 0 && (
+                    <div className="coverage-alert">
+                      <strong>Stale packages (no recent device)</strong>
+                      <div>{coverageReport.stalePackages.join(", ")}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+      </div>
+      )}
     </div>
   );
 }

@@ -145,11 +145,34 @@ button.danger {
   color: #9b1f1f;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tab-btn {
+  background: #e9eef7;
+  color: #334155;
+  border: 1px solid #d6e0ec;
+}
+
+.tab-btn.active {
+  background: #165dff;
+  color: #fff;
+  border-color: #165dff;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 380px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+.single-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .panel {
@@ -463,6 +486,56 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.coverage-box {
+  border: 1px solid #e0e8f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafcff;
+  display: grid;
+  gap: 10px;
+}
+
+.coverage-days {
+  display: grid;
+  gap: 6px;
+  width: min(180px, 100%);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.coverage-result {
+  display: grid;
+  gap: 8px;
+}
+
+.coverage-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.coverage-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #dde7f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.coverage-alert {
+  border: 1px solid #f0c9a8;
+  border-radius: 10px;
+  background: #fff8ef;
+  color: #8d5a12;
+  padding: 8px 10px;
+  display: grid;
+  gap: 4px;
+}
+
 .preview-cards {
   display: grid;
   gap: 8px;
@@ -539,6 +612,10 @@ textarea {
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .admin-tabs {
+    flex-wrap: wrap;
   }
 
   .device-finder-header,

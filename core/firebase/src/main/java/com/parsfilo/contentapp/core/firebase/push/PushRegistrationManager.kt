@@ -3,12 +3,15 @@ package com.parsfilo.contentapp.core.firebase.push
 import android.content.Context
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.messaging.FirebaseMessaging
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -19,6 +22,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.random.Random
 
 @Singleton
 class PushRegistrationManager @Inject constructor(
@@ -26,6 +30,7 @@ class PushRegistrationManager @Inject constructor(
     private val firebaseMessaging: FirebaseMessaging,
     private val preferencesDataSource: PreferencesDataSource,
     private val pushRegistrationSender: PushRegistrationSender,
+    private val crashlytics: FirebaseCrashlytics,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
     suspend fun subscribeToTopics(topics: List<String>) = withContext(ioDispatcher) {
@@ -46,7 +51,12 @@ class PushRegistrationManager @Inject constructor(
             runCatching {
                 val installationId = preferencesDataSource.getOrCreateInstallationId()
                 val preferences = preferencesDataSource.userData.first()
-                val fcmToken = tokenOverride ?: fetchFcmToken() ?: return@runCatching false
+                val fcmToken = tokenOverride ?: fetchFcmTokenWithRetry() ?: run {
+                    val message = "Push registration skipped: could not fetch FCM token (reason=$reason)"
+                    Timber.w(message)
+                    crashlytics.log(message)
+                    return@runCatching false
+                }
                 val payload = PushRegistrationPayload(
                     installationId = installationId,
                     fcmToken = fcmToken,
@@ -66,19 +76,40 @@ class PushRegistrationManager @Inject constructor(
                         timestamp = payload.syncedAtEpochMs,
                     )
                 }
+                if (!sent) {
+                    val message = "Push registration send returned false (reason=$reason)"
+                    Timber.w(message)
+                    crashlytics.log(message)
+                }
                 sent
             }.getOrElse { throwable ->
                 Timber.w(throwable, "Push registration sync failed.")
+                crashlytics.log("Push registration sync failed (reason=$reason): ${throwable::class.simpleName}")
+                crashlytics.recordException(throwable)
                 false
             }
         }
 
-    private suspend fun fetchFcmToken(): String? {
-        return runCatching { firebaseMessaging.fetchTokenSuspend() }.onFailure {
-            Timber.w(
-                it, "Unable to fetch FCM token for push registration."
-            )
-        }.getOrNull()
+    private suspend fun fetchFcmTokenWithRetry(): String? {
+        TOKEN_FETCH_RETRY_DELAYS_MS.forEachIndexed { index, retryDelayMs ->
+            runCatching { firebaseMessaging.fetchTokenSuspend() }
+                .onSuccess { token ->
+                    if (token.isNotBlank()) {
+                        return token
+                    }
+                    Timber.w("FCM token fetch returned blank token (attempt=%d).", index + 1)
+                }
+                .onFailure { throwable ->
+                    if (throwable is CancellationException) throw throwable
+                    Timber.w(throwable, "Unable to fetch FCM token (attempt=%d).", index + 1)
+                }
+
+            if (index < TOKEN_FETCH_RETRY_DELAYS_MS.lastIndex) {
+                val jitter = Random.nextLong(from = 0L, until = TOKEN_FETCH_MAX_JITTER_MS + 1)
+                delay(retryDelayMs + jitter)
+            }
+        }
+        return null
     }
 }
 
@@ -114,3 +145,6 @@ private suspend fun FirebaseMessaging.subscribeToTopicSuspend(topic: String): Un
             }
         }
     }
+
+private val TOKEN_FETCH_RETRY_DELAYS_MS = listOf(1_000L, 3_000L, 7_000L)
+private const val TOKEN_FETCH_MAX_JITTER_MS = 400L

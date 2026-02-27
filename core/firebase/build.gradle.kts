@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.firebase.perf)
     implementation(libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.timber)
     implementation(libs.hilt.android)

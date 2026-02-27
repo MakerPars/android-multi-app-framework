@@ -45,6 +45,7 @@ import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logTabSelected
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.navigation.AppRoute
+import com.parsfilo.contentapp.navigation.NotificationOpenRequest
 import com.parsfilo.contentapp.ui.update.HardUpdateRequiredOverlay
 import com.parsfilo.contentapp.ui.update.SoftUpdateDialog
 import com.parsfilo.contentapp.update.UpdateGateViewModel
@@ -55,7 +56,7 @@ import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun ContentApp(
-    openNotificationsEvents: Flow<Unit> = emptyFlow(),
+    openNotificationsEvents: Flow<NotificationOpenRequest> = emptyFlow(),
     appAnalytics: AppAnalytics,
     onPrivacyOptionsUpdated: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
@@ -157,8 +158,23 @@ fun ContentApp(
     }
 
     LaunchedEffect(openNotificationsEvents) {
-        openNotificationsEvents.collect {
-            navigateToRoute(AppRoute.NotificationsGraph)
+        openNotificationsEvents.collect { request ->
+            when (request.target) {
+                NotificationOpenRequest.Target.LIST -> {
+                    navigateToRoute(AppRoute.NotificationsGraph)
+                }
+
+                NotificationOpenRequest.Target.DETAIL -> {
+                    val rowId = request.notificationRowId
+                    if (rowId != null && rowId > 0L) {
+                        navController.navigate(AppRoute.NotificationDetail.createRoute(rowId)) {
+                            launchSingleTop = true
+                        }
+                    } else {
+                        navigateToRoute(AppRoute.NotificationsGraph)
+                    }
+                }
+            }
         }
     }
 
@@ -340,7 +356,6 @@ private fun Int.toBadgeText(): String? {
         else -> toString()
     }
 }
-
 
 
 
