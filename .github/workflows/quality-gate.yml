@@ -60,6 +60,8 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
 
       - id: setvars
         name: Detect Changed Flavours
@@ -191,6 +193,8 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
 
       - name: Run Unit Tests
         env:
@@ -263,6 +267,8 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
 
       - name: Run Static Analysis
         run: |
@@ -319,6 +325,8 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
