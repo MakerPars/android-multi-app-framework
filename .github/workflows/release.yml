@@ -103,14 +103,50 @@ jobs:
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
-      - name: Validate Release Signing Secrets
+      - name: Load secrets from Doppler (optional)
+        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        uses: dopplerhq/cli-action@v3
+
+      - name: Resolve release secrets (Doppler first, GitHub fallback)
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          load_from_doppler() {
+            local key="$1"
+            if [ -n "${DOPPLER_TOKEN:-}" ]; then
+              local val
+              val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+              if [ -n "$val" ]; then
+                echo "::add-mask::$val"
+                printf -v "$key" '%s' "$val"
+                export "$key"
+                printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+              fi
+            fi
+          }
+
+          load_from_doppler KEYSTORE_BASE64
+          load_from_doppler KEYSTORE_PASSWORD
+          load_from_doppler KEY_ALIAS
+          load_from_doppler KEY_PASSWORD
+          load_from_doppler PUSH_REGISTRATION_URL
+          load_from_doppler SENTRY_AUTH_TOKEN
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
+
+          printf 'KEYSTORE_BASE64=%s\n' "${KEYSTORE_BASE64:-${{ secrets.KEYSTORE_BASE64 }}}" >> "$GITHUB_ENV"
+          printf 'KEYSTORE_PASSWORD=%s\n' "${KEYSTORE_PASSWORD:-${{ secrets.KEYSTORE_PASSWORD }}}" >> "$GITHUB_ENV"
+          printf 'KEY_ALIAS=%s\n' "${KEY_ALIAS:-${{ secrets.KEY_ALIAS }}}" >> "$GITHUB_ENV"
+          printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
+          printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
+          printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+
+      - name: Validate Release Signing Secrets
         run: |
           set -euo pipefail
           [ -n "$KEYSTORE_BASE64" ] || { echo "::error::Missing secret: KEYSTORE_BASE64"; exit 1; }
@@ -121,16 +157,12 @@ jobs:
           [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
 
       - name: Decode Keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
 
       - name: Decode Play Service Account (for auto-bump)
         if: github.event.inputs.publish_to_play == 'true'
-        env:
-          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
         run: |
           set -euo pipefail
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
@@ -163,13 +195,6 @@ jobs:
           echo "::warning::If you later upload this artifact manually to Play, versionCode may already be used."
 
       - name: Build Release AAB
-        env:
-          KEYSTORE_FILE: ${{ runner.temp }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -255,15 +280,50 @@ jobs:
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ needs.build-release.outputs.resolved_flavors_csv }}"
 
-      - name: Decode Secrets
+      - name: Load secrets from Doppler (optional)
+        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        uses: dopplerhq/cli-action@v3
+
+      - name: Resolve release secrets (Doppler first, GitHub fallback)
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
-          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          load_from_doppler() {
+            local key="$1"
+            if [ -n "${DOPPLER_TOKEN:-}" ]; then
+              local val
+              val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+              if [ -n "$val" ]; then
+                echo "::add-mask::$val"
+                printf -v "$key" '%s' "$val"
+                export "$key"
+                printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+              fi
+            fi
+          }
+
+          load_from_doppler KEYSTORE_BASE64
+          load_from_doppler KEYSTORE_PASSWORD
+          load_from_doppler KEY_ALIAS
+          load_from_doppler KEY_PASSWORD
+          load_from_doppler PUSH_REGISTRATION_URL
+          load_from_doppler SENTRY_AUTH_TOKEN
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
+
+          printf 'KEYSTORE_BASE64=%s\n' "${KEYSTORE_BASE64:-${{ secrets.KEYSTORE_BASE64 }}}" >> "$GITHUB_ENV"
+          printf 'KEYSTORE_PASSWORD=%s\n' "${KEYSTORE_PASSWORD:-${{ secrets.KEYSTORE_PASSWORD }}}" >> "$GITHUB_ENV"
+          printf 'KEY_ALIAS=%s\n' "${KEY_ALIAS:-${{ secrets.KEY_ALIAS }}}" >> "$GITHUB_ENV"
+          printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
+          printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
+          printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+
+      - name: Decode Secrets
         run: |
           set -euo pipefail
           [ -n "$KEYSTORE_BASE64" ] || { echo "::error::Missing secret: KEYSTORE_BASE64"; exit 1; }
@@ -291,13 +351,6 @@ jobs:
 
       - name: Publish to Play Console
         if: needs.build-release.outputs.auto_bump_done == 'true'
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          PUSH_REGISTRATION_URL: ${{ secrets.PUSH_REGISTRATION_URL }}
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           set -euo pipefail
           chmod +x ./gradlew

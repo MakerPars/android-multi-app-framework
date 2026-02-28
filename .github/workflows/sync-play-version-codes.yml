@@ -41,9 +41,30 @@ jobs:
           set -euo pipefail
           python3 ./scripts/ci/validate_ci_apps_catalog.py --mode warn --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
-      - name: Decode Play Service Account
+      - name: Load secrets from Doppler (optional)
+        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        uses: dopplerhq/cli-action@v3
+
+      - name: Resolve Play secret (Doppler first, GitHub fallback)
         env:
-          PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          set -euo pipefail
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          if [ -n "${DOPPLER_TOKEN:-}" ]; then
+            val="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              PLAY_SERVICE_ACCOUNT_JSON_BASE64="$val"
+              printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val" >> "$GITHUB_ENV"
+            fi
+          fi
+
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+
+      - name: Decode Play Service Account
         run: |
           set -euo pipefail
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }

@@ -23,26 +23,27 @@ Bu dokümanda projenin imzalama, Play Store yayınlama ve CI/CD için gereken t�
 | `KEYSTORE_PASSWORD` | Keystore şifresi | Her yerde |
 | `KEY_ALIAS` | İmza anahtarının alias adı | Her yerde |
 | `KEY_PASSWORD` | Anahtar şifresi | Her yerde |
-| `PLAY_SERVICE_ACCOUNT_JSON` | Play Console API service account JSON içeriği | CI/CD (publish) |
+| `PLAY_SERVICE_ACCOUNT_JSON_BASE64` | Service account JSON dosyasının Base64 kodlanmış hali | CI/CD (publish) |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Service account JSON dosya yolu | Lokal geliştirme (.env) |
 
 ---
 
 ## GitHub Actions — Repository Secrets
 
-> Not: Bu repo'da CI/CD icin Azure DevOps kullanilir. GitHub Actions workflow'lari devre disidir ve
-> `docs/legacy/github-actions/` altina arsivlenmistir. Bu bolum referans amaclidir.
-
 ```
 GitHub Repo → Settings → Secrets and variables → Actions → New repository secret
 ```
 
-Eklenecek 5 secret:
+Eklenecek secretlar:
 
 1. **`KEYSTORE_BASE64`** — JKS dosyasını Base64'e çevirerek
 2. **`KEYSTORE_PASSWORD`** — Keystore şifresi
 3. **`KEY_ALIAS`** — Genellikle `upload` veya `key0`
 4. **`KEY_PASSWORD`** — Anahtar şifresi
-5. **`PLAY_SERVICE_ACCOUNT_JSON`** — Service account JSON dosyasının tüm içeriği
+5. **`PLAY_SERVICE_ACCOUNT_JSON_BASE64`** — Service account JSON dosyasını Base64'e çevirerek
+6. **`PUSH_REGISTRATION_URL`** — release/publish için zorunlu endpoint
+7. **`SENTRY_AUTH_TOKEN`** — release mapping upload için
+8. **`DOPPLER_TOKEN`** (opsiyonel) — workflow'larda Doppler-first secret çekimi için
 
 ### GitHub Environment (Zorunlu)
 
@@ -71,7 +72,9 @@ Azure DevOps'ta secret'ları aşağıdaki iki yöntemden biriyle tanımlayın:
 - `KEYSTORE_PASSWORD`
 - `KEY_ALIAS`
 - `KEY_PASSWORD`
-- `PLAY_SERVICE_ACCOUNT_JSON`
+- `PLAY_SERVICE_ACCOUNT_JSON_BASE64`
+- `PUSH_REGISTRATION_URL`
+- `SENTRY_AUTH_TOKEN`
 - `FIREBASE_CONFIGS_ZIP_BASE64` (opsiyonel override)
 
 Azure YAML dosyaları:
@@ -144,7 +147,12 @@ base64 -w 0 release.jks
 4. [Google Play Console](https://play.google.com/console) → **Settings → API access**
 5. Oluşturduğunuz Service Account'u **bağlayın**
 6. **Permissions**: En az `Release manager` rolü verin
-7. JSON dosyasının **tüm içeriğini** `PLAY_SERVICE_ACCOUNT_JSON` secret'ına kopyalayın
+7. JSON dosyasını Base64'e çevirip `PLAY_SERVICE_ACCOUNT_JSON_BASE64` secret'ına koyun
+
+**PowerShell:**
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account.json"))
+```
 
 ---
 
@@ -157,7 +165,7 @@ base64 -w 0 release.jks
 │  KEYSTORE_PASSWORD ──► env var ──► Gradle pick()      │
 │  KEY_ALIAS         ──► env var ──► Gradle pick()      │
 │  KEY_PASSWORD      ──► env var ──► Gradle pick()      │
-│  PLAY_SERVICE_ACCOUNT_JSON ──► service-account.json   │
+│  PLAY_SERVICE_ACCOUNT_JSON_BASE64 ─decode──► service-account.json │
 │                                                       │
 │  build.gradle.kts:                                    │
 │    pick("KEYSTORE_FILE") → "../release.jks"           │
