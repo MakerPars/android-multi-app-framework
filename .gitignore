@@ -93,3 +93,4 @@ side-projects/admin-notifications/dist/
 project-no-assets.zip
 .wrangler/cache/pages.json
 .wrangler/cache/wrangler-account.json
+.vscode/
