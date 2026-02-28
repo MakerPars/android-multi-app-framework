@@ -1,62 +1,57 @@
 <!doctype html>
 <html lang="tr">
-
 <head>
-    <meta charset="utf-8">
-    <title>Mobil Uygulama Geliştirici Sayfası</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3312485084079132"
-        crossorigin="anonymous"></script>
-
-    <!-- reCAPTCHA Enterprise (v3) -->
-    <script defer
-        src="https://www.google.com/recaptcha/enterprise.js?render=6LdRYXEsAAAAANIMT89AjKOgMguNDW6qB4_1dRSL"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Destek | Parsfilo</title>
+  <meta name="description" content="Parsfilo uygulamalari destek merkezi.">
+  <link rel="canonical" href="https://parsfilo.com/support/">
+  <link rel="stylesheet" href="/assets/site.css">
 </head>
-
 <body>
+  <main class="container">
+    <header class="hero">
+      <p class="kicker">Parsfilo</p>
+      <h1>Destek merkezi</h1>
+      <p class="lead">Sorun bildirimi, geri bildirim ve sik sorulan sorular icin bu sayfayi kullanin.</p>
+    </header>
 
-    <h1>Mobil Uygulama Geliştirici Sayfası</h1>
+    <section class="stack">
+      <article class="card">
+        <h2>Hizli destek e-postasi</h2>
+        <p><a href="mailto:info@parsfilo.com?subject=Parsfilo%20Destek">info@parsfilo.com</a></p>
+        <p class="muted">E-postaya uygulama adi, surum, cihaz modeli ve ekran goruntusu eklerseniz cozum suresi kisalir.</p>
+      </article>
 
-    <p>Bu web sitesi, mobil uygulamalar için gerekli yasal ve teknik bilgilendirme sayfalarını barındırır.</p>
+      <article class="card">
+        <h2>Sik sorulanlar</h2>
+        <div class="stack">
+          <div>
+            <strong>Bildirim neden gelmedi?</strong>
+            <p class="muted">Cihazin pil optimizasyonu, bildirim izni ve internet baglantisi kontrol edilmelidir.</p>
+          </div>
+          <div>
+            <strong>Abonelik taninmadiysa ne yapmaliyim?</strong>
+            <p class="muted">Google Play odeme hesabinizla uygulamadaki hesabinizin ayni oldugunu dogrulayin, sonra uygulamayi yeniden acin.</p>
+          </div>
+          <div>
+            <strong>Hata bildirimi nasil yapilir?</strong>
+            <p class="muted">E-posta ile paket adi, adimlar ve ekran goruntusu gonderin.</p>
+          </div>
+        </div>
+      </article>
 
-    <ul>
-        <li><a href="/privacy">Gizlilik Politikası</a></li>
-        <li><a href="/terms">Kullanım Şartları</a></li>
-        <li><a href="/support">Destek</a></li>
-    </ul>
-
-    <!-- reCAPTCHA Token Request -->
-    <script>
-        (function () {
-            const SITE_KEY = "6LdRYXEsAAAAANIMT89AjKOgMguNDW6qB4_1dRSL";
-
-            function runRecaptcha() {
-                if (!window.grecaptcha || !grecaptcha.enterprise) {
-                    console.warn("reCAPTCHA script yüklenmedi (grecaptcha.enterprise yok).");
-                    return;
-                }
-
-                grecaptcha.enterprise.ready(function () {
-                    grecaptcha.enterprise.execute(SITE_KEY, { action: "homepage" })
-                        .then(function (token) {
-                            console.log("recaptcha token:", token);
-                        })
-                        .catch(function (err) {
-                            console.error("reCAPTCHA execute hata:", err);
-                        });
-                });
-            }
-
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", runRecaptcha);
-            } else {
-                runRecaptcha();
-            }
-        })();
-    </script>
-
+      <article class="card">
+        <h2>Ilgili sayfalar</h2>
+        <p class="chips">
+          <a class="chip" href="/apps/">Uygulamalar</a>
+          <a class="chip" href="/status/">Sistem durumu</a>
+          <a class="chip" href="/privacy/">Gizlilik</a>
+          <a class="chip" href="/terms/">Kullanim sartlari</a>
+          <a class="chip" href="/contact/">Iletisim</a>
+        </p>
+      </article>
+    </section>
+  </main>
 </body>
-
 </html>

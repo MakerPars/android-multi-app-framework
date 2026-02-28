@@ -18,7 +18,7 @@ type FeedCacheEntry = {
     expiresAt: number;
 };
 
-const SEED_APPS_URL = "https://mobildev.site/other_apps.json";
+const SEED_APPS_URL = "https://parsfilo.com/other_apps.json";
 const PLAY_DETAILS_URL = "https://play.google.com/store/apps/details?id=";
 const PLAY_USER_AGENT =
     "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 " +
