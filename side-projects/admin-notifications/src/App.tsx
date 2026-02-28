@@ -61,6 +61,41 @@ type DeviceCoverageReport = {
   stalePackages: string[];
 };
 
+type AdPerformanceAlert = {
+  appId: string;
+  appLabel: string;
+  format: string;
+  adRequests: number;
+  matchedRequests: number;
+  impressions: number;
+  fillRatePct: number;
+  showRatePct: number;
+  earningsTry: number;
+  reasons: string[];
+};
+
+type AdPerformanceReport = {
+  generatedAt: string;
+  rangeStart: string;
+  rangeEnd: string;
+  status: "ok" | "misconfigured" | "error";
+  thresholds: {
+    minRequests: number;
+    fillRatePct: number;
+    showRatePct: number;
+  };
+  totals: {
+    earningsTry: number;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+    fillRatePct: number;
+    showRatePct: number;
+  };
+  alerts: AdPerformanceAlert[];
+  issue?: string;
+};
+
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
 
 function parseEventStatus(value: unknown): ScheduledEventRecord["status"] {
@@ -295,6 +330,16 @@ function formatDateTime(date?: Date | null): string {
   }).format(date);
 }
 
+function formatPercent(value?: number): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+  return `${value.toFixed(2)}%`;
+}
+
+function formatTry(value?: number): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+  return `₺${value.toFixed(4)}`;
+}
+
 function scheduleLabel(record: ScheduledEventRecord): string {
   if (record.date) return `Once: ${record.date} @ ${record.localDeliveryTime}`;
   if (record.recurrence) return `${record.recurrence} @ ${record.localDeliveryTime}`;
@@ -341,6 +386,9 @@ export default function App() {
   const [coverageLoading, setCoverageLoading] = useState(false);
   const [coverageError, setCoverageError] = useState("");
   const [coverageReport, setCoverageReport] = useState<DeviceCoverageReport | null>(null);
+  const [adReportLoading, setAdReportLoading] = useState(false);
+  const [adReportError, setAdReportError] = useState("");
+  const [adPerformanceReport, setAdPerformanceReport] = useState<AdPerformanceReport | null>(null);
   const [testPushResult, setTestPushResult] = useState<{
     messageId: string;
     mode: string;
@@ -431,6 +479,14 @@ export default function App() {
     );
     return () => unsub();
   }, [adminState, selectedId]);
+
+  useEffect(() => {
+    if (adminState !== "authorized") return;
+    if (activeTab !== "test-push") return;
+    if (adPerformanceReport || adReportLoading) return;
+    void loadAdPerformanceReport(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminState, activeTab, adPerformanceReport, adReportLoading]);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedId) ?? null,
@@ -779,6 +835,47 @@ export default function App() {
       setCoverageError(e instanceof Error ? e.message : "Failed to fetch coverage report.");
     } finally {
       setCoverageLoading(false);
+    }
+  };
+
+  const loadAdPerformanceReport = async (forceRefresh: boolean) => {
+    if (!user) return;
+    setAdReportLoading(true);
+    setAdReportError("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/adPerformanceReport`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ refresh: forceRefresh }),
+      });
+
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(
+            responseBody,
+            `HTTP ${response.status}: Failed to fetch ad performance report`,
+          ),
+        );
+      }
+
+      const payload = responseBody as AdPerformanceReport;
+      setAdPerformanceReport(payload);
+    } catch (e) {
+      console.error(e);
+      setAdReportError(e instanceof Error ? e.message : "Failed to fetch ad performance report.");
+    } finally {
+      setAdReportLoading(false);
     }
   };
 
@@ -1401,6 +1498,110 @@ export default function App() {
                     <div className="coverage-alert">
                       <strong>Stale packages (no recent device)</strong>
                       <div>{coverageReport.stalePackages.join(", ")}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+          <section className="subsection">
+            <div className="coverage-box">
+              <div className="device-preview-header">
+                <strong>Weekly ad health (AdMob)</strong>
+                <div className="device-finder-actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => loadAdPerformanceReport(false)}
+                    disabled={adReportLoading}
+                  >
+                    {adReportLoading ? "Loading…" : "Load latest"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => loadAdPerformanceReport(true)}
+                    disabled={adReportLoading}
+                  >
+                    {adReportLoading ? "Refreshing…" : "Force refresh"}
+                  </button>
+                </div>
+              </div>
+
+              {adReportError && <p className="inline-error">{adReportError}</p>}
+
+              {adPerformanceReport && !adReportError && (
+                <div className="ad-report-result">
+                  <p className="muted">
+                    generatedAt={adPerformanceReport.generatedAt} · range=
+                    {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
+                    <strong>{adPerformanceReport.status}</strong>
+                  </p>
+                  {adPerformanceReport.issue && (
+                    <div className="coverage-alert">
+                      <strong>Issue</strong>
+                      <div>{adPerformanceReport.issue}</div>
+                    </div>
+                  )}
+                  <ul className="coverage-list">
+                    <li>
+                      <span>Total earnings</span>
+                      <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
+                    </li>
+                    <li>
+                      <span>Total ad requests</span>
+                      <strong>{adPerformanceReport.totals.adRequests}</strong>
+                    </li>
+                    <li>
+                      <span>Total fill rate</span>
+                      <strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong>
+                    </li>
+                    <li>
+                      <span>Total show rate</span>
+                      <strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong>
+                    </li>
+                  </ul>
+
+                  <div className="muted">
+                    Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=
+                    {formatPercent(adPerformanceReport.thresholds.fillRatePct)}, showRate=
+                    {formatPercent(adPerformanceReport.thresholds.showRatePct)}
+                  </div>
+
+                  {adPerformanceReport.alerts.length === 0 ? (
+                    <p className="muted">No app/format alerts in this window.</p>
+                  ) : (
+                    <div className="ad-alert-list">
+                      {adPerformanceReport.alerts.map((alert) => (
+                        <div
+                          key={`${alert.appId}-${alert.format}`}
+                          className="ad-alert-item"
+                        >
+                          <div className="ad-alert-header">
+                            <strong>{alert.appLabel}</strong>
+                            <code>{alert.format}</code>
+                          </div>
+                          <div className="ad-alert-metrics">
+                            requests={alert.adRequests} · matched={alert.matchedRequests} · impressions=
+                            {alert.impressions}
+                          </div>
+                          <div className="ad-alert-metrics">
+                            fill={formatPercent(alert.fillRatePct)} · show=
+                            {formatPercent(alert.showRatePct)} · earnings=
+                            {formatTry(alert.earningsTry)}
+                          </div>
+                          <div className="ad-alert-reasons">
+                            {alert.reasons.map((reason) => (
+                              <span key={reason} className="status-pill status-paused">
+                                {reason}
+                              </span>
+                            ))}
+                          </div>
+                          <small className="muted">
+                            appId=<code>{alert.appId}</code>
+                          </small>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

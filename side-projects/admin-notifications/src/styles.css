@@ -379,6 +379,52 @@ textarea {
   gap: 12px;
 }
 
+.device-preview-box {
+  border: 1px solid #e0e8f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafcff;
+  margin-top: 12px;
+}
+
+.device-preview-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.device-preview-result {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.device-preview-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.device-preview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.device-preview-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #dde7f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
 .test-push-box {
   border: 1px solid #e0e8f2;
   border-radius: 12px;
@@ -534,6 +580,43 @@ textarea {
   padding: 8px 10px;
   display: grid;
   gap: 4px;
+}
+
+.ad-report-result {
+  display: grid;
+  gap: 10px;
+}
+
+.ad-alert-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ad-alert-item {
+  border: 1px solid #e0e8f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.ad-alert-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.ad-alert-metrics {
+  color: #4d5d72;
+  font-size: 0.9rem;
+}
+
+.ad-alert-reasons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .preview-cards {

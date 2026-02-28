@@ -15,6 +15,7 @@ class AdsPolicyProviderTest {
         val remoteConfigManager = mockRemoteConfig(
             longs = mapOf(
                 AdsPolicyProvider.KEY_INTERSTITIAL_FREQUENCY_CAP_MS to 1L, // invalid -> fallback
+                AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to 10L, // invalid -> fallback
                 AdsPolicyProvider.KEY_APP_OPEN_COOLDOWN_MS to 999_999_999L, // invalid -> fallback
                 AdsPolicyProvider.KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS to -1L, // invalid -> fallback
                 AdsPolicyProvider.KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to 99L, // invalid -> fallback
@@ -27,6 +28,8 @@ class AdsPolicyProviderTest {
                 AdsPolicyProvider.KEY_BANNER_PLACEMENTS_DISABLED_CSV to
                     "banner_home, BANNER_QIBLA, unknown_placement",
                 AdsPolicyProvider.KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "NATIVE_FEED_HOME",
+                AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to
+                    "com.parsfilo.yasinsuresi, com.parsfilo.mucizedualar",
             ),
         )
 
@@ -34,6 +37,8 @@ class AdsPolicyProviderTest {
 
         assertThat(policy.interstitialFrequencyCapMs)
             .isEqualTo(AdsPolicyProvider.DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS)
+        assertThat(policy.interstitialRelaxedFrequencyCapMs)
+            .isEqualTo(AdsPolicyProvider.DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS)
         assertThat(policy.appOpenCooldownMs)
             .isEqualTo(AdsPolicyProvider.DEFAULT_APP_OPEN_COOLDOWN_MS)
         assertThat(policy.rewardedInterstitialMinIntervalMs)
@@ -52,6 +57,8 @@ class AdsPolicyProviderTest {
             )
         assertThat(policy.nativePlacementsDisabled)
             .containsExactly(AdPlacement.NATIVE_FEED_HOME.analyticsValue)
+        assertThat(policy.interstitialRelaxedPackages)
+            .containsExactly("com.parsfilo.yasinsuresi", "com.parsfilo.mucizedualar")
     }
 
     @Test
@@ -59,6 +66,7 @@ class AdsPolicyProviderTest {
         val remoteConfigManager = mockRemoteConfig(
             longs = mapOf(
                 AdsPolicyProvider.KEY_INTERSTITIAL_FREQUENCY_CAP_MS to 180_000L,
+                AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to 360_000L,
                 AdsPolicyProvider.KEY_APP_OPEN_COOLDOWN_MS to 300_000L,
                 AdsPolicyProvider.KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS to 1_200_000L,
                 AdsPolicyProvider.KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to 3L,
@@ -70,12 +78,14 @@ class AdsPolicyProviderTest {
                 AdsPolicyProvider.KEY_NATIVE_ENABLED to "true",
                 AdsPolicyProvider.KEY_BANNER_PLACEMENTS_DISABLED_CSV to "",
                 AdsPolicyProvider.KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "native_feed_zikir",
+                AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "com.parsfilo.zikirmatik",
             ),
         )
 
         val policy = AdsPolicyProvider(remoteConfigManager).getPolicy()
 
         assertThat(policy.interstitialFrequencyCapMs).isEqualTo(180_000L)
+        assertThat(policy.interstitialRelaxedFrequencyCapMs).isEqualTo(360_000L)
         assertThat(policy.appOpenCooldownMs).isEqualTo(300_000L)
         assertThat(policy.rewardedInterstitialMinIntervalMs).isEqualTo(1_200_000L)
         assertThat(policy.rewardedInterstitialMaxPerSession).isEqualTo(3)
@@ -85,6 +95,10 @@ class AdsPolicyProviderTest {
         assertThat(policy.nativeEnabled).isTrue()
         assertThat(policy.nativePlacementsDisabled)
             .containsExactly(AdPlacement.NATIVE_FEED_ZIKIR.analyticsValue)
+        assertThat(policy.interstitialFrequencyCapForPackage("com.parsfilo.zikirmatik"))
+            .isEqualTo(360_000L)
+        assertThat(policy.interstitialFrequencyCapForPackage("com.parsfilo.kible"))
+            .isEqualTo(180_000L)
     }
 
     private fun mockRemoteConfig(
@@ -98,4 +112,3 @@ class AdsPolicyProviderTest {
         return remoteConfigManager
     }
 }
-

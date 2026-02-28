@@ -118,7 +118,15 @@ class InterstitialAdManager @Inject constructor(
             return
         }
 
-        val frequencyCapMs = adsPolicyProvider.getPolicy().interstitialFrequencyCapMs
+        val policy = adsPolicyProvider.getPolicy()
+        val frequencyCapMs = policy.interstitialFrequencyCapForPackage(context.packageName)
+        if (frequencyCapMs != policy.interstitialFrequencyCapMs) {
+            Timber.d(
+                "Interstitial frequency cap relaxed for package=%s capMs=%d",
+                context.packageName,
+                frequencyCapMs,
+            )
+        }
         if (now - prefs.lastInterstitialShown < frequencyCapMs) {
             onAdDismissed()
             return

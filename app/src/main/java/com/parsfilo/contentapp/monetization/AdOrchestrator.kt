@@ -227,15 +227,8 @@ class AdOrchestrator @Inject constructor(
             policy.nativePoolMax,
         )
 
-        SentryMetrics.count("ads.load.requested.rewarded")
-        rewardedAdManager.loadAd(
-            AppAdUnitIds.resolvePlacement(
-                activity,
-                AdPlacement.REWARDED_DEFAULT,
-                BuildConfig.USE_TEST_ADS,
-            ),
-            AdPlacement.REWARDED_DEFAULT,
-        )
+        // Rewarded ads are loaded on-demand from Rewards screen to avoid
+        // high background request volume when user never opens rewards flow.
 
         SentryMetrics.count("ads.load.requested.rewarded_interstitial")
         rewardedInterstitialAdManager.loadAd(

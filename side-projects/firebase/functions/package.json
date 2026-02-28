@@ -4,11 +4,13 @@
     "scripts": {
         "build": "tsc",
         "build:watch": "tsc --watch",
+        "sync-env:doppler": "node scripts/sync-env-from-doppler.mjs",
         "test:reset-logic": "npm run build && node scripts/test-reset-logic.js",
-        "serve": "npm run build && firebase emulators:start --only functions",
-        "shell": "npm run build && firebase functions:shell",
+        "serve": "npm run build && firebase emulators:start --only functions --config ../firebase.json",
+        "shell": "npm run build && firebase functions:shell --config ../firebase.json",
         "start": "npm run shell",
-        "deploy": "firebase deploy --only functions",
+        "deploy": "firebase deploy --only functions --project mobil-oaslananka-firebase --config ../firebase.json",
+        "deploy:with-doppler": "npm run sync-env:doppler && npm run deploy",
         "logs": "firebase functions:log"
     },
     "engines": {

@@ -26,6 +26,12 @@ class AdsPolicyProvider @Inject constructor(
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_APP_OPEN_COOLDOWN_MS,
         )
+        val interstitialRelaxedFrequencyCapMs = sanitizeLong(
+            remoteConfigManager.getLong(KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS),
+            min = 60_000L,
+            max = 60 * 60 * 1000L,
+            fallback = DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
+        )
         val rewardedInterstitialMinIntervalMs = sanitizeLong(
             remoteConfigManager.getLong(KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS),
             min = 0L,
@@ -67,9 +73,14 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getString(KEY_NATIVE_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.NATIVE,
         )
+        val interstitialRelaxedPackages = parsePackageCsv(
+            remoteConfigManager.getString(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
+        )
 
         return AdsPolicyConfig(
             interstitialFrequencyCapMs = interstitialFrequencyCapMs,
+            interstitialRelaxedFrequencyCapMs = interstitialRelaxedFrequencyCapMs,
+            interstitialRelaxedPackages = interstitialRelaxedPackages,
             appOpenCooldownMs = appOpenCooldownMs,
             rewardedInterstitialMinIntervalMs = rewardedInterstitialMinIntervalMs,
             rewardedInterstitialMaxPerSession = rewardedInterstitialMaxPerSession,
@@ -118,6 +129,15 @@ class AdsPolicyProvider @Inject constructor(
             }
         }
 
+    private fun parsePackageCsv(value: String): Set<String> {
+        if (value.isBlank()) return emptySet()
+        return value.split(',')
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+    }
+
     private fun sanitizeLong(value: Long, min: Long, max: Long, fallback: Long): Long =
         value.takeIf { it in min..max } ?: fallback
 
@@ -128,6 +148,10 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_BANNER_ENABLED = "ads_banner_enabled"
         const val KEY_NATIVE_ENABLED = "ads_native_enabled"
         const val KEY_INTERSTITIAL_FREQUENCY_CAP_MS = "ads_interstitial_frequency_cap_ms"
+        const val KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS =
+            "ads_interstitial_relaxed_frequency_cap_ms"
+        const val KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV =
+            "ads_interstitial_relaxed_packages_csv"
         const val KEY_APP_OPEN_COOLDOWN_MS = "ads_app_open_cooldown_ms"
         const val KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS =
             "ads_rewarded_interstitial_min_interval_ms"
@@ -141,6 +165,7 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_BANNER_ENABLED = true
         const val DEFAULT_NATIVE_ENABLED = true
         const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 150_000L
+        const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 240_000L
         const val DEFAULT_APP_OPEN_COOLDOWN_MS = 240_000L
         const val DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS = 900_000L
         const val DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION = 2
@@ -151,6 +176,8 @@ class AdsPolicyProvider @Inject constructor(
             KEY_BANNER_ENABLED to DEFAULT_BANNER_ENABLED,
             KEY_NATIVE_ENABLED to DEFAULT_NATIVE_ENABLED,
             KEY_INTERSTITIAL_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS,
+            KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
+            KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "",
             KEY_APP_OPEN_COOLDOWN_MS to DEFAULT_APP_OPEN_COOLDOWN_MS,
             KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS to DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
             KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong(),
@@ -161,4 +188,3 @@ class AdsPolicyProvider @Inject constructor(
         )
     }
 }
-

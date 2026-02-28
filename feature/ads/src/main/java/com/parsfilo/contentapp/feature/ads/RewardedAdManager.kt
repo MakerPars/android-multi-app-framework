@@ -22,6 +22,7 @@ class RewardedAdManager @Inject constructor(
     private val adRevenueLogger: AdRevenueLogger,
 ) {
     private var rewardedAd: RewardedAd? = null
+    private var isLoading = false
     private var currentPlacement: AdPlacement = AdPlacement.REWARDED_DEFAULT
     private var currentRoute: String? = null
     private var loadBackoffState = AdLoadBackoffState()
@@ -39,10 +40,12 @@ class RewardedAdManager @Inject constructor(
             clearAd()
             return
         }
+        if (isLoading || rewardedAd != null) return
         val now = SystemTimeProvider.nowMillis()
         if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) return
         currentPlacement = placement
         currentRoute = route
+        isLoading = true
         val adRequest = AdRequest.Builder().build()
         Timber.d("Rewarded load requested: %s", adUnitId)
         RewardedAd.load(
@@ -53,6 +56,7 @@ class RewardedAdManager @Inject constructor(
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     rewardedAd = null
                     _isAdReady.value = false
+                    isLoading = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
                         nowMillis = SystemTimeProvider.nowMillis(),
                         current = loadBackoffState,
@@ -84,6 +88,7 @@ class RewardedAdManager @Inject constructor(
                     )
                     rewardedAd = ad
                     _isAdReady.value = true
+                    isLoading = false
                 }
             }
         )
@@ -101,6 +106,7 @@ class RewardedAdManager @Inject constructor(
                 override fun onAdDismissedFullScreenContent() {
                     rewardedAd = null
                     _isAdReady.value = false
+                    isLoading = false
                     Timber.d("Rewarded dismissed")
                     onAdDismissed()
                 }
@@ -108,6 +114,7 @@ class RewardedAdManager @Inject constructor(
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     rewardedAd = null
                     _isAdReady.value = false
+                    isLoading = false
                     Timber.w("Rewarded failed to show: %s", adError.message)
                     onAdDismissed()
                 }
@@ -142,6 +149,7 @@ class RewardedAdManager @Inject constructor(
             }
         } else {
             _isAdReady.value = false
+            isLoading = false
             Timber.d("Rewarded show skipped: ad not ready")
             onAdDismissed()
         }
@@ -150,5 +158,6 @@ class RewardedAdManager @Inject constructor(
     fun clearAd() {
         rewardedAd = null
         _isAdReady.value = false
+        isLoading = false
     }
 }

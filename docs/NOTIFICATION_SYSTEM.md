@@ -183,6 +183,27 @@ Notlar:
 - `side-projects/admin-notifications/vite.config.ts` repo root `.env` dosyasini da okur (`envDir = ".."`).
 - Geriye donuk uyumluluk icin sadece `FIREBASE_WEB_API_KEY` fallback olarak desteklenir; diger Firebase Web alanlari `VITE_` prefix ile verilmelidir.
 
+### Weekly AdMob Health Report (Cloud Functions Env)
+
+`adPerformanceReport` ve `generateAdPerformanceWeeklyReport` fonksiyonlari icin gerekli env:
+
+- `ADMOB_CLIENT_ID`
+- `ADMOB_CLIENT_SECRET`
+- `ADMOB_REFRESH_TOKEN`
+- `ADMOB_PUBLISHER_ID` (`pub-...` veya `accounts/pub-...`)
+
+Opsiyonel threshold env:
+
+- `AD_HEALTH_MIN_REQUESTS` (default: `500`)
+- `AD_HEALTH_FILL_RATE_THRESHOLD` (default: `55`)
+- `AD_HEALTH_SHOW_RATE_THRESHOLD` (default: `20`)
+
+Doppler'dan functions `.env` dosyasi uretmek icin:
+
+```powershell
+npm run sync-env:doppler --prefix side-projects/firebase/functions
+```
+
 ### Otomatik Çalışan Bileşenler
 
 | Bileşen | Nerede | Ne Yapar |
@@ -198,17 +219,18 @@ Notlar:
 ```powershell
 # Functions deploy
 Set-Location android-multi-app-framework
-firebase deploy --only functions
+npm run deploy:with-doppler --prefix side-projects/firebase/functions
 
 # Firestore rules deploy
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules --project mobil-oaslananka-firebase --config side-projects/firebase/firebase.json
 
 # Firestore composite indexes deploy (repo-declared)
-firebase deploy --only firestore:indexes
+firebase deploy --only firestore:indexes --project mobil-oaslananka-firebase --config side-projects/firebase/firebase.json
 
 # Function loglarını izle
-firebase functions:log --only registerDevice
-firebase functions:log --only dispatchNotifications
+firebase functions:log --only registerDevice --project mobil-oaslananka-firebase
+firebase functions:log --only dispatchNotifications --project mobil-oaslananka-firebase
+firebase functions:log --only adPerformanceReport --project mobil-oaslananka-firebase
 
 # Functions'ı yeniden build et
 npm run build --prefix side-projects/firebase/functions

@@ -9,3 +9,4 @@ export { dispatchNotifications } from "./dispatchNotifications";
 export { otherAppsFeed } from "./otherAppsFeed";
 export { sendTestNotification } from "./sendTestNotification";
 export { deviceCoverageReport } from "./deviceCoverageReport";
+export { adPerformanceReport, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
