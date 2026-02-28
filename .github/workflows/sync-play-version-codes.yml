@@ -20,6 +20,8 @@ jobs:
   sync:
     name: Sync app-versions.properties from Play (artifact only)
     runs-on: ubuntu-latest
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -42,7 +44,7 @@ jobs:
           python3 ./scripts/ci/validate_ci_apps_catalog.py --mode warn --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
       - name: Load secrets from Doppler (optional)
-        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
       - name: Resolve Play secret (Doppler first, GitHub fallback)

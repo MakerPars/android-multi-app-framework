@@ -56,6 +56,8 @@ jobs:
     name: Manual Ops
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.do_publish == 'true' && 'production' || '' }}
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -144,7 +146,7 @@ jobs:
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
       - name: Load secrets from Doppler (optional)
-        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
       - name: Resolve release secrets (Doppler first, GitHub fallback)

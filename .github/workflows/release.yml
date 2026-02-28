@@ -32,6 +32,8 @@ jobs:
   build-release:
     name: Build Signed Release AAB
     runs-on: ubuntu-latest
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     outputs:
       resolved_flavors_json: ${{ steps.resolve.outputs.resolved_json }}
       resolved_flavors_csv: ${{ steps.resolve.outputs.resolved_csv }}
@@ -104,7 +106,7 @@ jobs:
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
       - name: Load secrets from Doppler (optional)
-        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
       - name: Resolve release secrets (Doppler first, GitHub fallback)
@@ -237,6 +239,8 @@ jobs:
     if: github.event.inputs.publish_to_play == 'true'
     runs-on: ubuntu-latest
     environment: production
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -281,7 +285,7 @@ jobs:
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ needs.build-release.outputs.resolved_flavors_csv }}"
 
       - name: Load secrets from Doppler (optional)
-        if: ${{ secrets.DOPPLER_TOKEN != '' }}
+        if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
       - name: Resolve release secrets (Doppler first, GitHub fallback)
