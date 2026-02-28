@@ -11,6 +11,7 @@ import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
+import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialAdManager
 import com.parsfilo.contentapp.observability.SentryMetrics
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,7 @@ class AdOrchestrator @Inject constructor(
     private val appOpenAdManager: AppOpenAdManager,
     private val interstitialAdManager: InterstitialAdManager,
     val nativeAdManager: NativeAdManager,
+    private val rewardedAdManager: RewardedAdManager,
     internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
     private val adGateChecker: AdGateChecker,
     private val adsPolicyProvider: AdsPolicyProvider,
@@ -225,6 +227,16 @@ class AdOrchestrator @Inject constructor(
             policy.nativePoolMax,
         )
 
+        SentryMetrics.count("ads.load.requested.rewarded")
+        rewardedAdManager.loadAd(
+            AppAdUnitIds.resolvePlacement(
+                activity,
+                AdPlacement.REWARDED_DEFAULT,
+                BuildConfig.USE_TEST_ADS,
+            ),
+            AdPlacement.REWARDED_DEFAULT,
+        )
+
         SentryMetrics.count("ads.load.requested.rewarded_interstitial")
         rewardedInterstitialAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(
@@ -239,6 +251,7 @@ class AdOrchestrator @Inject constructor(
     private fun clearPreloadedAds() {
         appOpenAdManager.clearAd()
         interstitialAdManager.clearAd()
+        rewardedAdManager.clearAd()
         rewardedInterstitialAdManager.clearAd()
         nativeAdManager.destroyAds()
     }
