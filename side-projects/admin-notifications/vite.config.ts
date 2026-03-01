@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
 const ROOT_DIR = path.resolve(__dirname, "../..");
 
@@ -14,10 +15,27 @@ export default defineConfig(({ mode }) => {
     key.startsWith("VITE_") || key.startsWith("FIREBASE_WEB_"),
   );
 
+  let gitSha = "local";
+  try {
+    gitSha = execSync("git rev-parse --short HEAD", {
+      cwd: ROOT_DIR,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    gitSha = "local";
+  }
+
+  const buildTime = new Date().toISOString();
+  const packageVersion = process.env.npm_package_version ?? "0.1.0";
+
   const define: Record<string, string> = {};
   for (const [key, value] of envDefineEntries) {
     define[`import.meta.env.${key}`] = JSON.stringify(value);
   }
+  define["import.meta.env.VITE_APP_BUILD"] = JSON.stringify(`${packageVersion}-${gitSha}`);
+  define["import.meta.env.VITE_APP_BUILD_TIME"] = JSON.stringify(buildTime);
 
   return {
     envDir: __dirname,

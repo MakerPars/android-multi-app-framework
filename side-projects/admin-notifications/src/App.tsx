@@ -353,6 +353,9 @@ function packageLabel(packages: string[]): string {
 }
 
 const sortedApps = [...ciApps].sort((a, b) => a.flavor.localeCompare(b.flavor));
+const appBuildId = (import.meta.env.VITE_APP_BUILD as string | undefined) ?? "dev-local";
+const appBuildTimeRaw = (import.meta.env.VITE_APP_BUILD_TIME as string | undefined) ?? "";
+const appBuildTime = appBuildTimeRaw ? formatDateTime(new Date(appBuildTimeRaw)) : "-";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -1152,6 +1155,9 @@ export default function App() {
         <div>
           <h1>Notifications Admin</h1>
           <p>Manage Firestore <code>scheduled_events</code> used by dispatchNotifications.</p>
+          <p className="topbar-build">
+            build <code>{appBuildId}</code> · {appBuildTime}
+          </p>
         </div>
         <div className="topbar-actions">
           <div className="user-pill">{user.email ?? user.uid}</div>
