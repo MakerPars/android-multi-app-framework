@@ -378,6 +378,7 @@ const sortedApps = [...ciApps].sort((a, b) => a.flavor.localeCompare(b.flavor));
 const appBuildId = (import.meta.env.VITE_APP_BUILD as string | undefined) ?? "dev-local";
 const appBuildTimeRaw = (import.meta.env.VITE_APP_BUILD_TIME as string | undefined) ?? "";
 const appBuildTime = appBuildTimeRaw ? formatDateTime(new Date(appBuildTimeRaw)) : "-";
+const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -1775,7 +1776,7 @@ export default function App() {
             <section className="subsection">
               <div className="coverage-box">
                 <div className="device-preview-header">
-                  <strong>Weekly ad health (AdMob)</strong>
+                  <strong>Ad health (AdMob)</strong>
                   <div className="device-finder-actions">
                     <button
                       type="button"
@@ -1795,14 +1796,20 @@ export default function App() {
                     </button>
                   </div>
                 </div>
+                <p className="muted">
+                  Primary: <strong>Today so far</strong> (same day range as AdMob UI). Secondary:
+                  latest weekly diagnostics.
+                </p>
 
                 {adTodayError && <p className="inline-error">{adTodayError}</p>}
-                {adPerformanceToday && !adTodayError && (
-                  <div className="ad-report-result">
+                {adPerformanceToday && !adTodayError ? (
+                  <div className="ad-report-result ad-report-block">
+                    <h3>Today so far (primary)</h3>
                     <p className="muted">
                       Today so far ({adPerformanceToday.date}) · generatedAt=
                       {adPerformanceToday.generatedAt} · status=
-                      <strong>{adPerformanceToday.status}</strong>
+                      <strong>{adPerformanceToday.status}</strong> · timezone=
+                      {localTimeZone}
                     </p>
                     {adPerformanceToday.issue && (
                       <div className="coverage-alert">
@@ -1829,12 +1836,15 @@ export default function App() {
                       </li>
                     </ul>
                   </div>
+                ) : (
+                  !adTodayError && <p className="muted">Today report not loaded yet.</p>
                 )}
 
                 {adReportError && <p className="inline-error">{adReportError}</p>}
 
-                {adPerformanceReport && !adReportError && (
-                  <div className="ad-report-result">
+                {adPerformanceReport && !adReportError ? (
+                  <div className="ad-report-result ad-report-block">
+                    <h3>Weekly diagnostics (secondary)</h3>
                     <p className="muted">
                       generatedAt={adPerformanceReport.generatedAt} · range=
                       {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
@@ -1908,6 +1918,8 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                ) : (
+                  !adReportError && <p className="muted">Weekly diagnostics not loaded yet.</p>
                 )}
               </div>
             </section>

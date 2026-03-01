@@ -632,6 +632,18 @@ textarea {
   gap: 10px;
 }
 
+.ad-report-block {
+  border: 1px solid #e0e8f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+}
+
+.ad-report-block h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 .ad-alert-list {
   display: grid;
   gap: 8px;
