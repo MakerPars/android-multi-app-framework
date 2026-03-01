@@ -33,6 +33,7 @@ type LoadState = "loading" | "ready" | "error";
 
 type AdminState = "checking" | "authorized" | "unauthorized";
 type AdminTab = "events" | "test-push";
+type TestPushSubTab = "single-device" | "coverage" | "ad-health";
 type TestPushTargetMode = "installationId" | "token";
 
 type DeviceFinderItem = {
@@ -358,9 +359,14 @@ export default function App() {
   const [authState, setAuthState] = useState<LoadState>("loading");
   const [adminState, setAdminState] = useState<AdminState>("checking");
   const [activeTab, setActiveTab] = useState<AdminTab>("events");
+  const [testPushSubTab, setTestPushSubTab] = useState<TestPushSubTab>("single-device");
   const [events, setEvents] = useState<ScheduledEventRecord[]>([]);
   const [eventsState, setEventsState] = useState<LoadState>("loading");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [eventSearchQuery, setEventSearchQuery] = useState("");
+  const [eventStatusFilter, setEventStatusFilter] = useState<"all" | ScheduledEventRecord["status"]>(
+    "all",
+  );
   const [form, setForm] = useState<ScheduledEventForm>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -406,16 +412,25 @@ export default function App() {
     if (tab === "events" || tab === "test-push") {
       setActiveTab(tab);
     }
+    const subTab = params.get("subtab");
+    if (subTab === "single-device" || subTab === "coverage" || subTab === "ad-health") {
+      setTestPushSubTab(subTab);
+    }
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("tab") !== activeTab) {
       params.set("tab", activeTab);
-      const next = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState(null, "", next);
     }
-  }, [activeTab]);
+    if (activeTab === "test-push") {
+      params.set("subtab", testPushSubTab);
+    } else {
+      params.delete("subtab");
+    }
+    const next = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", next);
+  }, [activeTab, testPushSubTab]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(
@@ -492,6 +507,32 @@ export default function App() {
     () => events.find((event) => event.id === selectedId) ?? null,
     [events, selectedId],
   );
+  const filteredEvents = useMemo(() => {
+    const query = eventSearchQuery.trim().toLowerCase();
+    return events.filter((event) => {
+      if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
+      if (!query) return true;
+      return (
+        event.name.toLowerCase().includes(query) ||
+        event.type.toLowerCase().includes(query) ||
+        event.packages.some((pkg) => pkg.toLowerCase().includes(query))
+      );
+    });
+  }, [events, eventSearchQuery, eventStatusFilter]);
+  const eventStats = useMemo(() => {
+    const counts = {
+      total: events.length,
+      scheduled: 0,
+      paused: 0,
+      sent: 0,
+      expired: 0,
+      visible: filteredEvents.length,
+    };
+    for (const event of events) {
+      counts[event.status] += 1;
+    }
+    return counts;
+  }, [events, filteredEvents.length]);
   const filteredDeviceFinderResults = useMemo(() => {
     const needle = deviceFinderSearch.trim().toLowerCase();
     if (!needle) return deviceFinderResults;
@@ -1152,13 +1193,49 @@ export default function App() {
             <h2>Scheduled events</h2>
             <button className="secondary" onClick={resetForm}>New event</button>
           </div>
+          <div className="event-summary">
+            <span className="status-pill status-scheduled">scheduled: {eventStats.scheduled}</span>
+            <span className="status-pill status-paused">paused: {eventStats.paused}</span>
+            <span className="status-pill status-sent">sent: {eventStats.sent}</span>
+            <span className="status-pill status-expired">expired: {eventStats.expired}</span>
+          </div>
+          <div className="event-filters">
+            <label>
+              Search
+              <input
+                value={eventSearchQuery}
+                onChange={(e) => setEventSearchQuery(e.target.value)}
+                placeholder="name / type / package"
+              />
+            </label>
+            <label>
+              Status
+              <select
+                value={eventStatusFilter}
+                onChange={(e) =>
+                  setEventStatusFilter(e.target.value as "all" | ScheduledEventRecord["status"])
+                }
+              >
+                <option value="all">all</option>
+                <option value="scheduled">scheduled</option>
+                <option value="paused">paused</option>
+                <option value="sent">sent</option>
+                <option value="expired">expired</option>
+              </select>
+            </label>
+          </div>
           {eventsState === "loading" && <p className="muted">Loading events…</p>}
           {eventsState === "error" && <p className="inline-error">Failed to load events.</p>}
           {eventsState === "ready" && events.length === 0 && (
             <p className="muted">No scheduled_events documents yet.</p>
           )}
+          {eventsState === "ready" && events.length > 0 && filteredEvents.length === 0 && (
+            <p className="muted">
+              No events match this filter ({eventStats.visible}/{eventStats.total} shown).
+            </p>
+          )}
           <div className="event-list">
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
               <button
                 key={event.id}
                 type="button"
@@ -1443,171 +1520,207 @@ export default function App() {
       <div className="single-panel-grid">
         <main className="panel form-panel">
           <div className="panel-header">
-            <h2>Single-device test push</h2>
+            <h2>Test Push Operations</h2>
           </div>
-          {testPushSection}
-          <section className="subsection">
-            <div className="coverage-box">
-              <div className="device-preview-header">
-                <strong>Device coverage (last N days)</strong>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={loadDeviceCoverageReport}
-                  disabled={coverageLoading}
-                >
-                  {coverageLoading ? "Loading…" : "Refresh coverage"}
-                </button>
-              </div>
+          <div className="sub-tabs" role="tablist" aria-label="Test push sections">
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "single-device"}
+              onClick={() => setTestPushSubTab("single-device")}
+            >
+              Single Device
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "coverage"}
+              onClick={() => setTestPushSubTab("coverage")}
+            >
+              Coverage
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "ad-health"}
+              onClick={() => setTestPushSubTab("ad-health")}
+            >
+              Ad Health
+            </button>
+          </div>
 
-              <label className="coverage-days">
-                Days
-                <input
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={coverageDays}
-                  onChange={(e) => setCoverageDays(Number(e.target.value || 14))}
-                />
-              </label>
+          {testPushSubTab === "single-device" && testPushSection}
 
-              {coverageError && <p className="inline-error">{coverageError}</p>}
-
-              {coverageReport && !coverageError && (
-                <div className="coverage-result">
-                  <p className="muted">
-                    generatedAt={coverageReport.generatedAt} · days={coverageReport.days}
-                  </p>
-                  <ul className="coverage-list">
-                    {coverageReport.byPackage.map((item) => (
-                      <li key={item.packageName}>
-                        <code>{item.packageName}</code>
-                        <span>
-                          active={item.activeDeviceCount} / total={item.totalDeviceCount}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {coverageReport.missingPackages.length > 0 && (
-                    <div className="coverage-alert">
-                      <strong>Missing packages</strong>
-                      <div>{coverageReport.missingPackages.join(", ")}</div>
-                    </div>
-                  )}
-                  {coverageReport.stalePackages.length > 0 && (
-                    <div className="coverage-alert">
-                      <strong>Stale packages (no recent device)</strong>
-                      <div>{coverageReport.stalePackages.join(", ")}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-          <section className="subsection">
-            <div className="coverage-box">
-              <div className="device-preview-header">
-                <strong>Weekly ad health (AdMob)</strong>
-                <div className="device-finder-actions">
+          {testPushSubTab === "coverage" && (
+            <section className="subsection">
+              <div className="coverage-box">
+                <div className="device-preview-header">
+                  <strong>Device coverage (last N days)</strong>
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => loadAdPerformanceReport(false)}
-                    disabled={adReportLoading}
+                    onClick={loadDeviceCoverageReport}
+                    disabled={coverageLoading}
                   >
-                    {adReportLoading ? "Loading…" : "Load latest"}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => loadAdPerformanceReport(true)}
-                    disabled={adReportLoading}
-                  >
-                    {adReportLoading ? "Refreshing…" : "Force refresh"}
+                    {coverageLoading ? "Loading…" : "Refresh coverage"}
                   </button>
                 </div>
-              </div>
 
-              {adReportError && <p className="inline-error">{adReportError}</p>}
+                <label className="coverage-days">
+                  Days
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={coverageDays}
+                    onChange={(e) => setCoverageDays(Number(e.target.value || 14))}
+                  />
+                </label>
 
-              {adPerformanceReport && !adReportError && (
-                <div className="ad-report-result">
-                  <p className="muted">
-                    generatedAt={adPerformanceReport.generatedAt} · range=
-                    {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
-                    <strong>{adPerformanceReport.status}</strong>
-                  </p>
-                  {adPerformanceReport.issue && (
-                    <div className="coverage-alert">
-                      <strong>Issue</strong>
-                      <div>{adPerformanceReport.issue}</div>
-                    </div>
-                  )}
-                  <ul className="coverage-list">
-                    <li>
-                      <span>Total earnings</span>
-                      <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
-                    </li>
-                    <li>
-                      <span>Total ad requests</span>
-                      <strong>{adPerformanceReport.totals.adRequests}</strong>
-                    </li>
-                    <li>
-                      <span>Total fill rate</span>
-                      <strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong>
-                    </li>
-                    <li>
-                      <span>Total show rate</span>
-                      <strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong>
-                    </li>
-                  </ul>
+                {coverageError && <p className="inline-error">{coverageError}</p>}
 
-                  <div className="muted">
-                    Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=
-                    {formatPercent(adPerformanceReport.thresholds.fillRatePct)}, showRate=
-                    {formatPercent(adPerformanceReport.thresholds.showRatePct)}
-                  </div>
-
-                  {adPerformanceReport.alerts.length === 0 ? (
-                    <p className="muted">No app/format alerts in this window.</p>
-                  ) : (
-                    <div className="ad-alert-list">
-                      {adPerformanceReport.alerts.map((alert) => (
-                        <div
-                          key={`${alert.appId}-${alert.format}`}
-                          className="ad-alert-item"
-                        >
-                          <div className="ad-alert-header">
-                            <strong>{alert.appLabel}</strong>
-                            <code>{alert.format}</code>
-                          </div>
-                          <div className="ad-alert-metrics">
-                            requests={alert.adRequests} · matched={alert.matchedRequests} · impressions=
-                            {alert.impressions}
-                          </div>
-                          <div className="ad-alert-metrics">
-                            fill={formatPercent(alert.fillRatePct)} · show=
-                            {formatPercent(alert.showRatePct)} · earnings=
-                            {formatTry(alert.earningsTry)}
-                          </div>
-                          <div className="ad-alert-reasons">
-                            {alert.reasons.map((reason) => (
-                              <span key={reason} className="status-pill status-paused">
-                                {reason}
-                              </span>
-                            ))}
-                          </div>
-                          <small className="muted">
-                            appId=<code>{alert.appId}</code>
-                          </small>
-                        </div>
+                {coverageReport && !coverageError && (
+                  <div className="coverage-result">
+                    <p className="muted">
+                      generatedAt={coverageReport.generatedAt} · days={coverageReport.days}
+                    </p>
+                    <ul className="coverage-list">
+                      {coverageReport.byPackage.map((item) => (
+                        <li key={item.packageName}>
+                          <code>{item.packageName}</code>
+                          <span>
+                            active={item.activeDeviceCount} / total={item.totalDeviceCount}
+                          </span>
+                        </li>
                       ))}
-                    </div>
-                  )}
+                    </ul>
+                    {coverageReport.missingPackages.length > 0 && (
+                      <div className="coverage-alert">
+                        <strong>Missing packages</strong>
+                        <div>{coverageReport.missingPackages.join(", ")}</div>
+                      </div>
+                    )}
+                    {coverageReport.stalePackages.length > 0 && (
+                      <div className="coverage-alert">
+                        <strong>Stale packages (no recent device)</strong>
+                        <div>{coverageReport.stalePackages.join(", ")}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {testPushSubTab === "ad-health" && (
+            <section className="subsection">
+              <div className="coverage-box">
+                <div className="device-preview-header">
+                  <strong>Weekly ad health (AdMob)</strong>
+                  <div className="device-finder-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => loadAdPerformanceReport(false)}
+                      disabled={adReportLoading}
+                    >
+                      {adReportLoading ? "Loading…" : "Load latest"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => loadAdPerformanceReport(true)}
+                      disabled={adReportLoading}
+                    >
+                      {adReportLoading ? "Refreshing…" : "Force refresh"}
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          </section>
+
+                {adReportError && <p className="inline-error">{adReportError}</p>}
+
+                {adPerformanceReport && !adReportError && (
+                  <div className="ad-report-result">
+                    <p className="muted">
+                      generatedAt={adPerformanceReport.generatedAt} · range=
+                      {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
+                      <strong>{adPerformanceReport.status}</strong>
+                    </p>
+                    {adPerformanceReport.issue && (
+                      <div className="coverage-alert">
+                        <strong>Issue</strong>
+                        <div>{adPerformanceReport.issue}</div>
+                      </div>
+                    )}
+                    <ul className="coverage-list">
+                      <li>
+                        <span>Total earnings</span>
+                        <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
+                      </li>
+                      <li>
+                        <span>Total ad requests</span>
+                        <strong>{adPerformanceReport.totals.adRequests}</strong>
+                      </li>
+                      <li>
+                        <span>Total fill rate</span>
+                        <strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong>
+                      </li>
+                      <li>
+                        <span>Total show rate</span>
+                        <strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong>
+                      </li>
+                    </ul>
+
+                    <div className="muted">
+                      Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=
+                      {formatPercent(adPerformanceReport.thresholds.fillRatePct)}, showRate=
+                      {formatPercent(adPerformanceReport.thresholds.showRatePct)}
+                    </div>
+
+                    {adPerformanceReport.alerts.length === 0 ? (
+                      <p className="muted">No app/format alerts in this window.</p>
+                    ) : (
+                      <div className="ad-alert-list">
+                        {adPerformanceReport.alerts.map((alert) => (
+                          <div
+                            key={`${alert.appId}-${alert.format}`}
+                            className="ad-alert-item"
+                          >
+                            <div className="ad-alert-header">
+                              <strong>{alert.appLabel}</strong>
+                              <code>{alert.format}</code>
+                            </div>
+                            <div className="ad-alert-metrics">
+                              requests={alert.adRequests} · matched={alert.matchedRequests} · impressions=
+                              {alert.impressions}
+                            </div>
+                            <div className="ad-alert-metrics">
+                              fill={formatPercent(alert.fillRatePct)} · show=
+                              {formatPercent(alert.showRatePct)} · earnings=
+                              {formatTry(alert.earningsTry)}
+                            </div>
+                            <div className="ad-alert-reasons">
+                              {alert.reasons.map((reason) => (
+                                <span key={reason} className="status-pill status-paused">
+                                  {reason}
+                                </span>
+                              ))}
+                            </div>
+                            <small className="muted">
+                              appId=<code>{alert.appId}</code>
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </main>
       </div>
       )}

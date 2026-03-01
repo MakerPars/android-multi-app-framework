@@ -6,7 +6,7 @@ on:
       pages_project_name:
         description: "Cloudflare Pages project name"
         required: false
-        default: "contentapp-admin-notifications"
+        default: "admin-notifications"
       branch_name:
         description: "Pages branch/environment name (e.g. production, preview)"
         required: false
