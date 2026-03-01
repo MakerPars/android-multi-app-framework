@@ -4,6 +4,7 @@ import {
   getAuth,
   setPersistence,
   browserLocalPersistence,
+  inMemoryPersistence,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -69,7 +70,14 @@ const app: FirebaseApp = getApps()[0] ?? initializeApp(firebaseConfig);
 const functionsRegion = envValue("VITE_FIREBASE_FUNCTIONS_REGION") ?? "europe-west1";
 
 export const auth = getAuth(app);
-void setPersistence(auth, browserLocalPersistence);
+void setPersistence(auth, browserLocalPersistence).catch(async (error) => {
+  console.warn("Firebase Auth local persistence unavailable, falling back to in-memory.", error);
+  try {
+    await setPersistence(auth, inMemoryPersistence);
+  } catch (fallbackError) {
+    console.error("Firebase Auth in-memory persistence setup failed.", fallbackError);
+  }
+});
 export const firestore = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });

@@ -97,6 +97,21 @@ type AdPerformanceReport = {
   issue?: string;
 };
 
+type AdPerformanceToday = {
+  generatedAt: string;
+  date: string;
+  status: "ok" | "misconfigured" | "error";
+  totals: {
+    earningsTry: number;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+    fillRatePct: number;
+    showRatePct: number;
+  };
+  issue?: string;
+};
+
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
 
 function parseEventStatus(value: unknown): ScheduledEventRecord["status"] {
@@ -398,6 +413,9 @@ export default function App() {
   const [adReportLoading, setAdReportLoading] = useState(false);
   const [adReportError, setAdReportError] = useState("");
   const [adPerformanceReport, setAdPerformanceReport] = useState<AdPerformanceReport | null>(null);
+  const [adTodayLoading, setAdTodayLoading] = useState(false);
+  const [adTodayError, setAdTodayError] = useState("");
+  const [adPerformanceToday, setAdPerformanceToday] = useState<AdPerformanceToday | null>(null);
   const [adReportAutoRequested, setAdReportAutoRequested] = useState(false);
   const [testPushResult, setTestPushResult] = useState<{
     messageId: string;
@@ -437,9 +455,21 @@ export default function App() {
   }, [activeTab, testPushSubTab]);
 
   useEffect(() => {
+    const authInitTimeout = window.setTimeout(() => {
+      setAuthState((prev) => {
+        if (prev !== "loading") return prev;
+        setAdminState("unauthorized");
+        setError(
+          "Firebase Auth startup timed out. Check browser privacy/cookie settings and reload.",
+        );
+        return "ready";
+      });
+    }, 12000);
+
     const unsub = onAuthStateChanged(
       auth,
       async (nextUser) => {
+        window.clearTimeout(authInitTimeout);
         setUser(nextUser);
         setAuthState("ready");
         setEvents([]);
@@ -458,12 +488,16 @@ export default function App() {
         }
       },
       (authError) => {
+        window.clearTimeout(authInitTimeout);
         console.error(authError);
         setAuthState("error");
         setError("Firebase Auth initialization failed.");
       },
     );
-    return () => unsub();
+    return () => {
+      window.clearTimeout(authInitTimeout);
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
@@ -500,20 +534,31 @@ export default function App() {
   }, [adminState, selectedId]);
 
   useEffect(() => {
-    if (activeTab !== "test-push") {
+    if (activeTab !== "test-push" || testPushSubTab !== "ad-health") {
       setAdReportAutoRequested(false);
     }
-  }, [activeTab]);
+  }, [activeTab, testPushSubTab]);
 
   useEffect(() => {
     if (adminState !== "authorized") return;
     if (activeTab !== "test-push") return;
+    if (testPushSubTab !== "ad-health") return;
     if (adReportAutoRequested) return;
-    if (adPerformanceReport || adReportLoading) return;
+    if ((adPerformanceReport || adReportLoading) && (adPerformanceToday || adTodayLoading)) return;
     setAdReportAutoRequested(true);
     void loadAdPerformanceReport(false);
+    void loadAdPerformanceToday();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminState, activeTab, adPerformanceReport, adReportLoading, adReportAutoRequested]);
+  }, [
+    adminState,
+    activeTab,
+    testPushSubTab,
+    adPerformanceReport,
+    adPerformanceToday,
+    adReportLoading,
+    adTodayLoading,
+    adReportAutoRequested,
+  ]);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedId) ?? null,
@@ -930,6 +975,54 @@ export default function App() {
     } finally {
       setAdReportLoading(false);
     }
+  };
+
+  const loadAdPerformanceToday = async () => {
+    if (!user) return;
+    setAdTodayLoading(true);
+    setAdTodayError("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/adPerformanceToday`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(
+            responseBody,
+            `HTTP ${response.status}: Failed to fetch today's ad performance`,
+          ),
+        );
+      }
+
+      const payload = responseBody as AdPerformanceToday;
+      setAdPerformanceToday(payload);
+    } catch (e) {
+      console.error(e);
+      setAdTodayError(e instanceof Error ? e.message : "Failed to fetch today's ad report.");
+    } finally {
+      setAdTodayLoading(false);
+    }
+  };
+
+  const refreshAdHealth = async (forceWeeklyRefresh: boolean) => {
+    await Promise.all([
+      loadAdPerformanceToday(),
+      loadAdPerformanceReport(forceWeeklyRefresh),
+    ]);
   };
 
   const testPushSection = (
@@ -1639,21 +1732,56 @@ export default function App() {
                     <button
                       type="button"
                       className="secondary"
-                      onClick={() => loadAdPerformanceReport(false)}
-                      disabled={adReportLoading}
+                      onClick={() => refreshAdHealth(false)}
+                      disabled={adReportLoading || adTodayLoading}
                     >
-                      {adReportLoading ? "Loading…" : "Load latest"}
+                      {adReportLoading || adTodayLoading ? "Loading…" : "Load latest"}
                     </button>
                     <button
                       type="button"
                       className="secondary"
-                      onClick={() => loadAdPerformanceReport(true)}
-                      disabled={adReportLoading}
+                      onClick={() => refreshAdHealth(true)}
+                      disabled={adReportLoading || adTodayLoading}
                     >
-                      {adReportLoading ? "Refreshing…" : "Force refresh"}
+                      {adReportLoading || adTodayLoading ? "Refreshing…" : "Force refresh"}
                     </button>
                   </div>
                 </div>
+
+                {adTodayError && <p className="inline-error">{adTodayError}</p>}
+                {adPerformanceToday && !adTodayError && (
+                  <div className="ad-report-result">
+                    <p className="muted">
+                      Today so far ({adPerformanceToday.date}) · generatedAt=
+                      {adPerformanceToday.generatedAt} · status=
+                      <strong>{adPerformanceToday.status}</strong>
+                    </p>
+                    {adPerformanceToday.issue && (
+                      <div className="coverage-alert">
+                        <strong>Issue</strong>
+                        <div>{adPerformanceToday.issue}</div>
+                      </div>
+                    )}
+                    <ul className="coverage-list">
+                      <li>
+                        <span>Total earnings</span>
+                        <strong>{formatTry(adPerformanceToday.totals.earningsTry)}</strong>
+                      </li>
+                      <li>
+                        <span>Total ad requests</span>
+                        <strong>{adPerformanceToday.totals.adRequests}</strong>
+                      </li>
+                      <li>
+                        <span>Total fill rate</span>
+                        <strong>{formatPercent(adPerformanceToday.totals.fillRatePct)}</strong>
+                      </li>
+                      <li>
+                        <span>Total show rate</span>
+                        <strong>{formatPercent(adPerformanceToday.totals.showRatePct)}</strong>
+                      </li>
+                    </ul>
+                  </div>
+                )}
 
                 {adReportError && <p className="inline-error">{adReportError}</p>}
 

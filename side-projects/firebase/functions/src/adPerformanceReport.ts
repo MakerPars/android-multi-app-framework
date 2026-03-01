@@ -66,6 +66,22 @@ type ReportPayload = {
     issue?: string;
 };
 
+type TodayPayload = {
+    generatedAt: string;
+    date: string;
+    source: "admob_api";
+    status: "ok" | "misconfigured" | "error";
+    totals: {
+        earningsTry: number;
+        adRequests: number;
+        matchedRequests: number;
+        impressions: number;
+        fillRatePct: number;
+        showRatePct: number;
+    };
+    issue?: string;
+};
+
 type AuthResult =
     | { ok: true; uid: string; email?: string }
     | { ok: false; statusCode: number; error: string };
@@ -147,6 +163,39 @@ export const adPerformanceReport = onRequest(
     },
 );
 
+export const adPerformanceToday = onRequest(
+    { region: REGION, cors: true },
+    async (req, res) => {
+        if (req.method !== "POST") {
+            res.status(405).json({ error: "Method not allowed" });
+            return;
+        }
+
+        if (!looksLikeJsonRequest(req.get("content-type"))) {
+            res.status(415).json({ error: "Content-Type must be application/json" });
+            return;
+        }
+
+        const authResult = await authenticateAdminRequest(req.get("authorization"));
+        if (!authResult.ok) {
+            res.status(authResult.statusCode).json({ error: authResult.error });
+            return;
+        }
+
+        try {
+            const report = await generateTodayReport();
+            res.status(200).json(report);
+        } catch (error) {
+            logger.error("adPerformanceToday request failed", {
+                uid: authResult.uid,
+                email: authResult.email,
+                error,
+            });
+            res.status(500).json({ error: "Failed to load today ad performance report" });
+        }
+    },
+);
+
 async function generateAndStoreWeeklyReport(
     source: "scheduler" | "manual",
     actor?: { uid: string; email?: string },
@@ -205,6 +254,60 @@ async function generateAndStoreWeeklyReport(
         await persistReport(report, source, actor);
         logger.error("Ad performance report generation failed", { source, actor, error });
         return report;
+    }
+}
+
+async function generateTodayReport(): Promise<TodayPayload> {
+    const now = new Date();
+    const reportBase: Omit<TodayPayload, "status" | "totals"> = {
+        generatedAt: now.toISOString(),
+        date: formatDate(now),
+        source: "admob_api",
+    };
+
+    try {
+        const config = loadAdMobConfigFromEnv();
+        if (!config) {
+            return {
+                ...reportBase,
+                status: "misconfigured",
+                totals: zeroTotals(),
+                issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN/PUBLISHER_ID)",
+            };
+        }
+
+        const accessToken = await fetchAdMobAccessToken(config);
+        const rows = await fetchNetworkRows(config.accountName, accessToken, now, now);
+        const totals = rows.reduce(
+            (acc, item) => {
+                acc.earningsMicros += item.earningsMicros;
+                acc.adRequests += item.adRequests;
+                acc.matchedRequests += item.matchedRequests;
+                acc.impressions += item.impressions;
+                return acc;
+            },
+            { earningsMicros: 0, adRequests: 0, matchedRequests: 0, impressions: 0 },
+        );
+
+        return {
+            ...reportBase,
+            status: "ok",
+            totals: {
+                earningsTry: round4(totals.earningsMicros / 1_000_000),
+                adRequests: totals.adRequests,
+                matchedRequests: totals.matchedRequests,
+                impressions: totals.impressions,
+                fillRatePct: round2(calculateRate(totals.matchedRequests, totals.adRequests)),
+                showRatePct: round2(calculateRate(totals.impressions, totals.matchedRequests)),
+            },
+        };
+    } catch (error) {
+        return {
+            ...reportBase,
+            status: "error",
+            totals: zeroTotals(),
+            issue: error instanceof Error ? error.message : "Unknown report generation error",
+        };
     }
 }
 
