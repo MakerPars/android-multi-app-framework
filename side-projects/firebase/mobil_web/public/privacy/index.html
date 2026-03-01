@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="tr">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy Policy | Gizlilik Politikası</title>
-  <meta name="description" content="MobilDev privacy policy for Android applications.">
+  <meta name="description" content="Parsfilo Android uygulamaları için gizlilik politikası.">
   <link rel="canonical" href="https://parsfilo.com/privacy/">
   <style>
     :root {
@@ -25,7 +24,7 @@
       line-height: 1.6;
     }
     .container {
-      max-width: 920px;
+      max-width: 980px;
       margin: 24px auto;
       padding: 0 16px;
     }
@@ -80,11 +79,35 @@
       font-size: 0.95rem;
       margin: 0 0 14px;
     }
+    .owner-box {
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+    .owner-box div { margin: 2px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      text-align: left;
+      padding: 8px;
+      vertical-align: top;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+    }
     [data-lang] { display: none; }
     [data-lang].visible { display: block; }
   </style>
 </head>
-
 <body>
   <main class="container">
     <section class="card">
@@ -96,96 +119,121 @@
         </div>
       </div>
 
+      <div class="owner-box">
+        <div>Developer: anka</div>
+        <div>Contact: support@parsfilo.com</div>
+      </div>
+
       <p id="last-updated" class="meta"></p>
 
       <article data-lang="tr">
-        <p>Bu gizlilik politikası, mobil uygulamalarımızın kullanıcılarından hangi verilerin, hangi amaçlarla toplandığını ve işlendiğini açıklar.</p>
-        <h2>1. Toplanan Veriler</h2>
-        <p>Uygulamalarımız aşağıdaki veri türlerini toplayabilir:</p>
+        <p>Bu politika, Google Play Console üzerinde yayınlanan Parsfilo uygulamaları için geçerlidir. Bu sayfa tüm uygulama adlarını ve paket adlarını içerir.</p>
+
+        <h2>1. Kapsanan Uygulamalar (Google Play)</h2>
+        <table>
+          <thead>
+            <tr><th>Uygulama adı</th><th>Paket adı</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Amenerrasulu Sesli</td><td><code>com.parsfilo.amenerrasulu</code></td></tr>
+            <tr><td>Ayetel Kursi Sesli</td><td><code>com.parsfilo.ayetelkursi</code></td></tr>
+            <tr><td>Bereket Duası</td><td><code>com.parsfilo.bereketduasi</code></td></tr>
+            <tr><td>Esmaül Hüsna</td><td><code>com.parsfilo.esmaulhusna</code></td></tr>
+            <tr><td>Fetih Suresi Sesli</td><td><code>com.parsfilo.fetihsuresi</code></td></tr>
+            <tr><td>İmsakiye</td><td><code>com.parsfilo.imsakiye</code></td></tr>
+            <tr><td>İnşirah Sesli</td><td><code>com.parsfilo.insirahsuresi</code></td></tr>
+            <tr><td>İsmi Azam Sesli</td><td><code>com.parsfilo.ismiazamduasi</code></td></tr>
+            <tr><td>Kenzül Arş Sesli</td><td><code>com.parsfilo.kenzularsduasi</code></td></tr>
+            <tr><td>Kıble</td><td><code>com.parsfilo.kible</code></td></tr>
+            <tr><td>Kuran-ı Kerim</td><td><code>com.parsfilo.kuran_kerim</code></td></tr>
+            <tr><td>Mucize Dualar</td><td><code>com.parsfilo.mucizedualar</code></td></tr>
+            <tr><td>Namaz Sureleri Sesli</td><td><code>com.parsfilo.namazsurelerivedualarsesli</code></td></tr>
+            <tr><td>Namaz Vakitleri</td><td><code>com.parsfilo.namazvakitleri</code></td></tr>
+            <tr><td>Nazar Ayeti</td><td><code>com.parsfilo.nazarayeti</code></td></tr>
+            <tr><td>Vakıa Sesli</td><td><code>com.parsfilo.vakiasuresi</code></td></tr>
+            <tr><td>Yasin Sesli</td><td><code>com.parsfilo.yasinsuresi</code></td></tr>
+            <tr><td>Zikirmatik</td><td><code>com.parsfilo.zikirmatik</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2>2. Toplanan Veriler</h2>
         <ul>
-          <li>Cihaz bilgileri (cihaz modeli, işletim sistemi sürümü, uygulama sürümü)</li>
+          <li>Cihaz bilgileri (model, işletim sistemi, uygulama sürümü)</li>
           <li>Reklam kimliği (Advertising ID)</li>
-          <li>Uygulama kullanım ve etkileşim verileri</li>
+          <li>Uygulama kullanım/etkileşim verileri</li>
           <li>Hata ve çökme kayıtları</li>
-          <li>Push bildirim kayıt/senkronizasyon bilgileri (ör. installation ID, push token)</li>
+          <li>Push kayıt/senkronizasyon verileri (installation ID, push token)</li>
         </ul>
-        <p>Konum verisi yalnızca kullanıcı açıkça izin verdiğinde ve uygulama işlevi gerektirdiğinde kullanılır.</p>
+        <p>Konum verisi yalnızca kullanıcı açıkça izin verdiğinde ve özellik gerektirdiğinde işlenir.</p>
 
-        <h2>2. Reklamlar (Google AdMob)</h2>
-        <p>Google AdMob reklam hizmeti kullanılmaktadır. Reklam sunumu, ölçümleme, sıklık sınırlandırması ve sahtekarlık önleme amaçlarıyla belirli sinyaller işlenebilir.</p>
-        <p>Yetkili satıcılar <code>https://parsfilo.com/app-ads.txt</code> dosyasında listelenir.</p>
+        <h2>3. Reklamlar (Google AdMob)</h2>
+        <p>Google AdMob reklam hizmeti kullanılır. Reklam sunumu, ölçümleme, sıklık sınırlandırması ve sahtekarlık önleme için gerekli sinyaller işlenebilir.</p>
+        <p>Yetkili satıcılar: <code>https://parsfilo.com/app-ads.txt</code></p>
 
-        <h2>3. Analitik ve Altyapı (Firebase / Google Cloud)</h2>
-        <p>Uygulamalar analiz, performans ve hata ayıklama için Firebase/Google Cloud hizmetlerini kullanabilir. Veriler mümkün oldukça anonim veya toplu olarak işlenir.</p>
+        <h2>4. Altyapı (Firebase / Google Cloud)</h2>
+        <p>Analitik, performans ve hata teşhisi için Firebase/Google Cloud hizmetleri kullanılabilir. Veriler mümkün olduğunda toplulaştırılmış veya takma adlandırılmış şekilde işlenir.</p>
 
-        <h2>4. Onay, Privacy Options ve Uygulamalar Arası Senkronizasyon</h2>
-        <p>EEA/Birleşik Krallık/İsviçre bölgelerinde kişiselleştirilmiş reklamlar yalnızca gerekli onay alındığında gösterilir. Onay tercihleri UMP (User Messaging Platform) ile yönetilir.</p>
-        <p>Bazı uygulamalar aynı AdMob rıza grubunda olabilir. Uygun koşullarda tercih senkronizasyonu için Android App Set ID kullanılabilir. App Set ID alınamazsa uygulama çalışmaya devam eder, senkronizasyon tutarlılığı azalabilir.</p>
+        <h2>5. Onay ve Privacy Options</h2>
+        <p>EEA/UK/CH bölgelerinde kişiselleştirilmiş reklamlar için gerekli onay alınır. Onay tercihleri UMP (User Messaging Platform) üzerinden yönetilir.</p>
 
-        <h2>5. Veri Paylaşımı</h2>
-        <p>Veriler aşağıdaki amaçlarla hizmet sağlayıcılarla paylaşılabilir:</p>
-        <ul>
-          <li>Reklam gösterimi ve ölçümü</li>
-          <li>Uygulama performansı ve güvenlik</li>
-          <li>Hata tespiti ve operasyonel izleme</li>
-        </ul>
-
-        <h2>6. Veri Saklama</h2>
-        <p>Veriler, işleme amaçları için gerekli süre boyunca ve yasal yükümlülükler kapsamında saklanır.</p>
-
-        <h2>7. Çocukların Gizliliği</h2>
-        <p>Çocuklara yönelik uygulamalarda reklam/veri ayarları Google Play ve AdMob politikalarına uygun yapılandırılır.</p>
-
-        <h2>8. Kullanıcı Hakları</h2>
-        <p>Erişim/silme talepleri için: <strong>support@parsfilo.com</strong></p>
-
-        <h2>9. Değişiklikler</h2>
-        <p>Politika güncellenebilir; en güncel sürüm her zaman bu URL'de yayınlanır.</p>
+        <h2>6. Paylaşım, Saklama ve Haklar</h2>
+        <p>Veriler yalnızca hizmetin işletimi, reklam ölçümü, güvenlik ve hata analizi için ilgili servis sağlayıcılarla paylaşılır ve gerekli süre kadar saklanır.</p>
+        <p>Erişim/silme talepleri ve destek için: <strong>support@parsfilo.com</strong></p>
       </article>
 
       <article data-lang="en">
-        <p>This privacy policy explains what data is collected from users of our mobile applications, for which purposes, and how it is processed.</p>
-        <h2>1. Data We May Collect</h2>
-        <p>Our applications may collect:</p>
+        <p>This policy applies to Parsfilo apps published in Google Play Console. This page includes all app names and package names.</p>
+
+        <h2>1. Covered Apps (Google Play)</h2>
+        <table>
+          <thead>
+            <tr><th>App name</th><th>Package name</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Amenerrasulu Sesli</td><td><code>com.parsfilo.amenerrasulu</code></td></tr>
+            <tr><td>Ayetel Kursi Sesli</td><td><code>com.parsfilo.ayetelkursi</code></td></tr>
+            <tr><td>Bereket Duası</td><td><code>com.parsfilo.bereketduasi</code></td></tr>
+            <tr><td>Esmaül Hüsna</td><td><code>com.parsfilo.esmaulhusna</code></td></tr>
+            <tr><td>Fetih Suresi Sesli</td><td><code>com.parsfilo.fetihsuresi</code></td></tr>
+            <tr><td>İmsakiye</td><td><code>com.parsfilo.imsakiye</code></td></tr>
+            <tr><td>İnşirah Sesli</td><td><code>com.parsfilo.insirahsuresi</code></td></tr>
+            <tr><td>İsmi Azam Sesli</td><td><code>com.parsfilo.ismiazamduasi</code></td></tr>
+            <tr><td>Kenzül Arş Sesli</td><td><code>com.parsfilo.kenzularsduasi</code></td></tr>
+            <tr><td>Kıble</td><td><code>com.parsfilo.kible</code></td></tr>
+            <tr><td>Kuran-ı Kerim</td><td><code>com.parsfilo.kuran_kerim</code></td></tr>
+            <tr><td>Mucize Dualar</td><td><code>com.parsfilo.mucizedualar</code></td></tr>
+            <tr><td>Namaz Sureleri Sesli</td><td><code>com.parsfilo.namazsurelerivedualarsesli</code></td></tr>
+            <tr><td>Namaz Vakitleri</td><td><code>com.parsfilo.namazvakitleri</code></td></tr>
+            <tr><td>Nazar Ayeti</td><td><code>com.parsfilo.nazarayeti</code></td></tr>
+            <tr><td>Vakıa Sesli</td><td><code>com.parsfilo.vakiasuresi</code></td></tr>
+            <tr><td>Yasin Sesli</td><td><code>com.parsfilo.yasinsuresi</code></td></tr>
+            <tr><td>Zikirmatik</td><td><code>com.parsfilo.zikirmatik</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2>2. Data We May Collect</h2>
         <ul>
           <li>Device information (model, OS version, app version)</li>
           <li>Advertising ID</li>
           <li>App usage and interaction data</li>
           <li>Error and crash diagnostics</li>
-          <li>Push registration/sync data (for example installation ID, push token)</li>
+          <li>Push registration/sync data (installation ID, push token)</li>
         </ul>
-        <p>Location data is used only when the user explicitly grants permission and the feature requires it.</p>
+        <p>Location data is processed only when the user explicitly grants permission and the feature requires it.</p>
 
-        <h2>2. Ads (Google AdMob)</h2>
-        <p>We use Google AdMob for advertising. Certain signals may be processed for ad delivery, measurement, frequency capping, and fraud prevention.</p>
-        <p>Authorized sellers are listed at <code>https://parsfilo.com/app-ads.txt</code>.</p>
+        <h2>3. Ads (Google AdMob)</h2>
+        <p>We use Google AdMob. Signals needed for ad delivery, measurement, frequency capping, and fraud prevention may be processed.</p>
+        <p>Authorized sellers: <code>https://parsfilo.com/app-ads.txt</code></p>
 
-        <h2>3. Analytics and Infrastructure (Firebase / Google Cloud)</h2>
-        <p>Our apps may use Firebase/Google Cloud services for analytics, performance monitoring, and crash diagnostics. Data is processed in aggregated or pseudonymized form where possible.</p>
+        <h2>4. Infrastructure (Firebase / Google Cloud)</h2>
+        <p>We may use Firebase/Google Cloud for analytics, performance monitoring, and crash diagnostics. Data is processed in aggregated/pseudonymized form where possible.</p>
 
-        <h2>4. Consent, Privacy Options, and Cross-App Sync</h2>
-        <p>For users in the EEA/UK/Switzerland, personalized ads are shown only after required consent is obtained. Consent is managed via UMP (User Messaging Platform).</p>
-        <p>Some apps may be part of the same AdMob consent group. Where supported, Android App Set ID may be used to improve cross-app consent consistency. If App Set ID is unavailable, the app still works, but consent synchronization may be limited.</p>
+        <h2>5. Consent and Privacy Options</h2>
+        <p>For EEA/UK/CH users, required consent is collected for personalized ads. Consent preferences are managed via UMP (User Messaging Platform).</p>
 
-        <h2>5. Data Sharing</h2>
-        <p>Data may be shared with service providers for:</p>
-        <ul>
-          <li>Ad serving and measurement</li>
-          <li>App performance and security</li>
-          <li>Error diagnostics and operations monitoring</li>
-        </ul>
-
-        <h2>6. Data Retention</h2>
-        <p>Data is retained only as long as needed for the processing purposes and legal obligations.</p>
-
-        <h2>7. Children's Privacy</h2>
-        <p>For child-directed apps, ad and data handling settings are configured in line with Google Play and AdMob requirements.</p>
-
-        <h2>8. User Rights</h2>
-        <p>For access/deletion requests, contact: <strong>support@parsfilo.com</strong></p>
-
-        <h2>9. Updates</h2>
-        <p>This policy may be updated from time to time. The latest version is always available at this URL.</p>
+        <h2>6. Sharing, Retention, and Rights</h2>
+        <p>Data is shared only with service providers required for operations, ad measurement, security, and diagnostics, and retained only as long as necessary.</p>
+        <p>For access/deletion requests and support: <strong>support@parsfilo.com</strong></p>
       </article>
     </section>
   </main>
@@ -214,10 +262,10 @@
         document.documentElement.lang = lang;
         if (lang === "en") {
           title.textContent = "Privacy Policy";
-          updated.textContent = "Last updated: February 27, 2026";
+          updated.textContent = "Last updated: March 1, 2026";
         } else {
           title.textContent = "Gizlilik Politikası";
-          updated.textContent = "Son güncelleme: 27 Şubat 2026";
+          updated.textContent = "Son güncelleme: 1 Mart 2026";
         }
         if (updateQuery) {
           const currentUrl = new URL(window.location.href);
@@ -232,5 +280,4 @@
     })();
   </script>
 </body>
-
 </html>

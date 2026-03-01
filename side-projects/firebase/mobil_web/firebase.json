@@ -6,13 +6,6 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "redirects": [
-      {
-        "source": "/privacy.html",
-        "destination": "/privacy",
-        "type": 301
-      }
-    ],
     "rewrites": [
       {
         "source": "/apps/**",
