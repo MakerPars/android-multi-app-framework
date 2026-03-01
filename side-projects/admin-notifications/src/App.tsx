@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import {
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+} from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 import {
   addDoc,
   collection,
@@ -455,6 +462,25 @@ export default function App() {
   }, [activeTab, testPushSubTab]);
 
   useEffect(() => {
+    void (async () => {
+      try {
+        await getRedirectResult(auth);
+      } catch (e) {
+        console.error(e);
+        if (e instanceof FirebaseError) {
+          const readable =
+            e.code === "auth/invalid-action-code" || e.code === "auth/invalid-action"
+              ? "Google sign-in callback is invalid. Retry from the Sign in button (do not open __/auth/handler URL directly)."
+              : `Google sign-in failed: ${e.code}`;
+          setError(readable);
+        } else {
+          setError("Google sign-in failed after redirect.");
+        }
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     const authInitTimeout = window.setTimeout(() => {
       setAuthState((prev) => {
         if (prev !== "loading") return prev;
@@ -624,6 +650,28 @@ export default function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
       console.error(e);
+      if (e instanceof FirebaseError) {
+        const shouldFallbackToRedirect =
+          e.code === "auth/popup-blocked" ||
+          e.code === "auth/popup-closed-by-user" ||
+          e.code === "auth/internal-error";
+        if (shouldFallbackToRedirect) {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        }
+        const readable =
+          e.code === "auth/unauthorized-domain"
+            ? "Google sign-in failed: admin.parsfilo.com is not in Firebase Auth Authorized domains."
+            : e.code === "auth/popup-blocked"
+            ? "Google sign-in failed: popup blocked by browser."
+            : e.code === "auth/popup-closed-by-user"
+            ? "Google sign-in failed: popup was closed before completing login."
+            : e.code === "auth/invalid-action-code" || e.code === "auth/invalid-action"
+            ? "Google sign-in callback is invalid. Retry from the Sign in button and avoid opening __/auth/handler URL manually."
+            : `Google sign-in failed: ${e.code}`;
+        setError(readable);
+        return;
+      }
       setError("Google sign-in failed.");
     }
   };

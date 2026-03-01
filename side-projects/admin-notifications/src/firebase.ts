@@ -33,7 +33,7 @@ const missingFirebaseEnv: string[] = [];
 const firebaseConfig = {
   apiKey: requireFirebaseEnv(
     "Firebase API key",
-    ["VITE_FIREBASE_API_KEY", "FIREBASE_WEB_API_KEY"],
+    ["VITE_FIREBASE_API_KEY"],
     missingFirebaseEnv,
   ),
   authDomain: requireFirebaseEnv(

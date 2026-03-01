@@ -10,7 +10,7 @@ on:
       branch_name:
         description: "Pages branch/environment name (e.g. production, preview)"
         required: false
-        default: "production"
+        default: "main"
 
 concurrency:
   group: ${{ format('ci-admin-notifications-pages-{0}', github.ref) }}
@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           PAGES_PROJECT="${INPUT_PAGES_PROJECT_NAME:-${CF_PAGES_PROJECT_FALLBACK:-}}"
-          PAGES_BRANCH="${INPUT_BRANCH_NAME:-production}"
+          PAGES_BRANCH="${INPUT_BRANCH_NAME:-main}"
 
           if [[ -z "${PAGES_PROJECT}" ]]; then
             echo "::error::Cloudflare Pages project name is missing. Set workflow input 'pages_project_name' or repo variable CF_PAGES_ADMIN_NOTIFICATIONS_PROJECT."

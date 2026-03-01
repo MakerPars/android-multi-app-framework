@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const mergedEnv = { ...rootEnv, ...localEnv };
 
   const envDefineEntries = Object.entries(mergedEnv).filter(([key]) =>
-    key.startsWith("VITE_") || key.startsWith("FIREBASE_WEB_"),
+    key.startsWith("VITE_"),
   );
 
   let gitSha = "local";
@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     envDir: __dirname,
-    envPrefix: ["VITE_", "FIREBASE_WEB_"],
+    envPrefix: ["VITE_"],
     define,
     plugins: [react()],
     resolve: {
