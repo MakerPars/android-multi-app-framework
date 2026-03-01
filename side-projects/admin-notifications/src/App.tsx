@@ -398,6 +398,7 @@ export default function App() {
   const [adReportLoading, setAdReportLoading] = useState(false);
   const [adReportError, setAdReportError] = useState("");
   const [adPerformanceReport, setAdPerformanceReport] = useState<AdPerformanceReport | null>(null);
+  const [adReportAutoRequested, setAdReportAutoRequested] = useState(false);
   const [testPushResult, setTestPushResult] = useState<{
     messageId: string;
     mode: string;
@@ -499,12 +500,20 @@ export default function App() {
   }, [adminState, selectedId]);
 
   useEffect(() => {
+    if (activeTab !== "test-push") {
+      setAdReportAutoRequested(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (adminState !== "authorized") return;
     if (activeTab !== "test-push") return;
+    if (adReportAutoRequested) return;
     if (adPerformanceReport || adReportLoading) return;
+    setAdReportAutoRequested(true);
     void loadAdPerformanceReport(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminState, activeTab, adPerformanceReport, adReportLoading]);
+  }, [adminState, activeTab, adPerformanceReport, adReportLoading, adReportAutoRequested]);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedId) ?? null,
