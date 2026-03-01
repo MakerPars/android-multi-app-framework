@@ -509,10 +509,22 @@ async function persistReport(
 function readMetric(row: Record<string, unknown>, key: string): number {
     const metricValues = (row.metricValues ?? {}) as Record<string, Record<string, unknown>>;
     const metric = metricValues[key] ?? {};
-    if (typeof metric.microsValue === "number") return metric.microsValue;
-    if (typeof metric.integerValue === "number") return metric.integerValue;
-    if (typeof metric.doubleValue === "number") return metric.doubleValue;
+    const micros = parseMetricNumber(metric.microsValue);
+    if (micros != null) return micros;
+    const integer = parseMetricNumber(metric.integerValue);
+    if (integer != null) return integer;
+    const doubleValue = parseMetricNumber(metric.doubleValue);
+    if (doubleValue != null) return doubleValue;
     return 0;
+}
+
+function parseMetricNumber(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
 }
 
 function toAdMobDate(date: Date): { year: number; month: number; day: number } {
