@@ -35,18 +35,24 @@ runs:
         CF_R2_BUCKET='${{ inputs.cf_r2_bucket }}'
         CF_R2_FIREBASE_OBJECT='${{ inputs.cf_r2_firebase_object }}'
 
-        if [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
+        if [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
+          echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
+          echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
+        elif [ -n "${CF_R2_ACCOUNT_ID:-}" ] && [ -n "${CF_API_TOKEN:-}" ] && [ -n "${CF_R2_BUCKET:-}" ] && [ -n "${CF_R2_FIREBASE_OBJECT:-}" ]; then
           export CLOUDFLARE_ACCOUNT_ID="${CF_R2_ACCOUNT_ID}"
           export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
           npx --yes wrangler@4 r2 object get "${CF_R2_BUCKET}/${CF_R2_FIREBASE_OBJECT}" --file firebase_configs.zip --remote --config side-projects/cloudflare/workers/content-api/wrangler.toml
-          unzip -o firebase_configs.zip
-          rm -f firebase_configs.zip
           echo "Firebase configs restored from R2."
-        elif [ -n "${FIREBASE_CONFIGS_ZIP_BASE64:-}" ]; then
-          echo "$FIREBASE_CONFIGS_ZIP_BASE64" | base64 -d > firebase_configs.zip
-          unzip -o firebase_configs.zip
-          rm -f firebase_configs.zip
-          echo "Firebase configs restored from FIREBASE_CONFIGS_ZIP_BASE64."
         else
           echo "No Firebase override secret found. Using repository defaults."
+          exit 0
         fi
+
+        if ! unzip -Z1 firebase_configs.zip | grep -Eq '^app/src/[^/]+/google-services.json$'; then
+          echo "::error::firebase_configs.zip has invalid structure. Expected entries like app/src/<flavor>/google-services.json"
+          rm -f firebase_configs.zip
+          exit 1
+        fi
+
+        unzip -o firebase_configs.zip
+        rm -f firebase_configs.zip
