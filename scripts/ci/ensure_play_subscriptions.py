@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--flavors", default="all", help="Comma-separated flavor list or 'all'")
     p.add_argument(
         "--service-account",
-        default="SECRET/mobil-oaslananka-firebase.json",
+        default="SECRET/makerpars-oaslananka-mobil-FullAdminServiceAccount.json",
         help="Path to Play service account JSON",
     )
     p.add_argument("--dry-run", action="store_true", help="Only report, do not write")

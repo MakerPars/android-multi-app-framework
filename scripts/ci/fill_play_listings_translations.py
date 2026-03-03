@@ -35,7 +35,7 @@ class FlavorInfo:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fill missing Play Store listing translations")
     parser.add_argument("--flavors", default="all", help="Comma-separated flavor list or 'all' (default)")
-    parser.add_argument("--service-account", default="SECRET/mobil-oaslananka-firebase.json", help="Path to Play service account json")
+    parser.add_argument("--service-account", default="SECRET/makerpars-oaslananka-mobil-FullAdminServiceAccount.json", help="Path to Play service account json")
     parser.add_argument("--reference-package", default="com.parsfilo.amenerrasulu", help="Package used as target language set reference")
     parser.add_argument("--source-language", default="tr-TR", help="Preferred source listing language")
     parser.add_argument("--sleep-ms", type=int, default=200, help="Delay between listing update calls")

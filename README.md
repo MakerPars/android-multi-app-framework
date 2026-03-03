@@ -229,3 +229,14 @@ python scripts/firebase/render_web_index.py
 ```
 
 Not: `side-projects/firebase/mobil_web/public/index.html` repoda placeholder ile tutulur.
+
+## VPS Preparation (Optional)
+
+If you want to centralize non-Android services on a single VPS, initial deployment scaffolding is available under:
+
+- `side-projects/vps/docker-compose.yml`
+- `side-projects/vps/Caddyfile`
+- `side-projects/vps/.env.example`
+- `side-projects/vps/README.md`
+
+This moves static web/admin hosting to VPS while keeping Google-managed providers (FCM, AdMob, Play, Crashlytics) as external services.

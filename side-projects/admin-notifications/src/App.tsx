@@ -120,6 +120,17 @@ type AdPerformanceToday = {
 };
 
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
+const ADMIN_ALLOWED_EMAILS = new Set(
+  ((import.meta.env.VITE_ADMIN_ALLOWED_EMAILS as string | undefined) ?? "")
+    .split(/[,\s;]+/g)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+function isAllowlistedAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_ALLOWED_EMAILS.has(email.trim().toLowerCase());
+}
 
 function parseEventStatus(value: unknown): ScheduledEventRecord["status"] {
   if (typeof value === "string" && EVENT_STATUSES.includes(value as any)) {
@@ -507,7 +518,11 @@ export default function App() {
 
         try {
           const adminDoc = await getDoc(doc(firestore, "admins", nextUser.uid));
-          setAdminState(adminDoc.exists() ? "authorized" : "unauthorized");
+          const allowlisted = isAllowlistedAdminEmail(nextUser.email);
+          setAdminState(adminDoc.exists() || allowlisted ? "authorized" : "unauthorized");
+          if (!adminDoc.exists() && allowlisted) {
+            setMessage("Admin access granted by VITE_ADMIN_ALLOWED_EMAILS fallback.");
+          }
         } catch (e) {
           console.error(e);
           setError("Failed to verify admin access.");
@@ -1293,6 +1308,10 @@ export default function App() {
         <div className="auth-card">
           <h1>Access denied</h1>
           <p>{user.email ?? user.uid} is not in the Firestore <code>admins</code> list.</p>
+          <p className="muted">
+            Add your UID to <code>/admins/&lt;uid&gt;</code> or include your email in
+            <code> VITE_ADMIN_ALLOWED_EMAILS</code> and <code>ADMIN_ALLOWED_EMAILS</code>.
+          </p>
           <button onClick={handleSignOut}>Sign out</button>
           {error && <p className="inline-error">{error}</p>}
         </div>

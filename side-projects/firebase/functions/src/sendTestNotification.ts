@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { authenticateAdminRequest } from "./adminAuth";
 
 const FCM_TOKEN_REGEX = /^[A-Za-z0-9:._-]{80,4096}$/;
 const INSTALLATION_ID_REGEX = /^[A-Za-z0-9._:-]{8,200}$/;
@@ -136,34 +137,6 @@ export const sendTestNotification = onRequest(
         }
     },
 );
-
-type AuthResult =
-    | { ok: true; uid: string; email?: string }
-    | { ok: false; statusCode: number; error: string };
-
-async function authenticateAdminRequest(authorizationHeader: string | undefined): Promise<AuthResult> {
-    const bearerPrefix = "Bearer ";
-    if (!authorizationHeader || !authorizationHeader.startsWith(bearerPrefix)) {
-        return { ok: false, statusCode: 401, error: "Missing Bearer token" };
-    }
-
-    const idToken = authorizationHeader.slice(bearerPrefix.length).trim();
-    if (!idToken) {
-        return { ok: false, statusCode: 401, error: "Missing Bearer token" };
-    }
-
-    try {
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        const adminDoc = await admin.firestore().collection("admins").doc(decoded.uid).get();
-        if (!adminDoc.exists) {
-            return { ok: false, statusCode: 403, error: "User is not in admins whitelist" };
-        }
-        return { ok: true, uid: decoded.uid, email: decoded.email };
-    } catch (error) {
-        logger.warn("Admin auth verification failed", { error });
-        return { ok: false, statusCode: 401, error: "Invalid Firebase Auth token" };
-    }
-}
 
 type ParsePayloadResult =
     | { ok: true; payload: TestPushPayload }

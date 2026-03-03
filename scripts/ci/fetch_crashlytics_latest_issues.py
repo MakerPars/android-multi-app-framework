@@ -46,7 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--service-account",
-        default="SECRET/mobil-oaslananka-firebase.json",
+        default="SECRET/makerpars-oaslananka-mobil-FullAdminServiceAccount.json",
         help="Path to service account json",
     )
     parser.add_argument(

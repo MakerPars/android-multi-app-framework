@@ -10,6 +10,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 APP_SRC_DIR="$PROJECT_ROOT/app/src"
+FIREBASE_APPS_JSON="$PROJECT_ROOT/config/firebase-apps.json"
 
 # Color output
 GREEN='\033[0;32m'
@@ -43,7 +44,6 @@ FLAVOURS=($FLAVOURS_STR)
 
 download_config() {
     local flavour=$1
-    local package_name="com.parsfilo.${flavour}"
     local output_dir="$APP_SRC_DIR/$flavour"
     
     echo -e "\n${YELLOW}▸ Processing: $flavour${NC}"
@@ -51,16 +51,38 @@ download_config() {
     # Create directory if not exists
     mkdir -p "$output_dir"
     
-    # Download google-services.json
-    # Project ID is constant for all flavors (see config/firebase-apps.json)
-    local project_id="mobil-oaslananka-firebase"
-    
-    if firebase apps:sdkconfig ANDROID "$package_name" \
+    local app_id
+    app_id=$(python - <<PY
+import json
+from pathlib import Path
+cfg = json.loads(Path(r"$FIREBASE_APPS_JSON").read_text(encoding="utf-8"))
+entry = cfg.get("$flavour", {})
+print(entry.get("appId", ""))
+PY
+)
+
+    local project_id
+    project_id=$(python - <<PY
+import json
+from pathlib import Path
+cfg = json.loads(Path(r"$FIREBASE_APPS_JSON").read_text(encoding="utf-8"))
+entry = cfg.get("$flavour", {})
+print(entry.get("projectId", ""))
+PY
+)
+
+    if [[ -z "$app_id" || -z "$project_id" ]]; then
+        echo -e "${RED}✗ Missing appId/projectId in config/firebase-apps.json for $flavour${NC}"
+        return
+    fi
+
+    # Download google-services.json using Firebase app id
+    if firebase apps:sdkconfig ANDROID "$app_id" \
         --project="$project_id" \
         --out="$output_dir/google-services.json" 2>/dev/null; then
         echo -e "${GREEN}✓ Downloaded: $output_dir/google-services.json${NC}"
     else
-        echo -e "${RED}✗ Failed: Check Firebase project and package name${NC}"
+        echo -e "${RED}✗ Failed: Check Firebase project and app id${NC}"
     fi
 }
 

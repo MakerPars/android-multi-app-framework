@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
+import { authenticateAdminRequest } from "./adminAuth";
 
 type AdMobConfig = {
     clientId: string;
@@ -81,10 +82,6 @@ type TodayPayload = {
     };
     issue?: string;
 };
-
-type AuthResult =
-    | { ok: true; uid: string; email?: string }
-    | { ok: false; statusCode: number; error: string };
 
 const REGION = "europe-west1";
 const REPORTS_COLLECTION = "ad_performance_reports";
@@ -585,28 +582,4 @@ function looksLikeJsonRequest(contentTypeHeader: string | undefined): boolean {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === "object" && !Array.isArray(value);
-}
-
-async function authenticateAdminRequest(authorizationHeader: string | undefined): Promise<AuthResult> {
-    const bearerPrefix = "Bearer ";
-    if (!authorizationHeader || !authorizationHeader.startsWith(bearerPrefix)) {
-        return { ok: false, statusCode: 401, error: "Missing Bearer token" };
-    }
-
-    const idToken = authorizationHeader.slice(bearerPrefix.length).trim();
-    if (!idToken) {
-        return { ok: false, statusCode: 401, error: "Missing Bearer token" };
-    }
-
-    try {
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        const adminDoc = await admin.firestore().collection("admins").doc(decoded.uid).get();
-        if (!adminDoc.exists) {
-            return { ok: false, statusCode: 403, error: "User is not in admins whitelist" };
-        }
-        return { ok: true, uid: decoded.uid, email: decoded.email };
-    } catch (error) {
-        logger.warn("Admin auth verification failed", { error });
-        return { ok: false, statusCode: 401, error: "Invalid Firebase Auth token" };
-    }
 }

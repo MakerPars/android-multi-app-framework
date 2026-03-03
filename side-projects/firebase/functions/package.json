@@ -9,7 +9,7 @@
         "serve": "npm run build && firebase emulators:start --only functions --config ../firebase.json",
         "shell": "npm run build && firebase functions:shell --config ../firebase.json",
         "start": "npm run shell",
-        "deploy": "firebase deploy --only functions --project mobil-oaslananka-firebase --config ../firebase.json",
+        "deploy": "firebase deploy --only functions --project makerpars-oaslananka-mobil --config ../firebase.json",
         "deploy:with-doppler": "npm run sync-env:doppler && npm run deploy",
         "logs": "firebase functions:log"
     },

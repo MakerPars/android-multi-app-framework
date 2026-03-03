@@ -9,11 +9,22 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAllowlistedAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email in [
+          "makerpars@gmail.com",
+          "oaslananka@gmail.com"
+        ];
+    }
+
     // Admin panel access control (MVP):
     // Admin users are defined by existence of /admins/{uid} documents.
     function isAdmin() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        && (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+          || isAllowlistedAdminEmail()
+        );
     }
 
     match /user_messages/{messageId} {

@@ -17,6 +17,7 @@ const optionalKeys = [
   "AD_HEALTH_MIN_REQUESTS",
   "AD_HEALTH_FILL_RATE_THRESHOLD",
   "AD_HEALTH_SHOW_RATE_THRESHOLD",
+  "ADMIN_ALLOWED_EMAILS",
 ];
 
 function readSecret(key, required) {
