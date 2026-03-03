@@ -14,10 +14,18 @@ on:
         default: false
         type: boolean
       publish_to_play:
-        description: 'Publish to Play Console (production track)'
+        description: 'Publish to Play Console (selected track)'
         required: false
         default: false
         type: boolean
+      publish_track:
+        description: 'Play publish track (used when publish_to_play=true)'
+        required: false
+        default: production
+        type: choice
+        options:
+          - production
+          - internal
 
 concurrency:
   group: ${{ github.event.inputs.publish_to_play == 'true' && 'play-publish-global' || format('{0}-{1}', github.workflow, github.ref) }}
@@ -179,7 +187,7 @@ jobs:
         run: |
           set -euo pipefail
           [ -f "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::PLAY_SERVICE_ACCOUNT_JSON missing"; exit 1; }
-          echo "::notice::Auto-bump starting (track=production, flavors=${{ steps.resolve.outputs.resolved_csv }})"
+          echo "::notice::Auto-bump starting (track=${{ github.event.inputs.publish_track }}, flavors=${{ steps.resolve.outputs.resolved_csv }})"
           python3 -m pip install --quiet google-api-python-client google-auth
           python3 ./scripts/ci/fetch_play_version_codes.py \
             --flavors "${{ steps.resolve.outputs.resolved_csv }}" \
@@ -187,7 +195,7 @@ jobs:
             --suggest-next \
             --apply-to-app-versions \
             --sync-version-names
-          echo "::notice::Auto-bump completed (track=production, flavors=${{ steps.resolve.outputs.resolved_csv }})"
+          echo "::notice::Auto-bump completed (track=${{ github.event.inputs.publish_track }}, flavors=${{ steps.resolve.outputs.resolved_csv }})"
           echo "done=true" >> "$GITHUB_OUTPUT"
 
       - name: Notice release artifact may use repo versionCodes (publish disabled)
@@ -234,7 +242,7 @@ jobs:
         run: rm -f "${{ runner.temp }}/release.jks" "${{ runner.temp }}/service-account.json"
 
   publish-production:
-    name: Publish to Play Console
+    name: Publish to Play Console (${{ github.event.inputs.publish_track }})
     needs: build-release
     if: github.event.inputs.publish_to_play == 'true'
     runs-on: ubuntu-latest
@@ -349,7 +357,7 @@ jobs:
           set -euo pipefail
           if [ "${{ needs.build-release.outputs.auto_bump_done }}" != "true" ]; then
             echo "::error::Auto-bump marker missing. versionCode bump was not confirmed before Play publish."
-            echo "::error::Track=production, flavors=${{ needs.build-release.outputs.resolved_flavors_csv }}"
+            echo "::error::Track=${{ github.event.inputs.publish_track }}, flavors=${{ needs.build-release.outputs.resolved_flavors_csv }}"
             exit 1
           fi
 
@@ -388,7 +396,7 @@ jobs:
           while true; do
             log_file="$(mktemp)"
             set +e
-            ./gradlew "${TASKS[@]}" -PPLAY_TRACK=production --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
+            ./gradlew "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
             status=${PIPESTATUS[0]}
             set -e
             if [ "$status" -eq 0 ]; then
