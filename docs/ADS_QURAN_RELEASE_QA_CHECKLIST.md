@@ -172,7 +172,6 @@ Beklenen:
 3. En az 1 flavor `bundleRelease` basariyla uretilir
 4. Artifact yolu dogrulanir: `app/build/outputs/bundle/...`
 
-## Log / Sentry Gozlem Checklist
 
 ### Ads senaryolari
 
@@ -180,7 +179,6 @@ Beklenen:
 - Rewarded dismiss sonrasi preload istegi goruldu
 - Consent refresh sonrasi ad request gate davranisi dogru
 - Crash/ANR yok
-- Varsa Sentry debug metric/event anomali gostermiyor
 
 ### Quran senaryolari
 
