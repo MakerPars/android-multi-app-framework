@@ -110,13 +110,36 @@ jobs:
           [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
-          for key in FIREBASE_CONFIGS_ZIP_BASE64 CF_R2_ACCOUNT_ID CF_API_TOKEN CF_R2_BUCKET CF_R2_FIREBASE_OBJECT FIREBASE_WEB_CLIENT_ID; do
-            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          map_secret() {
+            local src="$1"
+            local dst="$2"
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
             if [ -n "$val" ]; then
               echo "::add-mask::$val"
-              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
             fi
-          done
+          }
+
+          map_secret_if_missing() {
+            local src="$1"
+            local dst="$2"
+            if [ -n "${!dst:-}" ]; then
+              return 0
+            fi
+            map_secret "$src" "$dst"
+          }
+
+          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
+          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
+          map_secret CF_R2_BUCKET CF_R2_BUCKET
+          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
+          # R2 operations: prefer CF_* keys, fallback to CLOUDFLARE_* aliases.
+          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret CF_API_TOKEN CF_API_TOKEN
+          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
@@ -359,13 +382,36 @@ jobs:
           [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
-          for key in FIREBASE_CONFIGS_ZIP_BASE64 CF_R2_ACCOUNT_ID CF_API_TOKEN CF_R2_BUCKET CF_R2_FIREBASE_OBJECT FIREBASE_WEB_CLIENT_ID; do
-            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          map_secret() {
+            local src="$1"
+            local dst="$2"
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
             if [ -n "$val" ]; then
               echo "::add-mask::$val"
-              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
             fi
-          done
+          }
+
+          map_secret_if_missing() {
+            local src="$1"
+            local dst="$2"
+            if [ -n "${!dst:-}" ]; then
+              return 0
+            fi
+            map_secret "$src" "$dst"
+          }
+
+          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
+          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
+          map_secret CF_R2_BUCKET CF_R2_BUCKET
+          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
+          # R2 operations: prefer CF_* keys, fallback to CLOUDFLARE_* aliases.
+          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret CF_API_TOKEN CF_API_TOKEN
+          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
