@@ -49,6 +49,22 @@ jobs:
             if [ -n "$val" ]; then
               echo "::add-mask::$val"
               printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
+            fi
+          }
+
+          map_secret_if_missing() {
+            local src="$1"
+            local dst="$2"
+            if [ -n "${!dst:-}" ]; then
+              return 0
+            fi
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
             fi
           }
 
@@ -59,8 +75,11 @@ jobs:
           map_secret FIREBASE_WEB_MESSAGING_SENDER_ID VITE_FIREBASE_MESSAGING_SENDER_ID
           map_secret FIREBASE_WEB_STORAGE_BUCKET VITE_FIREBASE_STORAGE_BUCKET
           map_secret ADMIN_ALLOWED_EMAILS VITE_ADMIN_ALLOWED_EMAILS
-          map_secret CF_API_TOKEN CLOUDFLARE_API_TOKEN
-          map_secret CF_R2_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          # Prefer dedicated Pages token/account secrets; keep legacy names as fallback.
+          map_secret CLOUDFLARE_API_TOKEN CLOUDFLARE_API_TOKEN
+          map_secret_if_missing CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          map_secret CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          map_secret_if_missing CF_R2_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
 
       - uses: actions/setup-node@v4
         with:
