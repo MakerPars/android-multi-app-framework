@@ -50,39 +50,33 @@ jobs:
       - name: Resolve Play secret (Doppler first, GitHub fallback)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
         run: |
           set -euo pipefail
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
 
-          if [ -n "${DOPPLER_TOKEN:-}" ]; then
-            val_json="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val_json" ]; then
-              echo "::add-mask::$val_json"
-              val_json_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
-              echo "::add-mask::$val_json_b64"
-              PLAY_SERVICE_ACCOUNT_JSON_BASE64="$val_json_b64"
-              printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val_json_b64" >> "$GITHUB_ENV"
-            fi
-
-            val="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val" ]; then
-              echo "::add-mask::$val"
-              PLAY_SERVICE_ACCOUNT_JSON_BASE64="$val"
-              printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val" >> "$GITHUB_ENV"
-            fi
+          if [ -z "${DOPPLER_TOKEN:-}" ]; then
+            echo "::error::Missing DOPPLER_TOKEN. This workflow is Doppler-only."
+            exit 1
           fi
 
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            if [ -n "${GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-              printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
-            elif [ -n "${GH_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
-              gh_json_b64="$(printf '%s' "$GH_PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
-              echo "::add-mask::$gh_json_b64"
-              printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$gh_json_b64" >> "$GITHUB_ENV"
-            fi
+          val_json="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          if [ -n "$val_json" ]; then
+            echo "::add-mask::$val_json"
+            val_json_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
+            echo "::add-mask::$val_json_b64"
+            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val_json_b64" >> "$GITHUB_ENV"
+          fi
+
+          val_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          if [ -n "$val_b64" ]; then
+            echo "::add-mask::$val_b64"
+            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val_b64" >> "$GITHUB_ENV"
+          fi
+
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${val_json:-}" ] && [ -z "${val_b64:-}" ]; then
+            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            exit 1
           fi
 
       - name: Decode Play Service Account

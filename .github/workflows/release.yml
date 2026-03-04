@@ -42,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-      WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
     outputs:
       resolved_flavors_json: ${{ steps.resolve.outputs.resolved_json }}
       resolved_flavors_csv: ${{ steps.resolve.outputs.resolved_csv }}
@@ -102,34 +101,36 @@ jobs:
             --mode strict \
             --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Export firebase override + web client from Doppler
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+          for key in FIREBASE_CONFIGS_ZIP_BASE64 CF_R2_ACCOUNT_ID CF_API_TOKEN CF_R2_BUCKET CF_R2_FIREBASE_OBJECT FIREBASE_WEB_CLIENT_ID; do
+            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+            fi
+          done
+
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
         with:
-          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          cf_api_token: ${{ secrets.CF_API_TOKEN }}
-          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
-          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
-      - name: Load Doppler CLI for preflight (optional)
-        if: ${{ env.DOPPLER_TOKEN != '' }}
-        uses: dopplerhq/cli-action@v3
-
-      - name: Resolve WEB_CLIENT_ID (Doppler first, GitHub fallback)
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          set -euo pipefail
-          WEB_CLIENT_ID_VALUE=""
-          if [ -n "${DOPPLER_TOKEN:-}" ]; then
-            WEB_CLIENT_ID_VALUE="$(doppler secrets get FIREBASE_WEB_CLIENT_ID --plain --project android-multi-app-framework --config prod 2>/dev/null || true)"
-          fi
-          if [ -z "$WEB_CLIENT_ID_VALUE" ]; then
-            WEB_CLIENT_ID_VALUE='${{ secrets.FIREBASE_WEB_CLIENT_ID }}'
-          fi
-          printf 'WEB_CLIENT_ID=%s\n' "$WEB_CLIENT_ID_VALUE" >> "$GITHUB_ENV"
+          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ env.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
 
       - name: Validate Google Sign-In Config (strict for publish)
         if: github.event.inputs.publish_to_play == 'true'
+        env:
+          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py \
             --flavors "${{ steps.resolve.outputs.resolved_csv }}" \
@@ -137,17 +138,16 @@ jobs:
 
       - name: Validate Google Sign-In Config
         if: github.event.inputs.publish_to_play != 'true'
+        env:
+          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
-      - name: Resolve release secrets (Doppler first, GitHub fallback)
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+      - name: Resolve release secrets (Doppler-only)
         run: |
           set -euo pipefail
 
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
 
@@ -171,20 +171,22 @@ jobs:
           load_from_doppler KEY_PASSWORD
           load_from_doppler PUSH_REGISTRATION_URL
           load_from_doppler SENTRY_AUTH_TOKEN
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON
           load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
 
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -n "${GH_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
-            PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "$GH_PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
             echo "::add-mask::$PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
           fi
 
-          printf 'KEYSTORE_BASE64=%s\n' "${KEYSTORE_BASE64:-${{ secrets.KEYSTORE_BASE64 }}}" >> "$GITHUB_ENV"
-          printf 'KEYSTORE_PASSWORD=%s\n' "${KEYSTORE_PASSWORD:-${{ secrets.KEYSTORE_PASSWORD }}}" >> "$GITHUB_ENV"
-          printf 'KEY_ALIAS=%s\n' "${KEY_ALIAS:-${{ secrets.KEY_ALIAS }}}" >> "$GITHUB_ENV"
-          printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
-          printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
-          printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}}" >> "$GITHUB_ENV"
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL SENTRY_AUTH_TOKEN; do
+            [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
+          done
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            exit 1
+          fi
 
       - name: Validate Release Signing Secrets
         run: |
@@ -293,7 +295,6 @@ jobs:
     environment: production
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-      WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -324,47 +325,45 @@ jobs:
           cp "TEMP_OUT/release-sync/app-versions.properties" "./app-versions.properties"
           echo "::notice::Restored bumped app-versions.properties from build job for publish"
 
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Export firebase override + web client from Doppler
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+          for key in FIREBASE_CONFIGS_ZIP_BASE64 CF_R2_ACCOUNT_ID CF_API_TOKEN CF_R2_BUCKET CF_R2_FIREBASE_OBJECT FIREBASE_WEB_CLIENT_ID; do
+            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+            fi
+          done
+
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
         with:
-          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          cf_api_token: ${{ secrets.CF_API_TOKEN }}
-          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
-          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
-
-      - name: Load Doppler CLI for preflight (optional)
-        if: ${{ env.DOPPLER_TOKEN != '' }}
-        uses: dopplerhq/cli-action@v3
-
-      - name: Resolve WEB_CLIENT_ID (Doppler first, GitHub fallback)
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          set -euo pipefail
-          WEB_CLIENT_ID_VALUE=""
-          if [ -n "${DOPPLER_TOKEN:-}" ]; then
-            WEB_CLIENT_ID_VALUE="$(doppler secrets get FIREBASE_WEB_CLIENT_ID --plain --project android-multi-app-framework --config prod 2>/dev/null || true)"
-          fi
-          if [ -z "$WEB_CLIENT_ID_VALUE" ]; then
-            WEB_CLIENT_ID_VALUE='${{ secrets.FIREBASE_WEB_CLIENT_ID }}'
-          fi
-          printf 'WEB_CLIENT_ID=%s\n' "$WEB_CLIENT_ID_VALUE" >> "$GITHUB_ENV"
+          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ env.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
 
       - name: Validate Google Sign-In Config
+        env:
+          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
         run: |
           python3 ./scripts/ci/verify_google_signin_config.py \
             --flavors "${{ needs.build-release.outputs.resolved_flavors_csv }}" \
             --require-web-client-id
 
-      - name: Resolve release secrets (Doppler first, GitHub fallback)
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+      - name: Resolve release secrets (Doppler-only)
         run: |
           set -euo pipefail
 
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
 
@@ -388,20 +387,22 @@ jobs:
           load_from_doppler KEY_PASSWORD
           load_from_doppler PUSH_REGISTRATION_URL
           load_from_doppler SENTRY_AUTH_TOKEN
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON
           load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
 
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -n "${GH_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
-            PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "$GH_PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
             echo "::add-mask::$PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
           fi
 
-          printf 'KEYSTORE_BASE64=%s\n' "${KEYSTORE_BASE64:-${{ secrets.KEYSTORE_BASE64 }}}" >> "$GITHUB_ENV"
-          printf 'KEYSTORE_PASSWORD=%s\n' "${KEYSTORE_PASSWORD:-${{ secrets.KEYSTORE_PASSWORD }}}" >> "$GITHUB_ENV"
-          printf 'KEY_ALIAS=%s\n' "${KEY_ALIAS:-${{ secrets.KEY_ALIAS }}}" >> "$GITHUB_ENV"
-          printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
-          printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
-          printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${GH_PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}}" >> "$GITHUB_ENV"
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL SENTRY_AUTH_TOKEN; do
+            [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
+          done
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            exit 1
+          fi
 
       - name: Decode Secrets
         run: |

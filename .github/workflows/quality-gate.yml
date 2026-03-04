@@ -290,6 +290,8 @@ jobs:
       needs.analyze-impact.outputs.has_code == 'true' &&
       needs.analyze-impact.outputs.flavours_json != '[]'
     runs-on: ubuntu-latest
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -328,18 +330,35 @@ jobs:
         with:
           cache-read-only: true
 
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Export firebase override + web client from Doppler
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+          for key in FIREBASE_CONFIGS_ZIP_BASE64 CF_R2_ACCOUNT_ID CF_API_TOKEN CF_R2_BUCKET CF_R2_FIREBASE_OBJECT FIREBASE_WEB_CLIENT_ID; do
+            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+            fi
+          done
+
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
         with:
-          firebase_configs_zip_base64: ${{ secrets.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          cf_r2_account_id: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          cf_api_token: ${{ secrets.CF_API_TOKEN }}
-          cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
-          cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
+          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ env.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
 
       - name: Validate Google Sign-In Config
         env:
-          WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
+          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
           FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}
         run: |
           set -euo pipefail

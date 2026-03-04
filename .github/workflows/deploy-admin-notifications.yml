@@ -21,23 +21,47 @@ jobs:
     name: Build & Deploy side-projects/admin-notifications (Cloudflare Pages)
     runs-on: ubuntu-latest
     env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       INPUT_PAGES_PROJECT_NAME: ${{ github.event.inputs.pages_project_name }}
       INPUT_BRANCH_NAME: ${{ github.event.inputs.branch_name }}
       CF_PAGES_PROJECT_FALLBACK: ${{ vars.CF_PAGES_ADMIN_NOTIFICATIONS_PROJECT }}
-      VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
-      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_WEB_AUTH_DOMAIN }}
-      VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_WEB_PROJECT_ID }}
-      VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_WEB_APP_ID }}
-      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_WEB_MESSAGING_SENDER_ID }}
-      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_WEB_STORAGE_BUCKET }}
-      VITE_ADMIN_ALLOWED_EMAILS: ${{ vars.ADMIN_ALLOWED_EMAILS }}
-      VITE_GOOGLE_RECAPTCHA_SITE_KEY: ${{ vars.GOOGLE_RECAPTCHA_SITE_KEY }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Export deploy env from Doppler
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          map_secret() {
+            local src="$1"
+            local dst="$2"
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+            fi
+          }
+
+          map_secret FIREBASE_WEB_API_KEY VITE_FIREBASE_API_KEY
+          map_secret FIREBASE_WEB_AUTH_DOMAIN VITE_FIREBASE_AUTH_DOMAIN
+          map_secret FIREBASE_WEB_PROJECT_ID VITE_FIREBASE_PROJECT_ID
+          map_secret FIREBASE_WEB_APP_ID VITE_FIREBASE_APP_ID
+          map_secret FIREBASE_WEB_MESSAGING_SENDER_ID VITE_FIREBASE_MESSAGING_SENDER_ID
+          map_secret FIREBASE_WEB_STORAGE_BUCKET VITE_FIREBASE_STORAGE_BUCKET
+          map_secret ADMIN_ALLOWED_EMAILS VITE_ADMIN_ALLOWED_EMAILS
+          map_secret GOOGLE_RECAPTCHA_SITE_KEY VITE_GOOGLE_RECAPTCHA_SITE_KEY
+          map_secret CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          map_secret CF_R2_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
 
       - uses: actions/setup-node@v4
         with:
