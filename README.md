@@ -53,10 +53,6 @@ PUSH_REGISTRATION_URL=https://your-api.example.com/register-device
 # publishRelease* tasks only
 PLAY_SERVICE_ACCOUNT_JSON=C:/path/to/play-service-account.json
 
-# optional
-SENTRY_AUTH_TOKEN=***
-SENTRY_DSN=***
-
 ```
 
 ### Building the Project

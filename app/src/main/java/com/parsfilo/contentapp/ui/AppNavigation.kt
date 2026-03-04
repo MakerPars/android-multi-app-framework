@@ -56,8 +56,6 @@ import com.parsfilo.contentapp.feature.quran.ui.surelist.QuranSuraListRoute
 import com.parsfilo.contentapp.feature.settings.ui.SettingsRoute
 import com.parsfilo.contentapp.monetization.AppAdUnitIds
 import com.parsfilo.contentapp.navigation.AppRoute
-import com.parsfilo.contentapp.observability.SentryMetrics
-import io.sentry.compose.withSentryObservableEffect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -84,10 +82,6 @@ fun AppNavHost(
     val hostActivity = context as? MainActivity
     val coroutineScope = rememberCoroutineScope()
     var shouldShowInterstitialOnAudioStop by remember { mutableStateOf(false) }
-    val sentryNavController = navController.withSentryObservableEffect(
-        enableNavigationBreadcrumbs = true,
-        enableNavigationTracing = true,
-    )
     val adUnitIds = remember(context, BuildConfig.USE_TEST_ADS) {
         AppAdUnitIds.resolve(context, BuildConfig.USE_TEST_ADS)
     }
@@ -109,12 +103,11 @@ fun AppNavHost(
             .distinctUntilChanged()
             .collect { route ->
                 appAnalytics.logScreenView(screenName = route, screenClass = "AppNavHost")
-                SentryMetrics.count("navigation.screen_view")
             }
     }
 
     NavHost(
-        navController = sentryNavController,
+        navController = navController,
         startDestination = AppRoute.HomeGraph.route,
         modifier = modifier
     ) {

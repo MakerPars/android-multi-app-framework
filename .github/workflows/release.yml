@@ -193,7 +193,6 @@ jobs:
           load_from_doppler KEY_ALIAS
           load_from_doppler KEY_PASSWORD
           load_from_doppler PUSH_REGISTRATION_URL
-          load_from_doppler SENTRY_AUTH_TOKEN
           load_from_doppler PLAY_SERVICE_ACCOUNT_JSON
 
           play_sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
@@ -208,7 +207,7 @@ jobs:
             load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
           fi
 
-          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL SENTRY_AUTH_TOKEN; do
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL; do
             [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
           done
           if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
@@ -224,7 +223,6 @@ jobs:
           [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret: KEY_ALIAS"; exit 1; }
           [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret: KEY_PASSWORD"; exit 1; }
           [ -n "$PUSH_REGISTRATION_URL" ] || { echo "::error::Missing secret: PUSH_REGISTRATION_URL"; exit 1; }
-          [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
 
       - name: Decode Keystore
         run: |
@@ -457,7 +455,6 @@ jobs:
           load_from_doppler KEY_ALIAS
           load_from_doppler KEY_PASSWORD
           load_from_doppler PUSH_REGISTRATION_URL
-          load_from_doppler SENTRY_AUTH_TOKEN
           load_from_doppler PLAY_SERVICE_ACCOUNT_JSON
 
           play_sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
@@ -472,7 +469,7 @@ jobs:
             load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
           fi
 
-          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL SENTRY_AUTH_TOKEN; do
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL; do
             [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
           done
           if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
@@ -489,7 +486,6 @@ jobs:
           [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret: KEY_PASSWORD"; exit 1; }
           [ -n "$PUSH_REGISTRATION_URL" ] || { echo "::error::Missing secret: PUSH_REGISTRATION_URL"; exit 1; }
           [ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ] || [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
-          [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
           sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
           if [ -n "$sa_json_trimmed" ] && [ "${#PLAY_SERVICE_ACCOUNT_JSON}" -ge 200 ] && [[ "$sa_json_trimmed" == \{* ]]; then

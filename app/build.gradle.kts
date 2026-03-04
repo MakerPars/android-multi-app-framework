@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.firebase.perf)
     alias(libs.plugins.play.publisher)
-    id("io.sentry.android.gradle")
 }
 
 /* =========================
@@ -267,7 +266,6 @@ android {
             "PUSH_REGISTRATION_URL",
             asBuildConfigString(pick("PUSH_REGISTRATION_URL") ?: ""),
         )
-        buildConfigField("String", "SENTRY_DSN", asBuildConfigString(pick("SENTRY_DSN") ?: ""))
     }
 
     buildTypes {
@@ -360,17 +358,6 @@ play {
     defaultToAppBundles.set(true)
 }
 
-sentry {
-    org.set("oaslananka")
-    projectName.set("android-multi-app-framework")
-    includeSourceContext.set(false)
-    autoUploadProguardMapping.set(true)
-
-    val sentryAuthToken = pick("SENTRY_AUTH_TOKEN")
-    if (!sentryAuthToken.isNullOrBlank()) {
-        authToken.set(sentryAuthToken)
-    }
-}
 /* =========================
    DEPENDENCIES
    ========================= */
@@ -425,7 +412,6 @@ dependencies {
     }
 
     implementation(libs.firebase.crashlytics)
-    implementation(libs.sentry.compose.android)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.timber)
 

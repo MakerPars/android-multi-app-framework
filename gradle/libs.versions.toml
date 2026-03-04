@@ -23,7 +23,6 @@ playServicesAds = "25.0.0"
 playServicesAppSet = "16.1.0"
 rules = "1.7.0"
 runner = "1.7.0"
-sentryComposeAndroid = "8.34.0"
 ump = "4.0.0"
 media3 = "1.9.2"
 coil = "3.4.0"
@@ -106,7 +105,6 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentialsVersion" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentialsVersion" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleidVersion" }
-sentry-compose-android = { module = "io.sentry:sentry-compose-android", version.ref = "sentryComposeAndroid" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
 play-asset-delivery-ktx = { group = "com.google.android.play", name = "asset-delivery-ktx", version = "2.3.0" }
 
@@ -156,4 +154,3 @@ room = { id = "androidx.room", version.ref = "room" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
-

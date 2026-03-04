@@ -16,7 +16,6 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint) apply false
 
-    id("io.sentry.android.gradle") version "6.1.0" apply false
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -78,10 +77,7 @@ subprojects {
         resolutionStrategy {
             componentSelection {
                 all {
-                    if (
-                        preReleaseVersionRegex.matches(candidate.version) &&
-                        candidate.group !in allowedPreReleaseGroups
-                    ) {
+                    if (preReleaseVersionRegex.matches(candidate.version) && candidate.group !in allowedPreReleaseGroups) {
                         reject(
                             "Pre-release dependencies are not allowed: " + "${candidate.group}:${candidate.module}:${candidate.version}"
                         )
@@ -119,9 +115,10 @@ subprojects {
             val isCi =
                 (System.getenv("TF_BUILD") ?: "").equals("True", ignoreCase = true) || !System.getenv("BUILD_BUILDID")
                     .isNullOrBlank() || (System.getenv("CI") ?: "").equals("true", ignoreCase = true)
-            val isPullRequest =
-                (System.getenv("BUILD_REASON") ?: "").equals("PullRequest", ignoreCase = true) ||
-                    !System.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID").isNullOrBlank()
+            val isPullRequest = (System.getenv("BUILD_REASON") ?: "").equals(
+                "PullRequest",
+                ignoreCase = true
+            ) || !System.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID").isNullOrBlank()
 
             // PR kalite kapısında ktlint ihlali pipeline'ı kırmalıdır.
             ignoreFailures.set(isCi && !isPullRequest)

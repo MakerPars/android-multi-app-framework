@@ -22,16 +22,6 @@
         android:theme="@style/Theme.ContentApp"
         tools:targetApi="36">
 
-        <!--
-          Sentry SDK is initialized manually in App.kt.
-          Remove auto-init provider to avoid startup crash when DSN is empty for a flavor.
-        -->
-        <provider
-            android:name="io.sentry.android.core.SentryInitProvider"
-            android:authorities="${applicationId}.sentryinitprovider"
-            tools:node="remove" />
-
-
         <activity
             android:name=".MainActivity"
             android:exported="true"

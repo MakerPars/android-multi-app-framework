@@ -1,7 +1,6 @@
 package com.parsfilo.contentapp
 
 import android.app.Application
-import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -20,14 +19,7 @@ import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
 import com.parsfilo.contentapp.feature.prayertimes.alarm.PrayerAlarmScheduler
 import com.parsfilo.contentapp.feature.prayertimes.widget.PrayerTimesWidgetReceiver
 import com.parsfilo.contentapp.feature.prayertimes.worker.PrayerTimesRefreshWorker
-import com.parsfilo.contentapp.observability.SentryMetrics
 import dagger.hilt.android.HiltAndroidApp
-import io.sentry.Sentry
-import io.sentry.SentryEvent
-import io.sentry.SentryLevel
-import io.sentry.SentryLogEvent
-import io.sentry.SentryLogLevel
-import io.sentry.android.core.SentryAndroid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -64,44 +56,10 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val appStartUptimeMs = SystemClock.elapsedRealtime()
 
         // Start with analytics collection disabled until UMP consent result is finalized.
         // Crashlytics remains independent and continues collecting crashes.
         appAnalytics.setAnalyticsCollectionEnabled(false)
-
-        if (BuildConfig.SENTRY_DSN.isNotBlank()) {
-            SentryAndroid.init(this) { options ->
-                options.dsn = BuildConfig.SENTRY_DSN
-                options.environment = BuildConfig.FLAVOR_NAME
-                options.release = "${BuildConfig.APPLICATION_ID}@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
-                options.isDebug = BuildConfig.DEBUG
-                options.tracesSampleRate = if (BuildConfig.DEBUG) DEBUG_TRACES_SAMPLE_RATE else PROD_TRACES_SAMPLE_RATE
-                options.profilesSampleRate = if (BuildConfig.DEBUG) DEBUG_PROFILES_SAMPLE_RATE else PROD_PROFILES_SAMPLE_RATE
-                // Keep continuous profiling disabled to preserve quota.
-                options.setProfileSessionSampleRate(0.0)
-
-                // Enable Sentry Logs with strict budget controls.
-                options.logs.isEnabled = true
-                options.logs.beforeSend =
-                    io.sentry.SentryOptions.Logs.BeforeSendLogCallback { logEvent ->
-                        if (shouldDropSentryLogNoise(logEvent)) null else logEvent
-                    }
-
-                options.setDiagnosticLevel(if (BuildConfig.DEBUG) SentryLevel.INFO else SentryLevel.WARNING)
-                options.isEnableUserInteractionBreadcrumbs = true
-                options.isEnableAutoSessionTracking = true
-                options.maxBreadcrumbs = 150
-                options.beforeSend = io.sentry.SentryOptions.BeforeSendCallback { event, _ ->
-                    if (shouldDropSentryNoise(event)) null else event
-                }
-            }
-            Sentry.setTag("flavor", BuildConfig.FLAVOR_NAME)
-            Sentry.setTag("build_type", BuildConfig.BUILD_TYPE)
-            SentryMetrics.count("app.sentry.init.success")
-        } else {
-            SentryMetrics.count("app.sentry.init.skipped")
-        }
 
         FirebaseCrashlytics.getInstance().apply {
             isCrashlyticsCollectionEnabled = !BuildConfig.DEBUG
@@ -112,13 +70,9 @@ class App : Application() {
         // App Check must be installed early to protect Firebase endpoints (Firestore, Functions, etc.)
         appCheckInstaller.install()
         endpointsProvider.prefetchAsync()
-        SentryMetrics.gauge("push.topics.configured", DEFAULT_FCM_TOPICS.size.toDouble())
         ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
             runCatching {
                 pushRegistrationManager.subscribeToTopics(DEFAULT_FCM_TOPICS)
-                SentryMetrics.count("push.topics.subscribe.success")
-            }.onFailure {
-                SentryMetrics.count("push.topics.subscribe.failure")
             }
         }
         PushRegistrationSyncWorker.schedule(this)
@@ -132,9 +86,6 @@ class App : Application() {
                         fallbackAudioFileName = BuildConfig.AUDIO_FILE_NAME,
                         prefetchAllAudioOnFirstLaunch = BuildConfig.FLAVOR_NAME == "namazsurelerivedualarsesli",
                     )
-                    SentryMetrics.count("audio.prefetch.success")
-                }.onFailure {
-                    SentryMetrics.count("audio.prefetch.failure")
                 }
             }
         }
@@ -191,12 +142,6 @@ class App : Application() {
                 }
             }
         }
-
-        SentryMetrics.distribution(
-            key = "app.on_create.duration",
-            value = (SystemClock.elapsedRealtime() - appStartUptimeMs).toDouble(),
-            unit = "millisecond",
-        )
     }
 
     private companion object {
@@ -204,64 +149,6 @@ class App : Application() {
             "dini-bildirim",
             "talep",
         )
-
-        private const val PROD_TRACES_SAMPLE_RATE = 0.08
-        private const val PROD_PROFILES_SAMPLE_RATE = 0.02
-        private const val DEBUG_TRACES_SAMPLE_RATE = 1.0
-        private const val DEBUG_PROFILES_SAMPLE_RATE = 1.0
-
-        private val BENIGN_SENTRY_PATTERNS = listOf(
-            "Native ad failed: No fill",
-            "Native ad no-fill",
-            "Native ad load warning",
-            "unexpected end of stream",
-            "Billing setup failed: Service connection is disconnected.",
-            "Billing service unavailable on device",
-            "Planlar alınamadı: An internal error occurred.",
-            "Reauth required (button flow)",
-            "Button flow finished with",
-            "Button flow CANCELLED",
-            "CANCELLED by user/system",
-            "activity is cancelled by the user",
-            "Job was cancelled",
-            "Account reauth failed.",
-        )
-    }
-
-    private fun shouldDropSentryNoise(event: SentryEvent): Boolean {
-        val logger = event.logger.orEmpty()
-        if (!logger.contains("timber", ignoreCase = true)) return false
-
-        val message = buildString {
-            event.message?.formatted?.let(::append)
-            event.message?.message?.let {
-                if (isNotBlank()) append(" | ")
-                append(it)
-            }
-            event.throwable?.message?.let {
-                if (isNotBlank()) append(" | ")
-                append(it)
-            }
-        }
-
-        val throwableType = event.throwable?.javaClass?.simpleName.orEmpty()
-        if (throwableType == "GetCredentialCancellationException") return true
-        if (throwableType == "JobCancellationException") return true
-
-        return BENIGN_SENTRY_PATTERNS.any { pattern ->
-            message.contains(pattern, ignoreCase = true)
-        }
-    }
-
-    private fun shouldDropSentryLogNoise(event: SentryLogEvent): Boolean {
-        val level = event.level
-        val warnOrAbove = level == SentryLogLevel.WARN || level == SentryLogLevel.ERROR || level == SentryLogLevel.FATAL
-        if (!warnOrAbove) return true
-
-        val body = event.body
-        return BENIGN_SENTRY_PATTERNS.any { pattern ->
-            body.contains(pattern, ignoreCase = true)
-        }
     }
 }
 

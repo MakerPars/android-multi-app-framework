@@ -46,9 +46,8 @@ Eklenecek secretlar:
 4. **`KEY_PASSWORD`** — Anahtar şifresi
 5. **`PLAY_SERVICE_ACCOUNT_JSON_BASE64`** — Service account JSON dosyasını Base64'e çevirerek
 6. **`PUSH_REGISTRATION_URL`** — release/publish için zorunlu endpoint
-7. **`SENTRY_AUTH_TOKEN`** — release mapping upload için
-8. **`DOPPLER_TOKEN`** (opsiyonel) — workflow'larda Doppler-first secret çekimi için
-9. **`FIREBASE_WEB_CLIENT_ID`** — publish/internal akışlarda zorunlu Google Sign-In cross-check için
+7. **`DOPPLER_TOKEN`** (opsiyonel) — workflow'larda Doppler-first secret çekimi için
+8. **`FIREBASE_WEB_CLIENT_ID`** — publish/internal akışlarda zorunlu Google Sign-In cross-check için
 
 ### GitHub Environment (Zorunlu)
 
@@ -79,7 +78,6 @@ Azure DevOps'ta secret'ları aşağıdaki iki yöntemden biriyle tanımlayın:
 - `KEY_PASSWORD`
 - `PLAY_SERVICE_ACCOUNT_JSON_BASE64`
 - `PUSH_REGISTRATION_URL`
-- `SENTRY_AUTH_TOKEN`
 - `FIREBASE_CONFIGS_ZIP_BASE64` (opsiyonel override)
 
 Azure YAML dosyaları:

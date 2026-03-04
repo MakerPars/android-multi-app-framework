@@ -3,252 +3,252 @@
     "flavor": "amenerrasulu",
     "package": "com.parsfilo.amenerrasulu",
     "name": "Amenerrasulü Duası Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~8105375519",
+    "admob_app_id": "ca-app-pub-3312485084079132~4012562548",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/2695264609",
-      "interstitial": "ca-app-pub-5653675164707335/4135863422",
-      "native": "ca-app-pub-5653675164707335/9171045179",
-      "rewarded": "ca-app-pub-5653675164707335/2822781752",
-      "open_app": "ca-app-pub-5653675164707335/1509700086",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/2929070451"
+      "banner": "ca-app-pub-3312485084079132/5773559718",
+      "interstitial": "ca-app-pub-3312485084079132/9095252852",
+      "native": "ca-app-pub-3312485084079132/8502830681",
+      "rewarded": "ca-app-pub-3312485084079132/1834314703",
+      "open_app": "ca-app-pub-3312485084079132/5170924485",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/3653811411"
     }
   },
   {
     "flavor": "ayetelkursi",
     "package": "com.parsfilo.ayetelkursi",
     "name": "Ayetel Kürsi Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~9428193910",
+    "admob_app_id": "ca-app-pub-3312485084079132~7496307482",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/9316513274",
-      "interstitial": "ca-app-pub-5653675164707335/6155522108",
-      "native": "ca-app-pub-5653675164707335/2737498762",
-      "rewarded": "ca-app-pub-5653675164707335/3266110248",
-      "open_app": "ca-app-pub-5653675164707335/1953028575",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/3529358763"
+      "banner": "ca-app-pub-3312485084079132/9783652332",
+      "interstitial": "ca-app-pub-3312485084079132/4531325655",
+      "native": "ca-app-pub-3312485084079132/1216289106",
+      "rewarded": "ca-app-pub-3312485084079132/7226339270",
+      "open_app": "ca-app-pub-3312485084079132/7905820537",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/8773841387"
     }
   },
   {
     "flavor": "bereketduasi",
     "package": "com.parsfilo.bereketduasi",
     "name": "Bereket Duası & Karınca Duası",
-    "admob_app_id": "ca-app-pub-5653675164707335~9128811019",
+    "admob_app_id": "ca-app-pub-3312485084079132~4161185675",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/5196141142",
-      "interstitial": "ca-app-pub-5653675164707335/3883059478",
-      "native": "ca-app-pub-5653675164707335/6485172083",
-      "rewarded": "ca-app-pub-5653675164707335/8943814463",
-      "open_app": "ca-app-pub-5653675164707335/7630732793",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/1256896132"
+      "banner": "ca-app-pub-3312485084079132/1125217972",
+      "interstitial": "ca-app-pub-3312485084079132/2745820786",
+      "native": "ca-app-pub-3312485084079132/7499054633",
+      "rewarded": "ca-app-pub-3312485084079132/9119657445",
+      "open_app": "ca-app-pub-3312485084079132/1097297810",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/1432739117"
     }
   },
   {
     "flavor": "esmaulhusna",
     "package": "com.parsfilo.esmaulhusna",
     "name": "Esma-ül Hüsna | 99 İsim",
-    "admob_app_id": "ca-app-pub-5653675164707335~7803645694",
+    "admob_app_id": "ca-app-pub-3312485084079132~7465066634",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/9915279078",
-      "interstitial": "ca-app-pub-5653675164707335/5551364365",
-      "native": "ca-app-pub-5653675164707335/1529881388",
-      "rewarded": "ca-app-pub-5653675164707335/2036789052",
-      "open_app": "ca-app-pub-5653675164707335/4004476847",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/6187311696"
+      "banner": "ca-app-pub-3312485084079132/9248154654",
+      "interstitial": "ca-app-pub-3312485084079132/9959983985",
+      "native": "ca-app-pub-3312485084079132/4624226664",
+      "rewarded": "ca-app-pub-3312485084079132/5937308331",
+      "open_app": "ca-app-pub-3312485084079132/3474796526",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/7756273187"
     }
   },
   {
     "flavor": "fetihsuresi",
     "package": "com.parsfilo.fetihsuresi",
     "name": "Fetih Suresi Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~5479212173",
+    "admob_app_id": "ca-app-pub-3312485084079132~2457444899",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/6905972354",
-      "interstitial": "ca-app-pub-5653675164707335/4279809015",
-      "native": "ca-app-pub-5653675164707335/6832656442",
-      "rewarded": "ca-app-pub-5653675164707335/1653645676",
-      "open_app": "ca-app-pub-5653675164707335/4430009918",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/9065231836"
+      "banner": "ca-app-pub-3312485084079132/1216762831",
+      "interstitial": "ca-app-pub-3312485084079132/9231085852",
+      "native": "ca-app-pub-3312485084079132/7918004182",
+      "rewarded": "ca-app-pub-3312485084079132/5854845998",
+      "open_app": "ca-app-pub-3312485084079132/6604922517",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/8279017361"
     }
   },
   {
     "flavor": "kenzularsduasi",
     "package": "com.parsfilo.kenzularsduasi",
     "name": "Kenzül Arş Duası Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~8430331656",
+    "admob_app_id": "ca-app-pub-3312485084079132~3739252267",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/9021358593",
-      "interstitial": "ca-app-pub-5653675164707335/6650821487",
-      "native": "ca-app-pub-5653675164707335/4146783356",
-      "rewarded": "ca-app-pub-5653675164707335/2318696365",
-      "open_app": "ca-app-pub-5653675164707335/9655783417",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/2455950244"
+      "banner": "ca-app-pub-3312485084079132/8031782695",
+      "interstitial": "ca-app-pub-3312485084079132/4136801532",
+      "native": "ca-app-pub-3312485084079132/8524675084",
+      "rewarded": "ca-app-pub-3312485084079132/3547680579",
+      "open_app": "ca-app-pub-3312485084079132/9569091613",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/2863473929"
     }
   },
   {
     "flavor": "kuran_kerim",
     "package": "com.parsfilo.kuran_kerim",
     "name": "Kur'an-ı Kerim: Meal & Okunuş",
-    "admob_app_id": "ca-app-pub-5653675164707335~5804168314",
+    "admob_app_id": "ca-app-pub-3312485084079132~2762839648",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/1486629297",
-      "interstitial": "ca-app-pub-5653675164707335/4313625697",
-      "native": "ca-app-pub-5653675164707335/8786534818",
-      "rewarded": "ca-app-pub-5653675164707335/2374333427",
-      "open_app": "ca-app-pub-5653675164707335/3729649258",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/1099616488"
+      "banner": "ca-app-pub-3312485084079132/6856037442",
+      "interstitial": "ca-app-pub-3312485084079132/6349196286",
+      "native": "ca-app-pub-3312485084079132/3723032944",
+      "rewarded": "ca-app-pub-3312485084079132/7058818314",
+      "open_app": "ca-app-pub-3312485084079132/6715203385",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/5461282335"
     }
   },
   {
     "flavor": "kible",
     "package": "com.parsfilo.kible",
     "name": "Kıbleyi Göster – Namaz Yönü",
-    "admob_app_id": "ca-app-pub-5653675164707335~3988164977",
+    "admob_app_id": "ca-app-pub-3312485084079132~9575660006",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/7702884986",
-      "interstitial": "ca-app-pub-5653675164707335/8342701743",
-      "native": "ca-app-pub-5653675164707335/6283514619",
-      "rewarded": "ca-app-pub-5653675164707335/3848922963",
-      "open_app": "ca-app-pub-5653675164707335/3878986788",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/2837367852"
+      "banner": "ca-app-pub-3312485084079132/1438258457",
+      "interstitial": "ca-app-pub-3312485084079132/6467791378",
+      "native": "ca-app-pub-3312485084079132/7836713366",
+      "rewarded": "ca-app-pub-3312485084079132/6209595486",
+      "open_app": "ca-app-pub-3312485084079132/5083654994",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/7209913044"
     }
   },
   {
     "flavor": "mucizedualar",
     "package": "com.parsfilo.mucizedualar",
     "name": "Mucize Dualar",
-    "admob_app_id": "ca-app-pub-5653675164707335~3409580476",
+    "admob_app_id": "ca-app-pub-3312485084079132~6594273442",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/5357591540",
-      "interstitial": "ca-app-pub-5653675164707335/8752398306",
-      "native": "ca-app-pub-5653675164707335/3583832107",
-      "rewarded": "ca-app-pub-5653675164707335/1149240457",
-      "open_app": "ca-app-pub-5653675164707335/8644587096",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/7850380179"
+      "banner": "ca-app-pub-3312485084079132/1326500863",
+      "interstitial": "ca-app-pub-3312485084079132/2887293262",
+      "native": "ca-app-pub-3312485084079132/5530114227",
+      "rewarded": "ca-app-pub-3312485084079132/2337799084",
+      "open_app": "ca-app-pub-3312485084079132/9848633188",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/9236051407"
     }
   },
   {
     "flavor": "namazvakitleri",
     "package": "com.parsfilo.namazvakitleri",
     "name": "Namaz Ezan Vakitleri",
-    "admob_app_id": "ca-app-pub-5653675164707335~9226885493",
+    "admob_app_id": "ca-app-pub-3312485084079132~3715770142",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/6236393094",
-      "interstitial": "ca-app-pub-5653675164707335/7357903071",
-      "native": "ca-app-pub-5653675164707335/7166331386",
-      "rewarded": "ca-app-pub-5653675164707335/2624451143",
-      "open_app": "ca-app-pub-5653675164707335/7064387472",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/7255959168"
+      "banner": "ca-app-pub-3312485084079132/8867491644",
+      "interstitial": "ca-app-pub-3312485084079132/1024717414",
+      "native": "ca-app-pub-3312485084079132/2218379585",
+      "rewarded": "ca-app-pub-3312485084079132/5554164955",
+      "open_app": "ca-app-pub-3312485084079132/3775003832",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/7404094987"
     }
   },
   {
     "flavor": "namazsurelerivedualarsesli",
     "package": "com.parsfilo.namazsurelerivedualarsesli",
     "name": "Namaz Sureleri Sesli - Dualar",
-    "admob_app_id": "ca-app-pub-5653675164707335~3876484333",
+    "admob_app_id": "ca-app-pub-3312485084079132~9767231692",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/1454839707",
-      "interstitial": "ca-app-pub-5653675164707335/9486536687",
-      "native": "ca-app-pub-5653675164707335/8133926564",
-      "rewarded": "ca-app-pub-5653675164707335/7275665100",
-      "open_app": "ca-app-pub-5653675164707335/1568518211",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/1831766733"
+      "banner": "ca-app-pub-3312485084079132/7065557480",
+      "interstitial": "ca-app-pub-3312485084079132/7079268847",
+      "native": "ca-app-pub-3312485084079132/4652971236",
+      "rewarded": "ca-app-pub-3312485084079132/4049511590",
+      "open_app": "ca-app-pub-3312485084079132/7222469849",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/9267840991"
     }
   },
   {
     "flavor": "nazarayeti",
     "package": "com.parsfilo.nazarayeti",
     "name": "Nazar Ayeti - Duası",
-    "admob_app_id": "ca-app-pub-5653675164707335~3178004976",
+    "admob_app_id": "ca-app-pub-3312485084079132~7557505209",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/2933570773",
-      "interstitial": "ca-app-pub-5653675164707335/9251567116",
-      "native": "ca-app-pub-5653675164707335/4653846559",
-      "rewarded": "ca-app-pub-5653675164707335/6783188004",
-      "open_app": "ca-app-pub-5653675164707335/1339289630",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/6561349234"
+      "banner": "ca-app-pub-3312485084079132/2246727958",
+      "interstitial": "ca-app-pub-3312485084079132/9992096854",
+      "native": "ca-app-pub-3312485084079132/3867330760",
+      "rewarded": "ca-app-pub-3312485084079132/7365933511",
+      "open_app": "ca-app-pub-3312485084079132/1343450648",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/6158052807"
     }
   },
   {
     "flavor": "vakiasuresi",
     "package": "com.parsfilo.vakiasuresi",
     "name": "Vakıa Suresi Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~8937239327",
+    "admob_app_id": "ca-app-pub-3312485084079132~4284536659",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/7657285974",
-      "interstitial": "ca-app-pub-5653675164707335/2207171259",
-      "native": "ca-app-pub-5653675164707335/3476496253",
-      "rewarded": "ca-app-pub-5653675164707335/7331980783",
-      "open_app": "ca-app-pub-5653675164707335/5142803276",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/9351164106"
+      "banner": "ca-app-pub-3312485084079132/7489284497",
+      "interstitial": "ca-app-pub-3312485084079132/4531948666",
+      "native": "ca-app-pub-3312485084079132/2707747011",
+      "rewarded": "ca-app-pub-3312485084079132/5964465747",
+      "open_app": "ca-app-pub-3312485084079132/9432813754",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/2670643057"
     }
   },
   {
     "flavor": "yasinsuresi",
     "package": "com.parsfilo.yasinsuresi",
     "name": "Yasin Suresi Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~7364661996",
+    "admob_app_id": "ca-app-pub-3312485084079132~2954411334",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/1632456182",
-      "interstitial": "ca-app-pub-5653675164707335/1888082418",
-      "native": "ca-app-pub-5653675164707335/1057741110",
-      "rewarded": "ca-app-pub-5653675164707335/9575000747",
-      "open_app": "ca-app-pub-5653675164707335/6559826729",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/9513293120"
+      "banner": "ca-app-pub-3312485084079132/6310730629",
+      "interstitial": "ca-app-pub-3312485084079132/4778975340",
+      "native": "ca-app-pub-3312485084079132/7548938750",
+      "rewarded": "ca-app-pub-3312485084079132/4269827850",
+      "open_app": "ca-app-pub-3312485084079132/2146227394",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/7595155920"
     }
   },
   {
     "flavor": "zikirmatik",
     "package": "com.parsfilo.zikirmatik",
     "name": "Zikirmatik – Tasbih Sayaç",
-    "admob_app_id": "ca-app-pub-5653675164707335~7913803823",
+    "admob_app_id": "ca-app-pub-3312485084079132~1856290341",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/5574048113",
-      "interstitial": "ca-app-pub-5653675164707335/7603443525",
-      "native": "ca-app-pub-5653675164707335/5246745050",
-      "rewarded": "ca-app-pub-5653675164707335/5707432563",
-      "open_app": "ca-app-pub-5653675164707335/4394350898",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/3446578225"
+      "banner": "ca-app-pub-3312485084079132/9351636983",
+      "interstitial": "ca-app-pub-3312485084079132/5391337838",
+      "native": "ca-app-pub-3312485084079132/5774481214",
+      "rewarded": "ca-app-pub-3312485084079132/4772390738",
+      "open_app": "ca-app-pub-3312485084079132/3459309063",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/5328595982"
     }
   },
   {
     "flavor": "imsakiye",
     "package": "com.parsfilo.imsakiye",
     "name": "İmsakiye",
-    "admob_app_id": "ca-app-pub-5653675164707335~5177482354",
+    "admob_app_id": "ca-app-pub-3312485084079132~7652510108",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/3222237000",
-      "interstitial": "ca-app-pub-5653675164707335/1909155332",
-      "native": "ca-app-pub-5653675164707335/6170311461",
-      "rewarded": "ca-app-pub-5653675164707335/5104641809",
-      "open_app": "ca-app-pub-5653675164707335/5144170251",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/7483393137"
+      "banner": "ca-app-pub-3312485084079132/3713265099",
+      "interstitial": "ca-app-pub-3312485084079132/6335559002",
+      "native": "ca-app-pub-3312485084079132/2560067078",
+      "rewarded": "ca-app-pub-3312485084079132/3975358588",
+      "open_app": "ca-app-pub-3312485084079132/6537054695",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/8115800600"
     }
   },
   {
     "flavor": "insirahsuresi",
     "package": "com.parsfilo.insirahsuresi",
     "name": "İnşirah Suresi Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~3369576665",
+    "admob_app_id": "ca-app-pub-3312485084079132~5523265003",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/6098159274",
-      "interstitial": "ca-app-pub-5653675164707335/3544148128",
-      "native": "ca-app-pub-5653675164707335/5656828652",
-      "rewarded": "ca-app-pub-5653675164707335/9917984788",
-      "open_app": "ca-app-pub-5653675164707335/9973825107",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/4952598561"
+      "banner": "ca-app-pub-3312485084079132/8352624231",
+      "interstitial": "ca-app-pub-3312485084079132/3224296928",
+      "native": "ca-app-pub-3312485084079132/9598133584",
+      "rewarded": "ca-app-pub-3312485084079132/7039542568",
+      "open_app": "ca-app-pub-3312485084079132/3032725230",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/8445713917"
     }
   },
   {
     "flavor": "ismiazamduasi",
     "package": "com.parsfilo.ismiazamduasi",
     "name": "İsmi Azam Duası Sesli Dinle",
-    "admob_app_id": "ca-app-pub-5653675164707335~1539967165",
+    "admob_app_id": "ca-app-pub-3312485084079132~2404917464",
     "ad_units": {
-      "banner": "ca-app-pub-5653675164707335/3064801820",
-      "interstitial": "ca-app-pub-5653675164707335/7221191764",
-      "native": "ca-app-pub-5653675164707335/4338355046",
-      "rewarded": "ca-app-pub-5653675164707335/4210362534",
-      "open_app": "ca-app-pub-5653675164707335/1590066493",
-      "rewarded_interstitial": "ca-app-pub-5653675164707335/8107373384"
+      "banner": "ca-app-pub-3312485084079132/5769447404",
+      "interstitial": "ca-app-pub-3312485084079132/6942928272",
+      "native": "ca-app-pub-3312485084079132/1646369564",
+      "rewarded": "ca-app-pub-3312485084079132/4316764933",
+      "open_app": "ca-app-pub-3312485084079132/1690601598",
+      "rewarded_interstitial": "ca-app-pub-3312485084079132/5489637263"
     }
   }
 ]
