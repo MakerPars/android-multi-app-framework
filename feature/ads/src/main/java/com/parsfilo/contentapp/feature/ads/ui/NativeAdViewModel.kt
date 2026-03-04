@@ -3,15 +3,15 @@ package com.parsfilo.contentapp.feature.ads.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.ads.nativead.NativeAd
-import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
+import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 

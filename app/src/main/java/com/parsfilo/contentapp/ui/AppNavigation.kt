@@ -34,9 +34,9 @@ import com.parsfilo.contentapp.feature.audio.ui.InlineAudioPlayer
 import com.parsfilo.contentapp.feature.auth.ui.AuthRoute
 import com.parsfilo.contentapp.feature.billing.ui.SubscriptionRoute
 import com.parsfilo.contentapp.feature.content.ui.ContentRoute
+import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesContentVariant
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesDetailRoute
 import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesListRoute
-import com.parsfilo.contentapp.feature.content.ui.miracles.MiraclesContentVariant
 import com.parsfilo.contentapp.feature.content.ui.prayer.PrayerDetailRoute
 import com.parsfilo.contentapp.feature.content.ui.prayer.PrayerListRoute
 import com.parsfilo.contentapp.feature.counter.ui.CounterRoute

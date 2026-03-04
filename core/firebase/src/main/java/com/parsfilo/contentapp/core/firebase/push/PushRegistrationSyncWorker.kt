@@ -12,8 +12,8 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import java.util.concurrent.TimeUnit
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class PushRegistrationSyncWorker(
     appContext: Context,

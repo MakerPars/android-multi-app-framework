@@ -6,9 +6,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,9 +59,9 @@ import com.parsfilo.contentapp.feature.counter.ui.components.SharePreviewCard
 import com.parsfilo.contentapp.feature.counter.ui.components.StreakBadge
 import com.parsfilo.contentapp.feature.counter.ui.components.ZikirSelectorPage
 import com.parsfilo.contentapp.feature.counter.ui.components.ZikirTextCard
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 
 @Composable
 fun CounterScreen(

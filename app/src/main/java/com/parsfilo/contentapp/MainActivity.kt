@@ -29,12 +29,12 @@ import com.parsfilo.contentapp.monetization.AdOrchestrator
 import com.parsfilo.contentapp.navigation.NotificationOpenRequest
 import com.parsfilo.contentapp.ui.ContentApp
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import javax.inject.Inject
 

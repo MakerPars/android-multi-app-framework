@@ -45,12 +45,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.parsfilo.contentapp.feature.content.R
 import com.parsfilo.contentapp.core.designsystem.AppTheme
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalMotion
 import com.parsfilo.contentapp.core.model.MiraclesPrayer
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
+import com.parsfilo.contentapp.feature.content.R
 
 @Composable
 fun MiraclesDetailRoute(
