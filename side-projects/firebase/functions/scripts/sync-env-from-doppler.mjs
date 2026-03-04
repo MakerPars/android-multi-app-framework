@@ -11,17 +11,25 @@ const requiredKeys = [
   "ADMOB_CLIENT_SECRET",
   "ADMOB_REFRESH_TOKEN",
   "ADMOB_PUBLISHER_ID",
+  "ADMIN_ALLOWED_EMAILS",
 ];
 
 const optionalKeys = [
   "AD_HEALTH_MIN_REQUESTS",
   "AD_HEALTH_FILL_RATE_THRESHOLD",
   "AD_HEALTH_SHOW_RATE_THRESHOLD",
-  "ADMIN_ALLOWED_EMAILS",
   "GOOGLE_RECAPTCHA_SECRET_KEY",
 ];
 
 function readSecret(key, required) {
+  if (!hasDopplerCli()) {
+    const fromEnv = (process.env[key] ?? "").trim();
+    if (!fromEnv && required) {
+      throw new Error(`Missing required key "${key}" in process environment (doppler unavailable)`);
+    }
+    return fromEnv;
+  }
+
   try {
     const value = execFileSync(
       "doppler",
@@ -45,8 +53,21 @@ function readSecret(key, required) {
     }
     return value;
   } catch (error) {
+    const fromEnv = (process.env[key] ?? "").trim();
+    if (fromEnv) return fromEnv;
     if (!required) return "";
-    throw new Error(`Failed to read required Doppler secret "${key}": ${error.message}`);
+    throw new Error(`Failed to read required secret "${key}" (doppler/env): ${error.message}`);
+  }
+}
+
+function hasDopplerCli() {
+  try {
+    execFileSync("doppler", ["--version"], {
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -66,4 +87,10 @@ for (const key of optionalKeys) {
 }
 
 writeFileSync(OUTPUT, `${lines.join("\n")}\n`, "utf8");
-console.log(`Wrote ${OUTPUT} with ${requiredKeys.length} required keys.`);
+const optionalPresentCount = optionalKeys.reduce((count, key) => {
+  return lines.some((line) => line.startsWith(`${key}=`)) ? count + 1 : count;
+}, 0);
+const source = hasDopplerCli() ? "doppler+env-fallback" : "env-only";
+console.log(
+  `Wrote ${OUTPUT} with ${requiredKeys.length} required keys and ${optionalPresentCount}/${optionalKeys.length} optional keys (${source}).`,
+);

@@ -27,6 +27,7 @@ import {
 } from "firebase/firestore";
 import ciApps from "@ciapps";
 import { auth, firestore, functionsBaseUrl, googleProvider } from "./firebase";
+import { executeRecaptcha } from "./recaptcha";
 import {
   DEFAULT_FORM,
   WEEKDAYS,
@@ -42,6 +43,7 @@ type AdminState = "checking" | "authorized" | "unauthorized";
 type AdminTab = "events" | "test-push";
 type TestPushSubTab = "single-device" | "coverage" | "ad-health";
 type TestPushTargetMode = "installationId" | "token";
+type RecaptchaMode = "disabled" | "enabled";
 
 type DeviceFinderItem = {
   id: string;
@@ -119,18 +121,27 @@ type AdPerformanceToday = {
   issue?: string;
 };
 
-const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
-const ADMIN_ALLOWED_EMAILS = new Set(
-  ((import.meta.env.VITE_ADMIN_ALLOWED_EMAILS as string | undefined) ?? "")
-    .split(/[,\s;]+/g)
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean),
-);
+type AdminAccessResponse = {
+  authorized?: boolean;
+  source?: "firestore" | "allowlist" | "none";
+  email?: string | null;
+  error?: string;
+};
 
-function isAllowlistedAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return ADMIN_ALLOWED_EMAILS.has(email.trim().toLowerCase());
-}
+type RecaptchaVerifyResponse = {
+  success?: boolean;
+  score?: number;
+  action?: string | null;
+  hostname?: string | null;
+  errorCodes?: string[];
+  error?: string;
+};
+
+const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
+const RECAPTCHA_SITE_KEY = (
+  (import.meta.env.VITE_GOOGLE_RECAPTCHA_SITE_KEY as string | undefined) ?? ""
+).trim();
+const RECAPTCHA_MODE: RecaptchaMode = RECAPTCHA_SITE_KEY ? "enabled" : "disabled";
 
 function parseEventStatus(value: unknown): ScheduledEventRecord["status"] {
   if (typeof value === "string" && EVENT_STATUSES.includes(value as any)) {
@@ -513,16 +524,45 @@ export default function App() {
         setEvents([]);
         setSelectedId(null);
         setEventsState("loading");
+        setMessage("");
+        setError("");
         setAdminState(nextUser ? "checking" : "unauthorized");
         if (!nextUser) return;
 
         try {
-          const adminDoc = await getDoc(doc(firestore, "admins", nextUser.uid));
-          const allowlisted = isAllowlistedAdminEmail(nextUser.email);
-          setAdminState(adminDoc.exists() || allowlisted ? "authorized" : "unauthorized");
-          if (!adminDoc.exists() && allowlisted) {
-            setMessage("Admin access granted by VITE_ADMIN_ALLOWED_EMAILS fallback.");
+          const idToken = await nextUser.getIdToken();
+          const response = await fetch(`${functionsBaseUrl}/adminAccessCheck`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({}),
+          });
+
+          let payload: AdminAccessResponse = {};
+          try {
+            payload = (await response.json()) as AdminAccessResponse;
+          } catch {
+            payload = {};
           }
+
+          if (!response.ok) {
+            setAdminState("unauthorized");
+            setError(summarizeApiError(payload, "Failed to verify admin access."));
+            return;
+          }
+
+          if (payload.authorized) {
+            setAdminState("authorized");
+            if (payload.source === "allowlist") {
+              setMessage("Admin access granted by backend allowlist fallback.");
+            }
+            return;
+          }
+
+          setAdminState("unauthorized");
+          setError("User is not authorized by backend admin policy.");
         } catch (e) {
           console.error(e);
           setError("Failed to verify admin access.");
@@ -864,6 +904,48 @@ export default function App() {
     }
   };
 
+  const verifyRecaptchaForAction = async (action: string): Promise<boolean> => {
+    if (!user) return false;
+    if (RECAPTCHA_MODE === "disabled") return true;
+
+    try {
+      const token = await executeRecaptcha(RECAPTCHA_SITE_KEY, action);
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/recaptchaVerify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ token, action }),
+      });
+
+      let payload: RecaptchaVerifyResponse = {};
+      try {
+        payload = (await response.json()) as RecaptchaVerifyResponse;
+      } catch {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(summarizeApiError(payload, "Failed to verify reCAPTCHA token."));
+      }
+
+      if (!payload.success) {
+        const errorCodes = payload.errorCodes?.join(", ") ?? "";
+        const suffix = errorCodes ? ` (${errorCodes})` : "";
+        throw new Error(`reCAPTCHA validation failed${suffix}.`);
+      }
+
+      return true;
+    } catch (e) {
+      const readable =
+        e instanceof Error ? e.message : "reCAPTCHA validation failed. Please retry.";
+      setError(readable);
+      return false;
+    }
+  };
+
   const sendTestPushToSingleDevice = async () => {
     if (!user) return;
 
@@ -892,6 +974,12 @@ export default function App() {
     setTestPushResult(null);
 
     try {
+      const recaptchaOk = await verifyRecaptchaForAction("send_test_notification");
+      if (!recaptchaOk) {
+        setTestPushError("reCAPTCHA check failed. Test push request was not sent.");
+        return;
+      }
+
       const idToken = await user.getIdToken();
       const response = await fetch(`${functionsBaseUrl}/sendTestNotification`, {
         method: "POST",
@@ -1083,6 +1171,13 @@ export default function App() {
   };
 
   const refreshAdHealth = async (forceWeeklyRefresh: boolean) => {
+    if (forceWeeklyRefresh) {
+      const recaptchaOk = await verifyRecaptchaForAction("ad_health_force_refresh");
+      if (!recaptchaOk) {
+        setAdReportError("reCAPTCHA check failed. Force refresh was blocked.");
+        return;
+      }
+    }
     await Promise.all([
       loadAdPerformanceToday(),
       loadAdPerformanceReport(forceWeeklyRefresh),
@@ -1107,6 +1202,13 @@ export default function App() {
           Sends a test push to exactly one device via admin-only Cloud Function (FCM token or
           Cihaz Kimliği / installationId).
         </p>
+        {RECAPTCHA_MODE === "disabled" ? (
+          <p className="inline-warning">
+            reCAPTCHA protection is disabled (`VITE_GOOGLE_RECAPTCHA_SITE_KEY` missing).
+          </p>
+        ) : (
+          <p className="muted">reCAPTCHA protection is enabled for send/force-refresh actions.</p>
+        )}
 
         <div className="test-push-grid">
           <label>
@@ -1307,10 +1409,10 @@ export default function App() {
       <div className="center-screen">
         <div className="auth-card">
           <h1>Access denied</h1>
-          <p>{user.email ?? user.uid} is not in the Firestore <code>admins</code> list.</p>
+          <p>{user.email ?? user.uid} is not authorized by backend admin policy.</p>
           <p className="muted">
-            Add your UID to <code>/admins/&lt;uid&gt;</code> or include your email in
-            <code> VITE_ADMIN_ALLOWED_EMAILS</code> and <code>ADMIN_ALLOWED_EMAILS</code>.
+            Add your UID to <code>/admins/&lt;uid&gt;</code> in Firestore or include your email in
+            server-side <code>ADMIN_ALLOWED_EMAILS</code>.
           </p>
           <button onClick={handleSignOut}>Sign out</button>
           {error && <p className="inline-error">{error}</p>}
@@ -1819,6 +1921,11 @@ export default function App() {
                   Primary: <strong>Today so far</strong> (same day range as AdMob UI). Secondary:
                   latest weekly diagnostics.
                 </p>
+                {RECAPTCHA_MODE === "disabled" ? (
+                  <p className="inline-warning">
+                    Force refresh is running without reCAPTCHA protection (`VITE_GOOGLE_RECAPTCHA_SITE_KEY` missing).
+                  </p>
+                ) : null}
 
                 {adTodayError && <p className="inline-error">{adTodayError}</p>}
                 {adPerformanceToday && !adTodayError ? (

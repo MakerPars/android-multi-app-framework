@@ -42,6 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
     outputs:
       resolved_flavors_json: ${{ steps.resolve.outputs.resolved_json }}
       resolved_flavors_csv: ${{ steps.resolve.outputs.resolved_csv }}
@@ -109,13 +110,35 @@ jobs:
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
           cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
           cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
-      - name: Validate Google Sign-In Config
-        run: |
-          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
-
-      - name: Load secrets from Doppler (optional)
+      - name: Load Doppler CLI for preflight (optional)
         if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
+
+      - name: Resolve WEB_CLIENT_ID (Doppler first, GitHub fallback)
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          set -euo pipefail
+          WEB_CLIENT_ID_VALUE=""
+          if [ -n "${DOPPLER_TOKEN:-}" ]; then
+            WEB_CLIENT_ID_VALUE="$(doppler secrets get FIREBASE_WEB_CLIENT_ID --plain --project android-multi-app-framework --config prod 2>/dev/null || true)"
+          fi
+          if [ -z "$WEB_CLIENT_ID_VALUE" ]; then
+            WEB_CLIENT_ID_VALUE='${{ secrets.FIREBASE_WEB_CLIENT_ID }}'
+          fi
+          printf 'WEB_CLIENT_ID=%s\n' "$WEB_CLIENT_ID_VALUE" >> "$GITHUB_ENV"
+
+      - name: Validate Google Sign-In Config (strict for publish)
+        if: github.event.inputs.publish_to_play == 'true'
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py \
+            --flavors "${{ steps.resolve.outputs.resolved_csv }}" \
+            --require-web-client-id
+
+      - name: Validate Google Sign-In Config
+        if: github.event.inputs.publish_to_play != 'true'
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
       - name: Resolve release secrets (Doppler first, GitHub fallback)
         env:
@@ -154,7 +177,7 @@ jobs:
           printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
           printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
           printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
 
       - name: Validate Release Signing Secrets
         run: |
@@ -182,6 +205,14 @@ jobs:
             exit 1
           fi
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Verify Play service account project
+        if: github.event.inputs.publish_to_play == 'true'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          python3 ./scripts/ci/verify_play_service_account_project.py \
+            --expected-project-id makerpars-oaslananka-mobil
 
       - name: Auto-bump Play versionCodes (selected flavors)
         id: auto_bump
@@ -253,6 +284,7 @@ jobs:
     environment: production
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -292,13 +324,29 @@ jobs:
           cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
           cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
 
-      - name: Validate Google Sign-In Config
-        run: |
-          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ needs.build-release.outputs.resolved_flavors_csv }}"
-
-      - name: Load secrets from Doppler (optional)
+      - name: Load Doppler CLI for preflight (optional)
         if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
+
+      - name: Resolve WEB_CLIENT_ID (Doppler first, GitHub fallback)
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          set -euo pipefail
+          WEB_CLIENT_ID_VALUE=""
+          if [ -n "${DOPPLER_TOKEN:-}" ]; then
+            WEB_CLIENT_ID_VALUE="$(doppler secrets get FIREBASE_WEB_CLIENT_ID --plain --project android-multi-app-framework --config prod 2>/dev/null || true)"
+          fi
+          if [ -z "$WEB_CLIENT_ID_VALUE" ]; then
+            WEB_CLIENT_ID_VALUE='${{ secrets.FIREBASE_WEB_CLIENT_ID }}'
+          fi
+          printf 'WEB_CLIENT_ID=%s\n' "$WEB_CLIENT_ID_VALUE" >> "$GITHUB_ENV"
+
+      - name: Validate Google Sign-In Config
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py \
+            --flavors "${{ needs.build-release.outputs.resolved_flavors_csv }}" \
+            --require-web-client-id
 
       - name: Resolve release secrets (Doppler first, GitHub fallback)
         env:
@@ -337,7 +385,7 @@ jobs:
           printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
           printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
           printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
 
       - name: Decode Secrets
         run: |
@@ -358,6 +406,13 @@ jobs:
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
           echo "PUSH_REGISTRATION_URL=$PUSH_REGISTRATION_URL" >> "$GITHUB_ENV"
+
+      - name: Verify Play service account project
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          python3 ./scripts/ci/verify_play_service_account_project.py \
+            --expected-project-id makerpars-oaslananka-mobil
 
       - name: Guard auto-bump marker before publish
         if: github.event.inputs.publish_to_play == 'true'

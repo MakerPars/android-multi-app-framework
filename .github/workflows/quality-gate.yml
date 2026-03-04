@@ -336,6 +336,16 @@ jobs:
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
           cf_r2_bucket: ${{ secrets.CF_R2_BUCKET }}
           cf_r2_firebase_object: ${{ secrets.CF_R2_FIREBASE_OBJECT }}
+
+      - name: Validate Google Sign-In Config
+        env:
+          WEB_CLIENT_ID: ${{ secrets.FIREBASE_WEB_CLIENT_ID }}
+          FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}
+        run: |
+          set -euo pipefail
+          FLAVOURS_CSV="$(echo "$FLAVOURS_JSON" | tr -d '[]\"' | tr ',' ',' | sed 's/[[:space:]]//g')"
+          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${FLAVOURS_CSV:-all}"
+
       - name: Run Dynamic Lint Tasks
         env:
           FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}

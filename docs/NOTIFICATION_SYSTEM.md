@@ -172,6 +172,7 @@ Gerekli alanlar:
 - `VITE_FIREBASE_AUTH_DOMAIN`
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
+- `VITE_GOOGLE_RECAPTCHA_SITE_KEY` (opsiyonel ama onerilir)
 
 Opsiyonel:
 
@@ -182,6 +183,8 @@ Notlar:
 
 - `side-projects/admin-notifications/vite.config.ts` repo root `.env` dosyasini da okur (`envDir = ".."`).
 - Geriye donuk uyumluluk icin sadece `FIREBASE_WEB_API_KEY` fallback olarak desteklenir; diger Firebase Web alanlari `VITE_` prefix ile verilmelidir.
+- Admin yetki karari backend `adminAccessCheck` ile verilir; frontend local allowlist karar vermez.
+- `ADMIN_ALLOWED_EMAILS` server-side fallback allowlist'tir; ilk giriste `/admins/<uid>` kaydi upsert edilir.
 
 ### Weekly AdMob Health Report (Cloud Functions Env)
 
@@ -191,6 +194,7 @@ Notlar:
 - `ADMOB_CLIENT_SECRET`
 - `ADMOB_REFRESH_TOKEN`
 - `ADMOB_PUBLISHER_ID` (`pub-...` veya `accounts/pub-...`)
+- `ADMIN_ALLOWED_EMAILS` (admin endpoint fallback policy)
 
 Opsiyonel threshold env:
 
@@ -202,6 +206,12 @@ Doppler'dan functions `.env` dosyasi uretmek icin:
 
 ```powershell
 npm run sync-env:doppler --prefix side-projects/firebase/functions
+```
+
+Functions env kontratini dogrulamak icin:
+
+```powershell
+npm run verify-env --prefix side-projects/firebase/functions
 ```
 
 ### Otomatik Çalışan Bileşenler

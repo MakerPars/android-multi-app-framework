@@ -27,6 +27,9 @@ Play'a publish icin:
 - `PLAY_SERVICE_ACCOUNT_JSON`
   - Dosya yolu (onerilen): `C:\secure\service-account.json`
   - veya JSON icerigi (script gecici dosyaya yazar)
+- `FIREBASE_WEB_CLIENT_ID`
+  - Google Sign-In web OAuth client id (`*.apps.googleusercontent.com`)
+  - publish/internal preflight'ta zorunlu cross-check icin kullanilir
 
 Opsiyonel Firebase override (CI ile ayni model):
 
@@ -42,6 +45,7 @@ Bu dogrulama su alanlari kontrol eder:
 - Signing (secretlar): `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` bos degil
 - Push registration: `PUSH_REGISTRATION_URL` bos degil ve `https://` ile basliyor
 - Publish gorevleri icin ek olarak: `PLAY_SERVICE_ACCOUNT_JSON` mevcut + dosya var
+- Publish/internal preflight icin: `FIREBASE_WEB_CLIENT_ID` bos olamaz
 
 Notlar:
 

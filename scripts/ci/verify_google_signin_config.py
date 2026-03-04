@@ -6,18 +6,21 @@ Checks:
 1) app/src/<flavor>/google-services.json exists and is valid JSON
 2) Expected package name exists in google-services client list
 3) Web OAuth client (client_type=3) exists and format looks valid
-4) local.properties WEB_CLIENT_ID (if set) matches google-services web client IDs
+4) WEB_CLIENT_ID (CLI arg/env/local.properties) matches google-services web client IDs
 5) config/firebase-apps.json contains flavor and matching appId/projectId
 
 Usage:
   python scripts/ci/verify_google_signin_config.py
   python scripts/ci/verify_google_signin_config.py --flavors amenerrasulu,ayetelkursi
+  python scripts/ci/verify_google_signin_config.py --flavors all --web-client-id xxx.apps.googleusercontent.com
+  python scripts/ci/verify_google_signin_config.py --flavors all --require-web-client-id
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import re
 import sys
@@ -42,6 +45,16 @@ def parse_args() -> argparse.Namespace:
         "--flavors",
         default="all",
         help="Comma-separated flavor list or 'all' (default: all)",
+    )
+    parser.add_argument(
+        "--web-client-id",
+        default="",
+        help="WEB_CLIENT_ID override (takes precedence over env/local.properties)",
+    )
+    parser.add_argument(
+        "--require-web-client-id",
+        action="store_true",
+        help="Fail when WEB_CLIENT_ID cannot be resolved",
     )
     return parser.parse_args()
 
@@ -139,7 +152,7 @@ def verify_flavor(
     if expected_web_client_id:
         if expected_web_client_id not in all_web_ids:
             errors.append(
-                f"{flavor_prefix} local.properties WEB_CLIENT_ID does not exist in {google_services_path.name}"
+                f"{flavor_prefix} WEB_CLIENT_ID does not exist in {google_services_path.name}"
             )
 
     flavor_firebase = firebase_map.get(flavor.name)
@@ -207,11 +220,22 @@ def main() -> int:
         print(f"ERROR: Invalid config/firebase-apps.json: {exc}")
         return 1
 
-    web_client_id = read_local_web_client_id(local_properties)
+    web_client_id = args.web_client_id.strip()
     if not web_client_id:
-        print("WARN: WEB_CLIENT_ID not found in local.properties (cross-check skipped)")
+        web_client_id = os.environ.get("WEB_CLIENT_ID", "").strip()
+    if not web_client_id:
+        web_client_id = read_local_web_client_id(local_properties).strip()
+
+    if not web_client_id:
+        if args.require_web_client_id:
+            print(
+                "ERROR: WEB_CLIENT_ID is required but missing "
+                "(checked: --web-client-id, env WEB_CLIENT_ID, local.properties)"
+            )
+            return 1
+        print("WARN: WEB_CLIENT_ID unresolved (cross-check skipped)")
     elif not WEB_CLIENT_PATTERN.match(web_client_id):
-        print("ERROR: WEB_CLIENT_ID has invalid format in local.properties")
+        print("ERROR: WEB_CLIENT_ID has invalid format")
         return 1
 
     print(f"Checking {len(selected)} flavor(s): {', '.join(f.name for f in selected)}")

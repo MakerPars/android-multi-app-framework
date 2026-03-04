@@ -48,11 +48,30 @@ runs:
           exit 0
         fi
 
-        if ! unzip -Z1 firebase_configs.zip | grep -Eq '^app/src/[^/]+/google-services.json$'; then
-          echo "::error::firebase_configs.zip has invalid structure. Expected entries like app/src/<flavor>/google-services.json"
+        mapfile -t ZIP_ENTRIES < <(unzip -Z1 firebase_configs.zip)
+        if [ "${#ZIP_ENTRIES[@]}" -eq 0 ]; then
+          echo "::error::firebase_configs.zip is empty."
           rm -f firebase_configs.zip
           exit 1
         fi
 
-        unzip -o firebase_configs.zip
+        SAFE_ENTRIES=()
+        for entry in "${ZIP_ENTRIES[@]}"; do
+          if [[ "$entry" =~ ^app/src/[^/]+/google-services\.json$ ]]; then
+            SAFE_ENTRIES+=("$entry")
+          else
+            echo "::error::firebase_configs.zip contains disallowed entry: $entry"
+            echo "::error::Only app/src/<flavor>/google-services.json is allowed."
+            rm -f firebase_configs.zip
+            exit 1
+          fi
+        done
+
+        if [ "${#SAFE_ENTRIES[@]}" -eq 0 ]; then
+          echo "::error::firebase_configs.zip has no allowed entries."
+          rm -f firebase_configs.zip
+          exit 1
+        fi
+
+        unzip -o firebase_configs.zip "${SAFE_ENTRIES[@]}"
         rm -f firebase_configs.zip

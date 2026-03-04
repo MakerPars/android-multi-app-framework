@@ -5,6 +5,13 @@ export type AuthResult =
     | { ok: true; uid: string; email?: string }
     | { ok: false; statusCode: number; error: string };
 
+export type AdminAccessStatus = {
+    authorized: boolean;
+    source: "firestore" | "allowlist" | "none";
+    uid: string;
+    email?: string;
+};
+
 const ADMIN_ALLOWED_EMAILS = new Set(
     (process.env.ADMIN_ALLOWED_EMAILS ?? "")
         .split(/[,\s;]+/g)
@@ -30,6 +37,41 @@ async function upsertAdminDoc(uid: string, email: string | undefined): Promise<v
     );
 }
 
+export async function resolveAdminAccess(uid: string, email?: string): Promise<AdminAccessStatus> {
+    const normalizedEmail = email?.trim().toLowerCase();
+    const adminRef = admin.firestore().collection("admins").doc(uid);
+    const adminDoc = await adminRef.get();
+    if (adminDoc.exists) {
+        return {
+            authorized: true,
+            source: "firestore",
+            uid,
+            email,
+        };
+    }
+
+    if (isAllowlistedEmail(normalizedEmail)) {
+        await upsertAdminDoc(uid, email);
+        logger.info("Admin access granted via ADMIN_ALLOWED_EMAILS fallback", {
+            uid,
+            email,
+        });
+        return {
+            authorized: true,
+            source: "allowlist",
+            uid,
+            email,
+        };
+    }
+
+    return {
+        authorized: false,
+        source: "none",
+        uid,
+        email,
+    };
+}
+
 export async function authenticateAdminRequest(
     authorizationHeader: string | undefined,
 ): Promise<AuthResult> {
@@ -45,19 +87,8 @@ export async function authenticateAdminRequest(
 
     try {
         const decoded = await admin.auth().verifyIdToken(idToken);
-        const email = decoded.email?.trim().toLowerCase();
-        const adminRef = admin.firestore().collection("admins").doc(decoded.uid);
-        const adminDoc = await adminRef.get();
-        if (adminDoc.exists) {
-            return { ok: true, uid: decoded.uid, email: decoded.email };
-        }
-
-        if (isAllowlistedEmail(email)) {
-            await upsertAdminDoc(decoded.uid, decoded.email);
-            logger.info("Admin access granted via ADMIN_ALLOWED_EMAILS fallback", {
-                uid: decoded.uid,
-                email: decoded.email,
-            });
+        const access = await resolveAdminAccess(decoded.uid, decoded.email);
+        if (access.authorized) {
             return { ok: true, uid: decoded.uid, email: decoded.email };
         }
 
@@ -67,4 +98,3 @@ export async function authenticateAdminRequest(
         return { ok: false, statusCode: 401, error: "Invalid Firebase Auth token" };
     }
 }
-

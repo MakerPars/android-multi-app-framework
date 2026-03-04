@@ -111,19 +111,20 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isAllowedOrigin(originHeader: string | undefined, refererHeader: string | undefined): boolean {
-    const allowedHosts = new Set([
-        "parsfilo.com",
-        "www.parsfilo.com",
-        "localhost",
-        "127.0.0.1",
-    ]);
-
     const originHost = extractHost(originHeader);
-    if (originHost && allowedHosts.has(originHost)) return true;
+    if (originHost && isAllowedHost(originHost)) return true;
 
     const refererHost = extractHost(refererHeader);
-    if (refererHost && allowedHosts.has(refererHost)) return true;
+    if (refererHost && isAllowedHost(refererHost)) return true;
 
+    return false;
+}
+
+function isAllowedHost(host: string): boolean {
+    const value = host.toLowerCase();
+    if (value === "localhost" || value === "127.0.0.1") return true;
+    if (value === "parsfilo.com" || value.endsWith(".parsfilo.com")) return true;
+    if (value === "mobildev.site" || value.endsWith(".mobildev.site")) return true;
     return false;
 }
 
