@@ -64,11 +64,15 @@ jobs:
           source_key=""
           resolved_play_sa_b64=""
           val_json="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-          if [ -n "$val_json" ]; then
+          val_json_trimmed="$(printf '%s' "$val_json" | tr -d '\r\n\t ')"
+          if [ -n "$val_json_trimmed" ] && [ "${#val_json}" -ge 200 ] && [[ "$val_json_trimmed" == \{* ]]; then
             echo "::add-mask::$val_json"
             resolved_play_sa_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
             source_key="PLAY_SERVICE_ACCOUNT_JSON"
           else
+            if [ -n "$val_json_trimmed" ]; then
+              echo "::warning::Ignoring PLAY_SERVICE_ACCOUNT_JSON because it does not look like a valid JSON service account payload."
+            fi
             val_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
             if [ -n "$val_b64" ]; then
               # Normalize accidental whitespace/newlines in base64 payload.
