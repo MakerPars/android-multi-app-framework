@@ -27,7 +27,6 @@ import {
 } from "firebase/firestore";
 import ciApps from "@ciapps";
 import { auth, firestore, functionsBaseUrl, googleProvider } from "./firebase";
-import { executeRecaptcha } from "./recaptcha";
 import {
   DEFAULT_FORM,
   WEEKDAYS,
@@ -43,7 +42,6 @@ type AdminState = "checking" | "authorized" | "unauthorized";
 type AdminTab = "events" | "test-push";
 type TestPushSubTab = "single-device" | "coverage" | "ad-health";
 type TestPushTargetMode = "installationId" | "token";
-type RecaptchaMode = "disabled" | "enabled";
 
 type DeviceFinderItem = {
   id: string;
@@ -128,20 +126,7 @@ type AdminAccessResponse = {
   error?: string;
 };
 
-type RecaptchaVerifyResponse = {
-  success?: boolean;
-  score?: number;
-  action?: string | null;
-  hostname?: string | null;
-  errorCodes?: string[];
-  error?: string;
-};
-
 const EVENT_STATUSES = ["scheduled", "paused", "sent", "expired"] as const;
-const RECAPTCHA_SITE_KEY = (
-  (import.meta.env.VITE_GOOGLE_RECAPTCHA_SITE_KEY as string | undefined) ?? ""
-).trim();
-const RECAPTCHA_MODE: RecaptchaMode = RECAPTCHA_SITE_KEY ? "enabled" : "disabled";
 
 function parseEventStatus(value: unknown): ScheduledEventRecord["status"] {
   if (typeof value === "string" && EVENT_STATUSES.includes(value as any)) {
@@ -904,48 +889,6 @@ export default function App() {
     }
   };
 
-  const verifyRecaptchaForAction = async (action: string): Promise<boolean> => {
-    if (!user) return false;
-    if (RECAPTCHA_MODE === "disabled") return true;
-
-    try {
-      const token = await executeRecaptcha(RECAPTCHA_SITE_KEY, action);
-      const idToken = await user.getIdToken();
-      const response = await fetch(`${functionsBaseUrl}/recaptchaVerify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ token, action }),
-      });
-
-      let payload: RecaptchaVerifyResponse = {};
-      try {
-        payload = (await response.json()) as RecaptchaVerifyResponse;
-      } catch {
-        payload = {};
-      }
-
-      if (!response.ok) {
-        throw new Error(summarizeApiError(payload, "Failed to verify reCAPTCHA token."));
-      }
-
-      if (!payload.success) {
-        const errorCodes = payload.errorCodes?.join(", ") ?? "";
-        const suffix = errorCodes ? ` (${errorCodes})` : "";
-        throw new Error(`reCAPTCHA validation failed${suffix}.`);
-      }
-
-      return true;
-    } catch (e) {
-      const readable =
-        e instanceof Error ? e.message : "reCAPTCHA validation failed. Please retry.";
-      console.warn("reCAPTCHA validation failed:", readable);
-      return false;
-    }
-  };
-
   const sendTestPushToSingleDevice = async () => {
     if (!user) return;
 
@@ -974,12 +917,6 @@ export default function App() {
     setTestPushResult(null);
 
     try {
-      const recaptchaOk = await verifyRecaptchaForAction("send_test_notification");
-      if (!recaptchaOk) {
-        setTestPushError("reCAPTCHA check failed. Test push request was not sent.");
-        return;
-      }
-
       const idToken = await user.getIdToken();
       const response = await fetch(`${functionsBaseUrl}/sendTestNotification`, {
         method: "POST",
@@ -1171,13 +1108,6 @@ export default function App() {
   };
 
   const refreshAdHealth = async (forceWeeklyRefresh: boolean) => {
-    if (forceWeeklyRefresh) {
-      const recaptchaOk = await verifyRecaptchaForAction("ad_health_force_refresh");
-      if (!recaptchaOk) {
-        setAdReportError("reCAPTCHA check failed. Force refresh was blocked.");
-        return;
-      }
-    }
     await Promise.all([
       loadAdPerformanceToday(),
       loadAdPerformanceReport(forceWeeklyRefresh),
@@ -1202,13 +1132,6 @@ export default function App() {
           Sends a test push to exactly one device via admin-only Cloud Function (FCM token or
           Cihaz Kimliği / installationId).
         </p>
-        {RECAPTCHA_MODE === "disabled" ? (
-          <p className="inline-warning">
-            reCAPTCHA protection is disabled (`VITE_GOOGLE_RECAPTCHA_SITE_KEY` missing).
-          </p>
-        ) : (
-          <p className="muted">reCAPTCHA protection is enabled for send/force-refresh actions.</p>
-        )}
 
         <div className="test-push-grid">
           <label>
@@ -1921,11 +1844,6 @@ export default function App() {
                   Primary: <strong>Today so far</strong> (same day range as AdMob UI). Secondary:
                   latest weekly diagnostics.
                 </p>
-                {RECAPTCHA_MODE === "disabled" ? (
-                  <p className="inline-warning">
-                    Force refresh is running without reCAPTCHA protection (`VITE_GOOGLE_RECAPTCHA_SITE_KEY` missing).
-                  </p>
-                ) : null}
 
                 {adTodayError && <p className="inline-error">{adTodayError}</p>}
                 {adPerformanceToday && !adTodayError ? (

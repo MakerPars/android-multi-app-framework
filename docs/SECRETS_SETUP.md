@@ -28,8 +28,7 @@ Bu dokümanda projenin imzalama, Play Store yayınlama ve CI/CD için gereken t�
 | `FIREBASE_WEB_CLIENT_ID` | Google Sign-In Web OAuth client id (`*.apps.googleusercontent.com`) | CI Google Sign-In doğrulama |
 | `ADMIN_ALLOWED_EMAILS` | Admin panel backend fallback allowlist (virgülle) | Firebase Functions (`adminAccessCheck`) |
 | `ADMOB_CLIENT_ID` / `ADMOB_CLIENT_SECRET` / `ADMOB_REFRESH_TOKEN` / `ADMOB_PUBLISHER_ID` | AdMob health rapor API kimlik bilgileri | Firebase Functions (`adPerformance*`) |
-| `GOOGLE_RECAPTCHA_SECRET_KEY` | reCAPTCHA secret (server-side verify) | Firebase Functions (`recaptchaVerify`) |
-| `VITE_GOOGLE_RECAPTCHA_SITE_KEY` | reCAPTCHA site key (public) | Admin panel frontend |
+| `GOOGLE_RECAPTCHA_SECRET_KEY` | reCAPTCHA secret (server-side verify, opsiyonel) | Firebase Functions (`recaptchaVerify`) |
 
 ---
 
@@ -108,7 +107,6 @@ PLAY_SERVICE_ACCOUNT_JSON=C:/Users/KULLANICI/path/to/play-service-account.json
 FIREBASE_WEB_CLIENT_ID=1234567890-abcdef.apps.googleusercontent.com
 ADMIN_ALLOWED_EMAILS=makerpars@gmail.com,oaslananka@gmail.com
 GOOGLE_RECAPTCHA_SECRET_KEY=xxxxxxxx
-VITE_GOOGLE_RECAPTCHA_SITE_KEY=xxxxxxxx
 ```
 
 > **Not:** Lokalde `KEYSTORE_BASE64` gerekmez — direkt dosya yolu kullanılır.
