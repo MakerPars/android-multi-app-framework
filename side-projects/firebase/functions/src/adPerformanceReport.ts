@@ -8,7 +8,7 @@ type AdMobConfig = {
     clientId: string;
     clientSecret: string;
     refreshToken: string;
-    accountName: string;
+    preferredAccountName?: string;
 };
 
 type NetworkRow = {
@@ -221,7 +221,7 @@ async function generateAndStoreWeeklyReport(
                 status: "misconfigured",
                 totals: zeroTotals(),
                 alerts: [],
-                issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN/PUBLISHER_ID)",
+                issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN)",
             };
             await persistReport(report, source, actor);
             logger.warn("Ad performance report skipped: env misconfigured");
@@ -229,12 +229,14 @@ async function generateAndStoreWeeklyReport(
         }
 
         const accessToken = await fetchAdMobAccessToken(config);
-        const rows = await fetchNetworkRows(config.accountName, accessToken, rangeStartDate, rangeEndDate);
+        const accountName = await resolveAccountName(config, accessToken);
+        const rows = await fetchNetworkRows(accountName, accessToken, rangeStartDate, rangeEndDate);
         const report = buildReport(baseReport, rows);
         await persistReport(report, source, actor);
         logger.info("Ad performance weekly report generated", {
             source,
             actor,
+            accountName,
             alerts: report.alerts.length,
             requests: report.totals.adRequests,
             earningsTry: report.totals.earningsTry,
@@ -269,12 +271,13 @@ async function generateTodayReport(): Promise<TodayPayload> {
                 ...reportBase,
                 status: "misconfigured",
                 totals: zeroTotals(),
-                issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN/PUBLISHER_ID)",
+                issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN)",
             };
         }
 
         const accessToken = await fetchAdMobAccessToken(config);
-        const rows = await fetchNetworkRows(config.accountName, accessToken, now, now);
+        const accountName = await resolveAccountName(config, accessToken);
+        const rows = await fetchNetworkRows(accountName, accessToken, now, now);
         const totals = rows.reduce(
             (acc, item) => {
                 acc.earningsMicros += item.earningsMicros;
@@ -314,12 +317,15 @@ function loadAdMobConfigFromEnv(): AdMobConfig | null {
     const refreshToken = process.env.ADMOB_REFRESH_TOKEN?.trim() ?? "";
     const publisher = process.env.ADMOB_PUBLISHER_ID?.trim() ?? "";
 
-    if (!clientId || !clientSecret || !refreshToken || !publisher) {
+    if (!clientId || !clientSecret || !refreshToken) {
         return null;
     }
 
-    const accountName = publisher.startsWith("accounts/") ? publisher : `accounts/${publisher}`;
-    return { clientId, clientSecret, refreshToken, accountName };
+    const preferredAccountName = publisher
+        ? (publisher.startsWith("accounts/") ? publisher : `accounts/${publisher}`)
+        : undefined;
+
+    return { clientId, clientSecret, refreshToken, preferredAccountName };
 }
 
 async function fetchAdMobAccessToken(config: AdMobConfig): Promise<string> {
@@ -392,6 +398,64 @@ async function fetchNetworkRows(
     }
 
     return rows;
+}
+
+async function fetchAccessibleAccountNames(accessToken: string): Promise<string[]> {
+    const response = await fetch("https://admob.googleapis.com/v1/accounts", {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    const payload = await response.json() as
+    | { account?: Array<{ name?: string }> }
+    | { error?: { message?: string } };
+
+    if (!response.ok) {
+        const message = "error" in payload ? payload.error?.message : undefined;
+        throw new Error(`AdMob accounts fetch failed: ${message || `HTTP ${response.status}`}`);
+    }
+
+    const accountEntries = Array.isArray((payload as { account?: Array<{ name?: string }> }).account)
+        ? (payload as { account: Array<{ name?: string }> }).account
+        : [];
+
+    const accountNames = accountEntries
+        .map((item: { name?: string }) => item.name?.trim() ?? "")
+        .filter((value: string) => value.length > 0);
+
+    if (accountNames.length === 0) {
+        throw new Error("AdMob accounts fetch succeeded but no accessible account was returned");
+    }
+
+    return accountNames;
+}
+
+async function resolveAccountName(config: AdMobConfig, accessToken: string): Promise<string> {
+    const accessibleAccounts = await fetchAccessibleAccountNames(accessToken);
+
+    if (!config.preferredAccountName) {
+        const selected = accessibleAccounts[0];
+        logger.warn("ADMOB_PUBLISHER_ID missing, using first accessible AdMob account", {
+            selectedAccount: selected,
+            accountCount: accessibleAccounts.length,
+        });
+        return selected;
+    }
+
+    if (accessibleAccounts.includes(config.preferredAccountName)) {
+        return config.preferredAccountName;
+    }
+
+    const selected = accessibleAccounts[0];
+    logger.warn("ADMOB_PUBLISHER_ID is not accessible by current OAuth token, using fallback account", {
+        preferredAccount: config.preferredAccountName,
+        selectedAccount: selected,
+        accountCount: accessibleAccounts.length,
+    });
+    return selected;
 }
 
 function buildReport(

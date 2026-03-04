@@ -7,11 +7,11 @@ const requiredKeys = [
   ["ADMOB_CLIENT_ID", 20],
   ["ADMOB_CLIENT_SECRET", 20],
   ["ADMOB_REFRESH_TOKEN", 20],
-  ["ADMOB_PUBLISHER_ID", 10],
   ["ADMIN_ALLOWED_EMAILS", 8],
 ];
 
 const optionalKeyGroups = [
+  [["ADMOB_PUBLISHER_ID"], 10],
   [["GOOGLE_RECAPTCHA_SECRET_KEY", "GOOGLE_reCAPTCHA_SECRET_KEY"], 20],
 ];
 
