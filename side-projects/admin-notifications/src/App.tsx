@@ -941,7 +941,7 @@ export default function App() {
     } catch (e) {
       const readable =
         e instanceof Error ? e.message : "reCAPTCHA validation failed. Please retry.";
-      setError(readable);
+      console.warn("reCAPTCHA validation failed:", readable);
       return false;
     }
   };
