@@ -8,13 +8,40 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5653675164707335"
     crossorigin="anonymous"></script>
   <script>
-    grecaptcha.ready(function () {
-      grecaptcha.execute('6LeNf3EsAAAAAHXRN7j8aITS9wH5cLliGJbrdd7_', {
-        action: 'homepage'
-      }).then(function (token) {
-        console.log("recaptcha token:", token);
-      });
-    });
+    (function () {
+      const siteKey = "__GOOGLE_RECAPTCHA_SITE_KEY__";
+      const verifyEndpoint = "__RECAPTCHA_VERIFY_ENDPOINT__";
+
+      if (!siteKey || siteKey === "__GOOGLE_RECAPTCHA_SITE_KEY__") {
+        console.info("reCAPTCHA disabled: site key is not injected.");
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = function () {
+        if (!window.grecaptcha || !window.grecaptcha.ready) return;
+        window.grecaptcha.ready(function () {
+          window.grecaptcha.execute(siteKey, { action: "homepage" }).then(async function (token) {
+            try {
+              const response = await fetch(verifyEndpoint || "/api/recaptcha/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token, action: "homepage" }),
+              });
+              if (!response.ok) {
+                console.warn("reCAPTCHA verify failed", response.status);
+              }
+            } catch (error) {
+              console.warn("reCAPTCHA verify request failed", error);
+            }
+          });
+        });
+      };
+      document.head.appendChild(script);
+    })();
   </script>
 </head>
 

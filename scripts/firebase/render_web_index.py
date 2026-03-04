@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Render firebase web index from template by injecting FIREBASE_WEB_API_KEY."""
+"""Render firebase web index from template by injecting env-driven placeholders."""
 from __future__ import annotations
 
 import argparse
 import os
 from pathlib import Path
 
-PLACEHOLDER = "__FIREBASE_WEB_API_KEY__"
+PLACEHOLDER_API_KEY = "__FIREBASE_WEB_API_KEY__"
+PLACEHOLDER_RECAPTCHA_SITE_KEY = "__GOOGLE_RECAPTCHA_SITE_KEY__"
+PLACEHOLDER_RECAPTCHA_VERIFY_ENDPOINT = "__RECAPTCHA_VERIFY_ENDPOINT__"
 
 
 def main() -> int:
@@ -27,6 +29,19 @@ def main() -> int:
         help="Firebase web API key (defaults to FIREBASE_WEB_API_KEY env var)",
     )
     parser.add_argument(
+        "--recaptcha-site-key",
+        default=(
+            os.getenv("GOOGLE_RECAPTCHA_SITE_KEY", "")
+            or os.getenv("GOOGLE_reCAPTCHA_SITE_KEY", "")
+        ),
+        help="reCAPTCHA site key (defaults to GOOGLE_RECAPTCHA_SITE_KEY env var)",
+    )
+    parser.add_argument(
+        "--recaptcha-verify-endpoint",
+        default=os.getenv("RECAPTCHA_VERIFY_ENDPOINT", "/api/recaptcha/verify"),
+        help="reCAPTCHA verify endpoint path or URL",
+    )
+    parser.add_argument(
         "--allow-placeholder",
         action="store_true",
         help="Allow writing placeholder when key is empty",
@@ -41,8 +56,13 @@ def main() -> int:
 
     content = template_path.read_text(encoding="utf-8")
 
-    if PLACEHOLDER not in content:
-        raise SystemExit(f"Placeholder '{PLACEHOLDER}' not found in template: {template_path}")
+    for placeholder in (
+        PLACEHOLDER_API_KEY,
+        PLACEHOLDER_RECAPTCHA_SITE_KEY,
+        PLACEHOLDER_RECAPTCHA_VERIFY_ENDPOINT,
+    ):
+        if placeholder not in content:
+            raise SystemExit(f"Placeholder '{placeholder}' not found in template: {template_path}")
 
     api_key = (args.api_key or "").strip()
     if not api_key and not args.allow_placeholder:
@@ -51,7 +71,15 @@ def main() -> int:
             "Use --allow-placeholder only when you intentionally keep analytics disabled."
         )
 
-    rendered = content.replace(PLACEHOLDER, api_key or PLACEHOLDER)
+    recaptcha_site_key = (args.recaptcha_site_key or "").strip()
+    verify_endpoint = (args.recaptcha_verify_endpoint or "").strip() or "/api/recaptcha/verify"
+
+    rendered = (
+        content
+        .replace(PLACEHOLDER_API_KEY, api_key or PLACEHOLDER_API_KEY)
+        .replace(PLACEHOLDER_RECAPTCHA_SITE_KEY, recaptcha_site_key or PLACEHOLDER_RECAPTCHA_SITE_KEY)
+        .replace(PLACEHOLDER_RECAPTCHA_VERIFY_ENDPOINT, verify_endpoint)
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(rendered, encoding="utf-8")
     print(f"Rendered {output_path} from {template_path}")
@@ -59,6 +87,11 @@ def main() -> int:
         print("Firebase web API key injected.")
     else:
         print("No API key injected (placeholder kept).")
+
+    if recaptcha_site_key:
+        print("reCAPTCHA site key injected.")
+    else:
+        print("No reCAPTCHA site key injected (feature disabled).")
 
     return 0
 

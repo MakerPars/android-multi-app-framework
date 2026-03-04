@@ -18,6 +18,7 @@ const optionalKeys = [
   "AD_HEALTH_FILL_RATE_THRESHOLD",
   "AD_HEALTH_SHOW_RATE_THRESHOLD",
   "ADMIN_ALLOWED_EMAILS",
+  "GOOGLE_RECAPTCHA_SECRET_KEY",
 ];
 
 function readSecret(key, required) {

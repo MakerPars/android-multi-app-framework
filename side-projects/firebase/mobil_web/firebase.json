@@ -12,6 +12,13 @@
         "destination": "/apps/app/index.html"
       },
       {
+        "source": "/api/recaptcha/verify",
+        "function": {
+          "functionId": "recaptchaVerify",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "/api/other-apps",
         "function": {
           "functionId": "otherAppsFeed",

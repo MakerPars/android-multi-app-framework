@@ -10,3 +10,4 @@ export { otherAppsFeed } from "./otherAppsFeed";
 export { sendTestNotification } from "./sendTestNotification";
 export { deviceCoverageReport } from "./deviceCoverageReport";
 export { adPerformanceReport, adPerformanceToday, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
+export { recaptchaVerify } from "./recaptchaVerify";
