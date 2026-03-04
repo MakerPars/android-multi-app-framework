@@ -270,7 +270,8 @@ jobs:
         if: github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true'
         run: |
           set -euo pipefail
-          if [ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+          sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
+          if [ -n "$sa_json_trimmed" ] && [ "${#PLAY_SERVICE_ACCOUNT_JSON}" -ge 200 ] && [[ "$sa_json_trimmed" == \{* ]]; then
             printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "${{ runner.temp }}/service-account.json"
           elif [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
             echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
@@ -278,6 +279,25 @@ jobs:
             echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
             exit 1
           fi
+          if [ ! -s "${{ runner.temp }}/service-account.json" ]; then
+            echo "::error::Decoded Play service account is empty."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, os, sys
+          p = os.path.join(os.environ["RUNNER_TEMP"], "service-account.json")
+          try:
+              with open(p, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception as e:
+              print(f"::error::Decoded Play service account is not valid JSON: {e}")
+              sys.exit(1)
+          missing = [k for k in ("project_id", "client_email", "private_key") if not data.get(k)]
+          if missing:
+              print(f"::error::Decoded Play service account missing keys: {', '.join(missing)}")
+              sys.exit(1)
+          print("::notice::Decoded Play service account JSON structure looks valid.")
+          PY
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
 
       - name: Verify Play service account project
