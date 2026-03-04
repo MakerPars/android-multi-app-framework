@@ -47,37 +47,43 @@ jobs:
         if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
-      - name: Resolve Play secret (Doppler first, GitHub fallback)
+      - name: Resolve Play secret (Doppler-only)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           set -euo pipefail
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
+          unset PLAY_SERVICE_ACCOUNT_JSON PLAY_SERVICE_ACCOUNT_JSON_BASE64
 
           if [ -z "${DOPPLER_TOKEN:-}" ]; then
             echo "::error::Missing DOPPLER_TOKEN. This workflow is Doppler-only."
             exit 1
           fi
 
+          source_key=""
+          resolved_play_sa_b64=""
           val_json="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
           if [ -n "$val_json" ]; then
             echo "::add-mask::$val_json"
-            val_json_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
-            echo "::add-mask::$val_json_b64"
-            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val_json_b64" >> "$GITHUB_ENV"
+            resolved_play_sa_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
+            source_key="PLAY_SERVICE_ACCOUNT_JSON"
+          else
+            val_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val_b64" ]; then
+              resolved_play_sa_b64="$val_b64"
+              source_key="PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            fi
           fi
 
-          val_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-          if [ -n "$val_b64" ]; then
-            echo "::add-mask::$val_b64"
-            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$val_b64" >> "$GITHUB_ENV"
-          fi
-
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${val_json:-}" ] && [ -z "${val_b64:-}" ]; then
+          if [ -z "${resolved_play_sa_b64:-}" ]; then
             echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
             exit 1
           fi
+
+          echo "::add-mask::$resolved_play_sa_b64"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$resolved_play_sa_b64" >> "$GITHUB_ENV"
+          echo "::notice::Resolved Play service account from Doppler key: $source_key"
 
       - name: Decode Play Service Account
         run: |
