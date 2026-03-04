@@ -154,7 +154,7 @@ jobs:
           printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
           printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
           printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" >> "$GITHUB_ENV"
 
       - name: Validate Release Signing Secrets
         run: |
@@ -177,6 +177,10 @@ jobs:
           set -euo pipefail
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          if grep -q '"project_id": "mobil-oaslananka-firebase"' "${{ runner.temp }}/service-account.json"; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 still points to deleted project mobil-oaslananka-firebase."
+            exit 1
+          fi
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
 
       - name: Auto-bump Play versionCodes (selected flavors)
@@ -333,7 +337,7 @@ jobs:
           printf 'KEY_PASSWORD=%s\n' "${KEY_PASSWORD:-${{ secrets.KEY_PASSWORD }}}" >> "$GITHUB_ENV"
           printf 'PUSH_REGISTRATION_URL=%s\n' "${PUSH_REGISTRATION_URL:-${{ secrets.PUSH_REGISTRATION_URL }}}" >> "$GITHUB_ENV"
           printf 'SENTRY_AUTH_TOKEN=%s\n' "${SENTRY_AUTH_TOKEN:-${{ secrets.SENTRY_AUTH_TOKEN }}}" >> "$GITHUB_ENV"
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" >> "$GITHUB_ENV"
 
       - name: Decode Secrets
         run: |
@@ -347,6 +351,10 @@ jobs:
           [ -n "$SENTRY_AUTH_TOKEN" ] || { echo "::error::Missing secret: SENTRY_AUTH_TOKEN"; exit 1; }
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          if grep -q '"project_id": "mobil-oaslananka-firebase"' "${{ runner.temp }}/service-account.json"; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 still points to deleted project mobil-oaslananka-firebase."
+            exit 1
+          fi
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
           echo "PUSH_REGISTRATION_URL=$PUSH_REGISTRATION_URL" >> "$GITHUB_ENV"

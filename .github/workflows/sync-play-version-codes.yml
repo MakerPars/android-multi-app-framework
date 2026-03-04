@@ -64,13 +64,17 @@ jobs:
             fi
           fi
 
-          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}}" >> "$GITHUB_ENV"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" >> "$GITHUB_ENV"
 
       - name: Decode Play Service Account
         run: |
           set -euo pipefail
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" ] || { echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
           echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          if grep -q '"project_id": "mobil-oaslananka-firebase"' "${{ runner.temp }}/service-account.json"; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 still points to deleted project mobil-oaslananka-firebase."
+            exit 1
+          fi
           echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
 
       - name: Sync from Play (all tracks)
