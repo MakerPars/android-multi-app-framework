@@ -4,6 +4,7 @@ import {
   getAuth,
   setPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
   inMemoryPersistence,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -71,14 +72,38 @@ const functionsRegion = envValue("VITE_FIREBASE_FUNCTIONS_REGION") ?? "europe-we
 const explicitFunctionsBaseUrl = envValue("VITE_FUNCTIONS_BASE_URL");
 
 export const auth = getAuth(app);
-void setPersistence(auth, browserLocalPersistence).catch(async (error) => {
-  console.warn("Firebase Auth local persistence unavailable, falling back to in-memory.", error);
+export type AuthPersistenceMode = "local" | "session" | "memory";
+
+let authPersistenceMode: AuthPersistenceMode = "memory";
+
+export function getAuthPersistenceMode(): AuthPersistenceMode {
+  return authPersistenceMode;
+}
+
+export const authPersistenceReady = (async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    authPersistenceMode = "local";
+    return;
+  } catch (localError) {
+    console.warn("Firebase Auth local persistence unavailable.", localError);
+  }
+
+  try {
+    await setPersistence(auth, browserSessionPersistence);
+    authPersistenceMode = "session";
+    return;
+  } catch (sessionError) {
+    console.warn("Firebase Auth session persistence unavailable.", sessionError);
+  }
+
   try {
     await setPersistence(auth, inMemoryPersistence);
-  } catch (fallbackError) {
-    console.error("Firebase Auth in-memory persistence setup failed.", fallbackError);
+    authPersistenceMode = "memory";
+  } catch (memoryError) {
+    console.error("Firebase Auth in-memory persistence setup failed.", memoryError);
   }
-});
+})();
 export const firestore = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });

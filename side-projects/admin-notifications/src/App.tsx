@@ -26,7 +26,14 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import ciApps from "@ciapps";
-import { auth, firestore, functionsBaseUrl, googleProvider } from "./firebase";
+import {
+  auth,
+  authPersistenceReady,
+  firestore,
+  functionsBaseUrl,
+  getAuthPersistenceMode,
+  googleProvider,
+} from "./firebase";
 import {
   DEFAULT_FORM,
   WEEKDAYS,
@@ -475,6 +482,7 @@ export default function App() {
   useEffect(() => {
     void (async () => {
       try {
+        await authPersistenceReady;
         await getRedirectResult(auth);
       } catch (e) {
         console.error(e);
@@ -513,7 +521,9 @@ export default function App() {
         setSelectedId(null);
         setEventsState("loading");
         setMessage("");
-        setError("");
+        if (nextUser) {
+          setError("");
+        }
         setAdminState(nextUser ? "checking" : "unauthorized");
         if (!nextUser) return;
 
@@ -691,6 +701,7 @@ export default function App() {
   const handleSignIn = async () => {
     setError("");
     try {
+      await authPersistenceReady;
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
       console.error(e);
@@ -700,6 +711,12 @@ export default function App() {
           e.code === "auth/popup-closed-by-user" ||
           e.code === "auth/internal-error";
         if (shouldFallbackToRedirect) {
+          if (getAuthPersistenceMode() === "memory") {
+            setError(
+              "Google sign-in cannot continue with redirect because browser storage is restricted. Enable site storage/cookies or allow popups, then retry.",
+            );
+            return;
+          }
           await signInWithRedirect(auth, googleProvider);
           return;
         }
