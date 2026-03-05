@@ -66,6 +66,22 @@ import SystemHealthPanel from "./components/SystemHealthPanel";
 
 const allPackages = sortedApps.map((a) => a.package);
 
+function readInitialTab(): AdminTab {
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (tab === "events" || tab === "test-push" || tab === "system-health") {
+    return tab;
+  }
+  return "events";
+}
+
+function readInitialSubTab(): TestPushSubTab {
+  const subtab = new URLSearchParams(window.location.search).get("subtab");
+  if (subtab === "single-device" || subtab === "coverage" || subtab === "ad-health") {
+    return subtab;
+  }
+  return "single-device";
+}
+
 export default function App() {
   /* ── Auth state ── */
   const [authState, setAuthState] = useState<"loading" | "ready" | "error">("loading");
@@ -91,8 +107,8 @@ export default function App() {
   const [previewError, setPreviewError] = useState("");
 
   /* ── Tab state ── */
-  const [activeTab, setActiveTab] = useState<AdminTab>("events");
-  const [testPushSubTab, setTestPushSubTab] = useState<TestPushSubTab>("single-device");
+  const [activeTab, setActiveTab] = useState<AdminTab>(readInitialTab);
+  const [testPushSubTab, setTestPushSubTab] = useState<TestPushSubTab>(readInitialSubTab);
 
   /* ── Test push state ── */
   const [testPushTargetMode, setTestPushTargetMode] = useState<TestPushTargetMode>("installationId");
@@ -130,6 +146,18 @@ export default function App() {
   /* ── Derived ── */
   const isCreateMode = selectedId === null;
   const selectedEvent = events.find((e) => e.id === selectedId) ?? null;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", activeTab);
+    if (activeTab === "test-push") {
+      params.set("subtab", testPushSubTab);
+    } else {
+      params.delete("subtab");
+    }
+    const next = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", next);
+  }, [activeTab, testPushSubTab]);
 
   /* ════════════════════════════════════════════
    *  AUTH EFFECTS
@@ -179,7 +207,7 @@ export default function App() {
     (async () => {
       try {
         const idToken = await user.getIdToken();
-        const response = await fetch(`${functionsBaseUrl}/checkAdminAccess`, {
+        const response = await fetch(`${functionsBaseUrl}/adminAccessCheck`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

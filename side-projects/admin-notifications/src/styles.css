@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
 /* ═══════════════════════════════════════════
    Premium Design System – Notifications Admin
    Glassmorphism · Gradients · Micro-Animations
@@ -69,9 +71,6 @@
         sans-serif;
     --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 }
-
-/* ── Google Fonts ── */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 /* ── Reset ── */
 *,
