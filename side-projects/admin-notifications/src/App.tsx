@@ -3,7 +3,6 @@ import type { User } from "firebase/auth";
 import {
   getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "firebase/auth";
@@ -702,34 +701,22 @@ export default function App() {
     setError("");
     try {
       await authPersistenceReady;
-      await signInWithPopup(auth, googleProvider);
+      if (getAuthPersistenceMode() === "memory") {
+        setError(
+          "Google sign-in cannot continue because browser storage is restricted. Enable site storage/cookies and retry.",
+        );
+        return;
+      }
+      await signInWithRedirect(auth, googleProvider);
     } catch (e) {
       console.error(e);
       if (e instanceof FirebaseError) {
-        const shouldFallbackToRedirect =
-          e.code === "auth/popup-blocked" ||
-          e.code === "auth/popup-closed-by-user" ||
-          e.code === "auth/internal-error";
-        if (shouldFallbackToRedirect) {
-          if (getAuthPersistenceMode() === "memory") {
-            setError(
-              "Google sign-in cannot continue with redirect because browser storage is restricted. Enable site storage/cookies or allow popups, then retry.",
-            );
-            return;
-          }
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        }
         const readable =
           e.code === "auth/unauthorized-domain"
             ? "Google sign-in failed: admin.parsfilo.com is not in Firebase Auth Authorized domains."
-            : e.code === "auth/popup-blocked"
-            ? "Google sign-in failed: popup blocked by browser."
-            : e.code === "auth/popup-closed-by-user"
-            ? "Google sign-in failed: popup was closed before completing login."
             : e.code === "auth/invalid-action-code" || e.code === "auth/invalid-action"
             ? "Google sign-in callback is invalid. Retry from the Sign in button and avoid opening __/auth/handler URL manually."
-            : `Google sign-in failed: ${e.code}`;
+            : `Google sign-in failed: ${e.code}${e.message ? ` (${e.message})` : ""}`;
         setError(readable);
         return;
       }
