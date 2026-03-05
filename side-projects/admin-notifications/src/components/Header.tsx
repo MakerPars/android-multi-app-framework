@@ -60,8 +60,8 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
           id="tab-test-push"
           aria-controls="tabpanel-test-push"
         >
-          <span className="tab-icon" aria-hidden="true">🚀</span>
-          Test Push
+          <span className="tab-icon" aria-hidden="true">🛠️</span>
+          Operations
         </button>
         <button
           type="button"
@@ -73,7 +73,7 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
           aria-controls="tabpanel-system-health"
         >
           <span className="tab-icon" aria-hidden="true">💚</span>
-          System Health
+          Observability
         </button>
       </nav>
     </>

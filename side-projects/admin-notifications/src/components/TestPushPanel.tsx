@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type {
   AdPerformanceReport,
   AdPerformanceToday,
@@ -117,41 +117,69 @@ export default function TestPushPanel(props: TestPushPanelProps) {
     );
   }, [deviceFinderResults, deviceFinderSearch]);
 
+  const hasTriggeredIndexRecovery = useRef(false);
+
+  useEffect(() => {
+    const issue = adPerformanceReport?.issue?.toLowerCase() ?? "";
+    if (testPushSubTab !== "ad-health") return;
+    if (!adPerformanceReport || adReportLoading || adTodayLoading) return;
+    if (hasTriggeredIndexRecovery.current) return;
+    if (!issue.includes("requires an index")) return;
+
+    hasTriggeredIndexRecovery.current = true;
+    void onRefreshAdHealth(true);
+  }, [
+    adPerformanceReport,
+    adReportLoading,
+    adTodayLoading,
+    onRefreshAdHealth,
+    testPushSubTab,
+  ]);
+
   return (
     <div className="single-panel-grid" id="tabpanel-test-push" role="tabpanel" aria-labelledby="tab-test-push">
       <main className="panel form-panel" role="main">
         <div className="panel-header">
-          <h2>Test Push Operations</h2>
+          <h2>Operations</h2>
         </div>
 
-        <div className="sub-tabs" role="tablist" aria-label="Test push sections">
-          <button
-            type="button"
-            role="tab"
-            className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
-            aria-selected={testPushSubTab === "single-device"}
-            onClick={() => onSubTabChange("single-device")}
-          >
-            <span className="tab-icon" aria-hidden="true">📱</span> Single Device
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
-            aria-selected={testPushSubTab === "coverage"}
-            onClick={() => onSubTabChange("coverage")}
-          >
-            <span className="tab-icon" aria-hidden="true">📊</span> Coverage
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
-            aria-selected={testPushSubTab === "ad-health"}
-            onClick={() => onSubTabChange("ad-health")}
-          >
-            <span className="tab-icon" aria-hidden="true">💰</span> Ad Health
-          </button>
+        <div className="sub-tab-groups" role="tablist" aria-label="Operations sections">
+          <div className="sub-tab-group">
+            <span className="sub-tab-group-label">Push</span>
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "single-device"}
+              onClick={() => onSubTabChange("single-device")}
+            >
+              <span className="tab-icon" aria-hidden="true">📱</span> Single Device
+            </button>
+          </div>
+          <div className="sub-tab-group">
+            <span className="sub-tab-group-label">Devices</span>
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "coverage"}
+              onClick={() => onSubTabChange("coverage")}
+            >
+              <span className="tab-icon" aria-hidden="true">📊</span> Coverage
+            </button>
+          </div>
+          <div className="sub-tab-group">
+            <span className="sub-tab-group-label">Revenue</span>
+            <button
+              type="button"
+              role="tab"
+              className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
+              aria-selected={testPushSubTab === "ad-health"}
+              onClick={() => onSubTabChange("ad-health")}
+            >
+              <span className="tab-icon" aria-hidden="true">💰</span> Ad Health
+            </button>
+          </div>
         </div>
 
         {/* ── Single Device ── */}

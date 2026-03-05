@@ -675,18 +675,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 async function loadWeeklyEcpmBaseline(weeks: number): Promise<Map<string, number>> {
-    const snapshot = await admin.firestore()
-        .collection(REPORTS_COLLECTION)
-        .orderBy(admin.firestore.FieldPath.documentId(), "desc")
-        .limit(60)
-        .get();
+    const reportCollection = admin.firestore().collection(REPORTS_COLLECTION);
+    const documentRefs = await reportCollection.listDocuments();
+    const candidateRefs = documentRefs
+        .filter((ref) => ref.id.startsWith(HISTORY_DOC_PREFIX))
+        .sort((a, b) => b.id.localeCompare(a.id))
+        .slice(0, 60);
+
+    if (candidateRefs.length === 0) {
+        return new Map<string, number>();
+    }
+
+    const snapshotDocs = await admin.firestore().getAll(...candidateRefs);
 
     let consideredWeeks = 0;
     const accumulator = new Map<string, { total: number; count: number }>();
-    for (const docSnap of snapshot.docs) {
-        if (!docSnap.id.startsWith(HISTORY_DOC_PREFIX)) {
-            continue;
-        }
+    for (const docSnap of snapshotDocs) {
         const data = docSnap.data() as { stats?: unknown; alerts?: unknown };
         const stats = Array.isArray(data.stats) ? data.stats : (Array.isArray(data.alerts) ? data.alerts : []);
         if (stats.length === 0) {
