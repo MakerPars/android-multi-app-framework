@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string;
   readonly VITE_FIREBASE_STORAGE_BUCKET?: string;
   readonly VITE_FIREBASE_FUNCTIONS_REGION?: string;
+  readonly VITE_FIREBASE_APP_CHECK_SITE_KEY?: string;
+  readonly VITE_GOOGLE_RECAPTCHA_SITE_KEY?: string;
   readonly FIREBASE_WEB_API_KEY?: string;
 }
 

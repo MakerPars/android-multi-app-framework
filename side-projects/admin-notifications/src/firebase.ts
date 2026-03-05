@@ -1,4 +1,5 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import {
   GoogleAuthProvider,
   getAuth,
@@ -68,6 +69,22 @@ if (missingFirebaseEnv.length > 0) {
 }
 
 const app: FirebaseApp = getApps()[0] ?? initializeApp(firebaseConfig);
+const appCheckSiteKey = envValue(
+  "VITE_FIREBASE_APP_CHECK_SITE_KEY",
+  "VITE_GOOGLE_RECAPTCHA_SITE_KEY",
+);
+
+if (typeof window !== "undefined" && appCheckSiteKey) {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (error) {
+    console.warn("Firebase App Check initialization failed; Auth may be rejected if enforcement is enabled.", error);
+  }
+}
+
 const functionsRegion = envValue("VITE_FIREBASE_FUNCTIONS_REGION") ?? "europe-west1";
 const explicitFunctionsBaseUrl = envValue("VITE_FUNCTIONS_BASE_URL");
 
