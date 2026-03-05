@@ -98,15 +98,15 @@ Firebase Remote Config keys:
 
 If a key is missing/blank or fetch fails, defaults above are used automatically.
 
-## CI/CD (Azure DevOps)
+## CI/CD (GitHub Actions)
 
-Azure DevOps pipeline dosyaları:
+Aktif pipeline/workflow dosyaları:
 
-- `pipelines/azure-pipelines.yml`
-- `pipelines/azure-pipelines-manual.yml`
-- `pipelines/azure-pipelines-release.yml`
-
-Kurulum adımları için: `docs/AZURE_DEVOPS_SETUP.md`
+- `.github/workflows/quality-gate.yml` (PR kalite kapısı)
+- `.github/workflows/manual-ops.yml` (manuel build/publish operasyonları)
+- `.github/workflows/release.yml` (release build + opsiyonel Play publish)
+- `.github/workflows/sync-play-version-codes.yml` (Play -> `app-versions.properties` senkronu)
+- `.github/workflows/deploy-admin-notifications.yml` (admin panel deploy)
 
 Standards / ops docs:
 - `docs/play-publish-standards.md`
@@ -136,10 +136,10 @@ This writes files under:
 
 ### Controlled CI Upload (Manual / Optional)
 
-By default, pipelines publish **bundles only**. Listing/graphics/release notes are **opt-in**:
+By default, workflows publish **bundles only**. Listing/graphics/release notes are **opt-in**:
 
-- `pipelines/azure-pipelines-release.yml`: parameter `updatePlayListing` (default `false`)
-- `pipelines/azure-pipelines-manual.yml`: parameter `updatePlayListing` (default `false`)
+- `.github/workflows/release.yml`: `update_play_listing` input (default `false`)
+- `.github/workflows/manual-ops.yml`: `update_play_listing` input (default `false`)
 
 When enabled for a flavour, the pipeline runs:
 

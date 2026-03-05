@@ -148,6 +148,7 @@ val validateReleaseConfig =
         val keyAlias = pick("KEY_ALIAS").orEmpty()
         val keyPassword = pick("KEY_PASSWORD").orEmpty()
         val pushRegistrationUrl = pick("PUSH_REGISTRATION_URL").orEmpty().trim()
+        val purchaseVerificationUrl = pick("PURCHASE_VERIFICATION_URL").orEmpty().trim()
         val playServiceAccountJsonPath = pick("PLAY_SERVICE_ACCOUNT_JSON").orEmpty().trim()
         val playServiceAccountJsonFile =
             playServiceAccountJsonPath.takeIf { it.isNotBlank() }?.let { project.file(it) }
@@ -174,6 +175,11 @@ val validateReleaseConfig =
                 errors += "Missing PUSH_REGISTRATION_URL (required for release/publish tasks)"
             } else if (!pushRegistrationUrl.startsWith("https://", ignoreCase = true)) {
                 errors += "PUSH_REGISTRATION_URL must start with https:// (resolved='$pushRegistrationUrl')"
+            }
+            if (purchaseVerificationUrl.isBlank()) {
+                errors += "Missing PURCHASE_VERIFICATION_URL (required for release/publish tasks)"
+            } else if (!purchaseVerificationUrl.startsWith("https://", ignoreCase = true)) {
+                errors += "PURCHASE_VERIFICATION_URL must start with https:// (resolved='$purchaseVerificationUrl')"
             }
 
             if (publishRequested) {
@@ -265,6 +271,11 @@ android {
             "String",
             "PUSH_REGISTRATION_URL",
             asBuildConfigString(pick("PUSH_REGISTRATION_URL") ?: ""),
+        )
+        buildConfigField(
+            "String",
+            "PURCHASE_VERIFICATION_URL",
+            asBuildConfigString(pick("PURCHASE_VERIFICATION_URL") ?: ""),
         )
     }
 
@@ -380,7 +391,6 @@ dependencies {
     implementation(project(":feature:messages"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:otherapps"))
-    implementation(project(":feature:curvedbottomnavigation"))
     implementation(project(":feature:prayertimes"))
     implementation(project(":feature:qibla"))
     implementation(project(":feature:counter"))

@@ -51,14 +51,13 @@ check_file "scripts/bump-version.sh"
 check_file "scripts/build-all-flavours.sh"
 check_file "scripts/final-verification.sh"
 
-# GitHub workflows
-# CI/CD (Azure DevOps)
-check_file "pipelines/azure-pipelines.yml"
-check_file "pipelines/azure-pipelines-manual.yml"
-check_file "pipelines/azure-pipelines-release.yml"
-
-# GitHub Actions workflows are intentionally disabled (archived under docs/legacy/github-actions/)
-check_dir "docs/legacy/github-actions"
+# GitHub workflows (GitHub Actions is the only CI/CD system in active use)
+check_file ".github/workflows/quality-gate.yml"
+check_file ".github/workflows/release.yml"
+check_file ".github/workflows/manual-ops.yml"
+check_file ".github/workflows/sync-play-version-codes.yml"
+check_file ".github/workflows/deploy-admin-notifications.yml"
+check_file ".github/workflows/verify-secrets-redacted.yml"
 check_file ".github/dependabot.yml"
 
 # BuildSrc

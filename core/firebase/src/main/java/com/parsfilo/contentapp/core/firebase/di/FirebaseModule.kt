@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.core.firebase.di
 
 import android.content.Context
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
@@ -43,4 +44,8 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun providesFirebaseCrashlytics(): FirebaseCrashlytics = FirebaseCrashlytics.getInstance()
+
+    @Provides
+    @Singleton
+    fun providesFirebaseAppCheck(): FirebaseAppCheck = FirebaseAppCheck.getInstance()
 }

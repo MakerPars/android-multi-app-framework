@@ -14,14 +14,6 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        exclusiveContent {
-            forRepository {
-                maven(url = "https://dl.google.com/dl/android/maven2/")
-            }
-            filter {
-                includeGroup("androidx.privacysandbox.ads")
-            }
-        }
         google()
         mavenCentral()
     }
@@ -45,7 +37,6 @@ include(":feature:notifications")
 include(":feature:messages")
 include(":feature:settings")
 include(":feature:otherapps")
-include(":feature:curvedbottomnavigation")
 include(":feature:prayertimes")
 include(":feature:qibla")
 include(":feature:counter")

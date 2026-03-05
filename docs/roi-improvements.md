@@ -192,16 +192,16 @@ Bu çalışma ile overengineering yapmadan 6 yüksek ROI iyileştirme uygulandı
   - varsayılan `RUN_CONNECTED_TESTS=false`
   - true olduğunda `:app:connectedAmenerrasuluDebugAndroidTest` koşar
   - cihaz/emulator yoksa bilinçli fail
-- Azure setup dokümantasyonu PR gate davranışları ile güncellendi.
+- GitHub Actions setup dokümantasyonu PR gate davranışları ile güncellendi.
 - Ktlint script ihlallerini kırmamak için script dosyalarında minimal newline/blank-line düzeltmeleri yapıldı.
 
 **Değişen dosyalar**
 - `app/build.gradle.kts`
 - `build.gradle.kts`
-- `docs/AZURE_DEVOPS_SETUP.md`
+- `docs/CI_RELEASE_VALIDATION_PLAN.md`
 - `feature/counter/build.gradle.kts`
 - `feature/qibla/build.gradle.kts`
-- `pipelines/azure-pipelines.yml`
+- `.github/workflows/quality-gate.yml`
 
 **Nasıl test edilir?**
 - `./gradlew :app:validateFlavorVersions ktlintCheck test`
@@ -237,7 +237,7 @@ Backward-compat:
 
 ## 6) CI’da PR Davranışı
 Dosya:
-- `pipelines/azure-pipelines.yml`
+- `.github/workflows/quality-gate.yml`
 
 PR gate job’ları:
 1. `StaticAnalysis`: `detekt` + `ktlintCheck`

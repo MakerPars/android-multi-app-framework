@@ -3,7 +3,7 @@
 Bu dosya, ikinci fazda tamamlanacak design-system migrasyon işlerini görünür kılmak için eklendi.
 
 ## 1) Hardcoded `dp` kalan ekranlar
-Kalan hedef dosyalarda (`CurvedBottomNavigation`, `SettingsScreen`, `RewardsScreen`) `LocalDimens.current` geçişi tamamlandı.
+Kalan hedef dosyalarda (`AppBottomBar`, `SettingsScreen`, `RewardsScreen`) `LocalDimens.current` geçişi tamamlandı.
 
 Bu başlık altında aktif kalan borç yok.
 
@@ -31,4 +31,4 @@ Bu TODO dosyası bilinçli olarak bırakıldı; böylece hiçbir varsayım yapı
 - `feature/content/**` ekranları token bazlı hale getirildi.
 - `feature/ads/ui/NativeAdItem.kt` ve `NativeAdCompose.kt` tokenlaştırıldı.
 - `feature/billing/ui/SubscriptionScreen.kt`, `feature/audio/ui/MiniAudioPlayer.kt`, `feature/messages/ui/MessageDetailScreen.kt`, `feature/otherapps/ui/OtherAppsScreen.kt`, `feature/notifications/**` dönüştürüldü.
-- `feature/curvedbottomnavigation/components/CurvedBottomNavigation.kt`, `feature/settings/ui/SettingsScreen.kt`, `app/ui/RewardsScreen.kt` token/wrapper standardına taşındı.
+- `app/src/main/java/com/parsfilo/contentapp/ui/AppBottomBar.kt`, `feature/settings/ui/SettingsScreen.kt`, `app/ui/RewardsScreen.kt` token/wrapper standardına taşındı.

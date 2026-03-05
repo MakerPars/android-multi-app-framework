@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Bootstraps Android SDK on Microsoft-hosted Ubuntu agents.
+# Bootstraps Android SDK on Linux CI agents.
 # Prefers the preinstalled SDK if present; falls back to downloading cmdline-tools.
 #
 # Inputs (env):
@@ -42,7 +42,7 @@ ensure_sdkmanager_on_path() {
   fi
 
   # Prefer the preinstalled Android SDK on hosted agents when available.
-  # (Azure/GitHub hosted Ubuntu images typically keep it under /usr/local/lib/android/sdk.)
+  # (GitHub-hosted Ubuntu images typically keep it under /usr/local/lib/android/sdk.)
   local candidates=(
     "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
     "/usr/local/lib/android/sdk/cmdline-tools/bin/sdkmanager"

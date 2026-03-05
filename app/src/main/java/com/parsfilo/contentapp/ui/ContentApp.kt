@@ -3,10 +3,8 @@ package com.parsfilo.contentapp.ui
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -87,11 +85,6 @@ fun ContentApp(
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = true
 
-    val compactBottomNavHeight = dimens.bottomBarHeight
-    val compactBottomNavInset = WindowInsets.safeDrawing
-        .only(WindowInsetsSides.Bottom)
-        .asPaddingValues()
-        .calculateBottomPadding()
     val topLevelRoutes = listOf(
         AppRoute.Subscription,
         AppRoute.OtherApps,
@@ -282,51 +275,35 @@ fun ContentApp(
                     contentWindowInsets = WindowInsets.safeDrawing.only(
                         WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
                     ),
+                    bottomBar = {
+                        if (showBottomBar) {
+                            AppBottomBarWithFab(
+                                currentDestination = currentDestination,
+                                onNavigateToDestination = ::navigateToRoute,
+                                unreadNotificationCount = unreadNotificationCount,
+                                unreadMessageCount = unreadMessageCount,
+                                newOtherAppsCount = newOtherAppsCount,
+                                shouldShowSubscriptionBadge = shouldShowSubscriptionBadge,
+                            )
+                        }
+                    },
                 ) { innerPadding ->
-                    Box(
+                    AppNavHost(
+                        navController = navController,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(
-                                PaddingValues(
-                                    top = innerPadding.calculateTopPadding(),
-                                    bottom = if (showBottomBar) {
-                                        compactBottomNavHeight + compactBottomNavInset
-                                    } else {
-                                        innerPadding.calculateBottomPadding()
-                                    },
-                                ),
-                            ),
-                    ) {
-                        AppNavHost(
-                            navController = navController,
-                            modifier = Modifier.fillMaxSize(),
-                            isUserSignedIn = isUserSignedIn,
-                            audioPlayerViewModel = audioPlayerViewModel,
-                            appAnalytics = appAnalytics,
-                            onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
-                            updateDebugSummary = updateDebugSnapshot?.toSummaryText(),
-                            onUpdateDebugFetchNow = updateGateViewModel::fetchNowForDebug,
-                            onUpdateDebugSimulateSoft = updateGateViewModel::simulateSoftPrompt,
-                            onUpdateDebugSimulateHard = updateGateViewModel::simulateHardBlock,
-                            onUpdateDebugClearSimulation = updateGateViewModel::clearSimulation,
-                            onUpdateDebugResetSoftPrompt = updateGateViewModel::resetSoftPromptForSession,
-                        )
-                    }
-                }
-
-                if (showBottomBar) {
-                    Box(
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    ) {
-                        AppBottomBarWithFab(
-                            currentDestination = currentDestination,
-                            onNavigateToDestination = ::navigateToRoute,
-                            unreadNotificationCount = unreadNotificationCount,
-                            unreadMessageCount = unreadMessageCount,
-                            newOtherAppsCount = newOtherAppsCount,
-                            shouldShowSubscriptionBadge = shouldShowSubscriptionBadge
-                        )
-                    }
+                            .padding(innerPadding),
+                        isUserSignedIn = isUserSignedIn,
+                        audioPlayerViewModel = audioPlayerViewModel,
+                        appAnalytics = appAnalytics,
+                        onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
+                        updateDebugSummary = updateDebugSnapshot?.toSummaryText(),
+                        onUpdateDebugFetchNow = updateGateViewModel::fetchNowForDebug,
+                        onUpdateDebugSimulateSoft = updateGateViewModel::simulateSoftPrompt,
+                        onUpdateDebugSimulateHard = updateGateViewModel::simulateHardBlock,
+                        onUpdateDebugClearSimulation = updateGateViewModel::clearSimulation,
+                        onUpdateDebugResetSoftPrompt = updateGateViewModel::resetSoftPromptForSession,
+                    )
                 }
             }
 
@@ -356,6 +333,5 @@ private fun Int.toBadgeText(): String? {
         else -> toString()
     }
 }
-
 
 

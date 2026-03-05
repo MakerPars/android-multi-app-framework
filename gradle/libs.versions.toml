@@ -11,7 +11,7 @@ composeBom = "2026.02.01"
 hilt = "2.59.2"
 # KSP 2.x is versioned independently of Kotlin patch versions (KSP2+).
 # Keep KSP on latest stable 2.3.x and validate via smoke builds when Kotlin is updated.
-ksp = "2.3.4"
+ksp = "2.3.5"
 room = "2.8.4"
 datastore = "1.2.0"
 navCompose = "2.9.7"
@@ -37,7 +37,7 @@ turbine = "1.2.1"
 truth = "1.4.5"
 androidxTestCore = "1.7.0"
 robolectric = "4.16.1"
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.2"
 ktlintGradle = "14.0.1"
 playPublisher = "4.0.0"
 guava = "33.5.0-android"
@@ -45,6 +45,7 @@ playBilling = "8.3.0"
 workRuntime = "2.11.1"
 playServicesLocation = "21.3.0"
 glance = "1.1.1"
+okhttp = "5.3.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -117,6 +118,7 @@ androidx-media3-common = { group = "androidx.media3", name = "media3-common", ve
 # Third Party
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
 
@@ -151,6 +153,6 @@ google-services = { id = "com.google.gms.google-services", version.ref = "google
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
 firebase-perf = { id = "com.google.firebase.firebase-perf", version.ref = "firebasePerfPlugin" }
 room = { id = "androidx.room", version.ref = "room" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

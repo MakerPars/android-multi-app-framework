@@ -34,7 +34,8 @@ import javax.inject.Singleton
 @Singleton
 class BillingManager @Inject constructor(
     @ApplicationContext private val appContext: Context,
-    private val preferencesDataSource: PreferencesDataSource
+    private val preferencesDataSource: PreferencesDataSource,
+    private val billingPurchaseVerifier: BillingPurchaseVerifier,
 ) {
 
     private var scope = createScope()
@@ -341,16 +342,56 @@ class BillingManager @Inject constructor(
         val purchased = purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
 
         if (purchased.isEmpty()) {
-            applySubscriptionState(isPremium = false, isAutoRenewing = false)
+            applySubscriptionState(
+                isPremium = false,
+                isAutoRenewing = false,
+                expiryDate = null,
+            )
             return
         }
 
-        purchased.forEach { purchase ->
-            acknowledgeIfNeeded(purchase)
-        }
+        _subscriptionState.value = SubscriptionState.Loading
+        ensureScope()
+        scope.launch {
+            purchased.forEach { purchase ->
+                acknowledgeIfNeeded(purchase)
+            }
 
-        val autoRenewing = purchased.any { it.isAutoRenewing }
-        applySubscriptionState(isPremium = true, isAutoRenewing = autoRenewing)
+            val verifiedPurchases = purchased.mapNotNull { purchase ->
+                val verification = billingPurchaseVerifier.verify(
+                    packageName = appContext.packageName,
+                    purchase = purchase,
+                )
+                if (!verification.verified) {
+                    Timber.w(
+                        "Purchase verification failed for product=%s state=%s ack=%s reason=%s",
+                        purchase.products.firstOrNull().orEmpty(),
+                        verification.purchaseState,
+                        verification.acknowledgementState,
+                        verification.error.orEmpty()
+                    )
+                    return@mapNotNull null
+                }
+                verification
+            }
+
+            if (verifiedPurchases.isEmpty()) {
+                applySubscriptionState(
+                    isPremium = false,
+                    isAutoRenewing = false,
+                    expiryDate = null,
+                )
+                return@launch
+            }
+
+            val expiryDate = verifiedPurchases.mapNotNull { it.expiryTimeMillis }.maxOrNull()
+            val autoRenewing = verifiedPurchases.any { it.isAutoRenewing }
+            applySubscriptionState(
+                isPremium = true,
+                isAutoRenewing = autoRenewing,
+                expiryDate = expiryDate,
+            )
+        }
     }
 
     private fun acknowledgeIfNeeded(purchase: Purchase) {
@@ -369,7 +410,8 @@ class BillingManager @Inject constructor(
 
     private fun applySubscriptionState(
         isPremium: Boolean,
-        isAutoRenewing: Boolean
+        isAutoRenewing: Boolean,
+        expiryDate: Long?
     ) {
         ensureScope()
         scope.launch {
@@ -378,7 +420,7 @@ class BillingManager @Inject constructor(
 
         _subscriptionState.value = if (isPremium) {
             SubscriptionState.Active(
-                expiryDate = null,
+                expiryDate = expiryDate,
                 isAutoRenewing = isAutoRenewing
             )
         } else {

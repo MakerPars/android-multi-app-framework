@@ -43,8 +43,6 @@ def ci_warning(message: str) -> None:
 
     if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
         print(f"::warning::{message}")
-    elif "TF_BUILD" in os.environ:
-        print(f"##vso[task.logissue type=warning]{message}")
     else:
         print(f"WARNING: {message}")
 

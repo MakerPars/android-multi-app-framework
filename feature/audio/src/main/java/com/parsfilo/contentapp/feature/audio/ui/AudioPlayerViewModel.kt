@@ -12,6 +12,8 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.android.play.core.assetpacks.AssetPackManager
+import com.google.android.play.core.assetpacks.AssetPackState
+import com.google.android.play.core.assetpacks.AssetPackStateUpdateListener
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 import com.google.common.util.concurrent.ListenableFuture
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
@@ -27,6 +29,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
@@ -34,15 +39,12 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.ExecutionException
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
 private const val ASSET_PACK_NAME = "audioassets"
 private const val STATE_KEY_POSITION = "playback_position"
-private const val REMOTE_MANIFEST_TIMEOUT_MS = 5_000
-private const val REMOTE_AUDIO_TIMEOUT_MS = 15_000
 private const val AUDIO_CACHE_DIR = "audio_cache"
 private const val AUDIO_BUFFER_SIZE = 8 * 1024
 
@@ -61,6 +63,7 @@ class AudioPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val assetPackManager: AssetPackManager,
     private val endpointsProvider: EndpointsProvider,
+    private val okHttpClient: OkHttpClient,
     @javax.inject.Named("audioFileName") private val audioFileName: String,
     @javax.inject.Named("useAssetPackAudio") private val useAssetPackAudio: Boolean,
     private val savedStateHandle: SavedStateHandle
@@ -71,6 +74,7 @@ class AudioPlayerViewModel @Inject constructor(
 
     private var playerListener: Player.Listener? = null
     private var positionTrackingJob: Job? = null
+    private var assetPackWaitJob: Job? = null
 
     // Hold reference to avoid garbage collection and allow cleanup
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -206,16 +210,16 @@ class AudioPlayerViewModel @Inject constructor(
                     }
                     AssetPackStatus.NOT_INSTALLED -> {
                         Timber.w("⚠️ Pack durumu: NOT_INSTALLED — fetch başlatılıyor")
-                        requestAssetPackFetch()
+                        requestAssetPackFetch(effectiveAudioFileName)
                     }
                     AssetPackStatus.DOWNLOADING -> {
                         val pct = if (totalBytes > 0) (bytesDownloaded * 100 / totalBytes) else 0
                         Timber.i("⏳ Pack durumu: DOWNLOADING — %$pct ($bytesDownloaded/$totalBytes)")
-                        viewModelScope.launch(Dispatchers.IO) { waitForAssetPack() }
+                        startAssetPackWait(effectiveAudioFileName)
                     }
                     AssetPackStatus.TRANSFERRING -> {
                         Timber.i("⏳ Pack durumu: TRANSFERRING — dosyalar aktarılıyor")
-                        viewModelScope.launch(Dispatchers.IO) { waitForAssetPack() }
+                        startAssetPackWait(effectiveAudioFileName)
                     }
                     AssetPackStatus.WAITING_FOR_WIFI -> {
                         Timber.w("⚠️ Pack durumu: WAITING_FOR_WIFI — WiFi bekleniyor")
@@ -223,11 +227,11 @@ class AudioPlayerViewModel @Inject constructor(
                             assetLoading = true,
                             assetError = "WiFi bağlantısı bekleniyor..."
                         )
-                        viewModelScope.launch(Dispatchers.IO) { waitForAssetPack() }
+                        startAssetPackWait(effectiveAudioFileName)
                     }
                     AssetPackStatus.PENDING -> {
                         Timber.i("⏳ Pack durumu: PENDING — indirme kuyruğunda")
-                        viewModelScope.launch(Dispatchers.IO) { waitForAssetPack() }
+                        startAssetPackWait(effectiveAudioFileName)
                     }
                     AssetPackStatus.CANCELED -> {
                         Timber.w("⚠️ Pack durumu: CANCELED")
@@ -394,25 +398,22 @@ class AudioPlayerViewModel @Inject constructor(
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.tmp")
 
-        var connection: HttpURLConnection? = null
         try {
             _playerState.value = _playerState.value.copy(
                 assetLoading = true,
                 assetError = "Ses dosyası indiriliyor..."
             )
-            connection = (URL(source.url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = REMOTE_AUDIO_TIMEOUT_MS
-                readTimeout = REMOTE_AUDIO_TIMEOUT_MS
-                requestMethod = "GET"
-            }
-
-            val code = connection.responseCode
-            if (code !in 200..299) {
-                Timber.w("Uzak ses indirme başarısız. key=${source.key} code=$code")
+            val request = Request.Builder()
+                .url(source.url)
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Timber.w("Uzak ses indirme başarısız. key=%s code=%s", source.key, response.code)
                 return null
             }
+            val responseBody = response.body ?: return null
 
-            BufferedInputStream(connection.inputStream).use { input ->
+            BufferedInputStream(responseBody.byteStream()).use { input ->
                 BufferedOutputStream(temp.outputStream()).use { output ->
                     val buffer = ByteArray(AUDIO_BUFFER_SIZE)
                     while (true) {
@@ -448,8 +449,6 @@ class AudioPlayerViewModel @Inject constructor(
             Timber.w(e, "Uzak ses indirme hatası. key=${source.key}")
             temp.delete()
             return null
-        } finally {
-            connection?.disconnect()
         }
     }
 
@@ -459,23 +458,19 @@ class AudioPlayerViewModel @Inject constructor(
     }
 
     private fun fetchRemoteAudioManifest(): RemoteAudioManifest? {
-        var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(endpointsProvider.getAudioManifestUrl()).openConnection() as HttpURLConnection).apply {
-                connectTimeout = REMOTE_MANIFEST_TIMEOUT_MS
-                readTimeout = REMOTE_MANIFEST_TIMEOUT_MS
-                requestMethod = "GET"
-                setRequestProperty("Accept", "application/json")
-            }
-
-            val code = connection.responseCode
-            if (code !in 200..299) {
-                Timber.w("Cloudflare manifest alınamadı. code=$code")
+            val request = Request.Builder()
+                .url(endpointsProvider.getAudioManifestUrl())
+                .addHeader("Accept", "application/json")
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Timber.w("Cloudflare manifest alınamadı. code=%s", response.code)
                 return null
             }
 
-            val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val json = JSONObject(response)
+            val body = response.body?.string().orEmpty()
+            val json = JSONObject(body)
             val packageAudio = mutableMapOf<String, String>()
             val packageAudioObj = json.optJSONObject("packageAudio")
             if (packageAudioObj != null) {
@@ -519,12 +514,10 @@ class AudioPlayerViewModel @Inject constructor(
         } catch (e: SecurityException) {
             Timber.w(e, "Cloudflare manifest okunamadı")
             null
-        } finally {
-            connection?.disconnect()
         }
     }
 
-    private fun requestAssetPackFetch() {
+    private fun requestAssetPackFetch(targetFileName: String) {
         Timber.i("⬇️ Asset pack fetch başlatılıyor: $ASSET_PACK_NAME")
         _playerState.value = _playerState.value.copy(
             assetLoading = true,
@@ -533,9 +526,7 @@ class AudioPlayerViewModel @Inject constructor(
         val request = assetPackManager.fetch(listOf(ASSET_PACK_NAME))
         request.addOnSuccessListener {
             Timber.i("✅ Fetch isteği kabul edildi, pack bekleniyor...")
-            viewModelScope.launch(Dispatchers.IO) {
-                waitForAssetPack()
-            }
+            startAssetPackWait(targetFileName)
         }.addOnFailureListener { e ->
             Timber.e("❌ Fetch başarısız: ${e.message}", e)
             _playerState.value = _playerState.value.copy(
@@ -546,32 +537,70 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
-    private suspend fun waitForAssetPack() {
-        Timber.i("⏳ Asset pack bekleniyor (max 60sn, 500ms aralık)...")
-        _playerState.value = _playerState.value.copy(
-            assetLoading = true,
-            assetError = "Ses dosyası hazırlanıyor..."
-        )
-        // Poll for completion (max 60 seconds)
-        repeat(120) { attempt ->
-            delay(500)
-            val path = getAssetPackFilePath(resolveEffectiveAudioFileName())
+    private fun startAssetPackWait(targetFileName: String) {
+        if (assetPackWaitJob?.isActive == true) {
+            Timber.d("Asset pack wait already active, skipping duplicate listener registration")
+            return
+        }
+        assetPackWaitJob = viewModelScope.launch(Dispatchers.IO) {
+            _playerState.value = _playerState.value.copy(
+                assetLoading = true,
+                assetError = "Ses dosyası hazırlanıyor..."
+            )
+            val path = awaitAssetPackReady(targetFileName)
             if (path != null) {
-                Timber.i("✅ Asset pack hazır! (deneme #$attempt, ${attempt * 500}ms) Yol: $path")
                 loadAudioFromFile(path)
-                return
+                return@launch
             }
-            if (attempt % 10 == 0) {
-                Timber.d("⏳ Hâlâ bekleniyor... (deneme #$attempt, ${attempt * 500}ms)")
+            Timber.e("❌ Asset pack bekleme listener'ı başarısız/zaman aşımı")
+            _playerState.value = _playerState.value.copy(
+                assetLoading = false,
+                assetReady = false,
+                assetError = "Ses dosyası hazırlanamadı"
+            )
+        }
+    }
+
+    private suspend fun awaitAssetPackReady(targetFileName: String): String? =
+        suspendCancellableCoroutine { continuation ->
+            val existingPath = getAssetPackFilePath(targetFileName)
+            if (existingPath != null) {
+                continuation.resume(existingPath)
+                return@suspendCancellableCoroutine
+            }
+
+            val listener = object : AssetPackStateUpdateListener {
+                override fun onStateUpdate(state: AssetPackState) {
+                    if (state.name() != ASSET_PACK_NAME) return
+                    when (state.status()) {
+                        AssetPackStatus.COMPLETED -> {
+                            val resolved = getAssetPackFilePath(targetFileName)
+                            assetPackManager.unregisterListener(this)
+                            continuation.resume(resolved)
+                        }
+
+                        AssetPackStatus.FAILED, AssetPackStatus.CANCELED -> {
+                            Timber.w(
+                                "Asset pack listener failed. status=%s error=%s",
+                                statusToString(state.status()),
+                                state.errorCode()
+                            )
+                            assetPackManager.unregisterListener(this)
+                            continuation.resume(null)
+                        }
+
+                        else -> {
+                            // waiting states handled by listener until terminal status.
+                        }
+                    }
+                }
+            }
+
+            assetPackManager.registerListener(listener)
+            continuation.invokeOnCancellation {
+                assetPackManager.unregisterListener(listener)
             }
         }
-        Timber.e("❌ Asset pack zaman aşımı (60sn)")
-        _playerState.value = _playerState.value.copy(
-            assetLoading = false,
-            assetReady = false,
-            assetError = "Ses dosyası zaman aşımına uğradı"
-        )
-    }
 
     private fun setupPlayer(mediaItem: MediaItem) {
         val player = this.player ?: return
@@ -789,6 +818,8 @@ class AudioPlayerViewModel @Inject constructor(
         super.onCleared()
         Timber.d("ViewModel temizleniyor — listener temizleniyor")
         stopPositionTracking()
+        assetPackWaitJob?.cancel()
+        assetPackWaitJob = null
         playerListener?.let { player?.removeListener(it) }
         playerListener = null
         // MediaController release
@@ -796,5 +827,3 @@ class AudioPlayerViewModel @Inject constructor(
         player = null
     }
 }
-
-

@@ -47,5 +47,6 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.guava)
     implementation(libs.play.asset.delivery.ktx)
+    implementation(libs.okhttp)
     ksp(libs.hilt.compiler)
 }

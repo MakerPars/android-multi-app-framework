@@ -67,14 +67,10 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def gh_or_azure_log(level: str, message: str) -> None:
+def gh_or_local_log(level: str, message: str) -> None:
     level = level.lower()
     if "GITHUB_ACTIONS" in os_environ():
         print(f"::{level}::{message}")
-        return
-    if "TF_BUILD" in os_environ():
-        mapped = "error" if level == "error" else "warning"
-        print(f"##vso[task.logissue type={mapped}]{message}")
         return
     prefix = "ERROR" if level == "error" else "WARNING"
     print(f"{prefix}: {message}")
@@ -256,7 +252,7 @@ def main() -> int:
     print("")
 
     for msg in warnings:
-        gh_or_azure_log("warning", msg)
+        gh_or_local_log("warning", msg)
 
     strict_errors: list[str] = []
     if args.mode == "strict":
@@ -290,7 +286,7 @@ def main() -> int:
     strict_errors = [e for e in strict_errors if not (e in seen or seen.add(e))]
 
     for msg in strict_errors:
-        gh_or_azure_log("error", msg)
+        gh_or_local_log("error", msg)
 
     if args.mode == "strict" and strict_errors:
         print("")

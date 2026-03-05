@@ -32,7 +32,11 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":core:firebase"))
 
+    implementation(platform(libs.firebase.bom))
     implementation(libs.play.billing.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.okhttp)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

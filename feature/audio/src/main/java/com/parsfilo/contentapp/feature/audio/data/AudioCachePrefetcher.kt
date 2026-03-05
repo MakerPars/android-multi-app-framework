@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -12,14 +14,10 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val AUDIO_CACHE_DIR = "audio_cache"
-private const val MANIFEST_TIMEOUT_MS = 5_000
-private const val AUDIO_TIMEOUT_MS = 15_000
 private const val AUDIO_BUFFER_SIZE = 8 * 1024
 private const val NAMAZ_SURELERI_PACKAGE = "com.parsfilo.namazsurelerivedualarsesli"
 private const val PREFS_NAME = "audio_prefetch"
@@ -39,6 +37,7 @@ private data class RemoteAudioSource(
 class AudioCachePrefetcher @Inject constructor(
     @ApplicationContext private val context: Context,
     private val endpointsProvider: EndpointsProvider,
+    private val okHttpClient: OkHttpClient,
 ) {
 
     fun prefetchIfNeeded(
@@ -158,20 +157,17 @@ class AudioCachePrefetcher @Inject constructor(
     }
 
     private fun fetchManifest(): RemoteAudioManifest? {
-        var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(endpointsProvider.getAudioManifestUrl()).openConnection() as HttpURLConnection).apply {
-                connectTimeout = MANIFEST_TIMEOUT_MS
-                readTimeout = MANIFEST_TIMEOUT_MS
-                requestMethod = "GET"
-                setRequestProperty("Accept", "application/json")
-            }
-
-            if (connection.responseCode !in 200..299) {
+            val request = Request.Builder()
+                .url(endpointsProvider.getAudioManifestUrl())
+                .addHeader("Accept", "application/json")
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
                 return null
             }
 
-            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            val body = response.body?.string().orEmpty()
             val json = JSONObject(body)
             val packageAudio = mutableMapOf<String, String>()
             json.optJSONObject("packageAudio")?.let { obj ->
@@ -201,26 +197,23 @@ class AudioCachePrefetcher @Inject constructor(
         } catch (e: SecurityException) {
             Timber.w(e, "Audio manifest fetch failed")
             null
-        } finally {
-            connection?.disconnect()
         }
     }
 
     private fun downloadToCache(source: RemoteAudioSource, target: File): Boolean {
-        var connection: HttpURLConnection? = null
         val temp = File(target.parentFile ?: context.filesDir, "${target.name}.tmp")
         return try {
             target.parentFile?.mkdirs()
-            connection = (URL(source.url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = AUDIO_TIMEOUT_MS
-                readTimeout = AUDIO_TIMEOUT_MS
-                requestMethod = "GET"
-            }
-            if (connection.responseCode !in 200..299) {
+            val request = Request.Builder()
+                .url(source.url)
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
                 return false
             }
 
-            BufferedInputStream(connection.inputStream).use { input ->
+            val responseBody = response.body ?: return false
+            BufferedInputStream(responseBody.byteStream()).use { input ->
                 BufferedOutputStream(temp.outputStream()).use { output ->
                     val buffer = ByteArray(AUDIO_BUFFER_SIZE)
                     while (true) {
@@ -251,8 +244,6 @@ class AudioCachePrefetcher @Inject constructor(
             Timber.w(e, "Audio download failed for key=${source.key}")
             temp.delete()
             false
-        } finally {
-            connection?.disconnect()
         }
     }
 

@@ -1,4 +1,4 @@
-# Play Publish Standards (GitHub Actions / Azure)
+# Play Publish Standards (GitHub Actions)
 
 Bu doküman, bu repo için güvenli ve standart Play Console yayın akışını tanımlar.
 

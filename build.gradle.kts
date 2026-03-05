@@ -1,5 +1,6 @@
-import io.gitlab.arturbosch.detekt.Detekt
+import dev.detekt.gradle.Detekt
 import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
+import org.gradle.api.artifacts.VersionCatalogsExtension
 
 // Top-level build file where you can add configuration options common to all subprojects/modules.
 plugins {
@@ -29,6 +30,12 @@ gradle.startParameter.maxWorkerCount = (cores - 2).coerceAtLeast(1)
 // Test JVM paralelliğini de sınırla
 tasks.withType<Test>().configureEach {
     maxParallelForks = (cores / 3).coerceAtLeast(1)
+}
+
+val qualityCheckTask = tasks.register("qualityCheck") {
+    group = "verification"
+    description = "Minimal checks: Android Lint + Detekt (deprecated only) + ktlint"
+    dependsOn("detekt")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -65,6 +72,10 @@ subprojects {
         // Google Mobile Ads 25.x transitively requires these beta AndroidX artifacts.
         "androidx.privacysandbox.ads"
     )
+    val allowedPreReleaseModules = setOf(
+        // Required transitively by androidx.credentials:credentials-play-services-auth:1.5.0.
+        "com.google.android.gms:play-services-identity-credentials"
+    )
 
     // Stabilize R8 inputs by pinning versions across the graph.
     val libsCatalog = rootProject.extensions.getByType<VersionCatalogsExtension>().named("libs")
@@ -77,7 +88,10 @@ subprojects {
         resolutionStrategy {
             componentSelection {
                 all {
-                    if (preReleaseVersionRegex.matches(candidate.version) && candidate.group !in allowedPreReleaseGroups) {
+                    val moduleCoordinate = "${candidate.group}:${candidate.module}"
+                    val isAllowedPreRelease =
+                        candidate.group in allowedPreReleaseGroups || moduleCoordinate in allowedPreReleaseModules
+                    if (preReleaseVersionRegex.matches(candidate.version) && !isAllowedPreRelease) {
                         reject(
                             "Pre-release dependencies are not allowed: " + "${candidate.group}:${candidate.module}:${candidate.version}"
                         )
@@ -97,14 +111,8 @@ subprojects {
         }
     }
 
-    val shouldConfigureKtlint = gradle.startParameter.taskNames.any { taskName ->
-        taskName.contains("ktlint", ignoreCase = true) || taskName.contains("qualityCheck", ignoreCase = true)
-    }
-
-    // ── ktlint (sadece kalite task'larında yükle) ──
-    if (shouldConfigureKtlint) {
-        apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    }
+    // ── ktlint (koşulsuz, configuration-cache uyumlu) ──
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
     // ✅ Plugin apply edildikten sonra extension kesin var
     plugins.withId("org.jlleitschuh.gradle.ktlint") {
@@ -113,12 +121,10 @@ subprojects {
             outputToConsole.set(true)
 
             val isCi =
-                (System.getenv("TF_BUILD") ?: "").equals("True", ignoreCase = true) || !System.getenv("BUILD_BUILDID")
-                    .isNullOrBlank() || (System.getenv("CI") ?: "").equals("true", ignoreCase = true)
-            val isPullRequest = (System.getenv("BUILD_REASON") ?: "").equals(
-                "PullRequest",
-                ignoreCase = true
-            ) || !System.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID").isNullOrBlank()
+                (System.getenv("GITHUB_ACTIONS") ?: "").equals("true", ignoreCase = true) ||
+                    (System.getenv("CI") ?: "").equals("true", ignoreCase = true)
+            val githubEventName = (System.getenv("GITHUB_EVENT_NAME") ?: "").lowercase()
+            val isPullRequest = githubEventName == "pull_request" || githubEventName == "pull_request_target"
 
             // PR kalite kapısında ktlint ihlali pipeline'ı kırmalıdır.
             ignoreFailures.set(isCi && !isPullRequest)
@@ -127,6 +133,10 @@ subprojects {
                 reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)
                 reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.SARIF)
             }
+        }
+
+        rootProject.tasks.named(qualityCheckTask.name).configure {
+            dependsOn(tasks.named("ktlintCheck"))
         }
     }
 
@@ -195,28 +205,20 @@ subprojects {
         if (consumerRules.exists()) {
             androidExt.defaultConfig.consumerProguardFiles(consumerRules)
         }
+
+        tasks.matching { it.name == "lintDebug" || it.name == "lintRelease" }.configureEach {
+            rootProject.tasks.named(qualityCheckTask.name).configure { dependsOn(this@configureEach) }
+        }
     }
-}
 
-// ═══════════════════════════════════════════════════════════════
-// ▸ 3. qualityCheck — Aggregate task (single entry-point)
-//    Usage: ./gradlew qualityCheck
-// ═══════════════════════════════════════════════════════════════
-tasks.register("qualityCheck") {
-    group = "verification"
-    description = "Minimal checks: Android Lint + Detekt (deprecated only) + ktlint"
-    dependsOn("detekt")
-}
-
-gradle.projectsEvaluated {
-    subprojects.forEach { sub ->
-        rootProject.tasks.named("qualityCheck") {
-            sub.tasks.findByName("lintDebug")?.let { dependsOn(it) }
-            sub.tasks.findByName("lintRelease")?.let { dependsOn(it) }
-            sub.tasks.findByName("ktlintCheck")?.let { dependsOn(it) }
+    plugins.withId("com.android.application") {
+        tasks.matching { it.name == "lintDebug" || it.name == "lintRelease" }.configureEach {
+            rootProject.tasks.named(qualityCheckTask.name).configure { dependsOn(this@configureEach) }
         }
     }
 }
+
+// qualityCheck task is registered near the top so subproject hooks can safely depend on it.
 
 // ═══════════════════════════════════════════════════════════════
 // ▸ 4. printFlavors — Utility for CI/CD to get flavor list
