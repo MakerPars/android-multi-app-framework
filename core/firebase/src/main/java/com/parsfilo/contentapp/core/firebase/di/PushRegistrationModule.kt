@@ -1,6 +1,6 @@
 package com.parsfilo.contentapp.core.firebase.di
 
-import com.parsfilo.contentapp.core.firebase.push.HttpPushRegistrationSender
+import com.parsfilo.contentapp.core.firebase.push.FirestorePushRegistrationSender
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationSender
 import dagger.Binds
 import dagger.Module
@@ -12,7 +12,6 @@ import dagger.hilt.components.SingletonComponent
 abstract class PushRegistrationModule {
     @Binds
     abstract fun bindsPushRegistrationSender(
-        impl: HttpPushRegistrationSender,
+        impl: FirestorePushRegistrationSender,
     ): PushRegistrationSender
 }
-

@@ -4,12 +4,15 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 
 // Function export'ları
-export { registerDevice } from "./registerDevice";
+// MOVED to direct Firestore SDK writes from Android client (FirestorePushRegistrationSender)
+// export { registerDevice } from "./registerDevice";
 export { dispatchNotifications } from "./dispatchNotifications";
-export { otherAppsFeed } from "./otherAppsFeed";
+// MOVED to Cloudflare Worker (contentapp-content-api /api/other-apps with icon enrichment)
+// export { otherAppsFeed } from "./otherAppsFeed";
 export { sendTestNotification } from "./sendTestNotification";
 export { deviceCoverageReport } from "./deviceCoverageReport";
-export { adPerformanceReport, adPerformanceToday, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
+export { adPerformance, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
 export { adminAccessCheck } from "./adminAccessCheck";
-export { recaptchaVerify } from "./recaptchaVerify";
+// MOVED to Cloudflare Worker (contentapp-content-api /api/recaptcha-verify)
+// export { recaptchaVerify } from "./recaptchaVerify";
 export { verifyPurchase } from "./verifyPurchase";

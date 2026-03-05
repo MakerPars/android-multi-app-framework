@@ -1,0 +1,30 @@
+{
+  "profile": "aggressive_revenue_v1",
+  "description": "Aggressive ad frequency preset for Remote Config",
+  "parameters": {
+    "ads_app_open_enabled": "true",
+    "ads_interstitial_enabled": "true",
+    "ads_banner_enabled": "true",
+    "ads_native_enabled": "true",
+    "ads_rewarded_enabled": "true",
+    "ads_rewarded_interstitial_enabled": "true",
+
+    "ads_app_open_cooldown_ms": "180000",
+    "ads_interstitial_frequency_cap_ms": "120000",
+    "ads_interstitial_relaxed_frequency_cap_ms": "90000",
+    "ads_interstitial_relaxed_packages_csv": "",
+
+    "ads_rewarded_interstitial_min_interval_ms": "600000",
+    "ads_rewarded_interstitial_max_per_session": "3",
+
+    "ads_native_pool_max": "3",
+    "ads_native_ttl_ms": "1800000",
+
+    "ads_app_open_placements_disabled_csv": "",
+    "ads_interstitial_placements_disabled_csv": "",
+    "ads_banner_placements_disabled_csv": "",
+    "ads_native_placements_disabled_csv": "",
+    "ads_rewarded_placements_disabled_csv": "",
+    "ads_rewarded_interstitial_placements_disabled_csv": ""
+  }
+}

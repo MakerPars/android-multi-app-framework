@@ -719,8 +719,8 @@ export default function App() {
           e.code === "auth/unauthorized-domain"
             ? "Google sign-in failed: admin.parsfilo.com is not in Firebase Auth Authorized domains."
             : e.code === "auth/invalid-action-code" || e.code === "auth/invalid-action"
-            ? "Google sign-in callback is invalid. Retry from the Sign in button and avoid opening __/auth/handler URL manually."
-            : `Google sign-in failed: ${e.code}${e.message ? ` (${e.message})` : ""}`;
+              ? "Google sign-in callback is invalid. Retry from the Sign in button and avoid opening __/auth/handler URL manually."
+              : `Google sign-in failed: ${e.code}${e.message ? ` (${e.message})` : ""}`;
         setError(readable);
         return;
       }
@@ -1042,13 +1042,13 @@ export default function App() {
     setAdReportError("");
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch(`${functionsBaseUrl}/adPerformanceReport`, {
+      const response = await fetch(`${functionsBaseUrl}/adPerformance`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ refresh: forceRefresh }),
+        body: JSON.stringify({ type: forceRefresh ? "refresh" : "report" }),
       });
 
       let responseBody: unknown = null;
@@ -1083,13 +1083,13 @@ export default function App() {
     setAdTodayError("");
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch(`${functionsBaseUrl}/adPerformanceToday`, {
+      const response = await fetch(`${functionsBaseUrl}/adPerformance`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ type: "today" }),
       });
 
       let responseBody: unknown = null;
@@ -1399,599 +1399,599 @@ export default function App() {
       </div>
 
       {activeTab === "events" ? (
-      <div className="content-grid">
-        <aside className="panel list-panel">
-          <div className="panel-header">
-            <h2>Scheduled events</h2>
-            <button className="secondary" onClick={resetForm}>New event</button>
-          </div>
-          <div className="event-summary">
-            <span className="status-pill status-scheduled">scheduled: {eventStats.scheduled}</span>
-            <span className="status-pill status-paused">paused: {eventStats.paused}</span>
-            <span className="status-pill status-sent">sent: {eventStats.sent}</span>
-            <span className="status-pill status-expired">expired: {eventStats.expired}</span>
-          </div>
-          <div className="event-filters">
-            <label>
-              Search
-              <input
-                value={eventSearchQuery}
-                onChange={(e) => setEventSearchQuery(e.target.value)}
-                placeholder="name / type / package"
-              />
-            </label>
-            <label>
-              Status
-              <select
-                value={eventStatusFilter}
-                onChange={(e) =>
-                  setEventStatusFilter(e.target.value as "all" | ScheduledEventRecord["status"])
-                }
-              >
-                <option value="all">all</option>
-                <option value="scheduled">scheduled</option>
-                <option value="paused">paused</option>
-                <option value="sent">sent</option>
-                <option value="expired">expired</option>
-              </select>
-            </label>
-          </div>
-          {eventsState === "loading" && <p className="muted">Loading events…</p>}
-          {eventsState === "error" && <p className="inline-error">Failed to load events.</p>}
-          {eventsState === "ready" && events.length === 0 && (
-            <p className="muted">No scheduled_events documents yet.</p>
-          )}
-          {eventsState === "ready" && events.length > 0 && filteredEvents.length === 0 && (
-            <p className="muted">
-              No events match this filter ({eventStats.visible}/{eventStats.total} shown).
-            </p>
-          )}
-          <div className="event-list">
-            {filteredEvents.map((event) => (
-              <button
-                key={event.id}
-                type="button"
-                className={`event-card ${selectedId === event.id ? "active" : ""}`}
-                onClick={() => selectEvent(event)}
-              >
-                <div className="event-card-top">
-                  <strong>{event.name || "(untitled)"}</strong>
-                  <span className={`status-pill status-${event.status}`}>{event.status}</span>
-                </div>
-                <div className="event-card-meta">{event.type} · {scheduleLabel(event)}</div>
-                <div className="event-card-meta">{packageLabel(event.packages)}</div>
-                <div className="event-card-meta">
-                  sentTimezones={event.sentTimezones.length} · updated {formatDateTime(event.updatedAt)}
-                </div>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <main className="panel form-panel">
-          <div className="panel-header">
-            <h2>{isCreateMode ? "Create event" : "Edit event"}</h2>
-            {!isCreateMode && (
-              <button className="danger" onClick={removeEvent} disabled={deleting || saving}>
-                {deleting ? "Deleting…" : "Delete"}
-              </button>
-            )}
-          </div>
-
-          <div className="form-grid">
-            <label>
-              Event name
-              <input
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Friday reminder"
-              />
-            </label>
-
-            <label>
-              Type
-              <input
-                value={form.type}
-                onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-                placeholder="campaign"
-              />
-            </label>
-
-            <label>
-              Status
-              <select
-                value={form.status}
-                onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}
-              >
-                <option value="scheduled">scheduled</option>
-                <option value="paused">paused</option>
-                <option value="sent">sent</option>
-                <option value="expired">expired</option>
-              </select>
-            </label>
-
-            <label>
-              Local delivery time
-              <input
-                type="time"
-                value={form.localDeliveryTime}
-                onChange={(e) => setForm((p) => ({ ...p, localDeliveryTime: e.target.value }))}
-              />
-            </label>
-
-            <label>
-              Target timezones (optional, comma-separated)
-              <input
-                value={form.targetTimezonesInput}
-                onChange={(e) => setForm((p) => ({ ...p, targetTimezonesInput: e.target.value }))}
-                placeholder="Europe/Istanbul, Europe/Berlin"
-              />
-              <small className="muted">
-                Leave empty to send globally using current timezone matching behavior.
-              </small>
-            </label>
-
-            <label>
-              Topic (optional, metadata-only for now)
-              <input
-                value={form.topic}
-                onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
-                placeholder="dini-bildirim"
-              />
-              <small className="muted">
-                Scheduler currently uses timezone/device targeting. Topic is stored for future use / manual sends.
-              </small>
-            </label>
-
-            <label>
-              Schedule mode
-              <select
-                value={form.scheduleMode}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, scheduleMode: e.target.value as any }))
-                }
-              >
-                <option value="daily">daily</option>
-                <option value="weekly">weekly</option>
-                <option value="once">once</option>
-              </select>
-            </label>
-
-            {form.scheduleMode === "weekly" && (
+        <div className="content-grid">
+          <aside className="panel list-panel">
+            <div className="panel-header">
+              <h2>Scheduled events</h2>
+              <button className="secondary" onClick={resetForm}>New event</button>
+            </div>
+            <div className="event-summary">
+              <span className="status-pill status-scheduled">scheduled: {eventStats.scheduled}</span>
+              <span className="status-pill status-paused">paused: {eventStats.paused}</span>
+              <span className="status-pill status-sent">sent: {eventStats.sent}</span>
+              <span className="status-pill status-expired">expired: {eventStats.expired}</span>
+            </div>
+            <div className="event-filters">
               <label>
-                Weekly day
+                Search
+                <input
+                  value={eventSearchQuery}
+                  onChange={(e) => setEventSearchQuery(e.target.value)}
+                  placeholder="name / type / package"
+                />
+              </label>
+              <label>
+                Status
                 <select
-                  value={form.weeklyDay}
+                  value={eventStatusFilter}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, weeklyDay: e.target.value as WeekdayKey }))
+                    setEventStatusFilter(e.target.value as "all" | ScheduledEventRecord["status"])
                   }
                 >
-                  {WEEKDAYS.map((day) => (
-                    <option key={day} value={day}>{day}</option>
-                  ))}
+                  <option value="all">all</option>
+                  <option value="scheduled">scheduled</option>
+                  <option value="paused">paused</option>
+                  <option value="sent">sent</option>
+                  <option value="expired">expired</option>
                 </select>
               </label>
-            )}
-
-            {form.scheduleMode === "once" && (
-              <label>
-                Date
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-                />
-              </label>
-            )}
-          </div>
-
-          <section className="subsection">
-            <h3>Target apps</h3>
-            <div className="checkbox-grid">
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={form.packages.includes("*")}
-                  onChange={(e) => updatePackages("*", e.target.checked)}
-                />
-                All apps (*)
-              </label>
-              {sortedApps.map((app) => {
-                const disabled = form.packages.includes("*");
-                return (
-                  <label key={app.package} className={`checkbox-row ${disabled ? "disabled" : ""}`}>
-                    <input
-                      type="checkbox"
-                      checked={!disabled && form.packages.includes(app.package)}
-                      disabled={disabled}
-                      onChange={(e) => updatePackages(app.package, e.target.checked)}
-                    />
-                    <span>{app.flavor}</span>
-                    <small>{app.package}</small>
-                  </label>
-                );
-              })}
             </div>
-            <div className="device-preview-box">
-              <div className="device-preview-header">
-                <strong>Target device preview</strong>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={previewTargetDevices}
-                  disabled={previewLoading}
-                >
-                  {previewLoading ? "Checking…" : "Preview target device count"}
-                </button>
-              </div>
-              <p className="muted device-preview-note">
-                Estimate only: actual dispatch also filters by timezone, schedule date, recurrence,
-                and sentTimezones.
+            {eventsState === "loading" && <p className="muted">Loading events…</p>}
+            {eventsState === "error" && <p className="inline-error">Failed to load events.</p>}
+            {eventsState === "ready" && events.length === 0 && (
+              <p className="muted">No scheduled_events documents yet.</p>
+            )}
+            {eventsState === "ready" && events.length > 0 && filteredEvents.length === 0 && (
+              <p className="muted">
+                No events match this filter ({eventStats.visible}/{eventStats.total} shown).
               </p>
-              {previewError && <p className="inline-error">{previewError}</p>}
-              {previewCount != null && !previewError && (
-                <div className="device-preview-result">
-                  <div className="device-preview-total">
-                    <span>Estimated target devices</span>
-                    <strong>{previewCount}</strong>
+            )}
+            <div className="event-list">
+              {filteredEvents.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  className={`event-card ${selectedId === event.id ? "active" : ""}`}
+                  onClick={() => selectEvent(event)}
+                >
+                  <div className="event-card-top">
+                    <strong>{event.name || "(untitled)"}</strong>
+                    <span className={`status-pill status-${event.status}`}>{event.status}</span>
                   </div>
-                  {!normalizePackages(form.packages).includes("*") &&
-                    Object.keys(previewByPackage).length > 0 && (
-                      <ul className="device-preview-list">
-                        {Object.entries(previewByPackage).map(([pkg, count]) => (
-                          <li key={pkg}>
-                            <code>{pkg}</code>
-                            <span>{count}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                </div>
+                  <div className="event-card-meta">{event.type} · {scheduleLabel(event)}</div>
+                  <div className="event-card-meta">{packageLabel(event.packages)}</div>
+                  <div className="event-card-meta">
+                    sentTimezones={event.sentTimezones.length} · updated {formatDateTime(event.updatedAt)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <main className="panel form-panel">
+            <div className="panel-header">
+              <h2>{isCreateMode ? "Create event" : "Edit event"}</h2>
+              {!isCreateMode && (
+                <button className="danger" onClick={removeEvent} disabled={deleting || saving}>
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
               )}
             </div>
-          </section>
 
-          <section className="subsection locale-grid">
-            {(["tr", "en", "de"] as LocaleKey[]).map((locale) => (
-              <div key={locale} className="locale-card">
-                <h3>{locale.toUpperCase()}</h3>
+            <div className="form-grid">
+              <label>
+                Event name
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Friday reminder"
+                />
+              </label>
+
+              <label>
+                Type
+                <input
+                  value={form.type}
+                  onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
+                  placeholder="campaign"
+                />
+              </label>
+
+              <label>
+                Status
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}
+                >
+                  <option value="scheduled">scheduled</option>
+                  <option value="paused">paused</option>
+                  <option value="sent">sent</option>
+                  <option value="expired">expired</option>
+                </select>
+              </label>
+
+              <label>
+                Local delivery time
+                <input
+                  type="time"
+                  value={form.localDeliveryTime}
+                  onChange={(e) => setForm((p) => ({ ...p, localDeliveryTime: e.target.value }))}
+                />
+              </label>
+
+              <label>
+                Target timezones (optional, comma-separated)
+                <input
+                  value={form.targetTimezonesInput}
+                  onChange={(e) => setForm((p) => ({ ...p, targetTimezonesInput: e.target.value }))}
+                  placeholder="Europe/Istanbul, Europe/Berlin"
+                />
+                <small className="muted">
+                  Leave empty to send globally using current timezone matching behavior.
+                </small>
+              </label>
+
+              <label>
+                Topic (optional, metadata-only for now)
+                <input
+                  value={form.topic}
+                  onChange={(e) => setForm((p) => ({ ...p, topic: e.target.value }))}
+                  placeholder="dini-bildirim"
+                />
+                <small className="muted">
+                  Scheduler currently uses timezone/device targeting. Topic is stored for future use / manual sends.
+                </small>
+              </label>
+
+              <label>
+                Schedule mode
+                <select
+                  value={form.scheduleMode}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, scheduleMode: e.target.value as any }))
+                  }
+                >
+                  <option value="daily">daily</option>
+                  <option value="weekly">weekly</option>
+                  <option value="once">once</option>
+                </select>
+              </label>
+
+              {form.scheduleMode === "weekly" && (
                 <label>
-                  Title
+                  Weekly day
+                  <select
+                    value={form.weeklyDay}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, weeklyDay: e.target.value as WeekdayKey }))
+                    }
+                  >
+                    {WEEKDAYS.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {form.scheduleMode === "once" && (
+                <label>
+                  Date
                   <input
-                    value={form.title[locale]}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        title: { ...p.title, [locale]: e.target.value },
-                      }))
-                    }
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
                   />
                 </label>
-                <label>
-                  Body
-                  <textarea
-                    value={form.body[locale]}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        body: { ...p.body, [locale]: e.target.value },
-                      }))
-                    }
-                    rows={4}
-                  />
-                </label>
-              </div>
-            ))}
-          </section>
-
-          <section className="subsection preview-grid">
-            <div>
-              <h3>Preview</h3>
-              <div className="preview-cards">
-                {(["tr", "en", "de"] as LocaleKey[]).map((locale) => (
-                  <div key={locale} className="preview-card">
-                    <div className="preview-locale">{locale.toUpperCase()}</div>
-                    <div className="preview-title">{form.title[locale] || "(empty title)"}</div>
-                    <div className="preview-body">{form.body[locale] || "(empty body)"}</div>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
-            <div>
-              <h3>Dispatch metadata</h3>
-              <dl className="meta-list">
-                <dt>sentTimezones</dt>
-                <dd>{selectedEvent?.sentTimezones.length ?? 0}</dd>
-                <dt>lastResetAt</dt>
-                <dd>{formatDateTime(selectedEvent?.lastResetAt)}</dd>
-                <dt>lastDispatchedAt</dt>
-                <dd>{formatDateTime(selectedEvent?.lastDispatchedAt)}</dd>
-                <dt>createdAt</dt>
-                <dd>{formatDateTime(selectedEvent?.createdAt)}</dd>
-                <dt>updatedAt</dt>
-                <dd>{formatDateTime(selectedEvent?.updatedAt)}</dd>
-                <dt>createdBy</dt>
-                <dd>{selectedEvent?.createdBy ?? "-"}</dd>
-                <dt>updatedBy</dt>
-                <dd>{selectedEvent?.updatedBy ?? "-"}</dd>
-              </dl>
-            </div>
-          </section>
 
-          <div className="form-actions">
-            <button onClick={saveEvent} disabled={saving || deleting}>
-              {saving ? "Saving…" : isCreateMode ? "Create event" : "Save changes"}
-            </button>
-            <button className="secondary" onClick={resetForm} disabled={saving || deleting}>
-              Reset form
-            </button>
-          </div>
-        </main>
-      </div>
-      ) : (
-      <div className="single-panel-grid">
-        <main className="panel form-panel">
-          <div className="panel-header">
-            <h2>Test Push Operations</h2>
-          </div>
-          <div className="sub-tabs" role="tablist" aria-label="Test push sections">
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "single-device"}
-              onClick={() => setTestPushSubTab("single-device")}
-            >
-              Single Device
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "coverage"}
-              onClick={() => setTestPushSubTab("coverage")}
-            >
-              Coverage
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "ad-health"}
-              onClick={() => setTestPushSubTab("ad-health")}
-            >
-              Ad Health
-            </button>
-          </div>
-
-          {testPushSubTab === "single-device" && testPushSection}
-
-          {testPushSubTab === "coverage" && (
             <section className="subsection">
-              <div className="coverage-box">
+              <h3>Target apps</h3>
+              <div className="checkbox-grid">
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={form.packages.includes("*")}
+                    onChange={(e) => updatePackages("*", e.target.checked)}
+                  />
+                  All apps (*)
+                </label>
+                {sortedApps.map((app) => {
+                  const disabled = form.packages.includes("*");
+                  return (
+                    <label key={app.package} className={`checkbox-row ${disabled ? "disabled" : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={!disabled && form.packages.includes(app.package)}
+                        disabled={disabled}
+                        onChange={(e) => updatePackages(app.package, e.target.checked)}
+                      />
+                      <span>{app.flavor}</span>
+                      <small>{app.package}</small>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="device-preview-box">
                 <div className="device-preview-header">
-                  <strong>Device coverage (last N days)</strong>
+                  <strong>Target device preview</strong>
                   <button
                     type="button"
                     className="secondary"
-                    onClick={loadDeviceCoverageReport}
-                    disabled={coverageLoading}
+                    onClick={previewTargetDevices}
+                    disabled={previewLoading}
                   >
-                    {coverageLoading ? "Loading…" : "Refresh coverage"}
+                    {previewLoading ? "Checking…" : "Preview target device count"}
                   </button>
                 </div>
-
-                <label className="coverage-days">
-                  Days
-                  <input
-                    type="number"
-                    min={1}
-                    max={90}
-                    value={coverageDays}
-                    onChange={(e) => setCoverageDays(Number(e.target.value || 14))}
-                  />
-                </label>
-
-                {coverageError && <p className="inline-error">{coverageError}</p>}
-
-                {coverageReport && !coverageError && (
-                  <div className="coverage-result">
-                    <p className="muted">
-                      generatedAt={coverageReport.generatedAt} · days={coverageReport.days}
-                    </p>
-                    <ul className="coverage-list">
-                      {coverageReport.byPackage.map((item) => (
-                        <li key={item.packageName}>
-                          <code>{item.packageName}</code>
-                          <span>
-                            active={item.activeDeviceCount} / total={item.totalDeviceCount}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {coverageReport.missingPackages.length > 0 && (
-                      <div className="coverage-alert">
-                        <strong>Missing packages</strong>
-                        <div>{coverageReport.missingPackages.join(", ")}</div>
-                      </div>
-                    )}
-                    {coverageReport.stalePackages.length > 0 && (
-                      <div className="coverage-alert">
-                        <strong>Stale packages (no recent device)</strong>
-                        <div>{coverageReport.stalePackages.join(", ")}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {testPushSubTab === "ad-health" && (
-            <section className="subsection">
-              <div className="coverage-box">
-                <div className="device-preview-header">
-                  <strong>Ad health (AdMob)</strong>
-                  <div className="device-finder-actions">
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => refreshAdHealth(false)}
-                      disabled={adReportLoading || adTodayLoading}
-                    >
-                      {adReportLoading || adTodayLoading ? "Loading…" : "Load latest"}
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => refreshAdHealth(true)}
-                      disabled={adReportLoading || adTodayLoading}
-                    >
-                      {adReportLoading || adTodayLoading ? "Refreshing…" : "Force refresh"}
-                    </button>
-                  </div>
-                </div>
-                <p className="muted">
-                  Primary: <strong>Today so far</strong> (same day range as AdMob UI). Secondary:
-                  latest weekly diagnostics.
+                <p className="muted device-preview-note">
+                  Estimate only: actual dispatch also filters by timezone, schedule date, recurrence,
+                  and sentTimezones.
                 </p>
-
-                {adTodayError && <p className="inline-error">{adTodayError}</p>}
-                {adPerformanceToday && !adTodayError ? (
-                  <div className="ad-report-result ad-report-block">
-                    <h3>Today so far (primary)</h3>
-                    <p className="muted">
-                      Today so far ({adPerformanceToday.date}) · generatedAt=
-                      {adPerformanceToday.generatedAt} · status=
-                      <strong>{adPerformanceToday.status}</strong> · timezone=
-                      {localTimeZone}
-                    </p>
-                    {adPerformanceToday.issue && (
-                      <div className="coverage-alert">
-                        <strong>Issue</strong>
-                        <div>{adPerformanceToday.issue}</div>
-                      </div>
-                    )}
-                    <ul className="coverage-list">
-                      <li>
-                        <span>Total earnings</span>
-                        <strong>{formatTry(adPerformanceToday.totals.earningsTry)}</strong>
-                      </li>
-                      <li>
-                        <span>Total eCPM</span>
-                        <strong>{formatTry(adPerformanceToday.totals.ecpmTry)}</strong>
-                      </li>
-                      <li>
-                        <span>Total ad requests</span>
-                        <strong>{adPerformanceToday.totals.adRequests}</strong>
-                      </li>
-                      <li>
-                        <span>Total fill rate</span>
-                        <strong>{formatPercent(adPerformanceToday.totals.fillRatePct)}</strong>
-                      </li>
-                      <li>
-                        <span>Total show rate</span>
-                        <strong>{formatPercent(adPerformanceToday.totals.showRatePct)}</strong>
-                      </li>
-                    </ul>
-                  </div>
-                ) : (
-                  !adTodayError && <p className="muted">Today report not loaded yet.</p>
-                )}
-
-                {adReportError && <p className="inline-error">{adReportError}</p>}
-
-                {adPerformanceReport && !adReportError ? (
-                  <div className="ad-report-result ad-report-block">
-                    <h3>Weekly diagnostics (secondary)</h3>
-                    <p className="muted">
-                      generatedAt={adPerformanceReport.generatedAt} · range=
-                      {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
-                      <strong>{adPerformanceReport.status}</strong>
-                    </p>
-                    {adPerformanceReport.issue && (
-                      <div className="coverage-alert">
-                        <strong>Issue</strong>
-                        <div>{adPerformanceReport.issue}</div>
-                      </div>
-                    )}
-                    <ul className="coverage-list">
-                      <li>
-                        <span>Total earnings</span>
-                        <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
-                      </li>
-                      <li>
-                        <span>Total eCPM</span>
-                        <strong>{formatTry(adPerformanceReport.totals.ecpmTry)}</strong>
-                      </li>
-                      <li>
-                        <span>Total ad requests</span>
-                        <strong>{adPerformanceReport.totals.adRequests}</strong>
-                      </li>
-                      <li>
-                        <span>Total fill rate</span>
-                        <strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong>
-                      </li>
-                      <li>
-                        <span>Total show rate</span>
-                        <strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong>
-                      </li>
-                    </ul>
-
-                    <div className="muted">
-                      Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=
-                      {formatPercent(adPerformanceReport.thresholds.fillRatePct)}, showRate=
-                      {formatPercent(adPerformanceReport.thresholds.showRatePct)}
+                {previewError && <p className="inline-error">{previewError}</p>}
+                {previewCount != null && !previewError && (
+                  <div className="device-preview-result">
+                    <div className="device-preview-total">
+                      <span>Estimated target devices</span>
+                      <strong>{previewCount}</strong>
                     </div>
-
-                    {adPerformanceReport.alerts.length === 0 ? (
-                      <p className="muted">No app/format alerts in this window.</p>
-                    ) : (
-                      <div className="ad-alert-list">
-                        {adPerformanceReport.alerts.map((alert) => (
-                          <div
-                            key={`${alert.appId}-${alert.format}`}
-                            className="ad-alert-item"
-                          >
-                            <div className="ad-alert-header">
-                              <strong>{alert.appLabel}</strong>
-                              <code>{alert.format}</code>
-                            </div>
-                            <div className="ad-alert-metrics">
-                              requests={alert.adRequests} · matched={alert.matchedRequests} · impressions=
-                              {alert.impressions}
-                            </div>
-                            <div className="ad-alert-metrics">
-                              fill={formatPercent(alert.fillRatePct)} · show=
-                              {formatPercent(alert.showRatePct)} · earnings=
-                              {formatTry(alert.earningsTry)}
-                            </div>
-                            <div className="ad-alert-metrics">
-                              eCPM={formatTry(alert.ecpmTry)}
-                            </div>
-                            <div className="ad-alert-reasons">
-                              {alert.reasons.map((reason) => (
-                                <span key={reason} className="status-pill status-paused">
-                                  {reason}
-                                </span>
-                              ))}
-                            </div>
-                            <small className="muted">
-                              appId=<code>{alert.appId}</code>
-                            </small>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {!normalizePackages(form.packages).includes("*") &&
+                      Object.keys(previewByPackage).length > 0 && (
+                        <ul className="device-preview-list">
+                          {Object.entries(previewByPackage).map(([pkg, count]) => (
+                            <li key={pkg}>
+                              <code>{pkg}</code>
+                              <span>{count}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                   </div>
-                ) : (
-                  !adReportError && <p className="muted">Weekly diagnostics not loaded yet.</p>
                 )}
               </div>
             </section>
-          )}
-        </main>
-      </div>
+
+            <section className="subsection locale-grid">
+              {(["tr", "en", "de"] as LocaleKey[]).map((locale) => (
+                <div key={locale} className="locale-card">
+                  <h3>{locale.toUpperCase()}</h3>
+                  <label>
+                    Title
+                    <input
+                      value={form.title[locale]}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          title: { ...p.title, [locale]: e.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Body
+                    <textarea
+                      value={form.body[locale]}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          body: { ...p.body, [locale]: e.target.value },
+                        }))
+                      }
+                      rows={4}
+                    />
+                  </label>
+                </div>
+              ))}
+            </section>
+
+            <section className="subsection preview-grid">
+              <div>
+                <h3>Preview</h3>
+                <div className="preview-cards">
+                  {(["tr", "en", "de"] as LocaleKey[]).map((locale) => (
+                    <div key={locale} className="preview-card">
+                      <div className="preview-locale">{locale.toUpperCase()}</div>
+                      <div className="preview-title">{form.title[locale] || "(empty title)"}</div>
+                      <div className="preview-body">{form.body[locale] || "(empty body)"}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3>Dispatch metadata</h3>
+                <dl className="meta-list">
+                  <dt>sentTimezones</dt>
+                  <dd>{selectedEvent?.sentTimezones.length ?? 0}</dd>
+                  <dt>lastResetAt</dt>
+                  <dd>{formatDateTime(selectedEvent?.lastResetAt)}</dd>
+                  <dt>lastDispatchedAt</dt>
+                  <dd>{formatDateTime(selectedEvent?.lastDispatchedAt)}</dd>
+                  <dt>createdAt</dt>
+                  <dd>{formatDateTime(selectedEvent?.createdAt)}</dd>
+                  <dt>updatedAt</dt>
+                  <dd>{formatDateTime(selectedEvent?.updatedAt)}</dd>
+                  <dt>createdBy</dt>
+                  <dd>{selectedEvent?.createdBy ?? "-"}</dd>
+                  <dt>updatedBy</dt>
+                  <dd>{selectedEvent?.updatedBy ?? "-"}</dd>
+                </dl>
+              </div>
+            </section>
+
+            <div className="form-actions">
+              <button onClick={saveEvent} disabled={saving || deleting}>
+                {saving ? "Saving…" : isCreateMode ? "Create event" : "Save changes"}
+              </button>
+              <button className="secondary" onClick={resetForm} disabled={saving || deleting}>
+                Reset form
+              </button>
+            </div>
+          </main>
+        </div>
+      ) : (
+        <div className="single-panel-grid">
+          <main className="panel form-panel">
+            <div className="panel-header">
+              <h2>Test Push Operations</h2>
+            </div>
+            <div className="sub-tabs" role="tablist" aria-label="Test push sections">
+              <button
+                type="button"
+                role="tab"
+                className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
+                aria-selected={testPushSubTab === "single-device"}
+                onClick={() => setTestPushSubTab("single-device")}
+              >
+                Single Device
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
+                aria-selected={testPushSubTab === "coverage"}
+                onClick={() => setTestPushSubTab("coverage")}
+              >
+                Coverage
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
+                aria-selected={testPushSubTab === "ad-health"}
+                onClick={() => setTestPushSubTab("ad-health")}
+              >
+                Ad Health
+              </button>
+            </div>
+
+            {testPushSubTab === "single-device" && testPushSection}
+
+            {testPushSubTab === "coverage" && (
+              <section className="subsection">
+                <div className="coverage-box">
+                  <div className="device-preview-header">
+                    <strong>Device coverage (last N days)</strong>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={loadDeviceCoverageReport}
+                      disabled={coverageLoading}
+                    >
+                      {coverageLoading ? "Loading…" : "Refresh coverage"}
+                    </button>
+                  </div>
+
+                  <label className="coverage-days">
+                    Days
+                    <input
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={coverageDays}
+                      onChange={(e) => setCoverageDays(Number(e.target.value || 14))}
+                    />
+                  </label>
+
+                  {coverageError && <p className="inline-error">{coverageError}</p>}
+
+                  {coverageReport && !coverageError && (
+                    <div className="coverage-result">
+                      <p className="muted">
+                        generatedAt={coverageReport.generatedAt} · days={coverageReport.days}
+                      </p>
+                      <ul className="coverage-list">
+                        {coverageReport.byPackage.map((item) => (
+                          <li key={item.packageName}>
+                            <code>{item.packageName}</code>
+                            <span>
+                              active={item.activeDeviceCount} / total={item.totalDeviceCount}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      {coverageReport.missingPackages.length > 0 && (
+                        <div className="coverage-alert">
+                          <strong>Missing packages</strong>
+                          <div>{coverageReport.missingPackages.join(", ")}</div>
+                        </div>
+                      )}
+                      {coverageReport.stalePackages.length > 0 && (
+                        <div className="coverage-alert">
+                          <strong>Stale packages (no recent device)</strong>
+                          <div>{coverageReport.stalePackages.join(", ")}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {testPushSubTab === "ad-health" && (
+              <section className="subsection">
+                <div className="coverage-box">
+                  <div className="device-preview-header">
+                    <strong>Ad health (AdMob)</strong>
+                    <div className="device-finder-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => refreshAdHealth(false)}
+                        disabled={adReportLoading || adTodayLoading}
+                      >
+                        {adReportLoading || adTodayLoading ? "Loading…" : "Load latest"}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => refreshAdHealth(true)}
+                        disabled={adReportLoading || adTodayLoading}
+                      >
+                        {adReportLoading || adTodayLoading ? "Refreshing…" : "Force refresh"}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="muted">
+                    Primary: <strong>Today so far</strong> (same day range as AdMob UI). Secondary:
+                    latest weekly diagnostics.
+                  </p>
+
+                  {adTodayError && <p className="inline-error">{adTodayError}</p>}
+                  {adPerformanceToday && !adTodayError ? (
+                    <div className="ad-report-result ad-report-block">
+                      <h3>Today so far (primary)</h3>
+                      <p className="muted">
+                        Today so far ({adPerformanceToday.date}) · generatedAt=
+                        {adPerformanceToday.generatedAt} · status=
+                        <strong>{adPerformanceToday.status}</strong> · timezone=
+                        {localTimeZone}
+                      </p>
+                      {adPerformanceToday.issue && (
+                        <div className="coverage-alert">
+                          <strong>Issue</strong>
+                          <div>{adPerformanceToday.issue}</div>
+                        </div>
+                      )}
+                      <ul className="coverage-list">
+                        <li>
+                          <span>Total earnings</span>
+                          <strong>{formatTry(adPerformanceToday.totals.earningsTry)}</strong>
+                        </li>
+                        <li>
+                          <span>Total eCPM</span>
+                          <strong>{formatTry(adPerformanceToday.totals.ecpmTry)}</strong>
+                        </li>
+                        <li>
+                          <span>Total ad requests</span>
+                          <strong>{adPerformanceToday.totals.adRequests}</strong>
+                        </li>
+                        <li>
+                          <span>Total fill rate</span>
+                          <strong>{formatPercent(adPerformanceToday.totals.fillRatePct)}</strong>
+                        </li>
+                        <li>
+                          <span>Total show rate</span>
+                          <strong>{formatPercent(adPerformanceToday.totals.showRatePct)}</strong>
+                        </li>
+                      </ul>
+                    </div>
+                  ) : (
+                    !adTodayError && <p className="muted">Today report not loaded yet.</p>
+                  )}
+
+                  {adReportError && <p className="inline-error">{adReportError}</p>}
+
+                  {adPerformanceReport && !adReportError ? (
+                    <div className="ad-report-result ad-report-block">
+                      <h3>Weekly diagnostics (secondary)</h3>
+                      <p className="muted">
+                        generatedAt={adPerformanceReport.generatedAt} · range=
+                        {adPerformanceReport.rangeStart}..{adPerformanceReport.rangeEnd} · status=
+                        <strong>{adPerformanceReport.status}</strong>
+                      </p>
+                      {adPerformanceReport.issue && (
+                        <div className="coverage-alert">
+                          <strong>Issue</strong>
+                          <div>{adPerformanceReport.issue}</div>
+                        </div>
+                      )}
+                      <ul className="coverage-list">
+                        <li>
+                          <span>Total earnings</span>
+                          <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
+                        </li>
+                        <li>
+                          <span>Total eCPM</span>
+                          <strong>{formatTry(adPerformanceReport.totals.ecpmTry)}</strong>
+                        </li>
+                        <li>
+                          <span>Total ad requests</span>
+                          <strong>{adPerformanceReport.totals.adRequests}</strong>
+                        </li>
+                        <li>
+                          <span>Total fill rate</span>
+                          <strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong>
+                        </li>
+                        <li>
+                          <span>Total show rate</span>
+                          <strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong>
+                        </li>
+                      </ul>
+
+                      <div className="muted">
+                        Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=
+                        {formatPercent(adPerformanceReport.thresholds.fillRatePct)}, showRate=
+                        {formatPercent(adPerformanceReport.thresholds.showRatePct)}
+                      </div>
+
+                      {adPerformanceReport.alerts.length === 0 ? (
+                        <p className="muted">No app/format alerts in this window.</p>
+                      ) : (
+                        <div className="ad-alert-list">
+                          {adPerformanceReport.alerts.map((alert) => (
+                            <div
+                              key={`${alert.appId}-${alert.format}`}
+                              className="ad-alert-item"
+                            >
+                              <div className="ad-alert-header">
+                                <strong>{alert.appLabel}</strong>
+                                <code>{alert.format}</code>
+                              </div>
+                              <div className="ad-alert-metrics">
+                                requests={alert.adRequests} · matched={alert.matchedRequests} · impressions=
+                                {alert.impressions}
+                              </div>
+                              <div className="ad-alert-metrics">
+                                fill={formatPercent(alert.fillRatePct)} · show=
+                                {formatPercent(alert.showRatePct)} · earnings=
+                                {formatTry(alert.earningsTry)}
+                              </div>
+                              <div className="ad-alert-metrics">
+                                eCPM={formatTry(alert.ecpmTry)}
+                              </div>
+                              <div className="ad-alert-reasons">
+                                {alert.reasons.map((reason) => (
+                                  <span key={reason} className="status-pill status-paused">
+                                    {reason}
+                                  </span>
+                                ))}
+                              </div>
+                              <small className="muted">
+                                appId=<code>{alert.appId}</code>
+                              </small>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    !adReportError && <p className="muted">Weekly diagnostics not loaded yet.</p>
+                  )}
+                </div>
+              </section>
+            )}
+          </main>
+        </div>
       )}
     </div>
   );

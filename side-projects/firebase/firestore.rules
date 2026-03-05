@@ -23,11 +23,18 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    // devices/ — Yazma: Sadece Cloud Functions (Admin SDK kuralları bypass eder).
-    // Bildirim admin panelindeki "target device preview" için admin read izni verilir.
+    // devices/ — Yazma: Client SDK ile doğrudan (Cloud Function yerine).
+    // Sadece beklenen alanlar yazılabilir, string uzunlukları sınırlıdır.
+    // Admin panelindeki "target device preview" için admin read izni verilir.
     match /devices/{deviceId} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow create, update: if
+        request.resource.data.keys().hasAll(['fcmToken', 'timezone', 'locale', 'packageName', 'notificationsEnabled']) &&
+        request.resource.data.fcmToken is string && request.resource.data.fcmToken.size() > 0 &&
+        request.resource.data.timezone is string &&
+        request.resource.data.locale is string &&
+        request.resource.data.packageName is string &&
+        request.resource.data.notificationsEnabled is bool;
     }
 
     // admins/ — Bildirim yönetim paneli erişim whitelist'i.

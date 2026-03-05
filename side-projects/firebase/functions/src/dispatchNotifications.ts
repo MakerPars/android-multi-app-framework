@@ -48,7 +48,7 @@ const FIRESTORE_IN_QUERY_LIMIT = 10;
  */
 export const dispatchNotifications = onSchedule(
     {
-        schedule: "0 * * * *", // Her saat başı
+        schedule: "0 */3 * * *", // Her 3 saatte bir
         region: "europe-west1",
         timeZone: "UTC",
     },

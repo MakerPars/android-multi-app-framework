@@ -121,7 +121,7 @@ export const generateAdPerformanceWeeklyReport = onSchedule(
     },
 );
 
-export const adPerformanceReport = onRequest(
+export const adPerformance = onRequest(
     { region: REGION, cors: true },
     async (req, res) => {
         if (req.method !== "POST") {
@@ -141,10 +141,18 @@ export const adPerformanceReport = onRequest(
         }
 
         const body = isPlainObject(req.body) ? req.body : {};
-        const forceRefresh = body.refresh === true;
+        const requestType = typeof body.type === "string" ? body.type : "report";
 
         try {
-            if (forceRefresh) {
+            // type: "today" → bugünkü rapor
+            if (requestType === "today") {
+                const report = await generateTodayReport();
+                res.status(200).json(report);
+                return;
+            }
+
+            // type: "refresh" → haftalık raporu yeniden üret
+            if (requestType === "refresh") {
                 const generated = await generateAndStoreWeeklyReport("manual", {
                     uid: authResult.uid,
                     email: authResult.email,
@@ -153,57 +161,26 @@ export const adPerformanceReport = onRequest(
                 return;
             }
 
+            // Default (type: "report") → son kaydedilmiş raporu getir
             const snap = await admin.firestore()
                 .collection(REPORTS_COLLECTION)
                 .doc(LATEST_DOC_ID)
                 .get();
             if (!snap.exists) {
                 res.status(404).json({
-                    error: "No ad performance report found yet. Trigger refresh once.",
+                    error: "No ad performance report found yet. Use type: 'refresh' to generate one.",
                 });
                 return;
             }
             res.status(200).json(snap.data());
         } catch (error) {
-            logger.error("adPerformanceReport request failed", {
+            logger.error("adPerformance request failed", {
                 uid: authResult.uid,
                 email: authResult.email,
+                requestType,
                 error,
             });
-            res.status(500).json({ error: "Failed to load ad performance report" });
-        }
-    },
-);
-
-export const adPerformanceToday = onRequest(
-    { region: REGION, cors: true },
-    async (req, res) => {
-        if (req.method !== "POST") {
-            res.status(405).json({ error: "Method not allowed" });
-            return;
-        }
-
-        if (!looksLikeJsonRequest(req.get("content-type"))) {
-            res.status(415).json({ error: "Content-Type must be application/json" });
-            return;
-        }
-
-        const authResult = await authenticateAdminRequest(req.get("authorization"));
-        if (!authResult.ok) {
-            res.status(authResult.statusCode).json({ error: authResult.error });
-            return;
-        }
-
-        try {
-            const report = await generateTodayReport();
-            res.status(200).json(report);
-        } catch (error) {
-            logger.error("adPerformanceToday request failed", {
-                uid: authResult.uid,
-                email: authResult.email,
-                error,
-            });
-            res.status(500).json({ error: "Failed to load today ad performance report" });
+            res.status(500).json({ error: "Failed to load ad performance data" });
         }
     },
 );
@@ -427,8 +404,8 @@ async function fetchAccessibleAccountNames(accessToken: string): Promise<string[
     });
 
     const payload = await response.json() as
-    | { account?: Array<{ name?: string }> }
-    | { error?: { message?: string } };
+        | { account?: Array<{ name?: string }> }
+        | { error?: { message?: string } };
 
     if (!response.ok) {
         const message = "error" in payload ? payload.error?.message : undefined;
