@@ -7,11 +7,18 @@ data class AdsPolicyConfig(
     val appOpenCooldownMs: Long,
     val rewardedInterstitialMinIntervalMs: Long,
     val rewardedInterstitialMaxPerSession: Int,
+    val appOpenEnabled: Boolean,
+    val interstitialEnabled: Boolean,
     val bannerEnabled: Boolean,
     val nativeEnabled: Boolean,
+    val rewardedEnabled: Boolean,
+    val rewardedInterstitialEnabled: Boolean,
+    val appOpenPlacementsDisabled: Set<String>,
     val interstitialPlacementsDisabled: Set<String>,
     val bannerPlacementsDisabled: Set<String>,
     val nativePlacementsDisabled: Set<String>,
+    val rewardedPlacementsDisabled: Set<String>,
+    val rewardedInterstitialPlacementsDisabled: Set<String>,
     val nativePoolMax: Int,
     val nativeTtlMs: Long,
 ) {
@@ -23,11 +30,40 @@ data class AdsPolicyConfig(
         }
 
     fun isBannerPlacementEnabled(placement: AdPlacement): Boolean =
-        bannerEnabled && placement.analyticsValue !in bannerPlacementsDisabled
+        isPlacementEnabled(placement)
 
     fun isInterstitialPlacementEnabled(placement: AdPlacement): Boolean =
-        placement.analyticsValue !in interstitialPlacementsDisabled
+        isPlacementEnabled(placement)
 
     fun isNativePlacementEnabled(placement: AdPlacement): Boolean =
-        nativeEnabled && placement.analyticsValue !in nativePlacementsDisabled
+        isPlacementEnabled(placement)
+
+    fun isAppOpenPlacementEnabled(placement: AdPlacement): Boolean =
+        isPlacementEnabled(placement)
+
+    fun isRewardedPlacementEnabled(placement: AdPlacement): Boolean =
+        isPlacementEnabled(placement)
+
+    fun isRewardedInterstitialPlacementEnabled(placement: AdPlacement): Boolean =
+        isPlacementEnabled(placement)
+
+    fun isPlacementEnabled(placement: AdPlacement): Boolean {
+        val disabledSet = when (placement.format) {
+            AdFormat.APP_OPEN -> appOpenPlacementsDisabled
+            AdFormat.INTERSTITIAL -> interstitialPlacementsDisabled
+            AdFormat.BANNER -> bannerPlacementsDisabled
+            AdFormat.NATIVE -> nativePlacementsDisabled
+            AdFormat.REWARDED -> rewardedPlacementsDisabled
+            AdFormat.REWARDED_INTERSTITIAL -> rewardedInterstitialPlacementsDisabled
+        }
+        if (placement.analyticsValue in disabledSet) return false
+        return when (placement.format) {
+            AdFormat.APP_OPEN -> appOpenEnabled
+            AdFormat.INTERSTITIAL -> interstitialEnabled
+            AdFormat.BANNER -> bannerEnabled
+            AdFormat.NATIVE -> nativeEnabled
+            AdFormat.REWARDED -> rewardedEnabled
+            AdFormat.REWARDED_INTERSTITIAL -> rewardedInterstitialEnabled
+        }
+    }
 }

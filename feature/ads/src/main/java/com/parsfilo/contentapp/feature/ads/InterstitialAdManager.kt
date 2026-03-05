@@ -39,6 +39,18 @@ class InterstitialAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
     ) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!policy.isInterstitialPlacementEnabled(placement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "placement_disabled",
+                route = route,
+            )
+            clearAd()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,

@@ -38,6 +38,18 @@ class AppOpenAdManager @Inject constructor(
         adUnitId: String,
         placement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT,
     ) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!policy.isAppOpenPlacementEnabled(placement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "placement_disabled",
+                route = null,
+            )
+            clearAd()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
@@ -137,6 +149,19 @@ class AppOpenAdManager @Inject constructor(
         }
         val prefs = preferencesDataSource.userData.first()
         val now = SystemTimeProvider.nowMillis()
+        val policy = adsPolicyProvider.getPolicy()
+
+        if (!policy.isAppOpenPlacementEnabled(currentPlacement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId ?: "unknown",
+                suppressReason = "placement_disabled",
+                route = null,
+            )
+            onShowComplete()
+            return
+        }
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
             val reason = if (prefs.isPremium) "premium" else "rewarded_free"
@@ -151,7 +176,7 @@ class AppOpenAdManager @Inject constructor(
             return
         }
 
-        val cooldownMs = adsPolicyProvider.getPolicy().appOpenCooldownMs
+        val cooldownMs = policy.appOpenCooldownMs
         if (now - prefs.lastAppOpenAdShown < cooldownMs) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,

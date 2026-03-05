@@ -20,6 +20,7 @@ import javax.inject.Singleton
 class RewardedAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val adRevenueLogger: AdRevenueLogger,
+    private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
@@ -38,6 +39,18 @@ class RewardedAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.REWARDED_DEFAULT,
         route: String? = null,
     ) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!policy.isRewardedPlacementEnabled(placement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "placement_disabled",
+                route = route,
+            )
+            clearAd()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED,
@@ -130,6 +143,18 @@ class RewardedAdManager @Inject constructor(
     }
 
     fun showAd(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
+        if (!adsPolicyProvider.getPolicy().isRewardedPlacementEnabled(currentPlacement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = "placement_disabled",
+                route = currentRoute,
+            )
+            clearAd()
+            onAdDismissed()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED,

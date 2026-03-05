@@ -23,6 +23,7 @@ import javax.inject.Singleton
 class RewardedInterstitialAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val adRevenueLogger: AdRevenueLogger,
+    private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private var rewardedInterstitialAd: RewardedInterstitialAd? = null
     private var isLoading = false
@@ -37,6 +38,18 @@ class RewardedInterstitialAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
         route: String? = null,
     ) {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!policy.isRewardedInterstitialPlacementEnabled(placement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "placement_disabled",
+                route = route,
+            )
+            clearAd()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
@@ -133,6 +146,18 @@ class RewardedInterstitialAdManager @Inject constructor(
         onUserEarnedReward: (type: String, amount: Int) -> Unit,
         onAdDismissed: () -> Unit,
     ) {
+        if (!adsPolicyProvider.getPolicy().isRewardedInterstitialPlacementEnabled(currentPlacement)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = "placement_disabled",
+                route = currentRoute,
+            )
+            clearAd()
+            onAdDismissed()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,

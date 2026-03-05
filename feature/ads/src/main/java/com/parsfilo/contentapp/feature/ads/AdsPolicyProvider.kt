@@ -48,9 +48,25 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getString(KEY_BANNER_ENABLED),
             DEFAULT_BANNER_ENABLED,
         )
+        val appOpenEnabled = parseBoolean(
+            remoteConfigManager.getString(KEY_APP_OPEN_ENABLED),
+            DEFAULT_APP_OPEN_ENABLED,
+        )
+        val interstitialEnabled = parseBoolean(
+            remoteConfigManager.getString(KEY_INTERSTITIAL_ENABLED),
+            DEFAULT_INTERSTITIAL_ENABLED,
+        )
         val nativeEnabled = parseBoolean(
             remoteConfigManager.getString(KEY_NATIVE_ENABLED),
             DEFAULT_NATIVE_ENABLED,
+        )
+        val rewardedEnabled = parseBoolean(
+            remoteConfigManager.getString(KEY_REWARDED_ENABLED),
+            DEFAULT_REWARDED_ENABLED,
+        )
+        val rewardedInterstitialEnabled = parseBoolean(
+            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_ENABLED),
+            DEFAULT_REWARDED_INTERSTITIAL_ENABLED,
         )
         val nativePoolMax = sanitizeInt(
             remoteConfigManager.getLong(KEY_NATIVE_POOL_MAX).toInt(),
@@ -69,6 +85,10 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getString(KEY_BANNER_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.BANNER,
         )
+        val appOpenPlacementsDisabled = parsePlacementCsv(
+            remoteConfigManager.getString(KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV),
+            format = AdFormat.APP_OPEN,
+        )
         val interstitialPlacementsDisabled = parsePlacementCsv(
             remoteConfigManager.getString(KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.INTERSTITIAL,
@@ -76,6 +96,14 @@ class AdsPolicyProvider @Inject constructor(
         val nativePlacementsDisabled = parsePlacementCsv(
             remoteConfigManager.getString(KEY_NATIVE_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.NATIVE,
+        )
+        val rewardedPlacementsDisabled = parsePlacementCsv(
+            remoteConfigManager.getString(KEY_REWARDED_PLACEMENTS_DISABLED_CSV),
+            format = AdFormat.REWARDED,
+        )
+        val rewardedInterstitialPlacementsDisabled = parsePlacementCsv(
+            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
+            format = AdFormat.REWARDED_INTERSTITIAL,
         )
         val interstitialRelaxedPackages = parsePackageCsv(
             remoteConfigManager.getString(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
@@ -88,11 +116,18 @@ class AdsPolicyProvider @Inject constructor(
             appOpenCooldownMs = appOpenCooldownMs,
             rewardedInterstitialMinIntervalMs = rewardedInterstitialMinIntervalMs,
             rewardedInterstitialMaxPerSession = rewardedInterstitialMaxPerSession,
+            appOpenEnabled = appOpenEnabled,
+            interstitialEnabled = interstitialEnabled,
             bannerEnabled = bannerEnabled,
             nativeEnabled = nativeEnabled,
+            rewardedEnabled = rewardedEnabled,
+            rewardedInterstitialEnabled = rewardedInterstitialEnabled,
+            appOpenPlacementsDisabled = appOpenPlacementsDisabled,
             interstitialPlacementsDisabled = interstitialPlacementsDisabled,
             bannerPlacementsDisabled = bannerPlacementsDisabled,
             nativePlacementsDisabled = nativePlacementsDisabled,
+            rewardedPlacementsDisabled = rewardedPlacementsDisabled,
+            rewardedInterstitialPlacementsDisabled = rewardedInterstitialPlacementsDisabled,
             nativePoolMax = nativePoolMax,
             nativeTtlMs = nativeTtlMs,
         )
@@ -152,6 +187,10 @@ class AdsPolicyProvider @Inject constructor(
     companion object {
         const val KEY_BANNER_ENABLED = "ads_banner_enabled"
         const val KEY_NATIVE_ENABLED = "ads_native_enabled"
+        const val KEY_APP_OPEN_ENABLED = "ads_app_open_enabled"
+        const val KEY_INTERSTITIAL_ENABLED = "ads_interstitial_enabled"
+        const val KEY_REWARDED_ENABLED = "ads_rewarded_enabled"
+        const val KEY_REWARDED_INTERSTITIAL_ENABLED = "ads_rewarded_interstitial_enabled"
         const val KEY_INTERSTITIAL_FREQUENCY_CAP_MS = "ads_interstitial_frequency_cap_ms"
         const val KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS =
             "ads_interstitial_relaxed_frequency_cap_ms"
@@ -167,9 +206,17 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV = "ads_interstitial_placements_disabled_csv"
         const val KEY_BANNER_PLACEMENTS_DISABLED_CSV = "ads_banner_placements_disabled_csv"
         const val KEY_NATIVE_PLACEMENTS_DISABLED_CSV = "ads_native_placements_disabled_csv"
+        const val KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV = "ads_app_open_placements_disabled_csv"
+        const val KEY_REWARDED_PLACEMENTS_DISABLED_CSV = "ads_rewarded_placements_disabled_csv"
+        const val KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV =
+            "ads_rewarded_interstitial_placements_disabled_csv"
 
         const val DEFAULT_BANNER_ENABLED = true
         const val DEFAULT_NATIVE_ENABLED = true
+        const val DEFAULT_APP_OPEN_ENABLED = true
+        const val DEFAULT_INTERSTITIAL_ENABLED = true
+        const val DEFAULT_REWARDED_ENABLED = true
+        const val DEFAULT_REWARDED_INTERSTITIAL_ENABLED = true
         const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 150_000L
         const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 240_000L
         const val DEFAULT_APP_OPEN_COOLDOWN_MS = 240_000L
@@ -181,6 +228,10 @@ class AdsPolicyProvider @Inject constructor(
         private val DEFAULTS = mapOf<String, Any>(
             KEY_BANNER_ENABLED to DEFAULT_BANNER_ENABLED,
             KEY_NATIVE_ENABLED to DEFAULT_NATIVE_ENABLED,
+            KEY_APP_OPEN_ENABLED to DEFAULT_APP_OPEN_ENABLED,
+            KEY_INTERSTITIAL_ENABLED to DEFAULT_INTERSTITIAL_ENABLED,
+            KEY_REWARDED_ENABLED to DEFAULT_REWARDED_ENABLED,
+            KEY_REWARDED_INTERSTITIAL_ENABLED to DEFAULT_REWARDED_INTERSTITIAL_ENABLED,
             KEY_INTERSTITIAL_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS,
             KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
             KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "",
@@ -192,6 +243,9 @@ class AdsPolicyProvider @Inject constructor(
             KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
             KEY_BANNER_PLACEMENTS_DISABLED_CSV to "",
             KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "",
+            KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV to "",
+            KEY_REWARDED_PLACEMENTS_DISABLED_CSV to "",
+            KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
         )
     }
 }
