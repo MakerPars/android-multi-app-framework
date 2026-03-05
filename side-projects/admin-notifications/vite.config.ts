@@ -42,6 +42,20 @@ export default defineConfig(({ mode }) => {
     envPrefix: ["VITE_"],
     define,
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes("node_modules/firebase")) return "firebase-vendor";
+            if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) {
+              return "react-vendor";
+            }
+            if (id.includes("node_modules")) return "vendor";
+            return undefined;
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         "@ciapps": path.resolve(__dirname, "../../.ci/apps.json"),

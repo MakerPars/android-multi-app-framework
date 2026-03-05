@@ -22,13 +22,14 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,6 +39,12 @@ class QuranRepository @Inject constructor(
     private val quranDao: QuranDao,
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
 
     fun observeSuras(): Flow<List<QuranSura>> =
         quranDao.observeAllSuras().map { entities -> entities.map { it.toModel() } }
@@ -270,37 +277,33 @@ class QuranRepository @Inject constructor(
     }
 
     private fun fetchJson(urlString: String): JSONObject {
-        val conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10_000
-            readTimeout = 15_000
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-        }
-        return try {
-            val code = conn.responseCode
+        val request = Request.Builder()
+            .url(urlString)
+            .get()
+            .header("Accept", "application/json")
+            .build()
+        return okHttpClient.newCall(request).execute().use { response ->
+            val code = response.code
             if (code !in 200..299) error("HTTP $code for $urlString")
-            JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-        } finally {
-            conn.disconnect()
+            JSONObject(response.body.string())
         }
     }
 
     private fun fetchEditionMap(edition: String, suraNumber: Int): Map<Int, String> {
         val url = QuranApiConfig.suraEditionUrl(edition, suraNumber)
-        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10_000
-            readTimeout = 15_000
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-        }
-        return try {
-            val code = conn.responseCode
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .header("Accept", "application/json")
+            .build()
+        return okHttpClient.newCall(request).execute().use { response ->
+            val code = response.code
             if (code !in 200..299) {
                 Timber.w("Edition fetch failed for $edition sura=$suraNumber code=$code")
                 return emptyMap()
             }
 
-            val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            val json = JSONObject(response.body.string())
             val chapter = json.optJSONArray("chapter") ?: return emptyMap()
             buildMap {
                 for (i in 0 until chapter.length()) {
@@ -310,35 +313,31 @@ class QuranRepository @Inject constructor(
                     put(verseNo, text)
                 }
             }
-        } finally {
-            conn.disconnect()
         }
     }
 
     private fun downloadFile(urlString: String, destination: File, onProgress: (Float) -> Unit) {
-        val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10_000
-            readTimeout = 30_000
-            requestMethod = "GET"
-        }
-
+        val request = Request.Builder().url(urlString).get().build()
         val tempFile = File(destination.parentFile, "${destination.name}.tmp")
         try {
-            val code = connection.responseCode
-            if (code !in 200..299) error("HTTP $code for $urlString")
+            okHttpClient.newCall(request).execute().use { response ->
+                val code = response.code
+                if (code !in 200..299) error("HTTP $code for $urlString")
 
-            val total = connection.contentLengthLong
-            var downloaded = 0L
-            BufferedInputStream(connection.inputStream).use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    val buffer = ByteArray(8 * 1024)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        output.write(buffer, 0, read)
-                        downloaded += read
-                        if (total > 0) {
-                            onProgress((downloaded.toFloat() / total).coerceIn(0f, 1f))
+                val body = response.body
+                val total = body.contentLength()
+                var downloaded = 0L
+                BufferedInputStream(body.byteStream()).use { input ->
+                    FileOutputStream(tempFile).use { output ->
+                        val buffer = ByteArray(8 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read <= 0) break
+                            output.write(buffer, 0, read)
+                            downloaded += read
+                            if (total > 0) {
+                                onProgress((downloaded.toFloat() / total).coerceIn(0f, 1f))
+                            }
                         }
                     }
                 }
@@ -352,7 +351,6 @@ class QuranRepository @Inject constructor(
                 tempFile.delete()
             }
         } finally {
-            connection.disconnect()
             if (tempFile.exists() && !destination.exists()) {
                 tempFile.delete()
             }

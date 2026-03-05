@@ -13,13 +13,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONException
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,6 +30,13 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
     private val endpointsProvider: EndpointsProvider,
 ) : OtherAppsRepository {
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .build()
+    }
+
 
     private val _apps = MutableStateFlow<List<OtherApp>>(emptyList())
     override val apps: StateFlow<List<OtherApp>> = _apps.asStateFlow()
@@ -131,19 +139,18 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
 
     private fun fetchJsonFrom(url: String): String? {
         return try {
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = CONNECT_TIMEOUT_MS
-                readTimeout = READ_TIMEOUT_MS
-                requestMethod = "GET"
-                setRequestProperty("Accept", "application/json")
-            }
+            val request = Request.Builder()
+                .url(url)
+                .get()
+                .header("Accept", "application/json")
+                .build()
 
-            connection.useConnection { conn ->
-                if (conn.responseCode !in 200..299) {
-                    Timber.w("Other apps fetch failed for $url with HTTP ${conn.responseCode}")
+            okHttpClient.newCall(request).execute().use { response ->
+                if (response.code !in 200..299) {
+                    Timber.w("Other apps fetch failed for $url with HTTP ${response.code}")
                     null
                 } else {
-                    conn.inputStream.bufferedReader().use { it.readText() }
+                    response.body.string()
                 }
             }
         } catch (e: IOException) {
@@ -160,14 +167,6 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
         private const val CACHE_TTL_MILLIS = 24 * 60 * 60 * 1000L
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
-    }
-}
-
-private inline fun <T : HttpURLConnection, R> T.useConnection(block: (T) -> R): R {
-    return try {
-        block(this)
-    } finally {
-        disconnect()
     }
 }
 

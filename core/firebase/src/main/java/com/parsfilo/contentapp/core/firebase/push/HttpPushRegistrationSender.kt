@@ -9,11 +9,14 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -25,6 +28,12 @@ class HttpPushRegistrationSender @Inject constructor(
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
     private val crashlytics: FirebaseCrashlytics,
 ) : PushRegistrationSender {
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .build()
+    }
 
     override suspend fun send(payload: PushRegistrationPayload): Boolean = withContext(ioDispatcher) {
         if (pushRegistrationUrl.isBlank()) {
@@ -65,24 +74,16 @@ class HttpPushRegistrationSender @Inject constructor(
     }
 
     private fun runAttempt(payloadJson: String): PushSendResult {
-        val connection =
-            (URL(pushRegistrationUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = CONNECT_TIMEOUT_MS
-                readTimeout = READ_TIMEOUT_MS
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                setRequestProperty("Accept", "application/json")
-            }
+        val request = Request.Builder()
+            .url(pushRegistrationUrl)
+            .post(payloadJson.toRequestBody(JSON_MEDIA_TYPE))
+            .header("Accept", "application/json")
+            .build()
 
         return try {
-            connection.useConnection {
-                it.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
-                    writer.write(payloadJson)
-                }
-
-                val statusCode = it.responseCode
-                val bodySnippet = readBodySnippet(it, statusCode)
+            okHttpClient.newCall(request).execute().use { response ->
+                val statusCode = response.code
+                val bodySnippet = readBodySnippet(response.body.string())
                 Timber.i("Push registration HTTP status=%d", statusCode)
                 if (statusCode in 200..299) {
                     PushSendResult(successful = true)
@@ -162,6 +163,7 @@ private const val READ_TIMEOUT_MS = 15_000
 private const val RETRY_DELAY_MIN_MS = 300L
 private const val RETRY_DELAY_MAX_MS = 900L
 private const val MAX_ERROR_BODY_CHARS = 2_048
+private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
 private data class PushSendResult(
     val successful: Boolean,
@@ -184,29 +186,7 @@ internal fun shouldRetryPushRegistration(
 internal fun nextRetryDelayMillis(random: Random = Random.Default): Long =
     random.nextLong(from = RETRY_DELAY_MIN_MS, until = RETRY_DELAY_MAX_MS + 1)
 
-private fun readBodySnippet(connection: HttpURLConnection, statusCode: Int): String? {
-    return runCatching {
-        val stream =
-            if (statusCode >= 400) {
-                connection.errorStream ?: connection.inputStream
-            } else {
-                connection.inputStream
-            }
-        stream ?: return null
-
-        stream.bufferedReader(Charsets.UTF_8).use { reader ->
-            val buffer = CharArray(256)
-            val builder = StringBuilder()
-            while (builder.length < MAX_ERROR_BODY_CHARS) {
-                val remaining = MAX_ERROR_BODY_CHARS - builder.length
-                val readCount = reader.read(buffer, 0, minOf(buffer.size, remaining))
-                if (readCount <= 0) break
-                builder.append(buffer, 0, readCount)
-            }
-            builder.toString().ifBlank { null }
-        }
-    }.getOrNull()
-}
+private fun readBodySnippet(raw: String?): String? = raw?.take(MAX_ERROR_BODY_CHARS)?.ifBlank { null }
 
 private fun maskSensitivePayload(raw: String): String {
     val keyValueRegex = Regex("""(?i)("(installationId|fcmToken|token|pushId)"\s*:\s*")[^"]*(")""")
@@ -231,12 +211,4 @@ private fun PushRegistrationPayload.toJson(): JSONObject = JSONObject().apply {
     put("deviceModel", deviceModel)
     put("reason", reason)
     put("syncedAtEpochMs", syncedAtEpochMs)
-}
-
-private inline fun <T : HttpURLConnection, R> T.useConnection(block: (T) -> R): R {
-    return try {
-        block(this)
-    } finally {
-        disconnect()
-    }
 }

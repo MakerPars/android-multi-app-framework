@@ -1,10 +1,11 @@
 package com.parsfilo.contentapp.feature.prayertimes.data
 
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import timber.log.Timber
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +18,13 @@ class EzanVaktiHttpException(
 
 @Singleton
 class EzanVaktiApiClient @Inject constructor() {
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .build()
+    }
+
     fun getCountries(): List<ApiCountry> =
         fetchArray("/ulkeler").map { obj ->
             ApiCountry(
@@ -66,27 +74,30 @@ class EzanVaktiApiClient @Inject constructor() {
         }
 
     private fun fetchArray(path: String): List<org.json.JSONObject> {
-        val connection = (URL("$BASE_URL$path").openConnection() as HttpURLConnection).apply {
-            connectTimeout = CONNECT_TIMEOUT_MS
-            readTimeout = READ_TIMEOUT_MS
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-        }
+        val request = Request.Builder()
+            .url("$BASE_URL$path")
+            .get()
+            .header("Accept", "application/json")
+            .build()
 
-        return connection.useConnection { conn ->
-            val responseCode = conn.responseCode
-            if (responseCode !in HTTP_SUCCESS_CODE_MIN..HTTP_SUCCESS_CODE_MAX) {
-                throw EzanVaktiHttpException(statusCode = responseCode, endpoint = path)
-            }
+        return runCatching {
+            okHttpClient.newCall(request).execute().use { response ->
+                val responseCode = response.code
+                if (responseCode !in HTTP_SUCCESS_CODE_MIN..HTTP_SUCCESS_CODE_MAX) {
+                    throw EzanVaktiHttpException(statusCode = responseCode, endpoint = path)
+                }
 
-            val payload = conn.inputStream.bufferedReader().use { it.readText() }
-            val arr = JSONArray(payload)
-            buildList(arr.length()) {
-                repeat(arr.length()) { index ->
-                    add(arr.getJSONObject(index))
+                val payload = response.body.string()
+                val arr = JSONArray(payload)
+                buildList(arr.length()) {
+                    repeat(arr.length()) { index ->
+                        add(arr.getJSONObject(index))
+                    }
                 }
             }
-        }
+        }.onFailure {
+            Timber.w(it, "EzanVaktiApiClient request error path=%s", path)
+        }.getOrThrow()
     }
 
     private companion object {
@@ -124,13 +135,3 @@ data class ApiPrayerTime(
     val aksam: String,
     val yatsi: String,
 )
-
-internal inline fun <T : HttpURLConnection, R> T.useConnection(block: (T) -> R): R {
-    return try {
-        runCatching { block(this) }
-            .onFailure { Timber.w(it, "EzanVaktiApiClient connection error") }
-            .getOrThrow()
-    } finally {
-        disconnect()
-    }
-}

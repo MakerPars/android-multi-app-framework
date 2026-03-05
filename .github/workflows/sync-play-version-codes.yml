@@ -54,57 +54,39 @@ jobs:
           set -euo pipefail
           export DOPPLER_PROJECT="android-multi-app-framework"
           export DOPPLER_CONFIG="prod"
-          unset PLAY_SERVICE_ACCOUNT_JSON PLAY_SERVICE_ACCOUNT_JSON_BASE64
+          unset PLAY_SERVICE_ACCOUNT_JSON_BASE64
 
           if [ -z "${DOPPLER_TOKEN:-}" ]; then
             echo "::error::Missing DOPPLER_TOKEN. This workflow is Doppler-only."
             exit 1
           fi
 
-          source_key=""
-          resolved_play_sa_b64=""
-          val_json="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-          val_json_trimmed="$(printf '%s' "$val_json" | tr -d '\r\n\t ')"
-          if [ -n "$val_json_trimmed" ] && [ "${#val_json}" -ge 200 ] && [[ "$val_json_trimmed" == \{* ]]; then
-            echo "::add-mask::$val_json"
-            resolved_play_sa_b64="$(printf '%s' "$val_json" | base64 | tr -d '\n')"
-            source_key="PLAY_SERVICE_ACCOUNT_JSON"
-          else
-            if [ -n "$val_json_trimmed" ]; then
-              echo "::warning::Ignoring PLAY_SERVICE_ACCOUNT_JSON because it does not look like a valid JSON service account payload."
-            fi
-            val_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val_b64" ]; then
-              # Normalize accidental whitespace/newlines in base64 payload.
-              resolved_play_sa_b64="$(printf '%s' "$val_b64" | tr -d '\r\n\t ')"
-              source_key="PLAY_SERVICE_ACCOUNT_JSON_BASE64"
-            fi
-          fi
+          resolved_play_sa_b64="$(doppler secrets get PLAY_SERVICE_ACCOUNT_JSON_BASE64 --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          resolved_play_sa_b64="$(printf '%s' "$resolved_play_sa_b64" | tr -d '\r\n\t ')"
 
           if [ -z "${resolved_play_sa_b64:-}" ]; then
-            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"
             exit 1
           fi
-          if [ "${#resolved_play_sa_b64}" -lt 100 ]; then
+          if [ "${#resolved_play_sa_b64}" -lt 500 ]; then
             echo "::error::Resolved Play service account payload is too short to be valid (len=${#resolved_play_sa_b64})."
             exit 1
           fi
 
           echo "::add-mask::$resolved_play_sa_b64"
           printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$resolved_play_sa_b64" >> "$GITHUB_ENV"
-          echo "::notice::Resolved Play service account from Doppler key: $source_key"
+          echo "::notice::Resolved Play service account from Doppler key: PLAY_SERVICE_ACCOUNT_JSON_BASE64"
 
       - name: Decode Play Service Account
         run: |
           set -euo pipefail
-          if [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
-          else
-            echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64 (or PLAY_SERVICE_ACCOUNT_JSON fallback conversion)."
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
+            echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64."
             exit 1
           fi
+          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
           if [ ! -s "${{ runner.temp }}/service-account.json" ]; then
-            echo "::error::Decoded Play service account is empty. Check Doppler PLAY_SERVICE_ACCOUNT_JSON / PLAY_SERVICE_ACCOUNT_JSON_BASE64."
+            echo "::error::Decoded Play service account is empty. Check Doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64."
             exit 1
           fi
           python3 - <<'PY'

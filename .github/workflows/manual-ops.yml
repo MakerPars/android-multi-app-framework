@@ -224,25 +224,20 @@ jobs:
           load_from_doppler KEY_ALIAS
           load_from_doppler KEY_PASSWORD
           load_from_doppler PUSH_REGISTRATION_URL
-          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON
+          load_from_doppler PURCHASE_VERIFICATION_URL
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" | tr -d '\r\n\t ')"
+          [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
 
-          play_sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ] && [ "${#PLAY_SERVICE_ACCOUNT_JSON}" -ge 200 ] && [[ "$play_sa_json_trimmed" == \{* ]]; then
-            PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" | base64 | tr -d '\n')"
-            echo "::add-mask::$PLAY_SERVICE_ACCOUNT_JSON_BASE64"
-            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
-          elif [ -n "$play_sa_json_trimmed" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            echo "::warning::Ignoring PLAY_SERVICE_ACCOUNT_JSON because it does not look like a valid JSON service account payload."
-            load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
-          elif [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
-            load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
-          fi
-
-          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL; do
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL PURCHASE_VERIFICATION_URL; do
             [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
           done
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && [ -z "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
-            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
+            echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+            exit 1
+          fi
+          if [ "${#PLAY_SERVICE_ACCOUNT_JSON_BASE64}" -lt 500 ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 is too short to be valid (len=${#PLAY_SERVICE_ACCOUNT_JSON_BASE64})"
             exit 1
           fi
 
@@ -256,6 +251,8 @@ jobs:
           [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Missing secret: KEYSTORE_PASSWORD"; exit 1; }
           [ -n "$KEY_ALIAS" ] || { echo "::error::Missing secret: KEY_ALIAS"; exit 1; }
           [ -n "$KEY_PASSWORD" ] || { echo "::error::Missing secret: KEY_PASSWORD"; exit 1; }
+          [ -n "$PUSH_REGISTRATION_URL" ] || { echo "::error::Missing secret: PUSH_REGISTRATION_URL"; exit 1; }
+          [ -n "$PURCHASE_VERIFICATION_URL" ] || { echo "::error::Missing secret: PURCHASE_VERIFICATION_URL"; exit 1; }
 
       # ── Quality Checks ──
       - name: Run Quality Checks
@@ -290,15 +287,11 @@ jobs:
         if: github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true'
         run: |
           set -euo pipefail
-          sa_json_trimmed="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON:-}" | tr -d '\r\n\t ')"
-          if [ -n "$sa_json_trimmed" ] && [ "${#PLAY_SERVICE_ACCOUNT_JSON}" -ge 200 ] && [[ "$sa_json_trimmed" == \{* ]]; then
-            printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "${{ runner.temp }}/service-account.json"
-          elif [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
-          else
-            echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON or PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
+            echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"
             exit 1
           fi
+          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
           if [ ! -s "${{ runner.temp }}/service-account.json" ]; then
             echo "::error::Decoded Play service account is empty."
             exit 1
