@@ -137,7 +137,8 @@ val validateFlavorVersions =
 val validateReleaseConfig =
     tasks.register("validateReleaseConfig") {
         group = "verification"
-        description = "Validates release/publish configuration (keystore, push URL, and Play credentials for publish tasks)."
+        description =
+            "Validates release/publish configuration (keystore, push URL, and Play credentials for publish tasks)."
 
         val requestedTasks = gradle.startParameter.taskNames.toList()
         val publishRequested = requestedTasks.any(::isReleasePublishTask)
@@ -197,7 +198,7 @@ val validateReleaseConfig =
                         errors.forEach { appendLine("  - $it") }
                         appendLine()
                         appendLine("Tip: app/build.gradle.kts reads values from -P, .env, then System.getenv().")
-                    }
+                    },
                 )
             }
         }

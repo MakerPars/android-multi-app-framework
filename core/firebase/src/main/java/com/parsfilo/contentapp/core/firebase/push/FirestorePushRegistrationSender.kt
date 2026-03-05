@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.core.firebase.push
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.SetOptions
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
@@ -54,7 +55,12 @@ class FirestorePushRegistrationSender @Inject constructor(
             true
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: FirebaseFirestoreException) {
+            Timber.e(e, "Firestore device registration failed")
+            crashlytics.log("Firestore device registration failed: ${e::class.simpleName}")
+            crashlytics.recordException(e)
+            false
+        } catch (e: IllegalArgumentException) {
             Timber.e(e, "Firestore device registration failed")
             crashlytics.log("Firestore device registration failed: ${e::class.simpleName}")
             crashlytics.recordException(e)
