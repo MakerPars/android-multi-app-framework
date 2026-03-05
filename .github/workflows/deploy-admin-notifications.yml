@@ -74,8 +74,6 @@ jobs:
           map_secret FIREBASE_WEB_APP_ID VITE_FIREBASE_APP_ID
           map_secret FIREBASE_WEB_MESSAGING_SENDER_ID VITE_FIREBASE_MESSAGING_SENDER_ID
           map_secret FIREBASE_WEB_STORAGE_BUCKET VITE_FIREBASE_STORAGE_BUCKET
-          map_secret FIREBASE_APP_CHECK_SITE_KEY VITE_FIREBASE_APP_CHECK_SITE_KEY
-          map_secret_if_missing GOOGLE_RECAPTCHA_SITE_KEY VITE_FIREBASE_APP_CHECK_SITE_KEY
           map_secret ADMIN_ALLOWED_EMAILS VITE_ADMIN_ALLOWED_EMAILS
           # Prefer dedicated Pages token/account secrets; keep legacy names as fallback.
           map_secret CLOUDFLARE_API_TOKEN CLOUDFLARE_API_TOKEN
