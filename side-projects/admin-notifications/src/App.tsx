@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 import {
   getRedirectResult,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "firebase/auth";
@@ -400,6 +401,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<LoadState>("loading");
   const [adminState, setAdminState] = useState<AdminState>("checking");
+  const [authBootstrapped, setAuthBootstrapped] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("events");
   const [testPushSubTab, setTestPushSubTab] = useState<TestPushSubTab>("single-device");
   const [events, setEvents] = useState<ScheduledEventRecord[]>([]);
@@ -465,6 +467,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!authBootstrapped) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("tab") !== activeTab) {
       params.set("tab", activeTab);
@@ -476,7 +479,7 @@ export default function App() {
     }
     const next = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, "", next);
-  }, [activeTab, testPushSubTab]);
+  }, [activeTab, authBootstrapped, testPushSubTab]);
 
   useEffect(() => {
     void (async () => {
@@ -494,6 +497,8 @@ export default function App() {
         } else {
           setError("Google sign-in failed after redirect.");
         }
+      } finally {
+        setAuthBootstrapped(true);
       }
     })();
   }, []);
@@ -701,6 +706,19 @@ export default function App() {
     setError("");
     try {
       await authPersistenceReady;
+      try {
+        await signInWithPopup(auth, googleProvider);
+        return;
+      } catch (popupError) {
+        if (
+          popupError instanceof FirebaseError &&
+          popupError.code !== "auth/popup-blocked" &&
+          popupError.code !== "auth/popup-closed-by-user" &&
+          popupError.code !== "auth/cancelled-popup-request"
+        ) {
+          throw popupError;
+        }
+      }
       if (getAuthPersistenceMode() === "memory") {
         setError(
           "Google sign-in cannot continue because browser storage is restricted. Enable site storage/cookies and retry.",
