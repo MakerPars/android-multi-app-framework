@@ -235,3 +235,53 @@ tasks.register("printFlavors") {
         println(flavors)
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ▸ 5. composeReports — Generate Compose Compiler stability & metrics reports
+//    Usage: ./gradlew composeReports
+//    Output: build/compose_reports/ and build/compose_metrics/ in each module
+// ═══════════════════════════════════════════════════════════════
+tasks.register("composeReports") {
+    description = "Generate Compose Compiler stability/metrics reports for all modules"
+    group = "verification"
+    doLast {
+        println("═══════════════════════════════════════════════════════")
+        println("  Compose Compiler Reports")
+        println("═══════════════════════════════════════════════════════")
+        println()
+        println("To generate reports, run:")
+        println("  ./gradlew assembleRelease -PcomposeCompilerReports=true")
+        println()
+        println("Reports will be generated in each module's build directory:")
+        println("  <module>/build/compose_reports/    (stability reports)")
+        println("  <module>/build/compose_metrics/    (metrics reports)")
+        println()
+        println("Key files to look for:")
+        println("  *-composables.txt    — List of all composables with stability info")
+        println("  *-composables.csv    — CSV of composable metrics (restartable, skippable)")
+        println("  *-classes.txt        — Class stability analysis")
+        println("  *-module.json        — Module-level summary metrics")
+        println()
+
+        // Find and list existing report directories
+        var found = false
+        subprojects.forEach { sub ->
+            val reportsDir = sub.layout.buildDirectory.dir("compose_reports").get().asFile
+            val metricsDir = sub.layout.buildDirectory.dir("compose_metrics").get().asFile
+            if (reportsDir.exists() || metricsDir.exists()) {
+                found = true
+                println("Found reports for :${sub.name}")
+                if (reportsDir.exists()) {
+                    reportsDir.listFiles()?.forEach { f -> println("  📄 ${f.name}") }
+                }
+                if (metricsDir.exists()) {
+                    metricsDir.listFiles()?.forEach { f -> println("  📊 ${f.name}") }
+                }
+                println()
+            }
+        }
+        if (!found) {
+            println("No compose reports found yet. Run the assembleRelease command above first.")
+        }
+    }
+}

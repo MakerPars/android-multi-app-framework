@@ -34,6 +34,82 @@ const PACKAGE_AUDIO: Record<string, string> = {
   "com.parsfilo.yasinsuresi": "yasinsuresi.mp3",
 };
 
+/* ═══════════════════════════════════════
+ *  Rate Limiter (in-memory, per-isolate)
+ * ═══════════════════════════════════════ */
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 60;   // max 60 requests per IP per minute
+
+type RateLimitEntry = { count: number; windowStart: number };
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function isRateLimited(clientIp: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(clientIp);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(clientIp, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX_REQUESTS) {
+    return true;
+  }
+  return false;
+}
+
+// Periodically clean stale entries (limit map growth)
+function pruneRateLimitMap() {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS * 2) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════
+ *  Security & CORS Headers
+ * ═══════════════════════════════════════ */
+const ALLOWED_ORIGINS = [
+  "https://admin-notifications.web.app",
+  "https://admin-notifications.firebaseapp.com",
+  "http://localhost:5173",
+  "http://localhost:4173",
+];
+
+function getSecurityHeaders(origin?: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "0",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Vary"] = "Origin";
+  }
+  return headers;
+}
+
+function handleCorsPreflightRequest(request: Request): Response | null {
+  if (request.method !== "OPTIONS") return null;
+  const origin = request.headers.get("Origin");
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(null, { status: 403 });
+  }
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+    },
+  });
+}
+
 function json(data: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -303,44 +379,78 @@ async function handleRecaptchaVerify(request: Request, env: Env): Promise<Respon
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // ── CORS pre-flight ──
+    const corsResponse = handleCorsPreflightRequest(request);
+    if (corsResponse) return corsResponse;
+
+    // ── Rate limiting ──
+    pruneRateLimitMap();
+    const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+    if (isRateLimited(clientIp)) {
+      return json(
+        { error: "Too many requests. Please try again later." },
+        429,
+        { "Retry-After": "60" },
+      );
+    }
+
+    const origin = request.headers.get("Origin");
+    const secHeaders = getSecurityHeaders(origin);
     const url = new URL(request.url);
 
+    // ── Routes ──
+    let response: Response;
+
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "contentapp-content-api" });
-    }
-
-    if (url.pathname === "/api/other-apps") {
+      response = json({ ok: true, service: "contentapp-content-api", timestamp: new Date().toISOString() });
+    } else if (url.pathname === "/api/other-apps") {
       const forceRefresh = url.searchParams.get("force") === "1";
-      return handleOtherApps(env, forceRefresh);
-    }
-
-    if (url.pathname === "/api/audio-manifest") {
+      response = await handleOtherApps(env, forceRefresh);
+    } else if (url.pathname === "/api/audio-manifest") {
       const manifest = await buildAudioManifest(url.origin, env);
-      return json(manifest, 200, { "cache-control": "public, max-age=300" });
-    }
-
-    if (url.pathname.startsWith("/api/audio/")) {
+      response = json(manifest, 200, { "cache-control": "public, max-age=300" });
+    } else if (url.pathname.startsWith("/api/audio/")) {
       const key = decodeURIComponent(url.pathname.replace("/api/audio/", ""));
-      if (!key || key.includes("..")) return json({ error: "Invalid audio key" }, 400);
-
-      const object = await env.AUDIO_BUCKET.get(key);
-      if (!object) return json({ error: "Not found" }, 404);
-
-      const headers = new Headers();
-      object.writeHttpMetadata(headers);
-      headers.set("etag", object.httpEtag);
-      headers.set("cache-control", "public, max-age=31536000, immutable");
-      if (!headers.has("content-type")) {
-        headers.set("content-type", "audio/mpeg");
+      if (!key || key.includes("..") || key.includes("/")) {
+        response = json({ error: "Invalid audio key" }, 400);
+      } else {
+        const object = await env.AUDIO_BUCKET.get(key);
+        if (!object) {
+          response = json({ error: "Not found" }, 404);
+        } else {
+          const headers = new Headers();
+          object.writeHttpMetadata(headers);
+          headers.set("etag", object.httpEtag);
+          headers.set("cache-control", "public, max-age=31536000, immutable");
+          if (!headers.has("content-type")) {
+            headers.set("content-type", "audio/mpeg");
+          }
+          // Add security headers to binary response
+          for (const [k, v] of Object.entries(secHeaders)) {
+            headers.set(k, v);
+          }
+          return new Response(object.body, { headers });
+        }
       }
-
-      return new Response(object.body, { headers });
+    } else if (url.pathname === "/api/recaptcha-verify") {
+      if (request.method !== "POST") {
+        response = json({ error: "Method not allowed" }, 405);
+      } else {
+        response = await handleRecaptchaVerify(request, env);
+      }
+    } else {
+      response = json({ error: "Not found" }, 404);
     }
 
-    if (url.pathname === "/api/recaptcha-verify") {
-      return handleRecaptchaVerify(request, env);
+    // ── Apply security headers to JSON responses ──
+    const finalHeaders = new Headers(response.headers);
+    for (const [k, v] of Object.entries(secHeaders)) {
+      finalHeaders.set(k, v);
     }
-
-    return json({ error: "Not found" }, 404);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: finalHeaders,
+    });
   },
 };
