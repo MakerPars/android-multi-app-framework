@@ -3,7 +3,6 @@ import type { User } from "firebase/auth";
 import {
   getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "firebase/auth";
@@ -706,19 +705,6 @@ export default function App() {
     setError("");
     try {
       await authPersistenceReady;
-      try {
-        await signInWithPopup(auth, googleProvider);
-        return;
-      } catch (popupError) {
-        if (
-          popupError instanceof FirebaseError &&
-          popupError.code !== "auth/popup-blocked" &&
-          popupError.code !== "auth/popup-closed-by-user" &&
-          popupError.code !== "auth/cancelled-popup-request"
-        ) {
-          throw popupError;
-        }
-      }
       if (getAuthPersistenceMode() === "memory") {
         setError(
           "Google sign-in cannot continue because browser storage is restricted. Enable site storage/cookies and retry.",
