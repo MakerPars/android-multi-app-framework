@@ -103,6 +103,10 @@ fun AppNavHost(
             .distinctUntilChanged()
             .collect { route ->
                 appAnalytics.logScreenView(screenName = route, screenClass = "AppNavHost")
+                hostActivity?.adOrchestrator?.updateSessionContext(
+                    activeRoute = route,
+                    contentType = routeToContentType(route),
+                )
             }
     }
 
@@ -278,6 +282,7 @@ fun AppNavHost(
                     route = AppRoute.QuranSuraDetail.route,
                     arguments = AppRoute.QuranSuraDetail.arguments,
                 ) {
+                    val seenAyahsInSession = remember { mutableSetOf<Int>() }
                     QuranSuraDetailRoute(
                         onBack = { navController.popBackStack() },
                         onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
@@ -287,6 +292,14 @@ fun AppNavHost(
                         },
                         onPauseAudio = {
                             audioPlayerViewModel.pause()
+                        },
+                        onAyahVisibleExternal = { ayah ->
+                            if (seenAyahsInSession.add(ayah.ayahNumber)) {
+                                hostActivity?.adOrchestrator?.updateSessionContext(
+                                    contentType = "quran",
+                                    verseReadIncrement = 1,
+                                )
+                            }
                         },
                         bannerAdContent = {
                             BannerAd(
@@ -347,6 +360,7 @@ fun AppNavHost(
                                         durationMs = audioState.duration,
                                     )
                                 } else {
+                                    hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
                                     appAnalytics.logAudioPlay(
                                         positionMs = audioState.currentPosition,
                                         durationMs = audioState.duration,
@@ -444,6 +458,7 @@ fun AppNavHost(
                                         durationMs = audioState.duration,
                                     )
                                 } else {
+                                    hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
                                     appAnalytics.logAudioPlay(
                                         positionMs = audioState.currentPosition,
                                         durationMs = audioState.duration,
@@ -520,6 +535,7 @@ fun AppNavHost(
                     },
                     onPlayAllAudioClick = if (isEsmaFlavor) {
                         {
+                            hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
                             audioPlayerViewModel.setOverrideAudioFileName(null)
                             audioPlayerViewModel.play()
                         }
@@ -632,6 +648,22 @@ fun AppNavHost(
         }
     }
 }
+
+private fun routeToContentType(route: String): String =
+    when {
+        route.startsWith(AppRoute.QuranSuraDetail.route.substringBefore("/{")) ||
+            route.startsWith(AppRoute.QuranSuraList.route) ||
+            route.startsWith(AppRoute.QuranBookmarks.route) -> "quran"
+        route.startsWith(AppRoute.PrayerTimesHome.route) ||
+            route.startsWith(AppRoute.PrayerList.route) ||
+            route.startsWith(AppRoute.PrayerDetail.route.substringBefore("/{")) -> "prayer"
+        route.startsWith(AppRoute.ZikirCounter.route) -> "zikir"
+        route.startsWith(AppRoute.MiraclesList.route) ||
+            route.startsWith(AppRoute.MiraclesDetail.route.substringBefore("/{")) -> "miracle"
+        route.startsWith(AppRoute.Content.route) -> "content"
+        route.startsWith(AppRoute.Qibla.route) -> "qibla"
+        else -> "other"
+    }
 
 
 

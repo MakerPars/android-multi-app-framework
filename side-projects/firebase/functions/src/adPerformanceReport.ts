@@ -41,7 +41,19 @@ type ReportAlert = {
     fillRatePct: number;
     showRatePct: number;
     earningsTry: number;
+    ecpmTry: number;
     reasons: string[];
+};
+
+type ReportStat = {
+    appId: string;
+    appLabel: string;
+    format: string;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+    earningsTry: number;
+    ecpmTry: number;
 };
 
 type ReportPayload = {
@@ -57,12 +69,14 @@ type ReportPayload = {
     };
     totals: {
         earningsTry: number;
+        ecpmTry: number;
         adRequests: number;
         matchedRequests: number;
         impressions: number;
         fillRatePct: number;
         showRatePct: number;
     };
+    stats?: ReportStat[];
     alerts: ReportAlert[];
     issue?: string;
 };
@@ -74,6 +88,7 @@ type TodayPayload = {
     status: "ok" | "misconfigured" | "error";
     totals: {
         earningsTry: number;
+        ecpmTry: number;
         adRequests: number;
         matchedRequests: number;
         impressions: number;
@@ -231,7 +246,8 @@ async function generateAndStoreWeeklyReport(
         const accessToken = await fetchAdMobAccessToken(config);
         const accountName = await resolveAccountName(config, accessToken);
         const rows = await fetchNetworkRows(accountName, accessToken, rangeStartDate, rangeEndDate);
-        const report = buildReport(baseReport, rows);
+        const ecpmBaselineByKey = await loadWeeklyEcpmBaseline(4);
+        const report = buildReport(baseReport, rows, ecpmBaselineByKey);
         await persistReport(report, source, actor);
         logger.info("Ad performance weekly report generated", {
             source,
@@ -294,6 +310,7 @@ async function generateTodayReport(): Promise<TodayPayload> {
             status: "ok",
             totals: {
                 earningsTry: round4(totals.earningsMicros / 1_000_000),
+                ecpmTry: round4(calculateEcpmTry(totals.earningsMicros, totals.impressions)),
                 adRequests: totals.adRequests,
                 matchedRequests: totals.matchedRequests,
                 impressions: totals.impressions,
@@ -461,6 +478,7 @@ async function resolveAccountName(config: AdMobConfig, accessToken: string): Pro
 function buildReport(
     base: Omit<ReportPayload, "status" | "totals" | "alerts">,
     rows: NetworkRow[],
+    ecpmBaselineByKey: Map<string, number>,
 ): ReportPayload {
     const grouped = new Map<string, AggregatedStat>();
 
@@ -484,6 +502,16 @@ function buildReport(
     }
 
     const stats = Array.from(grouped.values());
+    const reportStats: ReportStat[] = stats.map((item) => ({
+        appId: item.appId,
+        appLabel: item.appLabel,
+        format: item.format,
+        adRequests: item.adRequests,
+        matchedRequests: item.matchedRequests,
+        impressions: item.impressions,
+        earningsTry: round4(item.earningsMicros / 1_000_000),
+        ecpmTry: round4(calculateEcpmTry(item.earningsMicros, item.impressions)),
+    }));
     const totals = stats.reduce(
         (acc, item) => {
             acc.earningsMicros += item.earningsMicros;
@@ -498,8 +526,10 @@ function buildReport(
     const alerts: ReportAlert[] = stats
         .filter((item) => item.adRequests >= base.thresholds.minRequests)
         .map((item) => {
+            const key = `${item.appId}::${item.format}`;
             const fillRatePct = calculateRate(item.matchedRequests, item.adRequests);
             const showRatePct = calculateRate(item.impressions, item.matchedRequests);
+            const ecpmTry = calculateEcpmTry(item.earningsMicros, item.impressions);
             const reasons: string[] = [];
 
             if (fillRatePct < base.thresholds.fillRatePct) {
@@ -510,6 +540,15 @@ function buildReport(
             }
             if (item.format === "rewarded" && showRatePct < 1) {
                 reasons.push("rewarded_not_shown");
+            }
+            if (item.adRequests > 0 && item.impressions == 0) {
+                reasons.push("requests_without_impressions");
+            }
+            const baselineEcpmTry = ecpmBaselineByKey.get(key);
+            if (baselineEcpmTry != null && baselineEcpmTry > 0) {
+                if (ecpmTry <= baselineEcpmTry * 0.6) {
+                    reasons.push("ecpm_drop_spike");
+                }
             }
 
             return {
@@ -522,6 +561,7 @@ function buildReport(
                 fillRatePct: round2(fillRatePct),
                 showRatePct: round2(showRatePct),
                 earningsTry: round4(item.earningsMicros / 1_000_000),
+                ecpmTry: round4(ecpmTry),
                 reasons,
             };
         })
@@ -533,12 +573,14 @@ function buildReport(
         status: "ok",
         totals: {
             earningsTry: round4(totals.earningsMicros / 1_000_000),
+            ecpmTry: round4(calculateEcpmTry(totals.earningsMicros, totals.impressions)),
             adRequests: totals.adRequests,
             matchedRequests: totals.matchedRequests,
             impressions: totals.impressions,
             fillRatePct: round2(calculateRate(totals.matchedRequests, totals.adRequests)),
             showRatePct: round2(calculateRate(totals.impressions, totals.matchedRequests)),
         },
+        stats: reportStats,
         alerts,
     };
 }
@@ -614,6 +656,12 @@ function calculateRate(numerator: number, denominator: number): number {
     return (numerator / denominator) * 100;
 }
 
+function calculateEcpmTry(earningsMicros: number, impressions: number): number {
+    if (impressions <= 0) return 0;
+    const earningsTry = earningsMicros / 1_000_000;
+    return (earningsTry / impressions) * 1000;
+}
+
 function round2(value: number): number {
     return Math.round(value * 100) / 100;
 }
@@ -625,6 +673,7 @@ function round4(value: number): number {
 function zeroTotals(): ReportPayload["totals"] {
     return {
         earningsTry: 0,
+        ecpmTry: 0,
         adRequests: 0,
         matchedRequests: 0,
         impressions: 0,
@@ -646,4 +695,62 @@ function looksLikeJsonRequest(contentTypeHeader: string | undefined): boolean {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+async function loadWeeklyEcpmBaseline(weeks: number): Promise<Map<string, number>> {
+    const snapshot = await admin.firestore()
+        .collection(REPORTS_COLLECTION)
+        .orderBy(admin.firestore.FieldPath.documentId(), "desc")
+        .limit(60)
+        .get();
+
+    let consideredWeeks = 0;
+    const accumulator = new Map<string, { total: number; count: number }>();
+    for (const docSnap of snapshot.docs) {
+        if (!docSnap.id.startsWith(HISTORY_DOC_PREFIX)) {
+            continue;
+        }
+        const data = docSnap.data() as { stats?: unknown; alerts?: unknown };
+        const stats = Array.isArray(data.stats) ? data.stats : (Array.isArray(data.alerts) ? data.alerts : []);
+        if (stats.length === 0) {
+            continue;
+        }
+
+        consideredWeeks += 1;
+        for (const stat of stats) {
+            if (!isPlainObject(stat)) continue;
+            const appId = typeof stat.appId === "string" ? stat.appId : "";
+            const format = typeof stat.format === "string" ? stat.format : "";
+            if (!appId || !format) continue;
+
+            let ecpm = Number(stat.ecpmTry);
+            if (!Number.isFinite(ecpm) || ecpm <= 0) {
+                const earningsTry = Number(stat.earningsTry);
+                const impressions = Number(stat.impressions);
+                if (!Number.isFinite(earningsTry) || !Number.isFinite(impressions) || impressions <= 0) {
+                    continue;
+                }
+                ecpm = (earningsTry / impressions) * 1000;
+            }
+            if (!Number.isFinite(ecpm) || ecpm <= 0) continue;
+
+            const key = `${appId}::${format}`;
+            const current = accumulator.get(key) ?? { total: 0, count: 0 };
+            current.total += ecpm;
+            current.count += 1;
+            accumulator.set(key, current);
+        }
+
+        if (consideredWeeks >= weeks) {
+            break;
+        }
+    }
+
+    const baseline = new Map<string, number>();
+    for (const [key, value] of accumulator.entries()) {
+        if (value.count > 0) {
+            baseline.set(key, value.total / value.count);
+        }
+    }
+    return baseline;
 }

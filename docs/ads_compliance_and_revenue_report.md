@@ -164,6 +164,40 @@ Primary outcomes:
 - Backoff logs help distinguish no-fill from integration errors.
 - Consent/Privacy UI changes require AdMob Console messages to be published; code alone is not sufficient.
 
+## Analytics Event Dictionary (Revenue + Consent Funnel)
+
+Core consent events:
+- `consent_flow_started`
+- `consent_granted`
+- `consent_denied`
+- `consent_not_required`
+- `consent_error`
+- `consent_refreshed`
+- `privacy_options_opened`
+- `age_gate_completed`
+
+Core ad funnel events:
+- `ad_request_sent`
+- `ad_loaded`
+- `ad_failed_to_load`
+- `ad_suppressed`
+- `ad_impression`
+- `ad_failed_to_show`
+- `ad_served`
+- `ad_click`
+- `ad_paid_event`
+- `ad_after_engagement`
+
+Rewarded quality events:
+- `rewarded_watch_complete`
+- `rewarded_watch_skipped`
+
+Key params used for segmentation:
+- `ad_format`, `placement`, `route`
+- `suppress_reason`, `fill_latency_ms`, `backoff_attempt`, `adapter_name`
+- `session_content_type`, `session_duration_s`, `verse_count_before_ad`, `session_audio_played`
+- `consent_status`, `consent_trigger`, `ump_form_shown`, `age_gate_result`
+
 ## Force Update (Remote Config)
 - Force update gate uses Firebase Remote Config with in-app fail-safe defaults (app remains usable if fetch fails).
 - Parameters:

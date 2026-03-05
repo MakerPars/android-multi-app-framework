@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import com.parsfilo.contentapp.feature.ads.AdPaidEventContext
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
+import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
 import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.max
 
@@ -43,7 +45,24 @@ fun BannerAd(
     val adsPolicyProvider = remember(entryPoint) { entryPoint.adsPolicyProvider() }
     val shouldShowAds by adGateChecker.shouldShowAds.collectAsState(initial = false)
     val policy = adsPolicyProvider.getPolicy()
-    if (!canRequestAds || !shouldShowAds || !policy.isBannerPlacementEnabled(placement)) return
+    val suppressReason = when {
+        !canRequestAds -> "no_consent"
+        !policy.isBannerPlacementEnabled(placement) -> "placement_disabled"
+        !shouldShowAds -> "ad_gate"
+        else -> null
+    }
+    if (suppressReason != null) {
+        LaunchedEffect(adUnitId, placement, route, suppressReason) {
+            revenueLogger.logSuppressed(
+                adFormat = AdFormat.BANNER,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = suppressReason,
+                route = route,
+            )
+        }
+        return
+    }
 
     val adRequest = remember { AdRequest.Builder().build() }
 
@@ -53,10 +72,41 @@ fun BannerAd(
             AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidthDp)
         }
         val adView = remember(adUnitId, adWidthDp) {
+            var loadStartedAtMillis = SystemTimeProvider.nowMillis()
             AdView(context).apply {
                 this.adUnitId = adUnitId
                 setAdSize(adSize)
                 adListener = object : AdListener() {
+                    override fun onAdLoaded() {
+                        val fillLatencyMs = (SystemTimeProvider.nowMillis() - loadStartedAtMillis).coerceAtLeast(0L)
+                        revenueLogger.logLoaded(
+                            adFormat = AdFormat.BANNER,
+                            placement = placement,
+                            adUnitId = adUnitId,
+                            route = route,
+                            fillLatencyMs = fillLatencyMs,
+                            adapterName = responseInfo?.mediationAdapterClassName,
+                        )
+                        revenueLogger.logServed(
+                            adFormat = AdFormat.BANNER,
+                            placement = placement,
+                            adUnitId = adUnitId,
+                            route = route,
+                        )
+                    }
+
+                    override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
+                        revenueLogger.logFailedToLoad(
+                            adFormat = AdFormat.BANNER,
+                            placement = placement,
+                            adUnitId = adUnitId,
+                            errorCode = error.code,
+                            errorMessage = error.message,
+                            route = route,
+                            backoffAttempt = null,
+                        )
+                    }
+
                     override fun onAdImpression() {
                         revenueLogger.logImpression(
                             adFormat = AdFormat.BANNER,
@@ -87,6 +137,12 @@ fun BannerAd(
                         ),
                     )
                 }
+                revenueLogger.logRequest(
+                    adFormat = AdFormat.BANNER,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    route = route,
+                )
                 loadAd(adRequest)
             }
         }
@@ -102,6 +158,12 @@ fun BannerAd(
                 if (view.adUnitId != adUnitId) {
                     view.adUnitId = adUnitId
                     view.setAdSize(adSize)
+                    revenueLogger.logRequest(
+                        adFormat = AdFormat.BANNER,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        route = route,
+                    )
                     view.loadAd(adRequest)
                 }
             },

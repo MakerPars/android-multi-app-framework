@@ -23,9 +23,11 @@ class RewardedAdManager @Inject constructor(
 ) {
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
+    private var currentAdUnitId: String = ""
     private var currentPlacement: AdPlacement = AdPlacement.REWARDED_DEFAULT
     private var currentRoute: String? = null
     private var loadBackoffState = AdLoadBackoffState()
+    private var lastLoadStartedAtMillis: Long = 0L
     private val _isAdReady = MutableStateFlow(false)
     val isAdReady: StateFlow<Boolean> = _isAdReady.asStateFlow()
 
@@ -37,15 +39,30 @@ class RewardedAdManager @Inject constructor(
         route: String? = null,
     ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "no_consent",
+                route = route,
+            )
             clearAd()
             return
         }
         if (isLoading || rewardedAd != null) return
         val now = SystemTimeProvider.nowMillis()
         if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) return
+        currentAdUnitId = adUnitId
         currentPlacement = placement
         currentRoute = route
+        lastLoadStartedAtMillis = now
         isLoading = true
+        adRevenueLogger.logRequest(
+            adFormat = AdFormat.REWARDED,
+            placement = placement,
+            adUnitId = adUnitId,
+            route = route,
+        )
         val adRequest = AdRequest.Builder().build()
         Timber.d("Rewarded load requested: %s", adUnitId)
         RewardedAd.load(
@@ -62,11 +79,29 @@ class RewardedAdManager @Inject constructor(
                         current = loadBackoffState,
                         errorCode = adError.code,
                     )
+                    adRevenueLogger.logFailedToLoad(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = adUnitId,
+                        errorCode = adError.code,
+                        errorMessage = adError.message,
+                        route = currentRoute,
+                        backoffAttempt = loadBackoffState.failureStreak,
+                    )
                     Timber.w("Rewarded failed to load (%s): %s", adUnitId, adError.message)
                 }
 
                 override fun onAdLoaded(ad: RewardedAd) {
                     loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
+                    val fillLatencyMs = (SystemTimeProvider.nowMillis() - lastLoadStartedAtMillis).coerceAtLeast(0L)
+                    adRevenueLogger.logLoaded(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = ad.adUnitId,
+                        route = currentRoute,
+                        fillLatencyMs = fillLatencyMs,
+                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                    )
                     ad.onPaidEventListener = { value ->
                         adRevenueLogger.logPaidEvent(
                             AdPaidEventContext(
@@ -96,6 +131,13 @@ class RewardedAdManager @Inject constructor(
 
     fun showAd(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = "no_consent",
+                route = currentRoute,
+            )
             clearAd()
             onAdDismissed()
             return
@@ -116,11 +158,25 @@ class RewardedAdManager @Inject constructor(
                     _isAdReady.value = false
                     isLoading = false
                     Timber.w("Rewarded failed to show: %s", adError.message)
+                    adRevenueLogger.logFailedToShow(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = loadedAd.adUnitId,
+                        errorCode = adError.code,
+                        errorMessage = adError.message,
+                        route = currentRoute,
+                    )
                     onAdDismissed()
                 }
 
                 override fun onAdShowedFullScreenContent() {
                     Timber.d("Rewarded showed full screen content")
+                    adRevenueLogger.logServed(
+                        adFormat = AdFormat.REWARDED,
+                        placement = currentPlacement,
+                        adUnitId = loadedAd.adUnitId,
+                        route = currentRoute,
+                    )
                 }
 
                 override fun onAdImpression() {
@@ -151,6 +207,13 @@ class RewardedAdManager @Inject constructor(
             _isAdReady.value = false
             isLoading = false
             Timber.d("Rewarded show skipped: ad not ready")
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = "not_loaded",
+                route = currentRoute,
+            )
             onAdDismissed()
         }
     }

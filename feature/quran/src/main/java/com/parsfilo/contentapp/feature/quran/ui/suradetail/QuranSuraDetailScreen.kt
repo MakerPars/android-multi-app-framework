@@ -62,6 +62,7 @@ fun QuranSuraDetailRoute(
     onBookmarksClick: () -> Unit = {},
     onPlayAudioUrl: (String) -> Unit,
     onPauseAudio: () -> Unit,
+    onAyahVisibleExternal: ((QuranAyah) -> Unit)? = null,
     bannerAdContent: (@Composable () -> Unit)? = null,
     nativeAdContent: (@Composable () -> Unit)? = null,
     viewModel: QuranSuraDetailViewModel = hiltViewModel(),
@@ -88,7 +89,10 @@ fun QuranSuraDetailRoute(
         },
         onDownloadAyah = { ayah -> viewModel.downloadAyah(ayah.ayahNumber) },
         onToggleBookmark = { ayah -> viewModel.toggleBookmark(ayah.ayahNumber) },
-        onAyahVisible = { ayah -> viewModel.onAyahVisible(ayah.ayahNumber) },
+        onAyahVisible = { ayah ->
+            viewModel.onAyahVisible(ayah.ayahNumber)
+            onAyahVisibleExternal?.invoke(ayah)
+        },
         bannerAdContent = bannerAdContent,
         nativeAdContent = nativeAdContent,
     )

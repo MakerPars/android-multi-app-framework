@@ -79,6 +79,7 @@ type AdPerformanceAlert = {
   fillRatePct: number;
   showRatePct: number;
   earningsTry: number;
+  ecpmTry?: number;
   reasons: string[];
 };
 
@@ -94,6 +95,7 @@ type AdPerformanceReport = {
   };
   totals: {
     earningsTry: number;
+    ecpmTry?: number;
     adRequests: number;
     matchedRequests: number;
     impressions: number;
@@ -110,6 +112,7 @@ type AdPerformanceToday = {
   status: "ok" | "misconfigured" | "error";
   totals: {
     earningsTry: number;
+    ecpmTry?: number;
     adRequests: number;
     matchedRequests: number;
     impressions: number;
@@ -1867,6 +1870,10 @@ export default function App() {
                         <strong>{formatTry(adPerformanceToday.totals.earningsTry)}</strong>
                       </li>
                       <li>
+                        <span>Total eCPM</span>
+                        <strong>{formatTry(adPerformanceToday.totals.ecpmTry)}</strong>
+                      </li>
+                      <li>
                         <span>Total ad requests</span>
                         <strong>{adPerformanceToday.totals.adRequests}</strong>
                       </li>
@@ -1904,6 +1911,10 @@ export default function App() {
                       <li>
                         <span>Total earnings</span>
                         <strong>{formatTry(adPerformanceReport.totals.earningsTry)}</strong>
+                      </li>
+                      <li>
+                        <span>Total eCPM</span>
+                        <strong>{formatTry(adPerformanceReport.totals.ecpmTry)}</strong>
                       </li>
                       <li>
                         <span>Total ad requests</span>
@@ -1946,6 +1957,9 @@ export default function App() {
                               fill={formatPercent(alert.fillRatePct)} · show=
                               {formatPercent(alert.showRatePct)} · earnings=
                               {formatTry(alert.earningsTry)}
+                            </div>
+                            <div className="ad-alert-metrics">
+                              eCPM={formatTry(alert.ecpmTry)}
                             </div>
                             <div className="ad-alert-reasons">
                               {alert.reasons.map((reason) => (

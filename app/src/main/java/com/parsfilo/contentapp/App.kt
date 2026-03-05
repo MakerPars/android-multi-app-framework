@@ -13,6 +13,7 @@ import com.parsfilo.contentapp.core.firebase.appcheck.FirebaseAppCheckInstaller
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationSyncWorker
+import com.parsfilo.contentapp.core.model.SubscriptionState
 import com.parsfilo.contentapp.feature.audio.data.AudioCachePrefetcher
 import com.parsfilo.contentapp.feature.billing.BillingManager
 import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
@@ -100,12 +101,24 @@ class App : Application() {
             Locale.getDefault().toLanguageTag(),
         )
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.TZ, TimeZone.getDefault().id)
+        appAnalytics.setUserProperty(AnalyticsUserPropertyKey.CONSENT_STATUS, "unknown")
+        appAnalytics.setUserProperty(AnalyticsUserPropertyKey.AGE_GATE_STATUS, "unknown")
+        appAnalytics.setUserProperty(AnalyticsUserPropertyKey.IS_PREMIUM, "false")
         appAnalytics.setDefaultEventParameters(
             android.os.Bundle().apply {
                 putString(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
                 putString(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
             }
         )
+        ProcessLifecycleOwner.get().lifecycleScope.launch {
+            billingManager.subscriptionState.collect { subscriptionState ->
+                val premium = subscriptionState is SubscriptionState.Active
+                appAnalytics.setUserProperty(
+                    AnalyticsUserPropertyKey.IS_PREMIUM,
+                    if (premium) "true" else "false",
+                )
+            }
+        }
 
         // Timber initialization
         if (BuildConfig.DEBUG) {

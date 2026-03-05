@@ -69,6 +69,10 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getString(KEY_BANNER_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.BANNER,
         )
+        val interstitialPlacementsDisabled = parsePlacementCsv(
+            remoteConfigManager.getString(KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
+            format = AdFormat.INTERSTITIAL,
+        )
         val nativePlacementsDisabled = parsePlacementCsv(
             remoteConfigManager.getString(KEY_NATIVE_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.NATIVE,
@@ -86,6 +90,7 @@ class AdsPolicyProvider @Inject constructor(
             rewardedInterstitialMaxPerSession = rewardedInterstitialMaxPerSession,
             bannerEnabled = bannerEnabled,
             nativeEnabled = nativeEnabled,
+            interstitialPlacementsDisabled = interstitialPlacementsDisabled,
             bannerPlacementsDisabled = bannerPlacementsDisabled,
             nativePlacementsDisabled = nativePlacementsDisabled,
             nativePoolMax = nativePoolMax,
@@ -159,6 +164,7 @@ class AdsPolicyProvider @Inject constructor(
             "ads_rewarded_interstitial_max_per_session"
         const val KEY_NATIVE_POOL_MAX = "ads_native_pool_max"
         const val KEY_NATIVE_TTL_MS = "ads_native_ttl_ms"
+        const val KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV = "ads_interstitial_placements_disabled_csv"
         const val KEY_BANNER_PLACEMENTS_DISABLED_CSV = "ads_banner_placements_disabled_csv"
         const val KEY_NATIVE_PLACEMENTS_DISABLED_CSV = "ads_native_placements_disabled_csv"
 
@@ -183,6 +189,7 @@ class AdsPolicyProvider @Inject constructor(
             KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong(),
             KEY_NATIVE_POOL_MAX to DEFAULT_NATIVE_POOL_MAX.toLong(),
             KEY_NATIVE_TTL_MS to DEFAULT_NATIVE_TTL_MS,
+            KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
             KEY_BANNER_PLACEMENTS_DISABLED_CSV to "",
             KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "",
         )

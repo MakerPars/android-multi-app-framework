@@ -50,7 +50,46 @@ Bu eventler, “minimum is gorur” telemetri setidir. Hepsi tek contract'a bagl
   - `notification_delete`
   - `notifications_delete_all`
 - Paylasim:
-  - `share` (Firebase standard; content_type=`app_recommendation`, platform=`whatsapp`)
+- `share` (Firebase standard; content_type=`app_recommendation`, platform=`whatsapp`)
+
+## Consent + Ad Funnel (Yeni)
+
+Consent tarafi:
+
+- `consent_flow_started`
+- `consent_granted`
+- `consent_denied`
+- `consent_not_required`
+- `consent_error`
+- `consent_refreshed`
+- `privacy_options_opened`
+- `age_gate_completed`
+
+Reklam funnel:
+
+- `ad_request_sent`
+- `ad_loaded`
+- `ad_failed_to_load`
+- `ad_suppressed`
+- `ad_impression`
+- `ad_failed_to_show`
+- `ad_served`
+- `ad_click`
+- `ad_paid_event`
+- `ad_after_engagement`
+
+Rewarded kalite:
+
+- `rewarded_watch_complete`
+- `rewarded_watch_skipped`
+
+Detayli BigQuery sorgulari:
+
+- `docs/analytics/BIGQUERY_QUERIES.sql`
+
+GA4 dimension/metric kayitlari:
+
+- `docs/analytics/GA4_CUSTOM_DIMENSIONS.md`
 
 ## Test Senaryolari (Hizli)
 
@@ -72,4 +111,3 @@ Bu eventler, “minimum is gorur” telemetri setidir. Hepsi tek contract'a bagl
 
 - Android tarafinda “force-stop” sonrasi data-only FCM teslimati platform limitleri nedeniyle garanti degildir.
 - Debug trafgini GA4 raporlarindan ayirmak icin `build_type` ve `flavor` filtreleri kullanilmalidir.
-

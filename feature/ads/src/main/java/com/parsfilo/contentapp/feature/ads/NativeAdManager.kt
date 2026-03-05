@@ -73,6 +73,13 @@ class NativeAdManager @Inject constructor(
     ) {
         val policy = adsPolicyProvider.getPolicy()
         if (!canUseNativeAds(placement, policy)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = resolveSuppressReasonForNative(placement, policy),
+                route = null,
+            )
             destroyAds()
             return
         }
@@ -101,8 +108,23 @@ class NativeAdManager @Inject constructor(
         val targetCount = count.coerceIn(1, poolMax)
 
         repeat(targetCount) {
+            val requestStartedAtMillis = SystemTimeProvider.nowMillis()
+            adRevenueLogger.logRequest(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                adUnitId = adUnitId,
+                route = null,
+            )
             val adLoader = AdLoader.Builder(context, adUnitId)
                 .forNativeAd { ad: NativeAd ->
+                    adRevenueLogger.logLoaded(
+                        adFormat = AdFormat.NATIVE,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        route = null,
+                        fillLatencyMs = (SystemTimeProvider.nowMillis() - requestStartedAtMillis).coerceAtLeast(0L),
+                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                    )
                     ad.setOnPaidEventListener { adValue: AdValue ->
                         adRevenueLogger.logPaidEvent(
                             AdPaidEventContext(
@@ -142,6 +164,15 @@ class NativeAdManager @Inject constructor(
                             nowMillis = SystemTimeProvider.nowMillis(),
                             current = loadBackoffState,
                             errorCode = error.code,
+                        )
+                        adRevenueLogger.logFailedToLoad(
+                            adFormat = AdFormat.NATIVE,
+                            placement = placement,
+                            adUnitId = adUnitId,
+                            errorCode = error.code,
+                            errorMessage = error.message,
+                            route = null,
+                            backoffAttempt = loadBackoffState.failureStreak,
                         )
                         if (loadedCount.incrementAndGet() >= targetCount) {
                             isLoading = false
@@ -184,6 +215,13 @@ class NativeAdManager @Inject constructor(
     fun getNativeAd(placement: AdPlacement = AdPlacement.NATIVE_DEFAULT): NativeAd? {
         val policy = adsPolicyProvider.getPolicy()
         if (!canUseNativeAds(placement, policy)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = resolveSuppressReasonForNative(placement, policy),
+                route = null,
+            )
             destroyAds()
             return null
         }
@@ -249,4 +287,15 @@ class NativeAdManager @Inject constructor(
         if (!policy.isNativePlacementEnabled(placement)) return false
         return true
     }
+
+    private fun resolveSuppressReasonForNative(
+        placement: AdPlacement,
+        policy: AdsPolicyConfig = adsPolicyProvider.getPolicy(),
+    ): String =
+        when {
+            !AdsConsentRuntimeState.canRequestAds.value -> "no_consent"
+            !policy.isNativePlacementEnabled(placement) -> "placement_disabled"
+            !canShowAdsByGate -> "ad_gate"
+            else -> "not_loaded"
+        }
 }

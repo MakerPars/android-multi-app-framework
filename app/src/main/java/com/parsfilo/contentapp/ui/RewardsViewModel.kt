@@ -4,6 +4,9 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
+import com.parsfilo.contentapp.core.firebase.AnalyticsEventName
+import com.parsfilo.contentapp.core.firebase.AnalyticsParamKey
+import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.model.SubscriptionState
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.RewardedAdManager
@@ -29,7 +32,8 @@ class RewardsViewModel @Inject constructor(
     private val rewardedAdManager: RewardedAdManager,
     private val adGateChecker: AdGateChecker,
     private val billingManager: BillingManager,
-    private val preferencesDataSource: PreferencesDataSource
+    private val preferencesDataSource: PreferencesDataSource,
+    private val appAnalytics: AppAnalytics,
 ) : ViewModel() {
 
     private val _isAdLoading = MutableStateFlow(false)
@@ -111,14 +115,42 @@ class RewardsViewModel @Inject constructor(
     }
 
     fun showRewardedAd(activity: Activity, adUnitId: String) {
+        val watchStartedAtMs = System.currentTimeMillis()
+        var rewardEarned = false
+        var rewardMinutesEarned = 0
         rewardedAdManager.showAd(
             activity = activity,
             onUserEarnedReward = {
+                rewardEarned = true
                 viewModelScope.launch {
+                    val currentPrefs = preferencesDataSource.userData.first()
+                    rewardMinutesEarned = AdGateChecker.calculateRewardMinutes(currentPrefs.rewardWatchCount + 1)
                     adGateChecker.onRewardEarned()
                 }
             },
             onAdDismissed = {
+                val watchDurationSeconds = ((System.currentTimeMillis() - watchStartedAtMs).coerceAtLeast(0L) / 1000L)
+                viewModelScope.launch {
+                    val latestPrefs = preferencesDataSource.userData.first()
+                    if (rewardEarned) {
+                        appAnalytics.logEvent(
+                            AnalyticsEventName.REWARDED_WATCH_COMPLETE,
+                            android.os.Bundle().apply {
+                                putLong(AnalyticsParamKey.WATCH_DURATION_S, watchDurationSeconds)
+                                putLong(AnalyticsParamKey.REWARD_MINUTES_EARNED, rewardMinutesEarned.toLong())
+                                putLong(AnalyticsParamKey.TOTAL_WATCH_COUNT, latestPrefs.rewardWatchCount.toLong())
+                            },
+                        )
+                    } else {
+                        appAnalytics.logEvent(
+                            AnalyticsEventName.REWARDED_WATCH_SKIPPED,
+                            android.os.Bundle().apply {
+                                putLong(AnalyticsParamKey.WATCH_DURATION_S, watchDurationSeconds)
+                                putLong(AnalyticsParamKey.TOTAL_WATCH_COUNT, latestPrefs.rewardWatchCount.toLong())
+                            },
+                        )
+                    }
+                }
                 // Yeni reklam ön yükle
                 rewardedAdManager.loadAd(adUnitId)
             }

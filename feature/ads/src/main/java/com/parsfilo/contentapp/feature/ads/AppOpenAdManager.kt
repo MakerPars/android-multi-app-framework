@@ -31,6 +31,7 @@ class AppOpenAdManager @Inject constructor(
     private var currentAdUnitId: String? = null
     private var currentPlacement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT
     private var loadBackoffState = AdLoadBackoffState()
+    private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun loadAd(
@@ -38,6 +39,13 @@ class AppOpenAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT,
     ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = "no_consent",
+                route = null,
+            )
             clearAd()
             return
         }
@@ -47,6 +55,13 @@ class AppOpenAdManager @Inject constructor(
 
         currentAdUnitId = adUnitId
         currentPlacement = placement
+        lastLoadStartedAtMillis = now
+        adRevenueLogger.logRequest(
+            adFormat = AdFormat.APP_OPEN,
+            placement = placement,
+            adUnitId = adUnitId,
+            route = null,
+        )
         isLoadingAd = true
         val request = AdRequest.Builder().build()
         AppOpenAd.load(
@@ -59,6 +74,15 @@ class AppOpenAdManager @Inject constructor(
                     isLoadingAd = false
                     loadTime = Date().time
                     loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
+                    val fillLatencyMs = (SystemTimeProvider.nowMillis() - lastLoadStartedAtMillis).coerceAtLeast(0L)
+                    adRevenueLogger.logLoaded(
+                        adFormat = AdFormat.APP_OPEN,
+                        placement = currentPlacement,
+                        adUnitId = ad.adUnitId,
+                        route = null,
+                        fillLatencyMs = fillLatencyMs,
+                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                    )
                     ad.onPaidEventListener = { adValue ->
                         adRevenueLogger.logPaidEvent(
                             AdPaidEventContext(
@@ -80,13 +104,33 @@ class AppOpenAdManager @Inject constructor(
                         current = loadBackoffState,
                         errorCode = loadAdError.code,
                     )
+                    adRevenueLogger.logFailedToLoad(
+                        adFormat = AdFormat.APP_OPEN,
+                        placement = currentPlacement,
+                        adUnitId = adUnitId,
+                        errorCode = loadAdError.code,
+                        errorMessage = loadAdError.message,
+                        route = null,
+                        backoffAttempt = loadBackoffState.failureStreak,
+                    )
                 }
             },
         )
     }
 
-    suspend fun showAdIfAvailable(activity: Activity, onShowComplete: () -> Unit) {
+    suspend fun showAdIfAvailable(
+        activity: Activity,
+        onAdImpression: (String) -> Unit = {},
+        onShowComplete: () -> Unit,
+    ) {
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId ?: "unknown",
+                suppressReason = "no_consent",
+                route = null,
+            )
             clearAd()
             onShowComplete()
             return
@@ -95,18 +139,40 @@ class AppOpenAdManager @Inject constructor(
         val now = SystemTimeProvider.nowMillis()
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
+            val reason = if (prefs.isPremium) "premium" else "rewarded_free"
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId ?: "unknown",
+                suppressReason = reason,
+                route = null,
+            )
             onShowComplete()
             return
         }
 
         val cooldownMs = adsPolicyProvider.getPolicy().appOpenCooldownMs
         if (now - prefs.lastAppOpenAdShown < cooldownMs) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId ?: "unknown",
+                suppressReason = "cooldown",
+                route = null,
+            )
             onShowComplete()
             return
         }
 
         val ad = appOpenAd
         if (ad == null || !isAdAvailable()) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                adUnitId = currentAdUnitId ?: "unknown",
+                suppressReason = "not_loaded",
+                route = null,
+            )
             onShowComplete()
             return
         }
@@ -119,6 +185,14 @@ class AppOpenAdManager @Inject constructor(
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                adRevenueLogger.logFailedToShow(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    errorCode = adError.code,
+                    errorMessage = adError.message,
+                    route = null,
+                )
                 appOpenAd = null
                 onShowComplete()
             }
@@ -130,6 +204,7 @@ class AppOpenAdManager @Inject constructor(
                     adUnitId = ad.adUnitId,
                     route = null,
                 )
+                onAdImpression(ad.adUnitId)
                 if (shouldRecordImpressionStamp(impressionStampRecorded)) {
                     impressionStampRecorded = true
                     callbackScope.launch {
@@ -140,6 +215,15 @@ class AppOpenAdManager @Inject constructor(
 
             override fun onAdClicked() {
                 adRevenueLogger.logClick(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = null,
+                )
+            }
+
+            override fun onAdShowedFullScreenContent() {
+                adRevenueLogger.logServed(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,

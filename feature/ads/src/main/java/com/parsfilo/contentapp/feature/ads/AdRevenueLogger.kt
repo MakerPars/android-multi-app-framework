@@ -4,6 +4,8 @@ import android.os.Bundle
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.ResponseInfo
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
+import com.parsfilo.contentapp.core.firebase.AnalyticsEventName
+import com.parsfilo.contentapp.core.firebase.AnalyticsParamKey
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,6 +30,109 @@ data class AdPaidEventContext(
 class AdRevenueLogger @Inject constructor(
     private val appAnalytics: AppAnalytics,
 ) {
+    fun logRequest(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_REQUEST_SENT,
+            adEventBundle(adFormat, placement, adUnitId, route),
+        )
+    }
+
+    fun logLoaded(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        fillLatencyMs: Long? = null,
+        adapterName: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_LOADED,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                if (fillLatencyMs != null) putLong(AnalyticsParamKey.FILL_LATENCY_MS, fillLatencyMs)
+                if (!adapterName.isNullOrBlank()) putString(AnalyticsParamKey.ADAPTER_NAME, adapterName)
+            },
+        )
+    }
+
+    fun logFailedToLoad(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        errorCode: Int,
+        errorMessage: String?,
+        route: String? = null,
+        backoffAttempt: Int? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_FAILED_TO_LOAD,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                putLong(AnalyticsParamKey.ERROR_CODE, errorCode.toLong())
+                if (!errorMessage.isNullOrBlank()) putString(AnalyticsParamKey.ERROR_MESSAGE, errorMessage)
+                if (backoffAttempt != null) putLong(AnalyticsParamKey.BACKOFF_ATTEMPT, backoffAttempt.toLong())
+            },
+        )
+    }
+
+    fun logSuppressed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        suppressReason: String,
+        route: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_SUPPRESSED,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                putString(AnalyticsParamKey.SUPPRESS_REASON, suppressReason)
+            },
+        )
+    }
+
+    fun logFailedToShow(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        errorCode: Int? = null,
+        errorMessage: String? = null,
+        route: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_FAILED_TO_SHOW,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                if (errorCode != null) putLong(AnalyticsParamKey.ERROR_CODE, errorCode.toLong())
+                if (!errorMessage.isNullOrBlank()) putString(AnalyticsParamKey.ERROR_MESSAGE, errorMessage)
+            },
+        )
+    }
+
+    fun logAdAfterEngagement(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+        sessionDurationSeconds: Long,
+        verseCountBeforeAd: Int,
+        sessionAudioPlayed: Boolean,
+        sessionContentType: String?,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_AFTER_ENGAGEMENT,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                putLong(AnalyticsParamKey.SESSION_DURATION_S, sessionDurationSeconds)
+                putLong(AnalyticsParamKey.VERSE_COUNT_BEFORE_AD, verseCountBeforeAd.toLong())
+                putLong(AnalyticsParamKey.SESSION_AUDIO_PLAYED, if (sessionAudioPlayed) 1L else 0L)
+                if (!sessionContentType.isNullOrBlank()) {
+                    putString(AnalyticsParamKey.SESSION_CONTENT_TYPE, sessionContentType)
+                }
+            },
+        )
+    }
+
     fun logPaidEvent(context: AdPaidEventContext) {
         val adValue = context.adValue
         if (adValue.valueMicros == 0L) {
@@ -49,11 +154,11 @@ class AdRevenueLogger @Inject constructor(
         )
 
         appAnalytics.logEvent(
-            "ad_paid_event",
+            AnalyticsEventName.AD_PAID_EVENT,
             Bundle().apply {
-                putString("ad_format", context.adFormat.analyticsValue)
-                putString("placement", context.placement.analyticsValue)
-                putString("ad_unit_id", context.adUnitId)
+                putString(AnalyticsParamKey.AD_FORMAT, context.adFormat.analyticsValue)
+                putString(AnalyticsParamKey.PLACEMENT, context.placement.analyticsValue)
+                putString(AnalyticsParamKey.AD_UNIT_ID, context.adUnitId)
                 putLong("value_micros", adValue.valueMicros)
                 putString("currency", adValue.currencyCode)
                 putLong("precision", adValue.precisionType.toLong())
@@ -61,7 +166,7 @@ class AdRevenueLogger @Inject constructor(
                 putString("mediation_adapter", context.responseMeta.mediationAdapterClassName)
                 putString("loaded_adapter_name", context.responseMeta.loadedAdapterName)
                 putString("network", context.responseMeta.networkName)
-                putString("route", context.route ?: "unknown")
+                putString(AnalyticsParamKey.ROUTE, context.route ?: "unknown")
             },
         )
     }
@@ -73,13 +178,8 @@ class AdRevenueLogger @Inject constructor(
         route: String? = null,
     ) {
         appAnalytics.logEvent(
-            "ad_impression",
-            Bundle().apply {
-                putString("ad_format", adFormat.analyticsValue)
-                putString("placement", placement.analyticsValue)
-                putString("ad_unit_id", adUnitId)
-                putString("route", route ?: "unknown")
-            },
+            AnalyticsEventName.AD_IMPRESSION,
+            adEventBundle(adFormat, placement, adUnitId, route),
         )
     }
 
@@ -90,13 +190,8 @@ class AdRevenueLogger @Inject constructor(
         route: String? = null,
     ) {
         appAnalytics.logEvent(
-            "ad_click",
-            Bundle().apply {
-                putString("ad_format", adFormat.analyticsValue)
-                putString("placement", placement.analyticsValue)
-                putString("ad_unit_id", adUnitId)
-                putString("route", route ?: "unknown")
-            },
+            AnalyticsEventName.AD_CLICK,
+            adEventBundle(adFormat, placement, adUnitId, route),
         )
     }
 
@@ -107,13 +202,8 @@ class AdRevenueLogger @Inject constructor(
         route: String? = null,
     ) {
         appAnalytics.logEvent(
-            "ad_served",
-            Bundle().apply {
-                putString("ad_format", adFormat.analyticsValue)
-                putString("placement", placement.analyticsValue)
-                putString("ad_unit_id", adUnitId)
-                putString("route", route ?: "unknown")
-            },
+            AnalyticsEventName.AD_SERVED,
+            adEventBundle(adFormat, placement, adUnitId, route),
         )
     }
 
@@ -126,4 +216,17 @@ class AdRevenueLogger @Inject constructor(
             networkName = adapterInfo?.adSourceName,
         )
     }
+
+    private fun adEventBundle(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+    ): Bundle =
+        Bundle().apply {
+            putString(AnalyticsParamKey.AD_FORMAT, adFormat.analyticsValue)
+            putString(AnalyticsParamKey.PLACEMENT, placement.analyticsValue)
+            putString(AnalyticsParamKey.AD_UNIT_ID, adUnitId)
+            putString(AnalyticsParamKey.ROUTE, route ?: "unknown")
+        }
 }

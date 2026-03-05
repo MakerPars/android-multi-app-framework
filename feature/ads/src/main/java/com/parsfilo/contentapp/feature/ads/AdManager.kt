@@ -12,6 +12,14 @@ import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
+import com.parsfilo.contentapp.core.firebase.logAgeGateCompleted
+import com.parsfilo.contentapp.core.firebase.logConsentDenied
+import com.parsfilo.contentapp.core.firebase.logConsentError
+import com.parsfilo.contentapp.core.firebase.logConsentFlowStarted
+import com.parsfilo.contentapp.core.firebase.logConsentGranted
+import com.parsfilo.contentapp.core.firebase.logConsentNotRequired
+import com.parsfilo.contentapp.core.firebase.logConsentRefreshed
+import com.parsfilo.contentapp.core.firebase.logPrivacyOptionsOpened
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -75,8 +83,10 @@ class AdManager @Inject constructor(
         onAdsInitialized = onReady
         AdsConsentRuntimeState.update(false)
         launchWithResolvedAgeGateStatus("initialize") { ageGateStatus ->
+            appAnalytics.logConsentFlowStarted(trigger = "cold_start")
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
+            val expectedFormShown = !consentInformation.canRequestAds()
 
             consentInformation.requestConsentInfoUpdate(
                 activity,
@@ -89,14 +99,29 @@ class AdManager @Inject constructor(
                             _consentStatus.value = ConsentStatus.Error(
                                 loadAndShowError.message ?: "Unknown consent error",
                             )
+                            appAnalytics.logConsentError(
+                                trigger = "cold_start",
+                                message = loadAndShowError.message ?: "Unknown consent error",
+                                ageGateResult = ageGateStatus.analyticsValue(),
+                            )
                         }
-                        applyConsentOutcome(consentInformation, ageGateStatus)
+                        applyConsentOutcome(
+                            consentInformation = consentInformation,
+                            ageGateStatus = ageGateStatus,
+                            trigger = "cold_start",
+                            umpFormShown = expectedFormShown,
+                        )
                     }
                 },
                 { requestConsentError ->
                     Timber.w("Consent info update error: %s", requestConsentError.message)
                     _consentStatus.value = ConsentStatus.Error(
                         requestConsentError.message ?: "Consent info update failed",
+                    )
+                    appAnalytics.logConsentError(
+                        trigger = "cold_start",
+                        message = requestConsentError.message ?: "Consent info update failed",
+                        ageGateResult = ageGateStatus.analyticsValue(),
                     )
                     updatePrivacyOptionsState(consentInformation)
                     applyConsentRuntimeState(consentInformation.canRequestAds())
@@ -107,6 +132,10 @@ class AdManager @Inject constructor(
                 updatePrivacyOptionsState(consentInformation)
                 applyConsentRuntimeState(true)
                 _consentStatus.value = ConsentStatus.NotRequired
+                appAnalytics.logConsentNotRequired(
+                    trigger = "cold_start",
+                    ageGateResult = ageGateStatus.analyticsValue(),
+                )
                 initializeMobileAdsSdk(ageGateStatus)
             } else {
                 AdsConsentRuntimeState.update(false)
@@ -127,6 +156,11 @@ class AdManager @Inject constructor(
                     updatePrivacyOptionsState(consentInformation)
                     val canRequestAds = consentInformation.canRequestAds()
                     applyConsentRuntimeState(canRequestAds)
+                    appAnalytics.logConsentRefreshed(
+                        trigger = "runtime",
+                        consentStatus = canRequestAds.analyticsConsentStatus(),
+                        ageGateResult = ageGateStatus.analyticsValue(),
+                    )
                     if (canRequestAds) {
                         initializeMobileAdsSdk(ageGateStatus)
                     } else {
@@ -136,9 +170,19 @@ class AdManager @Inject constructor(
                 },
                 { requestConsentError ->
                     Timber.w("Consent refresh error: %s", requestConsentError.message)
+                    appAnalytics.logConsentError(
+                        trigger = "runtime",
+                        message = requestConsentError.message ?: "Consent refresh failed",
+                        ageGateResult = ageGateStatus.analyticsValue(),
+                    )
                     updatePrivacyOptionsState(consentInformation)
                     val canRequestAds = consentInformation.canRequestAds()
                     applyConsentRuntimeState(canRequestAds)
+                    appAnalytics.logConsentRefreshed(
+                        trigger = "runtime_error_recover",
+                        consentStatus = canRequestAds.analyticsConsentStatus(),
+                        ageGateResult = ageGateStatus.analyticsValue(),
+                    )
                     if (canRequestAds) {
                         initializeMobileAdsSdk(ageGateStatus)
                     } else {
@@ -156,6 +200,7 @@ class AdManager @Inject constructor(
         val isRequired =
             consentInformation.privacyOptionsRequirementStatus ==
                 ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+        appAnalytics.logPrivacyOptionsOpened(required = isRequired)
         if (!isRequired) {
             Timber.d("Privacy options not required in this region/session")
             onCompleted(false)
@@ -178,6 +223,7 @@ class AdManager @Inject constructor(
 
     fun showConsentFormIfRequired(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
         launchWithResolvedAgeGateStatus("showConsentFormIfRequired") { ageGateStatus ->
+            appAnalytics.logConsentFlowStarted(trigger = "debug_menu")
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
             consentInformation.requestConsentInfoUpdate(
@@ -185,17 +231,34 @@ class AdManager @Inject constructor(
                 params,
                 {
                     updatePrivacyOptionsState(consentInformation)
+                    val expectedFormShown = !consentInformation.canRequestAds()
                     UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
                         if (formError != null) {
                             Timber.w("Debug consent form error: %s", formError.message)
+                            appAnalytics.logConsentError(
+                                trigger = "debug_menu",
+                                message = formError.message ?: "Debug consent form error",
+                                ageGateResult = ageGateStatus.analyticsValue(),
+                            )
                             refreshConsent(activity) { onCompleted(false) }
                         } else {
+                            applyConsentOutcome(
+                                consentInformation = consentInformation,
+                                ageGateStatus = ageGateStatus,
+                                trigger = "debug_menu",
+                                umpFormShown = expectedFormShown,
+                            )
                             refreshConsent(activity) { onCompleted(true) }
                         }
                     }
                 },
                 { requestError ->
                     Timber.w("Debug consent request update error: %s", requestError.message)
+                    appAnalytics.logConsentError(
+                        trigger = "debug_menu",
+                        message = requestError.message ?: "Debug consent request update error",
+                        ageGateResult = ageGateStatus.analyticsValue(),
+                    )
                     refreshConsent(activity) { onCompleted(false) }
                 },
             )
@@ -233,14 +296,26 @@ class AdManager @Inject constructor(
     private fun applyConsentOutcome(
         consentInformation: ConsentInformation,
         ageGateStatus: AdAgeGateStatus,
+        trigger: String,
+        umpFormShown: Boolean,
     ) {
         if (consentInformation.canRequestAds()) {
             applyConsentRuntimeState(true)
             _consentStatus.value = ConsentStatus.Obtained
+            appAnalytics.logConsentGranted(
+                trigger = trigger,
+                umpFormShown = umpFormShown,
+                ageGateResult = ageGateStatus.analyticsValue(),
+            )
             initializeMobileAdsSdk(ageGateStatus)
         } else {
             applyConsentRuntimeState(false)
             _consentStatus.value = ConsentStatus.Required
+            appAnalytics.logConsentDenied(
+                trigger = trigger,
+                umpFormShown = umpFormShown,
+                ageGateResult = ageGateStatus.analyticsValue(),
+            )
             applyGlobalRequestConfiguration(ageGateStatus)
         }
     }
@@ -352,6 +427,7 @@ class AdManager @Inject constructor(
                 runCatching { resolveAgeGateStatus() }
                     .onFailure { Timber.w(it, "Failed to resolve age gate status for %s", operation) }
                     .getOrDefault(AdAgeGateStatus.UNKNOWN)
+            appAnalytics.logAgeGateCompleted(ageGateStatus.analyticsValue())
             block(ageGateStatus)
         }
     }
@@ -362,3 +438,12 @@ class AdManager @Inject constructor(
 
 internal fun mapToFirebaseConsentGrantedFlags(granted: Boolean): Pair<Boolean, Boolean> =
     granted to granted
+
+private fun Boolean.analyticsConsentStatus(): String = if (this) "granted" else "denied"
+
+private fun AdAgeGateStatus.analyticsValue(): String =
+    when (this) {
+        AdAgeGateStatus.UNKNOWN -> "unknown"
+        AdAgeGateStatus.UNDER_16 -> "under_16"
+        AdAgeGateStatus.AGE_16_OR_OVER -> "age_16_or_over"
+    }

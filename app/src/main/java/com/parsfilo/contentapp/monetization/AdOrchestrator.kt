@@ -3,9 +3,11 @@ package com.parsfilo.contentapp.monetization
 import android.app.Activity
 import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
+import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.AdPlacement
+import com.parsfilo.contentapp.feature.ads.AdRevenueLogger
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
@@ -21,6 +23,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class AdSessionContext(
+    val activeRoute: String? = null,
+    val contentType: String? = null,
+    val verseReadCount: Int = 0,
+    val audioPlayedThisSession: Boolean = false,
+    val sessionStartedAtMs: Long = System.currentTimeMillis(),
+)
+
 @Singleton
 class AdOrchestrator @Inject constructor(
     private val adManager: AdManager,
@@ -29,6 +39,7 @@ class AdOrchestrator @Inject constructor(
     val nativeAdManager: NativeAdManager,
     private val rewardedAdManager: RewardedAdManager,
     internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
+    private val adRevenueLogger: AdRevenueLogger,
     private val adGateChecker: AdGateChecker,
     private val adsPolicyProvider: AdsPolicyProvider,
     private val preferencesDataSource: PreferencesDataSource,
@@ -37,6 +48,8 @@ class AdOrchestrator @Inject constructor(
     // Shared main-thread scope for ad callbacks to avoid creating unbounded scopes repeatedly.
     private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
     private var rewardedInterstitialShownThisSession: Int = 0
+    @Volatile
+    private var adSessionContext: AdSessionContext = AdSessionContext()
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
         // UMP + MobileAds callbacks are UI-coupled; keep init on main thread.
@@ -59,6 +72,21 @@ class AdOrchestrator @Inject constructor(
         // so rewarded callbacks can still dispatch state updates after MainActivity.onDestroy().
     }
 
+    fun updateSessionContext(
+        activeRoute: String? = null,
+        contentType: String? = null,
+        verseReadIncrement: Int = 0,
+        audioPlayed: Boolean? = null,
+    ) {
+        val previous = adSessionContext
+        adSessionContext = previous.copy(
+            activeRoute = activeRoute ?: previous.activeRoute,
+            contentType = contentType ?: previous.contentType,
+            verseReadCount = (previous.verseReadCount + verseReadIncrement).coerceAtLeast(0),
+            audioPlayedThisSession = audioPlayed ?: previous.audioPlayedThisSession,
+        )
+    }
+
     suspend fun showInterstitialIfEligible(
         activity: Activity,
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
@@ -73,6 +101,14 @@ class AdOrchestrator @Inject constructor(
             activity = activity,
             placement = placement,
             route = route,
+            onAdImpression = { adUnitId ->
+                logAdAfterEngagement(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    route = route,
+                )
+            },
         ) {
             onAdDismissed()
         }
@@ -89,7 +125,17 @@ class AdOrchestrator @Inject constructor(
         if (!adGateChecker.shouldShowAds.first()) {
             return
         }
-        appOpenAdManager.showAdIfAvailable(activity) {
+        appOpenAdManager.showAdIfAvailable(
+            activity = activity,
+            onAdImpression = { adUnitId ->
+                logAdAfterEngagement(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = AdPlacement.APP_OPEN_RESUME,
+                    adUnitId = adUnitId,
+                    route = adSessionContext.activeRoute,
+                )
+            },
+        ) {
             // Reklam bitti veya gösterilemedi — yeni reklam yükle
             appOpenAdManager.loadAd(
                 AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
@@ -134,11 +180,17 @@ class AdOrchestrator @Inject constructor(
         }
         rewardedInterstitialAdManager.showAd(
             activity = activity,
-            onAdImpression = {
+            onAdImpression = { adUnitId ->
                 orchestratorScope.launch {
                     rewardedInterstitialShownThisSession += 1
                     preferencesDataSource.setLastRewardedInterstitialShown(System.currentTimeMillis())
                 }
+                logAdAfterEngagement(
+                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    route = route,
+                )
             },
             onUserEarnedReward = { _, _ ->
                 orchestratorScope.launch {
@@ -212,5 +264,26 @@ class AdOrchestrator @Inject constructor(
         rewardedAdManager.clearAd()
         rewardedInterstitialAdManager.clearAd()
         nativeAdManager.destroyAds()
+    }
+
+    private fun logAdAfterEngagement(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+    ) {
+        val context = adSessionContext
+        val now = System.currentTimeMillis()
+        val sessionDurationSeconds = ((now - context.sessionStartedAtMs).coerceAtLeast(0L) / 1000L)
+        adRevenueLogger.logAdAfterEngagement(
+            adFormat = adFormat,
+            placement = placement,
+            adUnitId = adUnitId,
+            route = route ?: context.activeRoute,
+            sessionDurationSeconds = sessionDurationSeconds,
+            verseCountBeforeAd = context.verseReadCount,
+            sessionAudioPlayed = context.audioPlayedThisSession,
+            sessionContentType = context.contentType,
+        )
     }
 }

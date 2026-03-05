@@ -9,6 +9,7 @@ data class AdsPolicyConfig(
     val rewardedInterstitialMaxPerSession: Int,
     val bannerEnabled: Boolean,
     val nativeEnabled: Boolean,
+    val interstitialPlacementsDisabled: Set<String>,
     val bannerPlacementsDisabled: Set<String>,
     val nativePlacementsDisabled: Set<String>,
     val nativePoolMax: Int,
@@ -23,6 +24,9 @@ data class AdsPolicyConfig(
 
     fun isBannerPlacementEnabled(placement: AdPlacement): Boolean =
         bannerEnabled && placement.analyticsValue !in bannerPlacementsDisabled
+
+    fun isInterstitialPlacementEnabled(placement: AdPlacement): Boolean =
+        placement.analyticsValue !in interstitialPlacementsDisabled
 
     fun isNativePlacementEnabled(placement: AdPlacement): Boolean =
         nativeEnabled && placement.analyticsValue !in nativePlacementsDisabled

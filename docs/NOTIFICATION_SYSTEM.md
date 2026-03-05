@@ -213,6 +213,17 @@ Functions env kontratini dogrulamak icin:
 npm run verify-env --prefix side-projects/firebase/functions
 ```
 
+Ad health payload (admin panel) now includes:
+
+- `today.totals.ecpmTry`
+- `weekly.totals.ecpmTry`
+- alert-level `ecpmTry`
+- additional alert reasons:
+  - `requests_without_impressions`
+  - `ecpm_drop_spike`
+
+Panelde bu alanlar backward-compatible sekilde conditionally render edilir; eski rapor dokumanlari bozulmaz.
+
 ### Otomatik Çalışan Bileşenler
 
 | Bileşen | Nerede | Ne Yapar |
