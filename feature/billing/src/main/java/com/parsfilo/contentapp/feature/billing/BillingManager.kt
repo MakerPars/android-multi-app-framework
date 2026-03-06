@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.feature.billing
 
 import android.app.Activity
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -31,11 +32,17 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
+object BillingErrorKeys {
+    const val CONNECTING = "BILLING_CONNECTING"
+    const val RECONNECTING = "BILLING_RECONNECTING"
+}
+
 @Singleton
 class BillingManager @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val preferencesDataSource: PreferencesDataSource,
     private val billingPurchaseVerifier: BillingPurchaseVerifier,
+    private val billingClientFactory: BillingClientFactory,
 ) {
 
     private var scope = createScope()
@@ -63,15 +70,7 @@ class BillingManager @Inject constructor(
     }
 
     private fun createBillingClient(): BillingClient {
-        val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
-            .enableOneTimeProducts()
-            .build()
-
-        return BillingClient.newBuilder(appContext)
-            .enablePendingPurchases(pendingPurchasesParams)
-            .enableAutoServiceReconnection()
-            .setListener(purchasesUpdatedListener)
-            .build()
+        return billingClientFactory.create(appContext, purchasesUpdatedListener)
     }
 
     fun startConnection() {
@@ -132,7 +131,7 @@ class BillingManager @Inject constructor(
     fun launchBillingFlow(activity: Activity, billingProduct: BillingProduct) {
         if (!billingClient.isReady) {
             startConnection()
-            _subscriptionState.value = SubscriptionState.Error("Ödeme servisine bağlanılıyor, tekrar deneyin")
+            _subscriptionState.value = SubscriptionState.Error(BillingErrorKeys.CONNECTING)
             return
         }
 
@@ -315,7 +314,7 @@ class BillingManager @Inject constructor(
                 Timber.i("%s (transient/disconnected)", message)
                 replaceBillingClient(closeCurrent = false, resetScope = false)
                 if (updateUiState) {
-                    _subscriptionState.value = SubscriptionState.Error("Ödeme servisine yeniden bağlanılıyor, tekrar deneyin")
+                    _subscriptionState.value = SubscriptionState.Error(BillingErrorKeys.RECONNECTING)
                 }
             }
 
@@ -339,59 +338,55 @@ class BillingManager @Inject constructor(
     }
 
     private fun handlePurchases(purchases: List<Purchase>) {
-        val purchased = purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
-
-        if (purchased.isEmpty()) {
-            applySubscriptionState(
-                isPremium = false,
-                isAutoRenewing = false,
-                expiryDate = null,
-            )
-            return
-        }
-
         _subscriptionState.value = SubscriptionState.Loading
         ensureScope()
         scope.launch {
-            purchased.forEach { purchase ->
-                acknowledgeIfNeeded(purchase)
-            }
-
-            val verifiedPurchases = purchased.mapNotNull { purchase ->
-                val verification = billingPurchaseVerifier.verify(
-                    packageName = appContext.packageName,
-                    purchase = purchase,
-                )
-                if (!verification.verified) {
-                    Timber.w(
-                        "Purchase verification failed for product=%s state=%s ack=%s reason=%s",
-                        purchase.products.firstOrNull().orEmpty(),
-                        verification.purchaseState,
-                        verification.acknowledgementState,
-                        verification.error.orEmpty()
-                    )
-                    return@mapNotNull null
-                }
-                verification
-            }
-
-            if (verifiedPurchases.isEmpty()) {
-                applySubscriptionState(
-                    isPremium = false,
-                    isAutoRenewing = false,
-                    expiryDate = null,
-                )
-                return@launch
-            }
-
-            val expiryDate = verifiedPurchases.mapNotNull { it.expiryTimeMillis }.maxOrNull()
-            val autoRenewing = verifiedPurchases.any { it.isAutoRenewing }
-            applySubscriptionState(
-                isPremium = true,
-                isAutoRenewing = autoRenewing,
-                expiryDate = expiryDate,
-            )
+            applySubscriptionState(resolveSubscriptionStateForPurchases(purchases))
         }
+    }
+
+    @VisibleForTesting
+    internal suspend fun resolveSubscriptionStateForPurchases(
+        purchases: List<Purchase>
+    ): SubscriptionState {
+        val purchased = purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+
+        if (purchased.isEmpty()) {
+            return SubscriptionState.Inactive
+        }
+
+        purchased.forEach { purchase ->
+            acknowledgeIfNeeded(purchase)
+        }
+
+        val verifiedPurchases = purchased.mapNotNull { purchase ->
+            val verification = billingPurchaseVerifier.verify(
+                packageName = appContext.packageName,
+                purchase = purchase,
+            )
+            if (!verification.verified) {
+                Timber.w(
+                    "Purchase verification failed for product=%s state=%s ack=%s reason=%s",
+                    purchase.products.firstOrNull().orEmpty(),
+                    verification.purchaseState,
+                    verification.acknowledgementState,
+                    verification.error.orEmpty()
+                )
+                return@mapNotNull null
+            }
+            verification
+        }
+
+        if (verifiedPurchases.isEmpty()) {
+            return SubscriptionState.Inactive
+        }
+
+        val expiryDate = verifiedPurchases.mapNotNull { it.expiryTimeMillis }.maxOrNull()
+        val autoRenewing = verifiedPurchases.any { it.isAutoRenewing }
+        return SubscriptionState.Active(
+            expiryDate = expiryDate,
+            isAutoRenewing = autoRenewing,
+        )
     }
 
     private fun acknowledgeIfNeeded(purchase: Purchase) {
@@ -408,24 +403,13 @@ class BillingManager @Inject constructor(
         }
     }
 
-    private fun applySubscriptionState(
-        isPremium: Boolean,
-        isAutoRenewing: Boolean,
-        expiryDate: Long?
-    ) {
+    private fun applySubscriptionState(state: SubscriptionState) {
         ensureScope()
         scope.launch {
-            preferencesDataSource.setPremium(isPremium)
+            preferencesDataSource.setPremium(state is SubscriptionState.Active)
         }
 
-        _subscriptionState.value = if (isPremium) {
-            SubscriptionState.Active(
-                expiryDate = expiryDate,
-                isAutoRenewing = isAutoRenewing
-            )
-        } else {
-            SubscriptionState.Inactive
-        }
+        _subscriptionState.value = state
     }
 
     private fun setError(message: String) {
@@ -460,6 +444,31 @@ class BillingManager @Inject constructor(
             closeCurrent,
             resetScope
         )
+    }
+}
+
+fun interface BillingClientFactory {
+    fun create(
+        context: Context,
+        purchasesUpdatedListener: PurchasesUpdatedListener,
+    ): BillingClient
+}
+
+@Singleton
+class DefaultBillingClientFactory @Inject constructor() : BillingClientFactory {
+    override fun create(
+        context: Context,
+        purchasesUpdatedListener: PurchasesUpdatedListener,
+    ): BillingClient {
+        val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
+            .enableOneTimeProducts()
+            .build()
+
+        return BillingClient.newBuilder(context)
+            .enablePendingPurchases(pendingPurchasesParams)
+            .enableAutoServiceReconnection()
+            .setListener(purchasesUpdatedListener)
+            .build()
     }
 }
 

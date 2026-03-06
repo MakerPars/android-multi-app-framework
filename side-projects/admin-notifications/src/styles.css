@@ -230,6 +230,7 @@ body {
 /* ── Tabs ── */
 .admin-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-xs);
     padding: var(--space-sm) var(--space-xl);
     background: rgba(15, 17, 23, 0.6);
@@ -1216,6 +1217,140 @@ small {
     flex-wrap: wrap;
     gap: 4px;
     margin-top: 6px;
+}
+
+/* ── Remote Config ── */
+.remote-config-list {
+    margin-top: var(--space-md);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-md);
+}
+
+.remote-config-card {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.remote-config-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.remote-config-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.remote-config-meta strong {
+    font-size: 0.9rem;
+    word-break: break-word;
+}
+
+.remote-config-type {
+    width: fit-content;
+    text-transform: lowercase;
+}
+
+.remote-config-type-boolean {
+    background: rgba(34, 197, 94, 0.12);
+    color: hsl(155, 70%, 60%);
+}
+
+.remote-config-type-number {
+    background: rgba(59, 130, 246, 0.12);
+    color: hsl(214, 90%, 68%);
+}
+
+.remote-config-type-json {
+    background: rgba(168, 85, 247, 0.14);
+    color: hsl(277, 90%, 74%);
+}
+
+.remote-config-type-string {
+    background: rgba(148, 163, 184, 0.12);
+    color: hsl(215, 20%, 70%);
+}
+
+/* ── Flavor Hub ── */
+.flavor-grid {
+    margin-top: var(--space-md);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-md);
+}
+
+.flavor-card {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.flavor-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.flavor-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.analytics-metric-grid {
+    margin-top: var(--space-md);
+}
+
+.analytics-table-wrap {
+    margin-top: var(--space-md);
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+}
+
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.analytics-table th,
+.analytics-table td {
+    padding: 10px var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.analytics-table th {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.analytics-table tr:last-child td {
+    border-bottom: none;
+}
+
+.revenue-alert-list {
+    margin-top: var(--space-md);
+}
+
+.revenue-meta-list {
+    margin-top: var(--space-md);
 }
 
 /* ── System Health ── */

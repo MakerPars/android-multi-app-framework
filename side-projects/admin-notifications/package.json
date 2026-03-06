@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "inject:flavor-versions": "node scripts/inject-flavor-versions.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

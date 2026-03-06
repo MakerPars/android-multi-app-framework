@@ -7,11 +7,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -123,7 +128,9 @@ fun QuranSuraDetailScreen(
     val language = Locale.getDefault().language.lowercase(Locale.ROOT)
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+        ),
         topBar = {
             QuranSuraDetailHeader(
                 title = state.sura?.nameTurkish ?: stringResource(R.string.quran_title),
@@ -136,7 +143,8 @@ fun QuranSuraDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state.shouldShowAds) {
@@ -245,8 +253,7 @@ fun QuranSuraDetailScreen(
         )
     }
 
-    if (actionAyah != null) {
-        val ayah = actionAyah!!
+    actionAyah?.let { ayah ->
         val isBookmarked = state.ayahs.firstOrNull { it.ayah.ayahNumber == ayah.ayahNumber }?.isBookmarked == true
         ModalBottomSheet(onDismissRequest = { actionAyah = null }) {
             Column(
@@ -292,6 +299,7 @@ private fun QuranSuraDetailHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
             .padding(horizontal = 6.dp, vertical = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

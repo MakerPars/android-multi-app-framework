@@ -5,12 +5,23 @@ import ciApps from "@ciapps";
 import {
   WEEKDAYS,
   type DeviceFinderItem,
+  type FlavorVersionInfo,
   type LocaleKey,
+  type RemoteConfigEntry,
+  type RemoteConfigTemplateResponse,
   type ScheduledEventForm,
   type ScheduledEventRecord,
   type WeekdayKey,
   EVENT_STATUSES,
 } from "./types";
+
+type CiAppCatalogEntry = {
+  flavor: string;
+  package: string;
+  name?: string;
+  admob_app_id: string;
+  ad_units: Record<string, string>;
+};
 
 /* ── Formatting ── */
 
@@ -271,9 +282,58 @@ export function summarizeApiError(errorPayload: unknown, fallback: string): stri
   return fallback;
 }
 
+function inferRemoteConfigValueType(value: string): RemoteConfigEntry["valueType"] {
+  const trimmed = value.trim();
+  if (trimmed === "true" || trimmed === "false") return "boolean";
+  if (trimmed !== "" && Number.isFinite(Number(trimmed))) return "number";
+  if (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+  ) {
+    try {
+      JSON.parse(trimmed);
+      return "json";
+    } catch {
+      return "string";
+    }
+  }
+  return "string";
+}
+
+export function parseRemoteConfigEntries(
+  template: RemoteConfigTemplateResponse | null,
+): RemoteConfigEntry[] {
+  const parameters = template?.parameters ?? {};
+  return Object.entries(parameters)
+    .map(([key, parameter]) => {
+      const value = parameter.defaultValue?.value ?? "";
+      return {
+        key,
+        value,
+        valueType: inferRemoteConfigValueType(value),
+        description: parameter.description ?? "",
+      };
+    })
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export function parseFlavorVersions(): Record<string, FlavorVersionInfo> {
+  const raw = import.meta.env.VITE_FLAVOR_VERSIONS as string | undefined;
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, FlavorVersionInfo>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 /* ── Shared Constants ── */
 
-export const sortedApps = [...ciApps].sort((a, b) => a.flavor.localeCompare(b.flavor));
+export const sortedApps = [...(ciApps as CiAppCatalogEntry[])].sort((a, b) =>
+  a.flavor.localeCompare(b.flavor),
+);
 export const appBuildId = (import.meta.env.VITE_APP_BUILD as string | undefined) ?? "dev-local";
 export const appBuildTimeRaw = (import.meta.env.VITE_APP_BUILD_TIME as string | undefined) ?? "";
 export const appBuildTime = appBuildTimeRaw ? formatDateTime(new Date(appBuildTimeRaw)) : "-";

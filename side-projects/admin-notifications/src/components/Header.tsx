@@ -16,10 +16,10 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
         <div className="topbar-brand">
           <h1>
             <span className="brand-icon" aria-hidden="true">🔔</span>
-            Notifications Admin
+            ContentApp Admin
           </h1>
           <p className="topbar-subtitle">
-            Manage Firestore <code>scheduled_events</code> used by dispatchNotifications.
+            Operate flavor inventory, notifications, remote config, analytics, revenue, and system health from one panel.
           </p>
           <p className="topbar-build">
             build <code>{appBuildId}</code> · {appBuildTime}
@@ -39,6 +39,18 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
       </header>
 
       <nav className="admin-tabs" role="tablist" aria-label="Admin sections">
+        <button
+          type="button"
+          role="tab"
+          className={`tab-btn ${activeTab === "flavor-hub" ? "active" : ""}`}
+          aria-selected={activeTab === "flavor-hub"}
+          onClick={() => onTabChange("flavor-hub")}
+          id="tab-flavor-hub"
+          aria-controls="tabpanel-flavor-hub"
+        >
+          <span className="tab-icon" aria-hidden="true">📱</span>
+          Flavor Hub
+        </button>
         <button
           type="button"
           role="tab"
@@ -66,6 +78,42 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
         <button
           type="button"
           role="tab"
+          className={`tab-btn ${activeTab === "remote-config" ? "active" : ""}`}
+          aria-selected={activeTab === "remote-config"}
+          onClick={() => onTabChange("remote-config")}
+          id="tab-remote-config"
+          aria-controls="tabpanel-remote-config"
+        >
+          <span className="tab-icon" aria-hidden="true">⚙️</span>
+          Remote Config
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`tab-btn ${activeTab === "analytics" ? "active" : ""}`}
+          aria-selected={activeTab === "analytics"}
+          onClick={() => onTabChange("analytics")}
+          id="tab-analytics"
+          aria-controls="tabpanel-analytics"
+        >
+          <span className="tab-icon" aria-hidden="true">📊</span>
+          Analytics
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`tab-btn ${activeTab === "revenue" ? "active" : ""}`}
+          aria-selected={activeTab === "revenue"}
+          onClick={() => onTabChange("revenue")}
+          id="tab-revenue"
+          aria-controls="tabpanel-revenue"
+        >
+          <span className="tab-icon" aria-hidden="true">💰</span>
+          Revenue
+        </button>
+        <button
+          type="button"
+          role="tab"
           className={`tab-btn ${activeTab === "system-health" ? "active" : ""}`}
           aria-selected={activeTab === "system-health"}
           onClick={() => onTabChange("system-health")}
@@ -73,7 +121,7 @@ export default function Header({ user, activeTab, onTabChange, onSignOut }: Head
           aria-controls="tabpanel-system-health"
         >
           <span className="tab-icon" aria-hidden="true">💚</span>
-          Observability
+          System
         </button>
       </nav>
     </>

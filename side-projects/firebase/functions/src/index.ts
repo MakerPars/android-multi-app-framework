@@ -13,6 +13,8 @@ export { sendTestNotification } from "./sendTestNotification";
 export { deviceCoverageReport } from "./deviceCoverageReport";
 export { adPerformance, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
 export { adminAccessCheck } from "./adminAccessCheck";
+export { adminGetRemoteConfig, adminUpdateRemoteConfig } from "./adminRemoteConfig";
+export { healthCheck } from "./healthCheck";
 // MOVED to Cloudflare Worker (contentapp-content-api /api/recaptcha-verify)
 // export { recaptchaVerify } from "./recaptchaVerify";
 export { verifyPurchase } from "./verifyPurchase";

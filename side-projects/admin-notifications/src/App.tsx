@@ -44,10 +44,13 @@ import {
   type TestPushTargetMode,
   type TestPushResult,
   type AdminAccessResponse,
+  type RemoteConfigEntry,
+  type RemoteConfigTemplateResponse,
 } from "./types";
 import {
   parseEvent,
   parseDeviceFinderItem,
+  parseRemoteConfigEntries,
   formFromRecord,
   buildPayload,
   validateForm,
@@ -59,19 +62,31 @@ import {
 /* ── Components ── */
 import Header from "./components/Header";
 import AuthScreen from "./components/AuthScreen";
+import FlavorHubPanel from "./components/FlavorHubPanel";
 import EventListPanel from "./components/EventListPanel";
 import EventFormPanel from "./components/EventFormPanel";
 import TestPushPanel from "./components/TestPushPanel";
+import RemoteConfigPanel from "./components/RemoteConfigPanel";
+import AnalyticsPanel from "./components/AnalyticsPanel";
+import RevenuePanel from "./components/RevenuePanel";
 import SystemHealthPanel from "./components/SystemHealthPanel";
 
 const allPackages = sortedApps.map((a) => a.package);
 
 function readInitialTab(): AdminTab {
   const tab = new URLSearchParams(window.location.search).get("tab");
-  if (tab === "events" || tab === "test-push" || tab === "system-health") {
+  if (
+    tab === "flavor-hub" ||
+    tab === "events" ||
+    tab === "test-push" ||
+    tab === "remote-config" ||
+    tab === "analytics" ||
+    tab === "revenue" ||
+    tab === "system-health"
+  ) {
     return tab;
   }
-  return "events";
+  return "flavor-hub";
 }
 
 function readInitialSubTab(): TestPushSubTab {
@@ -142,6 +157,14 @@ export default function App() {
   const [adTodayLoading, setAdTodayLoading] = useState(false);
   const [adTodayError, setAdTodayError] = useState("");
   const [adPerformanceToday, setAdPerformanceToday] = useState<AdPerformanceToday | null>(null);
+
+  /* ── Remote Config state ── */
+  const [remoteConfigLoading, setRemoteConfigLoading] = useState(false);
+  const [remoteConfigSavingKey, setRemoteConfigSavingKey] = useState<string | null>(null);
+  const [remoteConfigError, setRemoteConfigError] = useState("");
+  const [remoteConfigMessage, setRemoteConfigMessage] = useState("");
+  const [remoteConfigEntries, setRemoteConfigEntries] = useState<RemoteConfigEntry[]>([]);
+  const [remoteConfigEtag, setRemoteConfigEtag] = useState("");
 
   /* ── Derived ── */
   const isCreateMode = selectedId === null;
@@ -647,6 +670,88 @@ export default function App() {
     ]);
   }, [loadAdPerformanceToday, loadAdPerformanceReport]);
 
+  const loadRemoteConfig = useCallback(async () => {
+    if (!user) return;
+    setRemoteConfigLoading(true);
+    setRemoteConfigError("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/adminGetRemoteConfig`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to fetch Remote Config`),
+        );
+      }
+
+      const template = responseBody as RemoteConfigTemplateResponse;
+      setRemoteConfigEntries(parseRemoteConfigEntries(template));
+      setRemoteConfigEtag(typeof template.etag === "string" ? template.etag : "");
+    } catch (e) {
+      console.error(e);
+      setRemoteConfigError(e instanceof Error ? e.message : "Failed to fetch Remote Config.");
+    } finally {
+      setRemoteConfigLoading(false);
+    }
+  }, [user]);
+
+  const saveRemoteConfigEntry = useCallback(async (entry: RemoteConfigEntry) => {
+    if (!user) return;
+    setRemoteConfigSavingKey(entry.key);
+    setRemoteConfigError("");
+    setRemoteConfigMessage("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/adminUpdateRemoteConfig`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          key: entry.key,
+          value: entry.value,
+          description: entry.description,
+        }),
+      });
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to update Remote Config`),
+        );
+      }
+
+      setRemoteConfigMessage(`Saved ${entry.key}.`);
+      await loadRemoteConfig();
+    } catch (e) {
+      console.error(e);
+      setRemoteConfigError(e instanceof Error ? e.message : "Failed to update Remote Config.");
+    } finally {
+      setRemoteConfigSavingKey(null);
+    }
+  }, [loadRemoteConfig, user]);
+
+  useEffect(() => {
+    if (activeTab !== "remote-config") return;
+    if (remoteConfigLoading || remoteConfigEntries.length > 0) return;
+    void loadRemoteConfig();
+  }, [activeTab, loadRemoteConfig, remoteConfigEntries.length, remoteConfigLoading]);
+
   /* ════════════════════════════════════════════
    *  RENDER
    * ════════════════════════════════════════════ */
@@ -697,6 +802,8 @@ export default function App() {
       )}
 
       <div id="main-content">
+        {activeTab === "flavor-hub" && <FlavorHubPanel />}
+
         {activeTab === "events" && (
           <div className="content-grid">
             <EventListPanel
@@ -776,6 +883,23 @@ export default function App() {
             onRefreshAdHealth={refreshAdHealth}
           />
         )}
+
+        {activeTab === "remote-config" && (
+          <RemoteConfigPanel
+            entries={remoteConfigEntries}
+            etag={remoteConfigEtag}
+            loading={remoteConfigLoading}
+            savingKey={remoteConfigSavingKey}
+            error={remoteConfigError}
+            message={remoteConfigMessage}
+            onRefresh={loadRemoteConfig}
+            onSave={saveRemoteConfigEntry}
+          />
+        )}
+
+        {activeTab === "analytics" && <AnalyticsPanel />}
+
+        {activeTab === "revenue" && <RevenuePanel />}
 
         {activeTab === "system-health" && <SystemHealthPanel />}
       </div>

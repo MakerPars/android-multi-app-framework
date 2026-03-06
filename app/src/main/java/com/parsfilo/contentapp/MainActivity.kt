@@ -3,6 +3,7 @@ package com.parsfilo.contentapp
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,14 +14,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.activity.viewModels
 import com.parsfilo.contentapp.core.common.NotificationIntentKeys
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
 import com.parsfilo.contentapp.core.database.model.NotificationEntity
-import com.parsfilo.contentapp.core.datastore.PrayerPreferencesDataSource
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
@@ -28,10 +28,10 @@ import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.monetization.AdOrchestrator
 import com.parsfilo.contentapp.navigation.NotificationOpenRequest
 import com.parsfilo.contentapp.ui.ContentApp
+import com.parsfilo.contentapp.ui.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -40,6 +40,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val viewModel: MainViewModel by viewModels()
+
     @Inject
     lateinit var adOrchestrator: AdOrchestrator
 
@@ -55,48 +57,35 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appAnalytics: AppAnalytics
 
-    @Inject
-    lateinit var prayerPreferencesDataSource: PrayerPreferencesDataSource
-
     private val openNotificationsEventsChannel =
         Channel<NotificationOpenRequest>(capacity = Channel.BUFFERED)
     private val openNotificationsEvents = openNotificationsEventsChannel.receiveAsFlow()
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            lifecycleScope.launch {
-                preferencesDataSource.setNotificationPermissionPrompted(true)
-                if (!granted) {
-                    preferencesDataSource.setNotificationsEnabled(false)
-                }
-                pushRegistrationManager.syncRegistration("permission_result")
-            }
+            viewModel.onNotificationPermissionResult(granted)
         }
 
     private val prayerLocationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
-            lifecycleScope.launch {
-                prayerPreferencesDataSource.setLocationPermissionPrompted(true)
-            }
+            viewModel.onLocationPermissionResult()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyEdgeToEdge(resolveInitialDarkMode())
         handleNotificationIntent(intent)
+        setComposeContentSafely()
+        observePermissionPrompts()
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 preferencesDataSource.userData.map { it.darkMode }.distinctUntilChanged()
                     .collect { isDarkMode ->
-                        applyEdgeToEdgeSafely(isDarkMode)
+                        applyEdgeToEdge(isDarkMode)
                     }
             }
         }
-
-        setComposeContentSafely()
-
-        requestNotificationPermissionIfNeeded()
-        requestPrayerLocationPermissionIfNeeded()
 
         lifecycleScope.launch {
             pushRegistrationManager.syncRegistration("app_start")
@@ -273,51 +262,55 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
+    private fun observePermissionPrompts() {
         lifecycleScope.launch {
-            val permissionGranted = ContextCompat.checkSelfPermission(
-                this@MainActivity, Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.shouldRequestNotificationPermission.collect { shouldRequest ->
+                        if (!shouldRequest || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            return@collect
+                        }
 
-            val wasPrompted = preferencesDataSource.userData.first().notificationPermissionPrompted
+                        val permissionGranted = ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        ) == PackageManager.PERMISSION_GRANTED
 
-            if (!permissionGranted && !wasPrompted) {
-                preferencesDataSource.setNotificationPermissionPrompted(true)
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
+                        if (permissionGranted) {
+                            viewModel.onNotificationPermissionResult(granted = true)
+                        } else {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
 
-    private fun requestPrayerLocationPermissionIfNeeded() {
-        if (!isPrayerTimesFlavor()) return
+                launch {
+                    viewModel.shouldRequestLocationPermission.collect { shouldRequest ->
+                        if (!shouldRequest || !isPrayerTimesFlavor()) {
+                            return@collect
+                        }
 
-        lifecycleScope.launch {
-            val fineGranted = ContextCompat.checkSelfPermission(
-                this@MainActivity,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-            val coarseGranted = ContextCompat.checkSelfPermission(
-                this@MainActivity,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
+                        val fineGranted = ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        ) == PackageManager.PERMISSION_GRANTED
+                        val coarseGranted = ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ) == PackageManager.PERMISSION_GRANTED
 
-            val alreadyGranted = fineGranted || coarseGranted
-            val wasPrompted = prayerPreferencesDataSource.preferences.first().locationPermissionPrompted
-
-            if (alreadyGranted) {
-                return@launch
-            }
-
-            if (!wasPrompted) {
-                prayerPreferencesDataSource.setLocationPermissionPrompted(true)
-                prayerLocationPermissionLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                    )
-                )
+                        if (fineGranted || coarseGranted) {
+                            viewModel.onLocationPermissionResult()
+                        } else {
+                            prayerLocationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -338,40 +331,31 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun applyEdgeToEdgeSafely(isDarkMode: Boolean) {
+    private fun applyEdgeToEdge(isDarkMode: Boolean) {
         val transparent = app_transparent.toArgb()
-        try {
-            enableEdgeToEdge(
-                statusBarStyle = if (isDarkMode) {
-                    SystemBarStyle.dark(scrim = transparent)
-                } else {
-                    SystemBarStyle.light(
-                        scrim = transparent,
-                        darkScrim = transparent,
-                    )
-                },
-                navigationBarStyle = if (isDarkMode) {
-                    SystemBarStyle.dark(scrim = transparent)
-                } else {
-                    SystemBarStyle.light(
-                        scrim = transparent,
-                        darkScrim = transparent,
-                    )
-                },
-            )
-        } catch (_: UnsupportedOperationException) {
-            fallbackEdgeToEdge(isDarkMode)
-        } catch (_: IllegalArgumentException) {
-            fallbackEdgeToEdge(isDarkMode)
-        }
+        enableEdgeToEdge(
+            statusBarStyle = if (isDarkMode) {
+                SystemBarStyle.dark(scrim = transparent)
+            } else {
+                SystemBarStyle.light(
+                    scrim = transparent,
+                    darkScrim = transparent,
+                )
+            },
+            navigationBarStyle = if (isDarkMode) {
+                SystemBarStyle.dark(scrim = transparent)
+            } else {
+                SystemBarStyle.light(
+                    scrim = transparent,
+                    darkScrim = transparent,
+                )
+            },
+        )
     }
 
-    private fun fallbackEdgeToEdge(isDarkMode: Boolean) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowCompat.getInsetsController(window, window.decorView).let { controller ->
-            controller.isAppearanceLightStatusBars = !isDarkMode
-            controller.isAppearanceLightNavigationBars = !isDarkMode
-        }
+    private fun resolveInitialDarkMode(): Boolean {
+        return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
     }
 }
 

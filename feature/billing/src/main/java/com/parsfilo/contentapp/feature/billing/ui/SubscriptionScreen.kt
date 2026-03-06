@@ -60,6 +60,7 @@ import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalMotion
 import com.parsfilo.contentapp.core.model.SubscriptionState
+import com.parsfilo.contentapp.feature.billing.BillingErrorKeys
 import com.parsfilo.contentapp.feature.billing.R
 import com.parsfilo.contentapp.feature.billing.model.BillingProduct
 
@@ -185,10 +186,15 @@ fun SubscriptionScreen(
             }
 
             is SubscriptionState.Error -> {
+                val resolvedMessage = when (uiState.subscriptionState.message) {
+                    BillingErrorKeys.CONNECTING -> stringResource(R.string.billing_error_connecting)
+                    BillingErrorKeys.RECONNECTING -> stringResource(R.string.billing_error_reconnecting)
+                    else -> uiState.subscriptionState.message.orEmpty()
+                }
                 Text(
                     text = stringResource(
                         R.string.billing_error_prefix,
-                        uiState.subscriptionState.message.orEmpty()
+                        resolvedMessage
                     ),
                     color = colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium

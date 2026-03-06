@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.feature.quran.ui.reciter
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,7 @@ fun QuranReciterSettingsRoute(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top,
         ) {

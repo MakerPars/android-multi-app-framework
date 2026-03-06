@@ -7,7 +7,14 @@ export type ScheduleMode = "once" | "daily" | "weekly";
 export type LoadState = "loading" | "ready" | "error";
 
 export type AdminState = "checking" | "authorized" | "unauthorized";
-export type AdminTab = "events" | "test-push" | "system-health";
+export type AdminTab =
+  | "flavor-hub"
+  | "events"
+  | "test-push"
+  | "remote-config"
+  | "analytics"
+  | "revenue"
+  | "system-health";
 export type TestPushSubTab = "single-device" | "coverage" | "ad-health";
 export type TestPushTargetMode = "installationId" | "token";
 
@@ -166,6 +173,35 @@ export type AdminAccessResponse = {
   source?: "firestore" | "allowlist" | "none";
   email?: string | null;
   error?: string;
+};
+
+export type RemoteConfigParameterValueType =
+  | "boolean"
+  | "number"
+  | "json"
+  | "string";
+
+export type RemoteConfigEntry = {
+  key: string;
+  value: string;
+  valueType: RemoteConfigParameterValueType;
+  description: string;
+};
+
+export type RemoteConfigTemplateResponse = {
+  parameters?: Record<string, {
+    defaultValue?: { value?: string };
+    description?: string;
+    valueType?: string;
+  }>;
+  conditions?: unknown[];
+  version?: unknown;
+  etag?: string;
+};
+
+export type FlavorVersionInfo = {
+  versionCode?: number;
+  versionName?: string;
 };
 
 export type TestPushResult = {

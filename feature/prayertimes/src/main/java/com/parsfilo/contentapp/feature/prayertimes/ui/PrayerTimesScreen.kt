@@ -110,8 +110,8 @@ fun PrayerTimesRoute(
     }
 
     LaunchedEffect(snackMessage) {
-        if (snackMessage != null) {
-            snackbarHostState.showSnackbar(snackMessage!!.asString(context))
+        snackMessage?.asString(context)?.let { message ->
+            snackbarHostState.showSnackbar(message)
             viewModel.clearSnackMessage()
         }
     }

@@ -6,6 +6,8 @@
     <string name="billing_active_subtitle">Enjoy an ad-free experience</string>
 
     <string name="billing_error_prefix">Error: %s</string>
+    <string name="billing_error_connecting">Connecting to payment service, please try again</string>
+    <string name="billing_error_reconnecting">Reconnecting to payment service, please try again</string>
     <string name="billing_plans_loading">Loading plans...</string>
     <string name="billing_selected_badge">Selected</string>
     <string name="billing_subscribe">Subscribe</string>
@@ -25,4 +27,3 @@
     <string name="billing_plan_generic">Plan</string>
     <string name="billing_back">Back</string>
 </resources>
-

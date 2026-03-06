@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.parsfilo.contentapp.core.auth.AuthManager
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
+import com.parsfilo.contentapp.core.datastore.PrayerPreferencesDataSource
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
+import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.feature.messages.data.MessageRepository
 import com.parsfilo.contentapp.feature.otherapps.data.OtherAppsRepository
 import com.parsfilo.contentapp.navigation.AppRoute
@@ -25,6 +27,8 @@ class MainViewModel @Inject constructor(
     otherAppsRepository: OtherAppsRepository,
     private val authManager: AuthManager,
     private val preferencesDataSource: PreferencesDataSource,
+    private val prayerPreferencesDataSource: PrayerPreferencesDataSource,
+    private val pushRegistrationManager: PushRegistrationManager,
 ) : ViewModel() {
 
     val unreadNotificationCount: StateFlow<Int> = notificationDao.getUnreadCount()
@@ -43,6 +47,22 @@ class MainViewModel @Inject constructor(
 
     val darkModeEnabled: StateFlow<Boolean> = preferencesDataSource.userData
         .map { it.darkMode }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false,
+        )
+
+    val shouldRequestNotificationPermission: StateFlow<Boolean> = preferencesDataSource.userData
+        .map { !it.notificationPermissionPrompted }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false,
+        )
+
+    val shouldRequestLocationPermission: StateFlow<Boolean> = prayerPreferencesDataSource.preferences
+        .map { !it.locationPermissionPrompted }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -85,6 +105,22 @@ class MainViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             otherAppsRepository.refreshIfNeeded()
+        }
+    }
+
+    fun onNotificationPermissionResult(granted: Boolean) {
+        viewModelScope.launch {
+            preferencesDataSource.setNotificationPermissionPrompted(true)
+            if (!granted) {
+                preferencesDataSource.setNotificationsEnabled(false)
+            }
+            pushRegistrationManager.syncRegistration("permission_result")
+        }
+    }
+
+    fun onLocationPermissionResult() {
+        viewModelScope.launch {
+            prayerPreferencesDataSource.setLocationPermissionPrompted(true)
         }
     }
 

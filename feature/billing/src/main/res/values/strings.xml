@@ -6,6 +6,8 @@
     <string name="billing_active_subtitle">Reklamsız kullanım keyfini çıkarın</string>
 
     <string name="billing_error_prefix">Hata: %s</string>
+    <string name="billing_error_connecting">Ödeme servisine bağlanılıyor, tekrar deneyin</string>
+    <string name="billing_error_reconnecting">Ödeme servisine yeniden bağlanılıyor, tekrar deneyin</string>
     <string name="billing_plans_loading">Planlar yükleniyor...</string>
     <string name="billing_selected_badge">Seçili</string>
     <string name="billing_subscribe">Abone Ol</string>
@@ -25,4 +27,3 @@
     <string name="billing_plan_generic">Plan</string>
     <string name="billing_back">Geri</string>
 </resources>
-
