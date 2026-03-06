@@ -19,12 +19,6 @@ enum class AdPlacement(
     NATIVE_DEFAULT(AdFormat.NATIVE, null, "native_default"),
 
     INTERSTITIAL_NAV_BREAK(AdFormat.INTERSTITIAL, "ad_unit_interstitial_nav_break", "interstitial_nav_break"),
-    INTERSTITIAL_AUDIO_STOP(AdFormat.INTERSTITIAL, "ad_unit_interstitial_audio_stop", "interstitial_audio_stop"),
-    INTERSTITIAL_CONTENT_MODE_SWITCH(
-        AdFormat.INTERSTITIAL,
-        "ad_unit_interstitial_content_mode_switch",
-        "interstitial_content_mode_switch",
-    ),
     INTERSTITIAL_DEFAULT(AdFormat.INTERSTITIAL, null, "interstitial_default"),
 
     APP_OPEN_RESUME(AdFormat.APP_OPEN, "ad_unit_open_app_resume", "app_open_resume"),

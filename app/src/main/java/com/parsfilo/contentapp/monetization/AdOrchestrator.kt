@@ -3,18 +3,26 @@ package com.parsfilo.contentapp.monetization
 import android.app.Activity
 import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
+import com.parsfilo.contentapp.feature.ads.AdEligibility
 import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
 import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.AdPlacement
+import com.parsfilo.contentapp.feature.ads.AdRequestContext
 import com.parsfilo.contentapp.feature.ads.AdRevenueLogger
+import com.parsfilo.contentapp.feature.ads.AdSuppressReason
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
+import com.parsfilo.contentapp.feature.ads.AdsPlacementPolicyEvaluator
 import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
+import com.parsfilo.contentapp.feature.ads.AppOpenEligibilityTracker
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialAdManager
+import com.parsfilo.contentapp.feature.ads.RewardedInterstitialCoordinator
+import com.parsfilo.contentapp.feature.ads.RewardedInterstitialIntroSpec
+import com.parsfilo.contentapp.feature.ads.RewardedInterstitialLaunchToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.SupervisorJob
@@ -43,33 +51,36 @@ class AdOrchestrator @Inject constructor(
     private val adGateChecker: AdGateChecker,
     private val adsPolicyProvider: AdsPolicyProvider,
     private val preferencesDataSource: PreferencesDataSource,
+    private val placementPolicyEvaluator: AdsPlacementPolicyEvaluator,
+    private val rewardedInterstitialCoordinator: RewardedInterstitialCoordinator,
+    private val appOpenEligibilityTracker: AppOpenEligibilityTracker,
+    private val adsConfigValidator: AdsConfigValidator,
 ) {
 
-    // Shared main-thread scope for ad callbacks to avoid creating unbounded scopes repeatedly.
     private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
     private var rewardedInterstitialShownThisSession: Int = 0
+    private var interstitialShownThisSession: Int = 0
     @Volatile
     private var adSessionContext: AdSessionContext = AdSessionContext()
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
-        // UMP + MobileAds callbacks are UI-coupled; keep init on main thread.
-        scope.launch(Main.immediate) {
-            adManager.initialize(activity) {
-                scope.launch(Main.immediate) {
-                    // Respect premium/reward gate before preloading ads.
-                    if (!adGateChecker.shouldShowAds.first()) {
-                        return@launch
-                    }
-                    preloadAds(activity)
+        adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
+        adManager.initialize(activity) {
+            scope.launch(Main.immediate) {
+                if (!adGateChecker.shouldShowAds.first()) {
+                    return@launch
                 }
+                preloadAds(activity)
             }
         }
     }
 
     fun destroy() {
         nativeAdManager.destroyAds()
-        // Keep the shared scope alive across Activity recreation (rotation/process UI lifecycle)
-        // so rewarded callbacks can still dispatch state updates after MainActivity.onDestroy().
+    }
+
+    fun onAppPaused() {
+        appOpenEligibilityTracker.onPause()
     }
 
     fun updateSessionContext(
@@ -87,26 +98,87 @@ class AdOrchestrator @Inject constructor(
         )
     }
 
+    fun buildRewardedInterstitialIntro(placement: AdPlacement): RewardedInterstitialIntroSpec =
+        rewardedInterstitialCoordinator.buildIntroSpec(placement)
+
+    fun onRewardedInterstitialIntroShown(
+        placement: AdPlacement,
+        route: String?,
+        adUnitId: String,
+    ) {
+        rewardedInterstitialCoordinator.onIntroShown(placement, adUnitId, route)
+    }
+
+    fun onRewardedInterstitialIntroSkipped(
+        placement: AdPlacement,
+        route: String?,
+        adUnitId: String,
+    ) {
+        rewardedInterstitialCoordinator.onIntroSkipped(placement, adUnitId, route)
+        adRevenueLogger.logSuppressed(
+            adFormat = AdFormat.REWARDED_INTERSTITIAL,
+            placement = placement,
+            adUnitId = adUnitId,
+            suppressReason = AdSuppressReason.INTRO_SKIPPED,
+            route = route,
+        )
+    }
+
+    fun confirmRewardedInterstitialIntro(
+        placement: AdPlacement,
+        route: String?,
+        adUnitId: String,
+    ): RewardedInterstitialLaunchToken =
+        rewardedInterstitialCoordinator.confirmIntro(placement, adUnitId, route)
+
     suspend fun showInterstitialIfEligible(
         activity: Activity,
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
         onAdDismissed: () -> Unit = {},
     ) {
-        if (!AdsConsentRuntimeState.canRequestAds.value) {
-            onAdDismissed()
-            return
+        val prefs = preferencesDataSource.userData.first()
+        val contextRoute = route ?: adSessionContext.activeRoute
+        when (
+            val eligibility = placementPolicyEvaluator.evaluateInterstitial(
+                AdRequestContext(
+                    format = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    route = contextRoute,
+                    privacyState = AdsConsentRuntimeState.state.value,
+                    isPremium = prefs.isPremium,
+                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                    sessionCount = interstitialShownThisSession,
+                    lastShownAtMs = prefs.lastInterstitialShown,
+                    resumeGapMs = null,
+                    contentInProgress = isContentInProgress(contextRoute),
+                ),
+            )
+        ) {
+            is AdEligibility.Blocked -> {
+                adRevenueLogger.logSuppressed(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
+                    suppressReason = eligibility.reason,
+                    route = contextRoute,
+                )
+                onAdDismissed()
+                return
+            }
+            AdEligibility.Allowed -> Unit
         }
         interstitialAdManager.showAd(
             activity = activity,
             placement = placement,
-            route = route,
+            route = contextRoute,
             onAdImpression = { adUnitId ->
+                interstitialShownThisSession += 1
                 logAdAfterEngagement(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    route = route,
+                    route = contextRoute,
                 )
             },
         ) {
@@ -114,29 +186,51 @@ class AdOrchestrator @Inject constructor(
         }
     }
 
-    /**
-     * App Open reklamı gösterir — MainActivity.onResume'dan çağrılır.
-     * AppOpenAdManager kendi içinde premium/cooldown kontrolünü yapar.
-     */
     suspend fun showAppOpenAdIfEligible(activity: Activity) {
-        if (!AdsConsentRuntimeState.canRequestAds.value) {
-            return
-        }
-        if (!adGateChecker.shouldShowAds.first()) {
-            return
+        val prefs = preferencesDataSource.userData.first()
+        val resumeSnapshot = appOpenEligibilityTracker.onResume()
+        val route = adSessionContext.activeRoute
+        when (
+            val eligibility = placementPolicyEvaluator.evaluateAppOpen(
+                AdRequestContext(
+                    format = AdFormat.APP_OPEN,
+                    placement = AdPlacement.APP_OPEN_RESUME,
+                    route = route,
+                    privacyState = AdsConsentRuntimeState.state.value,
+                    isPremium = prefs.isPremium,
+                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                    sessionCount = resumeSnapshot.sessionCount,
+                    lastShownAtMs = prefs.lastAppOpenAdShown,
+                    resumeGapMs = if (resumeSnapshot.isColdStart) Long.MAX_VALUE else resumeSnapshot.resumeGapMs,
+                    contentInProgress = isContentInProgress(route),
+                ),
+            )
+        ) {
+            is AdEligibility.Blocked -> {
+                adRevenueLogger.logSuppressed(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = AdPlacement.APP_OPEN_RESUME,
+                    adUnitId = AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+                    suppressReason = eligibility.reason,
+                    route = route,
+                )
+                return
+            }
+            AdEligibility.Allowed -> Unit
         }
         appOpenAdManager.showAdIfAvailable(
             activity = activity,
+            route = route,
             onAdImpression = { adUnitId ->
+                appOpenEligibilityTracker.onShown()
                 logAdAfterEngagement(
                     adFormat = AdFormat.APP_OPEN,
                     placement = AdPlacement.APP_OPEN_RESUME,
                     adUnitId = adUnitId,
-                    route = adSessionContext.activeRoute,
+                    route = route,
                 )
             },
         ) {
-            // Reklam bitti veya gösterilemedi — yeni reklam yükle
             appOpenAdManager.loadAd(
                 AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
                 AdPlacement.APP_OPEN_RESUME,
@@ -144,42 +238,50 @@ class AdOrchestrator @Inject constructor(
         }
     }
 
-    /**
-     * RewardedInterstitial gösterir — doğal geçiş noktalarında çağrılır.
-     * Reward süresi tek kaynaktan (AdGateChecker) yönetilir.
-     */
     suspend fun showRewardedInterstitialIfEligible(
         activity: Activity,
+        launchToken: RewardedInterstitialLaunchToken,
         placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
         route: String? = null,
         onUserEarnedReward: () -> Unit = {},
-        onAdDismissed: () -> Unit = {}
+        onAdDismissed: () -> Unit = {},
     ) {
-        if (!AdsConsentRuntimeState.canRequestAds.value) {
-            onAdDismissed()
-            return
-        }
-        if (!adGateChecker.shouldShowAds.first()) {
-            onAdDismissed()
-            return
-        }
-        val policy = adsPolicyProvider.getPolicy()
-        val now = System.currentTimeMillis()
         val prefs = preferencesDataSource.userData.first()
-        if (policy.rewardedInterstitialMaxPerSession <= 0) {
-            onAdDismissed()
-            return
+        val contextRoute = route ?: adSessionContext.activeRoute
+        when (
+            val eligibility = placementPolicyEvaluator.evaluateRewardedInterstitial(
+                AdRequestContext(
+                    format = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = placement,
+                    route = contextRoute,
+                    privacyState = AdsConsentRuntimeState.state.value,
+                    isPremium = prefs.isPremium,
+                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                    sessionCount = rewardedInterstitialShownThisSession,
+                    lastShownAtMs = prefs.lastRewardedInterstitialShown,
+                    resumeGapMs = null,
+                    contentInProgress = false,
+                ),
+            )
+        ) {
+            is AdEligibility.Blocked -> {
+                adRevenueLogger.logSuppressed(
+                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
+                    suppressReason = eligibility.reason,
+                    route = contextRoute,
+                )
+                onAdDismissed()
+                return
+            }
+            AdEligibility.Allowed -> Unit
         }
-        if (rewardedInterstitialShownThisSession >= policy.rewardedInterstitialMaxPerSession) {
-            onAdDismissed()
-            return
-        }
-        if (now - prefs.lastRewardedInterstitialShown < policy.rewardedInterstitialMinIntervalMs) {
-            onAdDismissed()
-            return
-        }
-        rewardedInterstitialAdManager.showAd(
+        rewardedInterstitialAdManager.showAfterConfirmedIntro(
+            launchToken = launchToken,
             activity = activity,
+            placement = placement,
+            route = contextRoute,
             onAdImpression = { adUnitId ->
                 orchestratorScope.launch {
                     rewardedInterstitialShownThisSession += 1
@@ -189,7 +291,7 @@ class AdOrchestrator @Inject constructor(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    route = route,
+                    route = contextRoute,
                 )
             },
             onUserEarnedReward = { _, _ ->
@@ -199,11 +301,10 @@ class AdOrchestrator @Inject constructor(
                 }
             },
             onAdDismissed = {
-                // Sonraki gösterim için yeniden yükle
                 val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
-                rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial, placement, route)
+                rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial, placement, contextRoute)
                 onAdDismissed()
-            }
+            },
         )
     }
 
@@ -247,9 +348,6 @@ class AdOrchestrator @Inject constructor(
             policy.nativePoolMax,
         )
 
-        // Rewarded ads are loaded on-demand from Rewards screen to avoid
-        // high background request volume when user never opens rewards flow.
-
         rewardedInterstitialAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(
                 activity,
@@ -287,5 +385,14 @@ class AdOrchestrator @Inject constructor(
             sessionAudioPlayed = context.audioPlayedThisSession,
             sessionContentType = context.contentType,
         )
+    }
+
+    private fun isContentInProgress(route: String?): Boolean {
+        val normalizedRoute = route?.lowercase().orEmpty()
+        return adSessionContext.audioPlayedThisSession && (
+            normalizedRoute.startsWith("content") ||
+                normalizedRoute.startsWith("quran_sura_detail") ||
+                normalizedRoute.startsWith("prayer_detail")
+            )
     }
 }

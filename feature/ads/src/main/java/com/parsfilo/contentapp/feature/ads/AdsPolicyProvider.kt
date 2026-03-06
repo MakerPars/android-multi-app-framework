@@ -26,6 +26,24 @@ class AdsPolicyProvider @Inject constructor(
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_APP_OPEN_COOLDOWN_MS,
         )
+        val appOpenResumeGapMs = sanitizeLong(
+            remoteConfigManager.getLong(KEY_APP_OPEN_RESUME_GAP_MS),
+            min = 0L,
+            max = 30 * 60 * 1000L,
+            fallback = DEFAULT_APP_OPEN_RESUME_GAP_MS,
+        )
+        val appOpenMaxPerSession = sanitizeInt(
+            remoteConfigManager.getLong(KEY_APP_OPEN_MAX_PER_SESSION).toInt(),
+            min = 0,
+            max = 10,
+            fallback = DEFAULT_APP_OPEN_MAX_PER_SESSION,
+        )
+        val interstitialMaxPerSession = sanitizeInt(
+            remoteConfigManager.getLong(KEY_INTERSTITIAL_MAX_PER_SESSION).toInt(),
+            min = 0,
+            max = 20,
+            fallback = DEFAULT_INTERSTITIAL_MAX_PER_SESSION,
+        )
         val interstitialRelaxedFrequencyCapMs = sanitizeLong(
             remoteConfigManager.getLong(KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS),
             min = 60_000L,
@@ -43,6 +61,10 @@ class AdsPolicyProvider @Inject constructor(
             min = 0,
             max = 10,
             fallback = DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION,
+        )
+        val rewardedInterstitialIntroRequired = parseBoolean(
+            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED),
+            DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED,
         )
         val bannerEnabled = parseBoolean(
             remoteConfigManager.getString(KEY_BANNER_ENABLED),
@@ -105,6 +127,12 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.REWARDED_INTERSTITIAL,
         )
+        val appOpenRouteBlocklist = parseStringCsv(
+            remoteConfigManager.getString(KEY_APP_OPEN_ROUTE_BLOCKLIST_CSV),
+        )
+        val interstitialRouteBlocklist = parseStringCsv(
+            remoteConfigManager.getString(KEY_INTERSTITIAL_ROUTE_BLOCKLIST_CSV),
+        )
         val interstitialRelaxedPackages = parsePackageCsv(
             remoteConfigManager.getString(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
         )
@@ -114,8 +142,12 @@ class AdsPolicyProvider @Inject constructor(
             interstitialRelaxedFrequencyCapMs = interstitialRelaxedFrequencyCapMs,
             interstitialRelaxedPackages = interstitialRelaxedPackages,
             appOpenCooldownMs = appOpenCooldownMs,
+            appOpenResumeGapMs = appOpenResumeGapMs,
+            appOpenMaxPerSession = appOpenMaxPerSession,
+            interstitialMaxPerSession = interstitialMaxPerSession,
             rewardedInterstitialMinIntervalMs = rewardedInterstitialMinIntervalMs,
             rewardedInterstitialMaxPerSession = rewardedInterstitialMaxPerSession,
+            rewardedInterstitialIntroRequired = rewardedInterstitialIntroRequired,
             appOpenEnabled = appOpenEnabled,
             interstitialEnabled = interstitialEnabled,
             bannerEnabled = bannerEnabled,
@@ -128,6 +160,8 @@ class AdsPolicyProvider @Inject constructor(
             nativePlacementsDisabled = nativePlacementsDisabled,
             rewardedPlacementsDisabled = rewardedPlacementsDisabled,
             rewardedInterstitialPlacementsDisabled = rewardedInterstitialPlacementsDisabled,
+            appOpenRouteBlocklist = appOpenRouteBlocklist,
+            interstitialRouteBlocklist = interstitialRouteBlocklist,
             nativePoolMax = nativePoolMax,
             nativeTtlMs = nativeTtlMs,
         )
@@ -178,6 +212,16 @@ class AdsPolicyProvider @Inject constructor(
             .toSet()
     }
 
+    private fun parseStringCsv(value: String): Set<String> {
+        if (value.isBlank()) return emptySet()
+        return value.split(',')
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .map { it.lowercase() }
+            .toSet()
+    }
+
     private fun sanitizeLong(value: Long, min: Long, max: Long, fallback: Long): Long =
         value.takeIf { it in min..max } ?: fallback
 
@@ -197,10 +241,15 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV =
             "ads_interstitial_relaxed_packages_csv"
         const val KEY_APP_OPEN_COOLDOWN_MS = "ads_app_open_cooldown_ms"
+        const val KEY_APP_OPEN_RESUME_GAP_MS = "ads_app_open_resume_gap_ms"
+        const val KEY_APP_OPEN_MAX_PER_SESSION = "ads_app_open_max_per_session"
+        const val KEY_INTERSTITIAL_MAX_PER_SESSION = "ads_interstitial_max_per_session"
         const val KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS =
             "ads_rewarded_interstitial_min_interval_ms"
         const val KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION =
             "ads_rewarded_interstitial_max_per_session"
+        const val KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED =
+            "ads_rewarded_interstitial_intro_required"
         const val KEY_NATIVE_POOL_MAX = "ads_native_pool_max"
         const val KEY_NATIVE_TTL_MS = "ads_native_ttl_ms"
         const val KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV = "ads_interstitial_placements_disabled_csv"
@@ -210,6 +259,8 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_REWARDED_PLACEMENTS_DISABLED_CSV = "ads_rewarded_placements_disabled_csv"
         const val KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV =
             "ads_rewarded_interstitial_placements_disabled_csv"
+        const val KEY_APP_OPEN_ROUTE_BLOCKLIST_CSV = "ads_app_open_route_blocklist_csv"
+        const val KEY_INTERSTITIAL_ROUTE_BLOCKLIST_CSV = "ads_interstitial_route_blocklist_csv"
 
         const val DEFAULT_BANNER_ENABLED = true
         const val DEFAULT_NATIVE_ENABLED = true
@@ -220,10 +271,16 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 150_000L
         const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 240_000L
         const val DEFAULT_APP_OPEN_COOLDOWN_MS = 240_000L
+        const val DEFAULT_APP_OPEN_RESUME_GAP_MS = 45_000L
+        const val DEFAULT_APP_OPEN_MAX_PER_SESSION = 1
+        const val DEFAULT_INTERSTITIAL_MAX_PER_SESSION = 4
         const val DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS = 900_000L
         const val DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION = 2
+        const val DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED = true
         const val DEFAULT_NATIVE_POOL_MAX = 2
         const val DEFAULT_NATIVE_TTL_MS = 1_800_000L
+        const val DEFAULT_APP_OPEN_ROUTE_BLOCKLIST = "content,quran_sura_detail/{suranumber},prayer_detail/{prayerid},subscription,rewards"
+        const val DEFAULT_INTERSTITIAL_ROUTE_BLOCKLIST = "content,prayer_detail/{prayerid}"
 
         private val DEFAULTS = mapOf<String, Any>(
             KEY_BANNER_ENABLED to DEFAULT_BANNER_ENABLED,
@@ -236,8 +293,12 @@ class AdsPolicyProvider @Inject constructor(
             KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
             KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "",
             KEY_APP_OPEN_COOLDOWN_MS to DEFAULT_APP_OPEN_COOLDOWN_MS,
+            KEY_APP_OPEN_RESUME_GAP_MS to DEFAULT_APP_OPEN_RESUME_GAP_MS,
+            KEY_APP_OPEN_MAX_PER_SESSION to DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong(),
+            KEY_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_INTERSTITIAL_MAX_PER_SESSION.toLong(),
             KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS to DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
             KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong(),
+            KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED to DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED,
             KEY_NATIVE_POOL_MAX to DEFAULT_NATIVE_POOL_MAX.toLong(),
             KEY_NATIVE_TTL_MS to DEFAULT_NATIVE_TTL_MS,
             KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
@@ -246,6 +307,8 @@ class AdsPolicyProvider @Inject constructor(
             KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV to "",
             KEY_REWARDED_PLACEMENTS_DISABLED_CSV to "",
             KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
+            KEY_APP_OPEN_ROUTE_BLOCKLIST_CSV to DEFAULT_APP_OPEN_ROUTE_BLOCKLIST,
+            KEY_INTERSTITIAL_ROUTE_BLOCKLIST_CSV to DEFAULT_INTERSTITIAL_ROUTE_BLOCKLIST,
         )
     }
 }

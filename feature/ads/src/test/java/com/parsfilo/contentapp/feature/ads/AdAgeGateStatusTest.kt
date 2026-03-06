@@ -12,7 +12,9 @@ class AdAgeGateStatusTest {
 
     @Test
     fun `known values map correctly`() {
-        assertThat(AdAgeGateStatus.fromStorage("UNDER_16")).isEqualTo(AdAgeGateStatus.UNDER_16)
+        assertThat(AdAgeGateStatus.fromStorage("UNDER_16")).isEqualTo(AdAgeGateStatus.AGE_13_TO_15)
+        assertThat(AdAgeGateStatus.fromStorage("UNDER_13")).isEqualTo(AdAgeGateStatus.UNDER_13)
+        assertThat(AdAgeGateStatus.fromStorage("AGE_13_TO_15")).isEqualTo(AdAgeGateStatus.AGE_13_TO_15)
         assertThat(AdAgeGateStatus.fromStorage("AGE_16_OR_OVER")).isEqualTo(AdAgeGateStatus.AGE_16_OR_OVER)
     }
 }

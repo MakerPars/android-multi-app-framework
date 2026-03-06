@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.parsfilo.contentapp.feature.ads
 
 /**
@@ -39,6 +41,10 @@ object AdUnitIds {
      * ADMOB_APP_OPEN_ID=ca-app-pub-XXXXXXX/XXXXXXX
      * ```
      */
+    @Deprecated(
+        message = "Use app.monetization.AppAdUnitIds flavor resources as the only production source of truth.",
+        replaceWith = ReplaceWith("AppAdUnitIds.resolve(context, useTestAds = false)"),
+    )
     object Production {
         val APP_ID: String get() = BuildConfig.ADMOB_APP_ID
         val BANNER: String get() = BuildConfig.ADMOB_BANNER_ID

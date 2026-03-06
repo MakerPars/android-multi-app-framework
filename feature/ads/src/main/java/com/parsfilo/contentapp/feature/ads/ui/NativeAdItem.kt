@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,7 +66,7 @@ fun NativeAdItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimens.space12, vertical = dimens.space8),
+            .padding(horizontal = dimens.space12, vertical = dimens.space10),
         contentAlignment = Alignment.Center
     ) {
         NativeAdViewCompose(
@@ -93,6 +94,14 @@ fun NativeAdItem(
                         text = "Reklam",
                         containerColor = adLabelBg,
                         contentColor = adLabelText,
+                    )
+                    Text(
+                        text = "Sponsorlu",
+                        color = textSecondary,
+                        fontSize = 11.sp,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = dimens.space8),
                     )
                     NativeAdChoicesView(modifier = Modifier.size(dimens.iconMd))
                 }
@@ -180,6 +189,12 @@ fun NativeAdItem(
                         )
                     }
                 }
+
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = borderColor,
+                    modifier = Modifier.padding(bottom = dimens.space8),
+                )
 
                 nativeAd.advertiser?.let { advertiser ->
                     NativeAdAdvertiserView(modifier = Modifier.padding(bottom = dimens.space8)) {

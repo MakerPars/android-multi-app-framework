@@ -51,7 +51,8 @@
     <string name="settings_ads_age_gate_title">Altersangabe für Werbung</string>
     <string name="settings_ads_age_gate_desc">Wähle deine Altersgruppe für Datenschutz bei Werbung</string>
     <string name="settings_ads_age_unknown">Möchte ich nicht angeben</string>
-    <string name="settings_ads_age_under_16">Ich bin unter 16</string>
+    <string name="settings_ads_age_under_13">Ich bin unter 13</string>
+    <string name="settings_ads_age_13_to_15">Ich bin 13–15 Jahre alt</string>
     <string name="settings_ads_age_16_or_over">Ich bin 16 oder älter</string>
 
     <string name="settings_ads_debug_title">Ads-Debug (UMP / GMA)</string>

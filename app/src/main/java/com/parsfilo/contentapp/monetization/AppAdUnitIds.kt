@@ -16,6 +16,7 @@ import com.parsfilo.contentapp.feature.ads.AdUnitIds
  * AdMob IDs are not secrets; using resources keeps the build reproducible and flavor-correct.
  */
 object AppAdUnitIds {
+    const val GOOGLE_TEST_PUBLISHER_PREFIX = "ca-app-pub-3940256099942544"
 
     data class Ids(
         val banner: String,
@@ -78,6 +79,10 @@ object AppAdUnitIds {
         ids: Ids,
         format: AdFormat,
     ): String = placementValue?.takeIf { it.isNotBlank() } ?: defaultIdForFormat(ids, format)
+
+    fun Ids.usesGoogleTestIds(): Boolean =
+        listOf(banner, interstitial, native, rewarded, rewardedInterstitial, appOpen)
+            .all { it.startsWith(GOOGLE_TEST_PUBLISHER_PREFIX) }
 
     private fun stringByNameOrNull(context: Context, name: String): String? {
         val resId = context.resources.getIdentifier(name, "string", context.packageName)

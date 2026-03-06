@@ -14,16 +14,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Ödüllü Geçiş Reklamı (Rewarded Interstitial) yöneticisi.
- *
- * Kullanıcı doğal geçiş noktalarında ödüllü geçiş reklamı gösterir.
- * Reklam izlendikten sonra ödül verilir.
+ * Rewarded interstitial ads must only be shown after an explicit intro/confirmation step.
  */
 @Singleton
 class RewardedInterstitialAdManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val adRevenueLogger: AdRevenueLogger,
     private val adsPolicyProvider: AdsPolicyProvider,
+    private val rewardedInterstitialCoordinator: RewardedInterstitialCoordinator,
 ) {
     private var rewardedInterstitialAd: RewardedInterstitialAd? = null
     private var isLoading = false
@@ -44,7 +42,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
             clearAd()
@@ -55,7 +53,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
             )
             clearAd()
@@ -83,7 +81,7 @@ class RewardedInterstitialAdManager @Inject constructor(
             adRequest,
             object : RewardedInterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedInterstitialAd) {
-                    Timber.d("Ad loaded: $adUnitId")
+                    Timber.d("Ad loaded: %s", adUnitId)
                     loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
                     val fillLatencyMs = (SystemTimeProvider.nowMillis() - lastLoadStartedAtMillis).coerceAtLeast(0L)
                     adRevenueLogger.logLoaded(
@@ -92,7 +90,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                         adUnitId = ad.adUnitId,
                         route = currentRoute,
                         fillLatencyMs = fillLatencyMs,
-                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                        adapterName = ad.responseInfo.mediationAdapterClassName,
                     )
                     ad.onPaidEventListener = { value ->
                         adRevenueLogger.logPaidEvent(
@@ -118,7 +116,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    Timber.w("Failed to load: ${error.message}")
+                    Timber.w("Failed to load: %s", error.message)
                     rewardedInterstitialAd = null
                     isLoading = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
@@ -140,19 +138,22 @@ class RewardedInterstitialAdManager @Inject constructor(
         )
     }
 
-    fun showAd(
+    fun showAfterConfirmedIntro(
+        launchToken: RewardedInterstitialLaunchToken,
         activity: Activity,
+        placement: AdPlacement = currentPlacement,
+        route: String? = currentRoute,
         onAdImpression: (String) -> Unit = {},
         onUserEarnedReward: (type: String, amount: Int) -> Unit,
         onAdDismissed: () -> Unit,
     ) {
-        if (!adsPolicyProvider.getPolicy().isRewardedInterstitialPlacementEnabled(currentPlacement)) {
+        if (!adsPolicyProvider.getPolicy().isRewardedInterstitialPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                placement = currentPlacement,
+                placement = placement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "placement_disabled",
-                route = currentRoute,
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
+                route = route,
             )
             clearAd()
             onAdDismissed()
@@ -161,12 +162,23 @@ class RewardedInterstitialAdManager @Inject constructor(
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                placement = currentPlacement,
+                placement = placement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "no_consent",
-                route = currentRoute,
+                suppressReason = AdSuppressReason.NO_CONSENT,
+                route = route,
             )
             clearAd()
+            onAdDismissed()
+            return
+        }
+        if (!rewardedInterstitialCoordinator.isTokenValid(launchToken, placement, route)) {
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                placement = placement,
+                adUnitId = currentAdUnitId.ifBlank { "unknown" },
+                suppressReason = AdSuppressReason.INTRO_SKIPPED,
+                route = route,
+            )
             onAdDismissed()
             return
         }
@@ -175,10 +187,10 @@ class RewardedInterstitialAdManager @Inject constructor(
             Timber.d("Ad not ready, calling onAdDismissed")
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                placement = currentPlacement,
+                placement = placement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "not_loaded",
-                route = currentRoute,
+                suppressReason = AdSuppressReason.NOT_LOADED,
+                route = route,
             )
             onAdDismissed()
             return
@@ -187,19 +199,25 @@ class RewardedInterstitialAdManager @Inject constructor(
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 Timber.d("Ad dismissed")
+                adRevenueLogger.logDismissed(
+                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                )
                 rewardedInterstitialAd = null
                 onAdDismissed()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                Timber.w("Failed to show: ${adError.message}")
+                Timber.w("Failed to show: %s", adError.message)
                 adRevenueLogger.logFailedToShow(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = currentPlacement,
+                    placement = placement,
                     adUnitId = ad.adUnitId,
                     errorCode = adError.code,
                     errorMessage = adError.message,
-                    route = currentRoute,
+                    route = route,
                 )
                 rewardedInterstitialAd = null
                 onAdDismissed()
@@ -209,9 +227,9 @@ class RewardedInterstitialAdManager @Inject constructor(
                 Timber.d("Ad shown")
                 adRevenueLogger.logServed(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = currentPlacement,
+                    placement = placement,
                     adUnitId = ad.adUnitId,
-                    route = currentRoute,
+                    route = route,
                 )
             }
 
@@ -220,24 +238,24 @@ class RewardedInterstitialAdManager @Inject constructor(
                 onAdImpression(ad.adUnitId)
                 adRevenueLogger.logImpression(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = currentPlacement,
+                    placement = placement,
                     adUnitId = ad.adUnitId,
-                    route = currentRoute,
+                    route = route,
                 )
             }
 
             override fun onAdClicked() {
                 adRevenueLogger.logClick(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = currentPlacement,
+                    placement = placement,
                     adUnitId = ad.adUnitId,
-                    route = currentRoute,
+                    route = route,
                 )
             }
         }
 
         ad.show(activity) { rewardItem ->
-            Timber.d("Reward earned: ${rewardItem.type} x${rewardItem.amount}")
+            Timber.d("Reward earned: %s x%d", rewardItem.type, rewardItem.amount)
             onUserEarnedReward(rewardItem.type, rewardItem.amount)
         }
     }

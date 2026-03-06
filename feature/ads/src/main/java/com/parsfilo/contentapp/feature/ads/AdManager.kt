@@ -83,8 +83,8 @@ class AdManager @Inject constructor(
 
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
         onAdsInitialized = onReady
-        AdsConsentRuntimeState.update(false)
         launchWithResolvedAgeGateStatus("initialize") { ageGateStatus ->
+            AdsConsentRuntimeState.update(AdsPrivacyState.Gathering(ageGateStatus))
             appAnalytics.logConsentFlowStarted(trigger = "cold_start")
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
@@ -98,9 +98,10 @@ class AdManager @Inject constructor(
                     UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { loadAndShowError ->
                         if (loadAndShowError != null) {
                             Timber.w("Consent form error: %s", loadAndShowError.message)
-                            _consentStatus.value = ConsentStatus.Error(
+                            val errorStatus = ConsentStatus.Error(
                                 loadAndShowError.message ?: "Unknown consent error",
                             )
+                            _consentStatus.value = errorStatus
                             appAnalytics.logConsentError(
                                 trigger = "cold_start",
                                 message = loadAndShowError.message ?: "Unknown consent error",
@@ -117,30 +118,47 @@ class AdManager @Inject constructor(
                 },
                 { requestConsentError ->
                     Timber.w("Consent info update error: %s", requestConsentError.message)
-                    _consentStatus.value = ConsentStatus.Error(
+                    val errorStatus = ConsentStatus.Error(
                         requestConsentError.message ?: "Consent info update failed",
                     )
+                    _consentStatus.value = errorStatus
                     appAnalytics.logConsentError(
                         trigger = "cold_start",
                         message = requestConsentError.message ?: "Consent info update failed",
                         ageGateResult = ageGateStatus.analyticsValue(),
                     )
                     updatePrivacyOptionsState(consentInformation)
-                    applyConsentRuntimeState(consentInformation.canRequestAds())
+                    applyConsentRuntimeState(
+                        consentStatus = errorStatus,
+                        ageGateStatus = ageGateStatus,
+                        privacyOptionsRequired = _privacyOptionsRequired.value,
+                        canRequestAds = consentInformation.canRequestAds(),
+                    )
                 },
             )
 
             if (consentInformation.canRequestAds()) {
                 updatePrivacyOptionsState(consentInformation)
-                applyConsentRuntimeState(true)
                 _consentStatus.value = ConsentStatus.NotRequired
+                applyConsentRuntimeState(
+                    consentStatus = ConsentStatus.NotRequired,
+                    ageGateStatus = ageGateStatus,
+                    privacyOptionsRequired = _privacyOptionsRequired.value,
+                    canRequestAds = true,
+                )
                 appAnalytics.logConsentNotRequired(
                     trigger = "cold_start",
                     ageGateResult = ageGateStatus.analyticsValue(),
                 )
                 initializeMobileAdsSdk(ageGateStatus)
             } else {
-                AdsConsentRuntimeState.update(false)
+                AdsConsentRuntimeState.update(
+                    AdsPrivacyState.DeniedOrLimited(
+                        consentStatus = ConsentStatus.Unknown,
+                        privacyOptionsRequired = _privacyOptionsRequired.value,
+                        ageGateStatus = ageGateStatus,
+                    ),
+                )
                 applyFirebaseConsent(false)
             }
         }
@@ -157,7 +175,12 @@ class AdManager @Inject constructor(
                 {
                     updatePrivacyOptionsState(consentInformation)
                     val canRequestAds = consentInformation.canRequestAds()
-                    applyConsentRuntimeState(canRequestAds)
+                    applyConsentRuntimeState(
+                        consentStatus = if (canRequestAds) ConsentStatus.Obtained else ConsentStatus.Required,
+                        ageGateStatus = ageGateStatus,
+                        privacyOptionsRequired = _privacyOptionsRequired.value,
+                        canRequestAds = canRequestAds,
+                    )
                     appAnalytics.logConsentRefreshed(
                         trigger = "runtime",
                         consentStatus = canRequestAds.analyticsConsentStatus(),
@@ -179,7 +202,12 @@ class AdManager @Inject constructor(
                     )
                     updatePrivacyOptionsState(consentInformation)
                     val canRequestAds = consentInformation.canRequestAds()
-                    applyConsentRuntimeState(canRequestAds)
+                    applyConsentRuntimeState(
+                        consentStatus = if (canRequestAds) ConsentStatus.Obtained else ConsentStatus.Required,
+                        ageGateStatus = ageGateStatus,
+                        privacyOptionsRequired = _privacyOptionsRequired.value,
+                        canRequestAds = canRequestAds,
+                    )
                     appAnalytics.logConsentRefreshed(
                         trigger = "runtime_error_recover",
                         consentStatus = canRequestAds.analyticsConsentStatus(),
@@ -225,6 +253,7 @@ class AdManager @Inject constructor(
 
     fun showConsentFormIfRequired(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
         launchWithResolvedAgeGateStatus("showConsentFormIfRequired") { ageGateStatus ->
+            AdsConsentRuntimeState.update(AdsPrivacyState.Gathering(ageGateStatus))
             appAnalytics.logConsentFlowStarted(trigger = "debug_menu")
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
@@ -269,7 +298,7 @@ class AdManager @Inject constructor(
 
     fun resetConsent() {
         UserMessagingPlatform.getConsentInformation(context).reset()
-        AdsConsentRuntimeState.update(false)
+        AdsConsentRuntimeState.update(AdsPrivacyState.Unknown)
         applyFirebaseConsent(false)
         _consentStatus.value = ConsentStatus.Unknown
         _privacyOptionsRequired.value = false
@@ -302,8 +331,13 @@ class AdManager @Inject constructor(
         umpFormShown: Boolean,
     ) {
         if (consentInformation.canRequestAds()) {
-            applyConsentRuntimeState(true)
             _consentStatus.value = ConsentStatus.Obtained
+            applyConsentRuntimeState(
+                consentStatus = ConsentStatus.Obtained,
+                ageGateStatus = ageGateStatus,
+                privacyOptionsRequired = _privacyOptionsRequired.value,
+                canRequestAds = true,
+            )
             appAnalytics.logConsentGranted(
                 trigger = trigger,
                 umpFormShown = umpFormShown,
@@ -311,8 +345,13 @@ class AdManager @Inject constructor(
             )
             initializeMobileAdsSdk(ageGateStatus)
         } else {
-            applyConsentRuntimeState(false)
             _consentStatus.value = ConsentStatus.Required
+            applyConsentRuntimeState(
+                consentStatus = ConsentStatus.Required,
+                ageGateStatus = ageGateStatus,
+                privacyOptionsRequired = _privacyOptionsRequired.value,
+                canRequestAds = false,
+            )
             appAnalytics.logConsentDenied(
                 trigger = trigger,
                 umpFormShown = umpFormShown,
@@ -339,23 +378,10 @@ class AdManager @Inject constructor(
     }
 
     private fun applyGlobalRequestConfiguration(ageGateStatus: AdAgeGateStatus) {
-        val isUnderAge = ageGateStatus != AdAgeGateStatus.AGE_16_OR_OVER
         val builder = MobileAds.getRequestConfiguration().toBuilder()
-            .setTagForChildDirectedTreatment(
-                RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED,
-            )
-            .setTagForUnderAgeOfConsent(
-                if (isUnderAge) {
-                    RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
-                } else {
-                    RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE
-                },
-            )
-        if (isUnderAge) {
-            builder.setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_T)
-        } else {
-            builder.setMaxAdContentRating(null)
-        }
+            .setTagForChildDirectedTreatment(ageGateStatus.childDirectedTreatmentTag())
+            .setTagForUnderAgeOfConsent(ageGateStatus.underAgeOfConsentTag())
+            .setMaxAdContentRating(ageGateStatus.maxAdContentRating())
         MobileAds.setRequestConfiguration(builder.build())
     }
 
@@ -364,7 +390,7 @@ class AdManager @Inject constructor(
         debugGeography: UmpDebugGeography,
     ): ConsentRequestParameters {
         val builder = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(ageGateStatus != AdAgeGateStatus.AGE_16_OR_OVER)
+            .setTagForUnderAgeOfConsent(ageGateStatus.requiresTfua())
         val consentSyncId = consentSyncIdProvider.getConsentSyncIdOrNull()
         if (!consentSyncId.isNullOrBlank()) {
             builder.setConsentSyncId(consentSyncId)
@@ -396,14 +422,29 @@ class AdManager @Inject constructor(
                 ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
     }
 
-    private fun applyConsentRuntimeState(canRequestAds: Boolean) {
-        AdsConsentRuntimeState.update(canRequestAds)
+    private fun applyConsentRuntimeState(
+        consentStatus: ConsentStatus,
+        ageGateStatus: AdAgeGateStatus,
+        privacyOptionsRequired: Boolean,
+        canRequestAds: Boolean,
+    ) {
+        AdsConsentRuntimeState.update(
+            if (canRequestAds) {
+                AdsPrivacyState.CanRequestAds(
+                    consentStatus = consentStatus,
+                    privacyOptionsRequired = privacyOptionsRequired,
+                    ageGateStatus = ageGateStatus,
+                )
+            } else {
+                AdsPrivacyState.DeniedOrLimited(
+                    consentStatus = consentStatus,
+                    privacyOptionsRequired = privacyOptionsRequired,
+                    ageGateStatus = ageGateStatus,
+                )
+            },
+        )
         applyFirebaseConsent(canRequestAds)
-        _consentStatus.value = if (canRequestAds) {
-            ConsentStatus.Obtained
-        } else {
-            ConsentStatus.Required
-        }
+        _consentStatus.value = consentStatus
     }
 
     private fun applyFirebaseConsent(consentGranted: Boolean) {
@@ -454,6 +495,35 @@ private fun Boolean.analyticsConsentStatus(): String = if (this) "granted" else 
 private fun AdAgeGateStatus.analyticsValue(): String =
     when (this) {
         AdAgeGateStatus.UNKNOWN -> "unknown"
-        AdAgeGateStatus.UNDER_16 -> "under_16"
+        AdAgeGateStatus.UNDER_13 -> "under_13"
+        AdAgeGateStatus.AGE_13_TO_15 -> "age_13_to_15"
         AdAgeGateStatus.AGE_16_OR_OVER -> "age_16_or_over"
+    }
+
+private fun AdAgeGateStatus.requiresTfua(): Boolean =
+    this == AdAgeGateStatus.UNDER_13 || this == AdAgeGateStatus.AGE_13_TO_15
+
+private fun AdAgeGateStatus.childDirectedTreatmentTag(): Int =
+    when (this) {
+        AdAgeGateStatus.UNDER_13 -> RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
+        AdAgeGateStatus.UNKNOWN,
+        AdAgeGateStatus.AGE_13_TO_15,
+        AdAgeGateStatus.AGE_16_OR_OVER,
+        -> RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED
+    }
+
+private fun AdAgeGateStatus.underAgeOfConsentTag(): Int =
+    if (requiresTfua()) {
+        RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+    } else {
+        RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE
+    }
+
+private fun AdAgeGateStatus.maxAdContentRating(): String? =
+    when (this) {
+        AdAgeGateStatus.UNDER_13 -> RequestConfiguration.MAX_AD_CONTENT_RATING_G
+        AdAgeGateStatus.AGE_13_TO_15 -> RequestConfiguration.MAX_AD_CONTENT_RATING_T
+        AdAgeGateStatus.UNKNOWN,
+        AdAgeGateStatus.AGE_16_OR_OVER,
+        -> null
     }

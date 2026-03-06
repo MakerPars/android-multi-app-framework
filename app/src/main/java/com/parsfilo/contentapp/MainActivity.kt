@@ -326,6 +326,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        adOrchestrator.onAppPaused()
+        super.onPause()
+    }
+
     override fun onDestroy() {
         adOrchestrator.destroy()
         super.onDestroy()

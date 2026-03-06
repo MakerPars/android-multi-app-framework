@@ -95,18 +95,7 @@ class RewardsViewModel @Inject constructor(
             _isAdLoading.value = false
 
             if (adReady) {
-                rewardedAdManager.showAd(
-                    activity = activity,
-                    onUserEarnedReward = {
-                        viewModelScope.launch {
-                            adGateChecker.onRewardEarned()
-                        }
-                    },
-                    onAdDismissed = {
-                        // Yeni reklam ön yükle
-                        rewardedAdManager.loadAd(adUnitId)
-                    }
-                )
+                showRewardedAd(activity, adUnitId)
             } else {
                 // İlk yükleme başarısızsa sonraki deneme için tekrar tetikleyelim.
                 rewardedAdManager.loadAd(adUnitId)

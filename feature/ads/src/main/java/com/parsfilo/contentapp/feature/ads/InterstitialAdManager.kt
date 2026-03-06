@@ -48,7 +48,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
             clearAd()
@@ -59,7 +59,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
             )
             clearAd()
@@ -171,7 +171,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
             )
             clearAd()
@@ -183,7 +183,7 @@ class InterstitialAdManager @Inject constructor(
         val now = SystemTimeProvider.nowMillis()
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
-            val reason = if (prefs.isPremium) "premium" else "rewarded_free"
+            val reason = if (prefs.isPremium) AdSuppressReason.PREMIUM else AdSuppressReason.REWARDED_FREE
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
@@ -201,7 +201,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
             onAdDismissed()
@@ -220,7 +220,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "cooldown",
+                suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
             )
             onAdDismissed()
@@ -233,7 +233,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "not_loaded",
+                suppressReason = AdSuppressReason.NOT_LOADED,
                 route = route,
             )
             onAdDismissed()
@@ -247,6 +247,12 @@ class InterstitialAdManager @Inject constructor(
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                adRevenueLogger.logDismissed(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                )
                 interstitialAd = null
                 onAdDismissed()
                 maybeReload()

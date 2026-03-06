@@ -370,7 +370,8 @@ fun SettingsScreen(
                 val ageGateOptions = remember {
                     listOf(
                         AdAgeGateStatus.UNKNOWN to R.string.settings_ads_age_unknown,
-                        AdAgeGateStatus.UNDER_16 to R.string.settings_ads_age_under_16,
+                        AdAgeGateStatus.UNDER_13 to R.string.settings_ads_age_under_13,
+                        AdAgeGateStatus.AGE_13_TO_15 to R.string.settings_ads_age_13_to_15,
                         AdAgeGateStatus.AGE_16_OR_OVER to R.string.settings_ads_age_16_or_over,
                     )
                 }

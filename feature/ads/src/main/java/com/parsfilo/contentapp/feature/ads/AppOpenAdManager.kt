@@ -44,7 +44,7 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = null,
             )
             clearAd()
@@ -55,7 +55,7 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = null,
             )
             clearAd()
@@ -93,7 +93,7 @@ class AppOpenAdManager @Inject constructor(
                         adUnitId = ad.adUnitId,
                         route = null,
                         fillLatencyMs = fillLatencyMs,
-                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                        adapterName = ad.responseInfo.mediationAdapterClassName,
                     )
                     ad.onPaidEventListener = { adValue ->
                         adRevenueLogger.logPaidEvent(
@@ -132,6 +132,7 @@ class AppOpenAdManager @Inject constructor(
 
     suspend fun showAdIfAvailable(
         activity: Activity,
+        route: String? = null,
         onAdImpression: (String) -> Unit = {},
         onShowComplete: () -> Unit,
     ) {
@@ -140,8 +141,8 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "no_consent",
-                route = null,
+                suppressReason = AdSuppressReason.NO_CONSENT,
+                route = route,
             )
             clearAd()
             onShowComplete()
@@ -156,21 +157,21 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "placement_disabled",
-                route = null,
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
+                route = route,
             )
             onShowComplete()
             return
         }
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
-            val reason = if (prefs.isPremium) "premium" else "rewarded_free"
+            val reason = if (prefs.isPremium) AdSuppressReason.PREMIUM else AdSuppressReason.REWARDED_FREE
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
                 suppressReason = reason,
-                route = null,
+                route = route,
             )
             onShowComplete()
             return
@@ -182,8 +183,8 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "cooldown",
-                route = null,
+                suppressReason = AdSuppressReason.COOLDOWN,
+                route = route,
             )
             onShowComplete()
             return
@@ -195,8 +196,8 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = "not_loaded",
-                route = null,
+                suppressReason = AdSuppressReason.NOT_LOADED,
+                route = route,
             )
             onShowComplete()
             return
@@ -205,6 +206,12 @@ class AppOpenAdManager @Inject constructor(
         var impressionStampRecorded = false
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                adRevenueLogger.logDismissed(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                )
                 appOpenAd = null
                 onShowComplete()
             }
@@ -216,7 +223,7 @@ class AppOpenAdManager @Inject constructor(
                     adUnitId = ad.adUnitId,
                     errorCode = adError.code,
                     errorMessage = adError.message,
-                    route = null,
+                    route = route,
                 )
                 appOpenAd = null
                 onShowComplete()
@@ -227,7 +234,7 @@ class AppOpenAdManager @Inject constructor(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,
-                    route = null,
+                    route = route,
                 )
                 onAdImpression(ad.adUnitId)
                 if (shouldRecordImpressionStamp(impressionStampRecorded)) {
@@ -243,7 +250,7 @@ class AppOpenAdManager @Inject constructor(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,
-                    route = null,
+                    route = route,
                 )
             }
 
@@ -252,7 +259,7 @@ class AppOpenAdManager @Inject constructor(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,
-                    route = null,
+                    route = route,
                 )
             }
         }

@@ -101,6 +101,22 @@ jobs:
             --mode strict \
             --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
+      - name: Validate AdMob inventory (warn)
+        if: github.event.inputs.publish_to_play != 'true'
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_admob_inventory.py \
+            --mode warn \
+            --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
+
+      - name: Validate AdMob inventory (strict for publish flavors)
+        if: github.event.inputs.publish_to_play == 'true'
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_admob_inventory.py \
+            --mode strict \
+            --target-flavors "${{ steps.resolve.outputs.resolved_csv }}"
+
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
 

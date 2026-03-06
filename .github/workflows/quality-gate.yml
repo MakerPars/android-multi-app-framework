@@ -30,6 +30,11 @@ jobs:
           set -euo pipefail
           python3 ./scripts/ci/validate_ci_apps_catalog.py --mode warn --target-flavors all
 
+      - name: Validate AdMob inventory (warn)
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_admob_inventory.py --mode warn --target-flavors all
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin

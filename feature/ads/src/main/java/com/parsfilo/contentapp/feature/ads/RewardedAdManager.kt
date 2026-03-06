@@ -113,7 +113,7 @@ class RewardedAdManager @Inject constructor(
                         adUnitId = ad.adUnitId,
                         route = currentRoute,
                         fillLatencyMs = fillLatencyMs,
-                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                        adapterName = ad.responseInfo.mediationAdapterClassName,
                     )
                     ad.onPaidEventListener = { value ->
                         adRevenueLogger.logPaidEvent(

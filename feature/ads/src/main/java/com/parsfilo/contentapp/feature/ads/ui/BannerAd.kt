@@ -1,17 +1,27 @@
 package com.parsfilo.contentapp.feature.ads.ui
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -22,6 +32,7 @@ import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
+import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.ads.findActivity
 import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.max
@@ -37,6 +48,7 @@ fun BannerAd(
     val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
 
     val context = LocalContext.current
+    val dimens = LocalDimens.current
     val adContext = remember(context) { context.findActivity() ?: context }
     val appContext = context.applicationContext
     val entryPoint = remember(appContext) {
@@ -68,7 +80,11 @@ fun BannerAd(
 
     val adRequest = remember { AdRequest.Builder().build() }
 
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimens.space8, vertical = dimens.space8),
+    ) {
         val adWidthDp = max(1, maxWidth.value.toInt())
         val adSize = remember(adWidthDp, adContext) {
             AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(adContext, adWidthDp)
@@ -153,22 +169,51 @@ fun BannerAd(
             onDispose { adView.destroy() }
         }
 
-        AndroidView(
-            modifier = Modifier.fillMaxWidth(),
-            factory = { adView },
-            update = { view ->
-                if (view.adUnitId != adUnitId) {
-                    view.adUnitId = adUnitId
-                    view.setAdSize(adSize)
-                    revenueLogger.logRequest(
-                        adFormat = AdFormat.BANNER,
-                        placement = placement,
-                        adUnitId = adUnitId,
-                        route = route,
-                    )
-                    view.loadAd(adRequest)
-                }
-            },
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(dimens.radiusLarge),
+                )
+                .padding(horizontal = dimens.space8, vertical = dimens.space8),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "Reklam",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = dimens.space6),
+            )
+
+            AndroidView(
+                modifier = Modifier.fillMaxWidth(),
+                factory = { adView },
+                update = { view ->
+                    if (view.adUnitId != adUnitId) {
+                        view.adUnitId = adUnitId
+                        view.setAdSize(adSize)
+                        revenueLogger.logRequest(
+                            adFormat = AdFormat.BANNER,
+                            placement = placement,
+                            adUnitId = adUnitId,
+                            route = route,
+                        )
+                        view.loadAd(adRequest)
+                    }
+                },
+            )
+
+            Spacer(modifier = Modifier.height(dimens.space4))
+            Text(
+                text = "Sponsorlu içerik alanı",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }

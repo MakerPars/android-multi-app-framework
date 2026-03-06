@@ -93,6 +93,20 @@ class AdRevenueLogger @Inject constructor(
         )
     }
 
+    fun logSuppressed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        suppressReason: AdSuppressReason,
+        route: String? = null,
+    ) = logSuppressed(
+        adFormat = adFormat,
+        placement = placement,
+        adUnitId = adUnitId,
+        suppressReason = suppressReason.analyticsValue,
+        route = route,
+    )
+
     fun logFailedToShow(
         adFormat: AdFormat,
         placement: AdPlacement,
@@ -107,6 +121,51 @@ class AdRevenueLogger @Inject constructor(
                 if (errorCode != null) putLong(AnalyticsParamKey.ERROR_CODE, errorCode.toLong())
                 if (!errorMessage.isNullOrBlank()) putString(AnalyticsParamKey.ERROR_MESSAGE, errorMessage)
             },
+        )
+    }
+
+    fun logDismissed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_DISMISSED,
+            adEventBundle(adFormat, placement, adUnitId, route),
+        )
+    }
+
+    fun logRewardedInterstitialIntroShown(
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.REWARDED_INTRO_SHOWN,
+            adEventBundle(AdFormat.REWARDED_INTERSTITIAL, placement, adUnitId, route),
+        )
+    }
+
+    fun logRewardedInterstitialIntroSkipped(
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.REWARDED_INTRO_SKIPPED,
+            adEventBundle(AdFormat.REWARDED_INTERSTITIAL, placement, adUnitId, route),
+        )
+    }
+
+    fun logRewardedInterstitialIntroConfirmed(
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String?,
+    ) {
+        appAnalytics.logEvent(
+            AnalyticsEventName.REWARDED_INTRO_CONFIRMED,
+            adEventBundle(AdFormat.REWARDED_INTERSTITIAL, placement, adUnitId, route),
         )
     }
 

@@ -24,8 +24,8 @@ import com.parsfilo.contentapp.core.firebase.logAudioPause
 import com.parsfilo.contentapp.core.firebase.logAudioPlay
 import com.parsfilo.contentapp.core.firebase.logAudioStop
 import com.parsfilo.contentapp.core.firebase.logScreenView
-import com.parsfilo.contentapp.core.model.DisplayMode
 import com.parsfilo.contentapp.feature.ads.AdPlacement
+import com.parsfilo.contentapp.feature.ads.RewardedInterstitialIntroSpec
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdItem
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdViewModel
@@ -81,17 +81,23 @@ fun AppNavHost(
     val context = LocalContext.current
     val hostActivity = context as? MainActivity
     val coroutineScope = rememberCoroutineScope()
-    var shouldShowInterstitialOnAudioStop by remember { mutableStateOf(false) }
+    var rewardedInterstitialIntroRequest by remember { mutableStateOf<RewardedInterstitialIntroRequest?>(null) }
     val adUnitIds = remember(context, BuildConfig.USE_TEST_ADS) {
         AppAdUnitIds.resolve(context, BuildConfig.USE_TEST_ADS)
     }
 
-    fun requestInterstitialAd() {
+    fun requestInterstitialAd(
+        placement: AdPlacement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+        route: String? = null,
+        onAdDismissed: () -> Unit = {},
+    ) {
         val activity = hostActivity ?: return
         coroutineScope.launch {
             activity.adOrchestrator.showInterstitialIfEligible(
                 activity = activity,
-                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                placement = placement,
+                route = route,
+                onAdDismissed = onAdDismissed,
             )
         }
     }
@@ -210,9 +216,7 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Rewards.route)
                     },
                     onShowInterstitial = {
-                        val activity = hostActivity ?: return@CounterRoute
-                        activity.adOrchestrator.showInterstitialIfEligible(
-                            activity = activity,
+                        requestInterstitialAd(
                             placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                             route = AppRoute.ZikirCounter.route,
                         )
@@ -222,11 +226,25 @@ fun AppNavHost(
                         if (activity == null) {
                             onUnlocked()
                         } else {
-                            activity.adOrchestrator.showRewardedInterstitialIfEligible(
-                                activity = activity,
-                                placement = AdPlacement.REWARDED_INTERSTITIAL_HISTORY_UNLOCK,
-                                route = AppRoute.ZikirCounter.route,
-                                onUserEarnedReward = onUnlocked,
+                            val placement = AdPlacement.REWARDED_INTERSTITIAL_HISTORY_UNLOCK
+                            val route = AppRoute.ZikirCounter.route
+                            val adUnitId = AppAdUnitIds.resolvePlacement(
+                                activity,
+                                placement,
+                                BuildConfig.USE_TEST_ADS,
+                            )
+                            val introSpec = activity.adOrchestrator.buildRewardedInterstitialIntro(placement)
+                            activity.adOrchestrator.onRewardedInterstitialIntroShown(
+                                placement = placement,
+                                route = route,
+                                adUnitId = adUnitId,
+                            )
+                            rewardedInterstitialIntroRequest = RewardedInterstitialIntroRequest(
+                                placement = placement,
+                                route = route,
+                                adUnitId = adUnitId,
+                                spec = introSpec,
+                                onRewardEarned = onUnlocked,
                             )
                         }
                     },
@@ -253,14 +271,13 @@ fun AppNavHost(
                             if (activity == null) {
                                 navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
                             } else {
-                                coroutineScope.launch {
-                                    activity.adOrchestrator.showInterstitialIfEligible(
-                                        activity = activity,
-                                        onAdDismissed = {
-                                            navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
-                                        },
-                                    )
-                                }
+                                requestInterstitialAd(
+                                    placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                    route = AppRoute.QuranSuraList.route,
+                                    onAdDismissed = {
+                                        navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
+                                    },
+                                )
                             }
                         },
                         onBookmarksClick = { navController.navigate(AppRoute.QuranBookmarks.route) },
@@ -355,11 +372,7 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Settings.route)
                     }, onRewardsClick = {
                         navController.navigate(AppRoute.Rewards.route)
-                    }, onModeChanged = { mode ->
-                        if (mode == DisplayMode.LATIN || mode == DisplayMode.TURKISH) {
-                            requestInterstitialAd()
-                        }
-                    }, audioPlayerContent = {
+                    }, onModeChanged = { _ -> }, audioPlayerContent = {
                         InlineAudioPlayer(
                             state = audioState,
                             onPlayPause = {
@@ -375,16 +388,7 @@ fun AppNavHost(
                                         durationMs = audioState.duration,
                                     )
                                 }
-                                if (audioState.isPlaying && shouldShowInterstitialOnAudioStop) {
-                                    audioPlayerViewModel.togglePlayPause()
-                                    requestInterstitialAd()
-                                    shouldShowInterstitialOnAudioStop = false
-                                } else {
-                                    if (!audioState.isPlaying) {
-                                        shouldShowInterstitialOnAudioStop = true
-                                    }
-                                    audioPlayerViewModel.togglePlayPause()
-                                }
+                                audioPlayerViewModel.togglePlayPause()
                             },
                             onStop = {
                                 appAnalytics.logAudioStop(
@@ -392,10 +396,6 @@ fun AppNavHost(
                                     durationMs = audioState.duration,
                                 )
                                 audioPlayerViewModel.stop()
-                                if (shouldShowInterstitialOnAudioStop) {
-                                    requestInterstitialAd()
-                                    shouldShowInterstitialOnAudioStop = false
-                                }
                             },
                             onSeek = audioPlayerViewModel::seekTo,
                             onRetry = audioPlayerViewModel::retryAssetLoad
@@ -451,18 +451,7 @@ fun AppNavHost(
                     onAudioFileChanged = { mediaKey ->
                         audioPlayerViewModel.setOverrideAudioFileName(mediaKey)
                     },
-                    onModeChanged = { mode ->
-                        if (mode == DisplayMode.LATIN || mode == DisplayMode.TURKISH) {
-                            coroutineScope.launch {
-                                val activity = hostActivity ?: return@launch
-                                if (activity.adOrchestrator.rewardedInterstitialAdManager.isAdReady()) {
-                                    activity.adOrchestrator.showRewardedInterstitialIfEligible(activity)
-                                } else {
-                                    activity.adOrchestrator.showInterstitialIfEligible(activity)
-                                }
-                            }
-                        }
-                    },
+                    onModeChanged = { _ -> },
                     audioPlayerContent = {
                         InlineAudioPlayer(
                             state = audioState,
@@ -479,16 +468,7 @@ fun AppNavHost(
                                         durationMs = audioState.duration,
                                     )
                                 }
-                                if (audioState.isPlaying && shouldShowInterstitialOnAudioStop) {
-                                    audioPlayerViewModel.togglePlayPause()
-                                    requestInterstitialAd()
-                                    shouldShowInterstitialOnAudioStop = false
-                                } else {
-                                    if (!audioState.isPlaying) {
-                                        shouldShowInterstitialOnAudioStop = true
-                                    }
-                                    audioPlayerViewModel.togglePlayPause()
-                                }
+                                audioPlayerViewModel.togglePlayPause()
                             },
                             onStop = {
                                 appAnalytics.logAudioStop(
@@ -496,10 +476,6 @@ fun AppNavHost(
                                     durationMs = audioState.duration,
                                 )
                                 audioPlayerViewModel.stop()
-                                if (shouldShowInterstitialOnAudioStop) {
-                                    requestInterstitialAd()
-                                    shouldShowInterstitialOnAudioStop = false
-                                }
                             },
                             onSeek = audioPlayerViewModel::seekTo,
                             onRetry = audioPlayerViewModel::retryAssetLoad
@@ -668,6 +644,41 @@ fun AppNavHost(
             }
         }
     }
+
+    rewardedInterstitialIntroRequest?.let { request ->
+        RewardedInterstitialIntroDialog(
+            spec = request.spec,
+            onConfirm = {
+                val activity = hostActivity ?: return@RewardedInterstitialIntroDialog
+                val launchToken = activity.adOrchestrator.confirmRewardedInterstitialIntro(
+                    placement = request.placement,
+                    route = request.route,
+                    adUnitId = request.adUnitId,
+                )
+                rewardedInterstitialIntroRequest = null
+                coroutineScope.launch {
+                    activity.adOrchestrator.showRewardedInterstitialIfEligible(
+                        activity = activity,
+                        launchToken = launchToken,
+                        placement = request.placement,
+                        route = request.route,
+                        onUserEarnedReward = request.onRewardEarned,
+                    )
+                }
+            },
+            onDismiss = {
+                val activity = hostActivity
+                if (activity != null) {
+                    activity.adOrchestrator.onRewardedInterstitialIntroSkipped(
+                        placement = request.placement,
+                        route = request.route,
+                        adUnitId = request.adUnitId,
+                    )
+                }
+                rewardedInterstitialIntroRequest = null
+            },
+        )
+    }
 }
 
 private fun routeToContentType(route: String): String =
@@ -685,6 +696,14 @@ private fun routeToContentType(route: String): String =
         route.startsWith(AppRoute.Qibla.route) -> "qibla"
         else -> "other"
     }
+
+private data class RewardedInterstitialIntroRequest(
+    val placement: AdPlacement,
+    val route: String,
+    val adUnitId: String,
+    val spec: RewardedInterstitialIntroSpec,
+    val onRewardEarned: () -> Unit,
+)
 
 
 
