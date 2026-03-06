@@ -77,6 +77,8 @@ class AdManager @Inject constructor(
 
     private val _debugGeography = MutableStateFlow(UmpDebugGeography.NONE)
     val debugGeography: StateFlow<UmpDebugGeography> = _debugGeography.asStateFlow()
+    private val _lastRequestDebugGeography = MutableStateFlow(UmpDebugGeography.NONE)
+    val lastRequestDebugGeography: StateFlow<UmpDebugGeography> = _lastRequestDebugGeography.asStateFlow()
     private var lastFirebaseConsentGranted: Boolean? = null
 
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
@@ -370,9 +372,17 @@ class AdManager @Inject constructor(
             Timber.d("Consent sync id unavailable; continuing without cross-app sync id")
         }
 
-        if (isDebugBuild() && debugGeography != UmpDebugGeography.NONE) {
+        val effectiveDebugGeography =
+            if (isDebugBuild() && debugGeography != UmpDebugGeography.NONE) {
+                debugGeography
+            } else {
+                UmpDebugGeography.NONE
+            }
+        _lastRequestDebugGeography.value = effectiveDebugGeography
+
+        if (effectiveDebugGeography != UmpDebugGeography.NONE) {
             val debugSettings = ConsentDebugSettings.Builder(context)
-                .setDebugGeography(debugGeography.umpValue)
+                .setDebugGeography(effectiveDebugGeography.umpValue)
                 .build()
             builder.setConsentDebugSettings(debugSettings)
         }

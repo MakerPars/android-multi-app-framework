@@ -340,6 +340,7 @@ fun SettingsScreen(
                     (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
                 }
                 val debugGeography by adManager.debugGeography.collectAsStateWithLifecycle()
+                val lastRequestDebugGeography by adManager.lastRequestDebugGeography.collectAsStateWithLifecycle()
                 var debugFcmToken by remember(preferences.lastPushToken) {
                     mutableStateOf(preferences.lastPushToken)
                 }
@@ -692,6 +693,36 @@ fun SettingsScreen(
                                         R.string.settings_ads_debug_geo_status,
                                         debugGeography.name,
                                     ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space4))
+                                Text(
+                                    text = stringResource(
+                                        R.string.settings_ads_debug_geo_last_request_status,
+                                        lastRequestDebugGeography.name,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(dimens.space4))
+                                val requestStatusText =
+                                    when {
+                                        debugGeography == UmpDebugGeography.NONE ->
+                                            stringResource(R.string.settings_ads_debug_geo_effective_none)
+                                        lastRequestDebugGeography == debugGeography ->
+                                            stringResource(
+                                                R.string.settings_ads_debug_geo_effective_applied,
+                                                debugGeography.name,
+                                            )
+                                        else ->
+                                            stringResource(
+                                                R.string.settings_ads_debug_geo_effective_pending,
+                                                debugGeography.name,
+                                            )
+                                    }
+                                Text(
+                                    text = requestStatusText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colorScheme.onSurfaceVariant,
                                 )

@@ -21,20 +21,23 @@ import javax.inject.Singleton
 
 @Singleton
 class InterstitialAdManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext private val appContext: Context,
     private val preferencesDataSource: PreferencesDataSource,
     private val adRevenueLogger: AdRevenueLogger,
     private val adsPolicyProvider: AdsPolicyProvider,
 ) {
     private var interstitialAd: InterstitialAd? = null
+    private var isLoading = false
     private var currentAdUnitId: String? = null
     private var currentPlacement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT
     private var currentRoute: String? = null
+    private var currentLoadContext: Context? = null
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun loadAd(
+        loadContext: Context,
         adUnitId: String,
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
@@ -72,10 +75,21 @@ class InterstitialAdManager @Inject constructor(
             return
         }
 
+        if (isLoading && currentAdUnitId == adUnitId) {
+            Timber.d("Interstitial load skipped; already loading adUnit=%s", adUnitId)
+            return
+        }
+        if (interstitialAd != null && currentAdUnitId == adUnitId) {
+            Timber.d("Interstitial load skipped; ad already ready adUnit=%s", adUnitId)
+            return
+        }
+
         currentAdUnitId = adUnitId
         currentPlacement = placement
         currentRoute = route
+        currentLoadContext = loadContext.findActivity() ?: loadContext
         lastLoadStartedAtMillis = now
+        isLoading = true
         adRevenueLogger.logRequest(
             adFormat = AdFormat.INTERSTITIAL,
             placement = placement,
@@ -85,12 +99,13 @@ class InterstitialAdManager @Inject constructor(
         val adRequest = AdRequest.Builder().build()
 
         InterstitialAd.load(
-            context,
+            currentLoadContext ?: appContext,
             adUnitId,
             adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     interstitialAd = null
+                    isLoading = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
                         nowMillis = SystemTimeProvider.nowMillis(),
                         current = loadBackoffState,
@@ -115,6 +130,7 @@ class InterstitialAdManager @Inject constructor(
                 }
 
                 override fun onAdLoaded(ad: InterstitialAd) {
+                    isLoading = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
                     val fillLatencyMs = (SystemTimeProvider.nowMillis() - lastLoadStartedAtMillis).coerceAtLeast(0L)
                     adRevenueLogger.logLoaded(
@@ -123,7 +139,7 @@ class InterstitialAdManager @Inject constructor(
                         adUnitId = adUnitId,
                         route = currentRoute,
                         fillLatencyMs = fillLatencyMs,
-                        adapterName = ad.responseInfo?.mediationAdapterClassName,
+                        adapterName = ad.responseInfo.mediationAdapterClassName,
                     )
                     ad.onPaidEventListener = { adValue ->
                         adRevenueLogger.logPaidEvent(
@@ -191,11 +207,11 @@ class InterstitialAdManager @Inject constructor(
             onAdDismissed()
             return
         }
-        val frequencyCapMs = policy.interstitialFrequencyCapForPackage(context.packageName)
+        val frequencyCapMs = policy.interstitialFrequencyCapForPackage(appContext.packageName)
         if (frequencyCapMs != policy.interstitialFrequencyCapMs) {
             Timber.d(
                 "Interstitial frequency cap relaxed for package=%s capMs=%d",
-                context.packageName,
+                appContext.packageName,
                 frequencyCapMs,
             )
         }
@@ -292,11 +308,12 @@ class InterstitialAdManager @Inject constructor(
     private fun maybeReload() {
         val adUnitId = currentAdUnitId ?: return
         if (interstitialAd == null && AdsConsentRuntimeState.canRequestAds.value) {
-            loadAd(adUnitId, currentPlacement, currentRoute)
+            loadAd(currentLoadContext ?: appContext, adUnitId, currentPlacement, currentRoute)
         }
     }
 
     fun clearAd() {
         interstitialAd = null
+        isLoading = false
     }
 }

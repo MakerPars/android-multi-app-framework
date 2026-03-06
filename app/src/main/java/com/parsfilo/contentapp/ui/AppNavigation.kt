@@ -244,6 +244,9 @@ fun AppNavHost(
             }
             if (BuildConfig.FLAVOR_NAME == "kuran_kerim") {
                 composable(AppRoute.QuranSuraList.route) {
+                    LaunchedEffect(Unit) {
+                        nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
+                    }
                     QuranSuraListRoute(
                         onSuraClick = { suraNumber ->
                             val activity = hostActivity
@@ -282,6 +285,9 @@ fun AppNavHost(
                     route = AppRoute.QuranSuraDetail.route,
                     arguments = AppRoute.QuranSuraDetail.arguments,
                 ) {
+                    LaunchedEffect(Unit) {
+                        nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
+                    }
                     val seenAyahsInSession = remember { mutableSetOf<Int>() }
                     QuranSuraDetailRoute(
                         onBack = { navController.popBackStack() },
@@ -313,6 +319,9 @@ fun AppNavHost(
                     )
                 }
                 composable(AppRoute.QuranBookmarks.route) {
+                    LaunchedEffect(Unit) {
+                        nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
+                    }
                     QuranBookmarksRoute(
                         onAyahClick = { sura, _ ->
                             navController.navigate(AppRoute.QuranSuraDetail.createRoute(sura))
@@ -401,6 +410,9 @@ fun AppNavHost(
             }
             composable(AppRoute.PrayerList.route) {
                 LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
+                }
+                LaunchedEffect(Unit) {
                     audioPlayerViewModel.setOverrideAudioFileName(null)
                 }
                 PrayerListRoute(
@@ -424,6 +436,9 @@ fun AppNavHost(
                 route = AppRoute.PrayerDetail.route,
                 arguments = AppRoute.PrayerDetail.arguments
             ) { backStackEntry ->
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
+                }
                 backStackEntry.arguments?.getInt("prayerId") ?: 0
                 PrayerDetailRoute(
                     onBackClick = { navController.popBackStack() },
@@ -499,6 +514,9 @@ fun AppNavHost(
                 )
             }
             composable(AppRoute.MiraclesList.route) {
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
+                }
                 val isEsmaFlavor = BuildConfig.FLAVOR == "esmaulhusna"
                 if (isEsmaFlavor) {
                     LaunchedEffect(Unit) {
@@ -555,6 +573,9 @@ fun AppNavHost(
                 route = AppRoute.MiraclesDetail.route,
                 arguments = AppRoute.MiraclesDetail.arguments
             ) { backStackEntry ->
+                LaunchedEffect(Unit) {
+                    nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
+                }
                 backStackEntry.arguments?.getInt("prayerIndex") ?: 0
                 MiraclesDetailRoute(
                     onBackClick = { navController.popBackStack() },

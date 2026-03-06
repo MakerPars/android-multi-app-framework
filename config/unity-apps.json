@@ -1,0 +1,236 @@
+[
+  {
+    "flavor": "amenerrasulu",
+    "package": "com.parsfilo.amenerrasulu",
+    "name": "Amenerrasulü Duası Sesli Dinle",
+    "unity_app_key": "2574e229d",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "ayetelkursi",
+    "package": "com.parsfilo.ayetelkursi",
+    "name": "Ayetel Kürsi Sesli Dinle",
+    "unity_app_key": "2574e5c25",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "bereketduasi",
+    "package": "com.parsfilo.bereketduasi",
+    "name": "Bereket Duası & Karınca Duası",
+    "unity_app_key": "2574e95ad",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "esmaulhusna",
+    "package": "com.parsfilo.esmaulhusna",
+    "name": "Esma-ül Hüsna | 99 İsim",
+    "unity_app_key": "2574ecf35",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "fetihsuresi",
+    "package": "com.parsfilo.fetihsuresi",
+    "name": "Fetih Suresi Sesli Dinle",
+    "unity_app_key": "2574f08bd",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "kenzularsduasi",
+    "package": "com.parsfilo.kenzularsduasi",
+    "name": "Kenzül Arş Duası Sesli Dinle",
+    "unity_app_key": "2574f4245",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "kuran_kerim",
+    "package": "com.parsfilo.kuran_kerim",
+    "name": "Kur'an-ı Kerim: Meal & Okunuş",
+    "unity_app_key": "257522e2d",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "kible",
+    "package": "com.parsfilo.kible",
+    "name": "Kıbleyi Göster – Namaz Yönü",
+    "unity_app_key": "2574f7bcd",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "mucizedualar",
+    "package": "com.parsfilo.mucizedualar",
+    "name": "Mucize Dualar",
+    "unity_app_key": "2574fb555",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "namazvakitleri",
+    "package": "com.parsfilo.namazvakitleri",
+    "name": "Namaz Ezan Vakitleri",
+    "unity_app_key": "2574feedd",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "namazsurelerivedualarsesli",
+    "package": "com.parsfilo.namazsurelerivedualarsesli",
+    "name": "Namaz Sureleri Sesli - Dualar",
+    "unity_app_key": "257502865",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "nazarayeti",
+    "package": "com.parsfilo.nazarayeti",
+    "name": "Nazar Ayeti - Duası",
+    "unity_app_key": "2575061ed",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "vakiasuresi",
+    "package": "com.parsfilo.vakiasuresi",
+    "name": "Vakıa Suresi Sesli Dinle",
+    "unity_app_key": "257509b75",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "yasinsuresi",
+    "package": "com.parsfilo.yasinsuresi",
+    "name": "Yasin Suresi Sesli Dinle",
+    "unity_app_key": "257510e85",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "zikirmatik",
+    "package": "com.parsfilo.zikirmatik",
+    "name": "Zikirmatik – Tasbih Sayaç",
+    "unity_app_key": "25751480d",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "imsakiye",
+    "package": "com.parsfilo.imsakiye",
+    "name": "İmsakiye",
+    "unity_app_key": "257518195",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "insirahsuresi",
+    "package": "com.parsfilo.insirahsuresi",
+    "name": "İnşirah Suresi Sesli Dinle",
+    "unity_app_key": "25751bb1d",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  },
+  {
+    "flavor": "ismiazamduasi",
+    "package": "com.parsfilo.ismiazamduasi",
+    "name": "İsmi Azam Duası Sesli Dinle",
+    "unity_app_key": "25751f4a5",
+    "unity_platform": "Android",
+    "unity_placements": {
+      "banner": "DefaultBanner",
+      "interstitial": "DefaultInterstitial",
+      "rewarded": "DefaultRewardedVideo",
+      "native": "DefaultNative"
+    }
+  }
+]

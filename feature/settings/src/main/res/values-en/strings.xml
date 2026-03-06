@@ -57,6 +57,10 @@
     <string name="settings_ads_debug_title">Ads Debug (UMP / GMA)</string>
     <string name="settings_ads_debug_desc">Visible only in debug builds. Test consent and ad tools.</string>
     <string name="settings_ads_debug_geo_status">UMP debug geography: %1$s</string>
+    <string name="settings_ads_debug_geo_last_request_status">Geography used in last UMP request: %1$s</string>
+    <string name="settings_ads_debug_geo_effective_none">Debug geography is disabled. Normal geography detection will be used.</string>
+    <string name="settings_ads_debug_geo_effective_applied">Selected geography has been applied to the UMP request: %1$s</string>
+    <string name="settings_ads_debug_geo_effective_pending">Selected geography has not been applied to a UMP request yet: %1$s. Tap Show Consent Form or refresh consent.</string>
     <string name="settings_ads_debug_open_inspector">Open Ad Inspector</string>
     <string name="settings_ads_debug_reset_consent">Reset Consent</string>
     <string name="settings_ads_debug_show_consent_form">Show Consent Form</string>

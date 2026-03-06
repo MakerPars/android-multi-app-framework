@@ -32,7 +32,7 @@ private data class PooledNativeAd(
 
 @Singleton
 class NativeAdManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext private val appContext: Context,
     private val adRevenueLogger: AdRevenueLogger,
     private val adGateChecker: AdGateChecker,
     private val adsPolicyProvider: AdsPolicyProvider,
@@ -45,6 +45,7 @@ class NativeAdManager @Inject constructor(
     private var canShowAdsByGate = true
     private var currentAdUnitId: String = ""
     private var currentPlacement: AdPlacement = AdPlacement.NATIVE_DEFAULT
+    private var currentLoadContext: Context? = null
     private var loadBackoffState = AdLoadBackoffState()
 
     private val _adLoadedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -67,6 +68,7 @@ class NativeAdManager @Inject constructor(
     }
 
     fun loadAds(
+        loadContext: Context,
         adUnitId: String,
         placement: AdPlacement = AdPlacement.NATIVE_DEFAULT,
         count: Int,
@@ -93,19 +95,20 @@ class NativeAdManager @Inject constructor(
             return
         }
         val poolMax = policy.nativePoolMax.takeIf { it > 0 } ?: DEFAULT_POOL_MAX
-        synchronized(nativeAds) {
+        val targetCount = synchronized(nativeAds) {
             if (nativeAds.size >= poolMax) {
                 Timber.d("Native pool already full (%d)", nativeAds.size)
                 return
             }
+            count.coerceIn(1, (poolMax - nativeAds.size).coerceAtLeast(1))
         }
 
         currentAdUnitId = adUnitId
         currentPlacement = placement
+        currentLoadContext = loadContext.findActivity() ?: loadContext
         isLoading = true
 
         val loadedCount = AtomicInteger(0)
-        val targetCount = count.coerceIn(1, poolMax)
 
         repeat(targetCount) {
             val requestStartedAtMillis = SystemTimeProvider.nowMillis()
@@ -115,7 +118,7 @@ class NativeAdManager @Inject constructor(
                 adUnitId = adUnitId,
                 route = null,
             )
-            val adLoader = AdLoader.Builder(context, adUnitId)
+            val adLoader = AdLoader.Builder(currentLoadContext ?: appContext, adUnitId)
                 .forNativeAd { ad: NativeAd ->
                     adRevenueLogger.logLoaded(
                         adFormat = AdFormat.NATIVE,
@@ -229,13 +232,14 @@ class NativeAdManager @Inject constructor(
 
         val pooled = synchronized(nativeAds) {
             val idx = nativeAds.indexOfFirst { it.placement == placement }
-                .takeIf { it >= 0 } ?: nativeAds.indices.firstOrNull()
+                .takeIf { it >= 0 }
+                ?: if (placement == AdPlacement.NATIVE_DEFAULT) nativeAds.indices.firstOrNull() else null
             if (idx == null) null else nativeAds.removeAt(idx)
         }
 
         val currentSize = synchronized(nativeAds) { nativeAds.size }
         if (currentSize <= 0 && currentAdUnitId.isNotEmpty() && !isLoading) {
-            loadAds(currentAdUnitId, currentPlacement, 1)
+            loadAds(currentLoadContext ?: appContext, currentAdUnitId, currentPlacement, 1)
         }
 
         if (pooled != null) {

@@ -26,10 +26,10 @@ class NativeAdViewModel @Inject constructor(
     val nativeAdState: StateFlow<NativeAd?> = _nativeAdState.asStateFlow()
 
     init {
-        // Try to load immediately
+        // Acquire one ad for the current screen, but don't churn through the pool.
         refreshAdIfAvailable()
 
-        // Listen for new ads being loaded into the pool
+        // Only consume from the pool when UI does not already hold an ad.
         viewModelScope.launch {
             nativeAdManager.adLoadedFlow.collect {
                 refreshAdIfAvailable()
@@ -50,14 +50,18 @@ class NativeAdViewModel @Inject constructor(
         }
     }
 
-    private fun refreshAdIfAvailable() {
+    private fun refreshAdIfAvailable(forceReplace: Boolean = false) {
+        if (!forceReplace && _nativeAdState.value != null) return
+
         val nextAd = nativeAdManager.getNativeAd(currentPlacement.value) ?: return
         val previousAd = _nativeAdState.value
 
         if (previousAd === nextAd) return
 
         _nativeAdState.value = nextAd
-        previousAd?.destroy()
+        if (forceReplace) {
+            previousAd?.destroy()
+        }
     }
 
     private fun clearCurrentNativeAd() {
@@ -68,8 +72,9 @@ class NativeAdViewModel @Inject constructor(
 
     fun setPlacement(placement: AdPlacement) {
         if (currentPlacement.value == placement) return
+        clearCurrentNativeAd()
         currentPlacement.value = placement
-        refreshAdIfAvailable()
+        refreshAdIfAvailable(forceReplace = true)
     }
 
     override fun onCleared() {

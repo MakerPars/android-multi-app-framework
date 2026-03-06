@@ -231,6 +231,7 @@ class AdOrchestrator @Inject constructor(
         )
 
         interstitialAdManager.loadAd(
+            activity,
             AppAdUnitIds.resolvePlacement(
                 activity,
                 AdPlacement.INTERSTITIAL_NAV_BREAK,
@@ -240,6 +241,7 @@ class AdOrchestrator @Inject constructor(
         )
 
         nativeAdManager.loadAds(
+            activity,
             AppAdUnitIds.resolvePlacement(activity, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
             AdPlacement.NATIVE_FEED_HOME,
             policy.nativePoolMax,

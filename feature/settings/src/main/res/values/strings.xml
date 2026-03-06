@@ -57,6 +57,10 @@
     <string name="settings_ads_debug_title">Ads Debug (UMP / GMA)</string>
     <string name="settings_ads_debug_desc">Sadece debug derlemelerde görünür. Consent ve reklam araçlarını test edin.</string>
     <string name="settings_ads_debug_geo_status">UMP debug geography: %1$s</string>
+    <string name="settings_ads_debug_geo_last_request_status">Son UMP isteğinde kullanılan geography: %1$s</string>
+    <string name="settings_ads_debug_geo_effective_none">Debug geography devre dışı. Normal coğrafya tespiti kullanılacak.</string>
+    <string name="settings_ads_debug_geo_effective_applied">Seçilen geography UMP isteğine uygulanmış: %1$s</string>
+    <string name="settings_ads_debug_geo_effective_pending">Seçilen geography henüz UMP isteğine uygulanmadı: %1$s. Consent Formunu Göster veya consent yenile.</string>
     <string name="settings_ads_debug_open_inspector">Ad Inspector Aç</string>
     <string name="settings_ads_debug_reset_consent">Consent Sıfırla</string>
     <string name="settings_ads_debug_show_consent_form">Consent Formunu Göster</string>

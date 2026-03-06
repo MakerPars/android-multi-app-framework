@@ -22,6 +22,7 @@ import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
+import com.parsfilo.contentapp.feature.ads.findActivity
 import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.max
 
@@ -36,6 +37,7 @@ fun BannerAd(
     val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
 
     val context = LocalContext.current
+    val adContext = remember(context) { context.findActivity() ?: context }
     val appContext = context.applicationContext
     val entryPoint = remember(appContext) {
         EntryPointAccessors.fromApplication(appContext, AdsUiEntryPoint::class.java)
@@ -68,12 +70,12 @@ fun BannerAd(
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val adWidthDp = max(1, maxWidth.value.toInt())
-        val adSize = remember(adWidthDp, context) {
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidthDp)
+        val adSize = remember(adWidthDp, adContext) {
+            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(adContext, adWidthDp)
         }
         val adView = remember(adUnitId, adWidthDp) {
             var loadStartedAtMillis = SystemTimeProvider.nowMillis()
-            AdView(context).apply {
+            AdView(adContext).apply {
                 this.adUnitId = adUnitId
                 setAdSize(adSize)
                 adListener = object : AdListener() {
