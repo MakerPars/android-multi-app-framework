@@ -108,6 +108,7 @@ const DEFAULT_FILL_THRESHOLD = 55;
 const DEFAULT_SHOW_THRESHOLD = 20;
 
 const WEEKLY_ALERT_SCHEDULE = "15 7 * * 1"; // Monday 07:15 UTC
+const AD_PERFORMANCE_DEPLOY_REVISION = "2026-03-06-env-refresh";
 
 export const generateAdPerformanceWeeklyReport = onSchedule(
     {
@@ -227,6 +228,7 @@ async function generateAndStoreWeeklyReport(
         const report = buildReport(baseReport, rows, ecpmBaselineByKey);
         await persistReport(report, source, actor);
         logger.info("Ad performance weekly report generated", {
+            revision: AD_PERFORMANCE_DEPLOY_REVISION,
             source,
             actor,
             accountName,
