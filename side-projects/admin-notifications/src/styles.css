@@ -1220,8 +1220,20 @@ small {
 }
 
 /* ── Remote Config ── */
-.remote-config-list {
+.remote-config-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
     margin-top: var(--space-md);
+}
+
+.remote-config-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.remote-config-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: var(--space-md);

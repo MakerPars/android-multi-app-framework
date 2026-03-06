@@ -1,36 +1,21 @@
 import { useEffect, useState } from "react";
+import type { User } from "firebase/auth";
+import { functionsBaseUrl } from "../firebase";
 import {
-  Timestamp,
-  collection,
-  getCountFromServer,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
-import { firestore } from "../firebase";
-import { sortedApps, formatDateTime } from "../helpers";
-
-type AnalyticsSummary = {
-  totalDevices: number;
-  activeDevices30d: number;
-  notificationsEnabled30d: number;
-  devicesByPackage: Array<{ packageName: string; count: number }>;
-  recentCoverageReports: Array<{
-    id: string;
-    days: number;
-    generatedAt: string;
-    packageCount: number;
-    totalActiveDevices: number;
-    totalDevices: number;
-  }>;
-  loadedAt: string;
-};
+  fetchAdminFunctionJson,
+  formatDateTime,
+  isAnalyticsSummary,
+  sortedApps,
+} from "../helpers";
+import type { AnalyticsSummary } from "../types";
 
 const firebaseProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "makerpars-oaslananka-mobil";
 
-export default function AnalyticsPanel() {
+type AnalyticsPanelProps = {
+  user: User;
+};
+
+export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -42,76 +27,19 @@ export default function AnalyticsPanel() {
       setLoading(true);
       setError("");
       try {
-        const now = Date.now();
-        const activeSince = Timestamp.fromDate(new Date(now - 30 * 24 * 60 * 60 * 1000));
+        const idToken = await user.getIdToken();
+        const payload = await fetchAdminFunctionJson<AnalyticsSummary>({
+          endpoint: `${functionsBaseUrl}/adminGetAnalyticsSummary`,
+          idToken,
+          body: { packages: sortedApps.map((app) => app.package) },
+        });
 
-        const devicesRef = collection(firestore, "devices");
-        const [
-          totalCountSnap,
-          activeCountSnap,
-          notificationsEnabledSnap,
-          devicesByPackage,
-          coverageReportSnapshots,
-        ] =
-          await Promise.all([
-            getCountFromServer(devicesRef),
-            getCountFromServer(query(devicesRef, where("updatedAt", ">=", activeSince))),
-            getCountFromServer(
-              query(
-                devicesRef,
-                where("updatedAt", ">=", activeSince),
-                where("notificationsEnabled", "==", true),
-              ),
-            ),
-            Promise.all(
-              sortedApps.map(async (app) => ({
-                packageName: app.package,
-                count: (
-                  await getCountFromServer(
-                    query(devicesRef, where("packageName", "==", app.package)),
-                  )
-                ).data().count,
-              })),
-            ),
-            getDocs(
-              query(collection(firestore, "coverage_reports"), orderBy("generatedAt", "desc"), limit(5)),
-            ),
-          ]);
-
-        const recentCoverageReports = coverageReportSnapshots.docs.map((doc) => {
-          const data = doc.data() as {
-            days?: number;
-            generatedAt?: string;
-            byPackage?: Array<{ activeDeviceCount?: number; totalDeviceCount?: number }>;
-          };
-          const byPackage = Array.isArray(data.byPackage) ? data.byPackage : [];
-          return {
-            id: doc.id,
-            days: typeof data.days === "number" ? data.days : 0,
-            generatedAt: typeof data.generatedAt === "string" ? data.generatedAt : "",
-            packageCount: byPackage.length,
-            totalActiveDevices: byPackage.reduce(
-              (sum, item) => sum + (typeof item.activeDeviceCount === "number" ? item.activeDeviceCount : 0),
-              0,
-            ),
-            totalDevices: byPackage.reduce(
-              (sum, item) => sum + (typeof item.totalDeviceCount === "number" ? item.totalDeviceCount : 0),
-              0,
-            ),
-          };
-        }).filter((item) => item.generatedAt);
+        if (!isAnalyticsSummary(payload)) {
+          throw new Error("Analytics summary response is invalid.");
+        }
 
         if (!cancelled) {
-          setSummary({
-            totalDevices: totalCountSnap.data().count,
-            activeDevices30d: activeCountSnap.data().count,
-            notificationsEnabled30d: notificationsEnabledSnap.data().count,
-            devicesByPackage: devicesByPackage
-              .filter((item) => item.count > 0)
-              .sort((a, b) => b.count - a.count),
-            recentCoverageReports,
-            loadedAt: new Date().toISOString(),
-          });
+          setSummary(payload);
         }
       } catch (loadError) {
         console.error(loadError);
@@ -126,7 +54,7 @@ export default function AnalyticsPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   return (
     <div
@@ -144,11 +72,13 @@ export default function AnalyticsPanel() {
           <div className="coverage-box">
             <div className="device-preview-header">
               <strong>Push registration summary</strong>
-              <span className="muted">{loading ? "Loading…" : summary ? `loaded ${formatDateTime(new Date(summary.loadedAt))}` : "not loaded"}</span>
+              <span className="muted">
+                {loading ? "Loading…" : summary ? `loaded ${formatDateTime(new Date(summary.loadedAt))}` : "not loaded"}
+              </span>
             </div>
 
             <p className="muted">
-              Current metrics come from Firestore <code>devices</code>. Deeper DAU, retention and event funnels remain in Firebase Analytics / BigQuery.
+              Current metrics come from the admin analytics summary endpoint. Deeper DAU, retention and event funnels remain in Firebase Analytics / BigQuery.
             </p>
 
             {error && <p className="inline-error" role="alert">{error}</p>}
@@ -221,7 +151,7 @@ export default function AnalyticsPanel() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className="muted">No coverage_reports documents found.</td>
+                          <td colSpan={5} className="muted">No coverage reports found.</td>
                         </tr>
                       )}
                     </tbody>

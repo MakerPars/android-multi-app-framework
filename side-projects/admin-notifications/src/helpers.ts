@@ -4,11 +4,14 @@ import { serverTimestamp } from "firebase/firestore";
 import ciApps from "@ciapps";
 import {
   WEEKDAYS,
+  type AnalyticsSummary,
   type DeviceFinderItem,
   type FlavorVersionInfo,
+  type FlavorHubSummary,
   type LocaleKey,
   type RemoteConfigEntry,
   type RemoteConfigTemplateResponse,
+  type RevenueSummary,
   type ScheduledEventForm,
   type ScheduledEventRecord,
   type WeekdayKey,
@@ -282,6 +285,47 @@ export function summarizeApiError(errorPayload: unknown, fallback: string): stri
   return fallback;
 }
 
+export async function fetchAdminFunctionJson<T>(
+  input: {
+    endpoint: string;
+    idToken: string;
+    body?: Record<string, unknown>;
+    method?: "GET" | "POST";
+  },
+): Promise<T> {
+  const { endpoint, idToken, body, method = body ? "POST" : "GET" } = input;
+  const init: RequestInit = {
+    method,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+  };
+
+  if (method !== "GET") {
+    init.headers = {
+      ...init.headers,
+      "Content-Type": "application/json",
+    };
+    init.body = JSON.stringify(body ?? {});
+  }
+
+  const response = await fetch(endpoint, init);
+  let responseBody: unknown = null;
+  try {
+    responseBody = await response.json();
+  } catch {
+    responseBody = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      summarizeApiError(responseBody, `HTTP ${response.status}: Request failed`),
+    );
+  }
+
+  return responseBody as T;
+}
+
 function inferRemoteConfigValueType(value: string): RemoteConfigEntry["valueType"] {
   const trimmed = value.trim();
   if (trimmed === "true" || trimmed === "false") return "boolean";
@@ -303,18 +347,49 @@ function inferRemoteConfigValueType(value: string): RemoteConfigEntry["valueType
 export function parseRemoteConfigEntries(
   template: RemoteConfigTemplateResponse | null,
 ): RemoteConfigEntry[] {
-  const parameters = template?.parameters ?? {};
-  return Object.entries(parameters)
-    .map(([key, parameter]) => {
+  const entries = new Map<string, RemoteConfigEntry>();
+  const addEntries = (
+    parameters: RemoteConfigTemplateResponse["parameters"] | undefined,
+    groupKey?: string,
+    groupLabel?: string,
+  ) => {
+    if (!parameters) return;
+    for (const [key, parameter] of Object.entries(parameters)) {
       const value = parameter.defaultValue?.value ?? "";
-      return {
+      entries.set(key, {
         key,
         value,
         valueType: inferRemoteConfigValueType(value),
         description: parameter.description ?? "",
-      };
-    })
-    .sort((a, b) => a.key.localeCompare(b.key));
+        groupKey,
+        groupLabel,
+      });
+    }
+  };
+
+  addEntries(template?.parameters);
+
+  for (const [groupKey, group] of Object.entries(template?.parameterGroups ?? {})) {
+    addEntries(group.parameters, groupKey, group.description ?? groupKey);
+  }
+
+  return Array.from(entries.values()).sort((a, b) => {
+    const leftGroup = a.groupLabel ?? "";
+    const rightGroup = b.groupLabel ?? "";
+    return leftGroup.localeCompare(rightGroup) || a.key.localeCompare(b.key);
+  });
+}
+
+export function isFlavorHubSummary(value: unknown): value is FlavorHubSummary {
+  return typeof value === "object" && value !== null && "coverage" in value;
+}
+
+export function isAnalyticsSummary(value: unknown): value is AnalyticsSummary {
+  return typeof value === "object" && value !== null && "totalDevices" in value;
+}
+
+export function isRevenueSummary(value: unknown): value is RevenueSummary {
+  return typeof value === "object" && value !== null && "activeSubscriptions" in value;
 }
 
 export function parseFlavorVersions(): Record<string, FlavorVersionInfo> {

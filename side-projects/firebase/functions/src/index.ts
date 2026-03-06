@@ -13,6 +13,7 @@ export { deviceCoverageReport } from "./deviceCoverageReport";
 export { adPerformance, generateAdPerformanceWeeklyReport } from "./adPerformanceReport";
 export { adminAccessCheck } from "./adminAccessCheck";
 export { adminGetRemoteConfig, adminUpdateRemoteConfig } from "./adminRemoteConfig";
+export { adminGetFlavorHubSummary, adminGetAnalyticsSummary, adminGetRevenueSummary } from "./adminSummary";
 export { healthCheck } from "./healthCheck";
 export { recaptchaVerify } from "./recaptchaVerify";
 export { verifyPurchase } from "./verifyPurchase";

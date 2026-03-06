@@ -8,11 +8,17 @@ const REGION = "europe-west1";
 const REMOTE_CONFIG_SCOPE = "https://www.googleapis.com/auth/firebase.remoteconfig";
 const REMOTE_CONFIG_API_BASE = "https://firebaseremoteconfig.googleapis.com/v1";
 
+type RemoteConfigParameter = {
+    defaultValue?: { value?: string };
+    description?: string;
+    valueType?: string;
+};
+
 type RemoteConfigTemplate = {
-    parameters?: Record<string, {
-        defaultValue?: { value?: string };
+    parameters?: Record<string, RemoteConfigParameter>;
+    parameterGroups?: Record<string, {
         description?: string;
-        valueType?: string;
+        parameters?: Record<string, RemoteConfigParameter>;
     }>;
     conditions?: unknown[];
     version?: unknown;
@@ -41,15 +47,13 @@ function resolveProjectId(): string {
 }
 
 async function fetchRemoteConfigTemplate(projectId: string, accessToken: string) {
-    const response = await fetch(`${REMOTE_CONFIG_API_BASE}/projects/${projectId}/remoteConfig`, {
+    return fetch(`${REMOTE_CONFIG_API_BASE}/projects/${projectId}/remoteConfig`, {
         method: "GET",
         headers: {
             Authorization: `Bearer ${accessToken}`,
             "Accept-Encoding": "gzip",
         },
     });
-
-    return response;
 }
 
 export const adminGetRemoteConfig = onRequest(
@@ -91,11 +95,12 @@ export const adminGetRemoteConfig = onRequest(
 
             logger.info("adminGetRemoteConfig success", {
                 uid: auth.uid,
-                paramCount: Object.keys(template.parameters ?? {}).length,
+                paramCount: countParameters(template),
             });
 
             res.status(200).json({
                 parameters: template.parameters ?? {},
+                parameterGroups: template.parameterGroups ?? {},
                 conditions: template.conditions ?? [],
                 version: template.version ?? null,
                 etag,
@@ -127,6 +132,7 @@ export const adminUpdateRemoteConfig = onRequest(
         const key = typeof body.key === "string" ? body.key.trim() : "";
         const value = typeof body.value === "string" ? body.value : "";
         const description = typeof body.description === "string" ? body.description : undefined;
+        const requestedGroupName = typeof body.groupName === "string" ? body.groupName.trim() : "";
 
         if (!key) {
             res.status(400).json({ error: "key is required" });
@@ -162,13 +168,28 @@ export const adminUpdateRemoteConfig = onRequest(
             const etag = currentResponse.headers.get("etag") ?? "*";
             const currentTemplate = await currentResponse.json() as RemoteConfigTemplate;
             const parameters = { ...(currentTemplate.parameters ?? {}) };
-            const existing = parameters[key] ?? {};
+            const parameterGroups = cloneParameterGroups(currentTemplate.parameterGroups);
 
-            parameters[key] = {
-                ...existing,
+            const resolvedLocation = resolveParameterLocation(currentTemplate, key, requestedGroupName);
+            const updatedParameter: RemoteConfigParameter = {
+                ...resolvedLocation.parameter,
                 ...(description !== undefined ? { description } : {}),
                 defaultValue: { value },
             };
+
+            if (resolvedLocation.groupName) {
+                const existingGroup = parameterGroups[resolvedLocation.groupName] ?? {};
+                parameterGroups[resolvedLocation.groupName] = {
+                    ...existingGroup,
+                    parameters: {
+                        ...(existingGroup.parameters ?? {}),
+                        [key]: updatedParameter,
+                    },
+                };
+                delete parameters[key];
+            } else {
+                parameters[key] = updatedParameter;
+            }
 
             const updateResponse = await fetch(
                 `${REMOTE_CONFIG_API_BASE}/projects/${projectId}/remoteConfig`,
@@ -181,6 +202,7 @@ export const adminUpdateRemoteConfig = onRequest(
                     },
                     body: JSON.stringify({
                         parameters,
+                        parameterGroups,
                         conditions: currentTemplate.conditions ?? [],
                     }),
                 },
@@ -198,11 +220,58 @@ export const adminUpdateRemoteConfig = onRequest(
                 return;
             }
 
-            logger.info("adminUpdateRemoteConfig success", { uid: auth.uid, key });
-            res.status(200).json({ success: true, key });
+            logger.info("adminUpdateRemoteConfig success", { uid: auth.uid, key, groupName: resolvedLocation.groupName ?? null });
+            res.status(200).json({ success: true, key, groupName: resolvedLocation.groupName ?? null });
         } catch (error) {
             logger.error("adminUpdateRemoteConfig error", { error, key, uid: auth.uid });
             res.status(500).json({ error: "Failed to update Remote Config" });
         }
     },
 );
+
+function countParameters(template: RemoteConfigTemplate): number {
+    const rootCount = Object.keys(template.parameters ?? {}).length;
+    const groupedCount = Object.values(template.parameterGroups ?? {}).reduce((sum, group) => {
+        return sum + Object.keys(group.parameters ?? {}).length;
+    }, 0);
+    return rootCount + groupedCount;
+}
+
+function cloneParameterGroups(source: RemoteConfigTemplate["parameterGroups"]): NonNullable<RemoteConfigTemplate["parameterGroups"]> {
+    const result: NonNullable<RemoteConfigTemplate["parameterGroups"]> = {};
+    for (const [groupName, group] of Object.entries(source ?? {})) {
+        result[groupName] = {
+            ...group,
+            parameters: { ...(group.parameters ?? {}) },
+        };
+    }
+    return result;
+}
+
+function resolveParameterLocation(
+    template: RemoteConfigTemplate,
+    key: string,
+    requestedGroupName: string,
+): { groupName?: string; parameter: RemoteConfigParameter } {
+    if (requestedGroupName) {
+        const requestedGroup = template.parameterGroups?.[requestedGroupName];
+        return {
+            groupName: requestedGroupName,
+            parameter: requestedGroup?.parameters?.[key] ?? {},
+        };
+    }
+
+    for (const [groupName, group] of Object.entries(template.parameterGroups ?? {})) {
+        const groupedParameter = group.parameters?.[key];
+        if (groupedParameter) {
+            return {
+                groupName,
+                parameter: groupedParameter,
+            };
+        }
+    }
+
+    return {
+        parameter: template.parameters?.[key] ?? {},
+    };
+}

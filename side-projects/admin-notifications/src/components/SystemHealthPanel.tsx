@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { appBuildId, appBuildTime, localTimeZone, sortedApps } from "../helpers";
 import { functionsBaseUrl } from "../firebase";
 
@@ -12,24 +12,44 @@ type ServiceHealth = {
   detail: string;
 };
 
-const CLOUDFLARE_HEALTH_URL = import.meta.env.VITE_CONTENT_API_URL
-  ? `${import.meta.env.VITE_CONTENT_API_URL}/health`
-  : "https://contentapp-content-api.oaslananka.workers.dev/health";
-
 export default function SystemHealthPanel() {
-  const [services, setServices] = useState<ServiceHealth[]>([
-    { name: "Cloudflare Worker", url: CLOUDFLARE_HEALTH_URL, status: "unknown", latencyMs: null, detail: "Not checked" },
-    { name: "Firebase Functions", url: `${functionsBaseUrl}/healthCheck`, status: "unknown", latencyMs: null, detail: "Not checked" },
-  ]);
+  const serviceDefinitions = useMemo<ServiceHealth[]>(() => {
+    const contentApiBase = import.meta.env.VITE_CONTENT_API_URL?.trim().replace(/\/$/, "");
+    const services: ServiceHealth[] = [
+      {
+        name: "Firebase Functions",
+        url: `${functionsBaseUrl}/healthCheck`,
+        status: "unknown",
+        latencyMs: null,
+        detail: "Not checked",
+      },
+    ];
+
+    if (contentApiBase) {
+      services.unshift({
+        name: "Content API",
+        url: `${contentApiBase}/health`,
+        status: "unknown",
+        latencyMs: null,
+        detail: "Not checked",
+      });
+    }
+
+    return services;
+  }, []);
+
+  const [services, setServices] = useState<ServiceHealth[]>(serviceDefinitions);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
 
   const checkHealth = useCallback(async () => {
-    setServices((prev) =>
-      prev.map((s) => ({ ...s, status: "checking" as HealthStatus, detail: "Checking…" })),
-    );
+    setServices(serviceDefinitions.map((service) => ({
+      ...service,
+      status: "checking" as HealthStatus,
+      detail: "Checking…",
+    })));
 
     const results = await Promise.all(
-      services.map(async (service) => {
+      serviceDefinitions.map(async (service) => {
         const start = performance.now();
         try {
           const res = await fetch(service.url, {
@@ -62,12 +82,11 @@ export default function SystemHealthPanel() {
 
     setServices(results);
     setLastChecked(new Date().toLocaleTimeString());
-  }, [services]);
+  }, [serviceDefinitions]);
 
   useEffect(() => {
     checkHealth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [checkHealth]);
 
   const statusIcon = (status: HealthStatus) => {
     switch (status) {
@@ -90,6 +109,11 @@ export default function SystemHealthPanel() {
 
         {lastChecked && (
           <p className="muted" aria-live="polite">Last checked: {lastChecked}</p>
+        )}
+        {!import.meta.env.VITE_CONTENT_API_URL && (
+          <p className="muted">
+            Content API health check is hidden because <code>VITE_CONTENT_API_URL</code> is not configured for this deploy.
+          </p>
         )}
 
         {/* Build Info */}

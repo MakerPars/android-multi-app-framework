@@ -1,41 +1,27 @@
 import { useEffect, useState } from "react";
+import type { User } from "firebase/auth";
+import { functionsBaseUrl } from "../firebase";
 import {
-  Timestamp,
-  collection,
-  getCountFromServer,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
-import { firestore } from "../firebase";
-import { formatDateTime, parseFlavorVersions, sortedApps } from "../helpers";
-
-type CoverageSnapshot = {
-  days: number;
-  generatedAt: string;
-  byPackage: Array<{
-    packageName: string;
-    activeDeviceCount: number;
-    totalDeviceCount: number;
-  }>;
-};
-
-type FlavorHubState = {
-  loadedAt: string;
-  source: "coverage_reports" | "devices";
-  coverage: Record<string, { active: number; total: number }>;
-};
+  fetchAdminFunctionJson,
+  formatDateTime,
+  isFlavorHubSummary,
+  parseFlavorVersions,
+  sortedApps,
+} from "../helpers";
+import type { FlavorHubSummary } from "../types";
 
 const flavorVersions = parseFlavorVersions();
 const firebaseConsoleUrl = "https://console.firebase.google.com/project/makerpars-oaslananka-mobil/overview";
 const playConsoleBaseUrl = "https://play.google.com/console/u/0/developers";
 
-export default function FlavorHubPanel() {
+type FlavorHubPanelProps = {
+  user: User;
+};
+
+export default function FlavorHubPanel({ user }: FlavorHubPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [state, setState] = useState<FlavorHubState | null>(null);
+  const [state, setState] = useState<FlavorHubSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,32 +30,19 @@ export default function FlavorHubPanel() {
       setLoading(true);
       setError("");
       try {
-        const latestCoverage = await loadLatestCoverageSnapshot();
-        if (latestCoverage) {
-          const coverage = Object.fromEntries(
-            latestCoverage.byPackage.map((item) => [
-              item.packageName,
-              { active: item.activeDeviceCount, total: item.totalDeviceCount },
-            ]),
-          );
+        const idToken = await user.getIdToken();
+        const payload = await fetchAdminFunctionJson<FlavorHubSummary>({
+          endpoint: `${functionsBaseUrl}/adminGetFlavorHubSummary`,
+          idToken,
+          body: { packages: sortedApps.map((app) => app.package) },
+        });
 
-          if (!cancelled) {
-            setState({
-              loadedAt: latestCoverage.generatedAt,
-              source: "coverage_reports",
-              coverage,
-            });
-          }
-          return;
+        if (!isFlavorHubSummary(payload)) {
+          throw new Error("Flavor Hub summary response is invalid.");
         }
 
-        const fallbackCoverage = await loadCoverageFromDevices();
         if (!cancelled) {
-          setState({
-            loadedAt: new Date().toISOString(),
-            source: "devices",
-            coverage: fallbackCoverage,
-          });
+          setState(payload);
         }
       } catch (loadError) {
         console.error(loadError);
@@ -86,7 +59,7 @@ export default function FlavorHubPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   return (
     <div
@@ -194,50 +167,4 @@ export default function FlavorHubPanel() {
       </main>
     </div>
   );
-}
-
-async function loadLatestCoverageSnapshot(): Promise<CoverageSnapshot | null> {
-  const snapshot = await getDocs(
-    query(collection(firestore, "coverage_reports"), orderBy("generatedAt", "desc"), limit(5)),
-  );
-
-  if (snapshot.empty) {
-    return null;
-  }
-
-  const docs = snapshot.docs
-    .map((doc) => doc.data() as CoverageSnapshot)
-    .filter((item) => Array.isArray(item.byPackage) && typeof item.generatedAt === "string");
-
-  return docs.find((item) => item.days === 30) ?? docs[0] ?? null;
-}
-
-async function loadCoverageFromDevices(): Promise<Record<string, { active: number; total: number }>> {
-  const devicesRef = collection(firestore, "devices");
-  const activeSince = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-
-  const coverageEntries = await Promise.all(
-    sortedApps.map(async (app) => {
-      const [totalCountSnap, activeCountSnap] = await Promise.all([
-        getCountFromServer(query(devicesRef, where("packageName", "==", app.package))),
-        getCountFromServer(
-          query(
-            devicesRef,
-            where("packageName", "==", app.package),
-            where("updatedAt", ">=", activeSince),
-          ),
-        ),
-      ]);
-
-      return [
-        app.package,
-        {
-          active: activeCountSnap.data().count,
-          total: totalCountSnap.data().count,
-        },
-      ] as const;
-    }),
-  );
-
-  return Object.fromEntries(coverageEntries);
 }

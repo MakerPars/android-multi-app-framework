@@ -1,63 +1,26 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { firestore } from "../firebase";
-import { formatDateTime, formatPercent, formatTry, sortedApps } from "../helpers";
-import type { AdPerformanceReport } from "../types";
-
-type RevenueSummary = {
-  activeSubscriptions: number;
-  verifiedSubscriptions: number;
-  verifiedInAppPurchases: number;
-  monthlyVerifiedPurchases: number;
-  monthlyVerifiedRevenueTry: number;
-  adRevenueTodayTry: number;
-  adRevenueRangeTry: number;
-  totalTrackedRevenueTry: number;
-  purchasesByPackage: Array<{
-    packageName: string;
-    count: number;
-    revenueTry: number;
-  }>;
-  adAlerts: AdPerformanceReport["alerts"];
-  reportGeneratedAt?: string;
-  reportRangeLabel?: string;
-  loadedAt: string;
-};
+import type { User } from "firebase/auth";
+import { functionsBaseUrl } from "../firebase";
+import {
+  fetchAdminFunctionJson,
+  formatDateTime,
+  formatPercent,
+  formatTry,
+  isRevenueSummary,
+  sortedApps,
+} from "../helpers";
+import type { RevenueSummary } from "../types";
 
 const admobAccountUrl =
   "https://admob.google.com/v2/home?utm_source=admin-panel&utm_medium=deep-link";
 const playConsoleUrl =
   "https://play.google.com/console/u/0/developers/makerpars-oaslananka-mobil";
 
-function toMillis(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
+type RevenuePanelProps = {
+  user: User;
+};
 
-function inferRevenueTry(raw: Record<string, unknown>): number {
-  const candidates = [
-    raw.priceAmountTry,
-    raw.amountTry,
-    raw.revenueTry,
-    raw.localizedPriceTry,
-  ];
-  for (const candidate of candidates) {
-    if (typeof candidate === "number" && Number.isFinite(candidate)) {
-      return candidate;
-    }
-    if (typeof candidate === "string" && candidate.trim() !== "") {
-      const parsed = Number(candidate);
-      if (Number.isFinite(parsed)) return parsed;
-    }
-  }
-  return 0;
-}
-
-export default function RevenuePanel() {
+export default function RevenuePanel({ user }: RevenuePanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState<RevenueSummary | null>(null);
@@ -69,96 +32,19 @@ export default function RevenuePanel() {
       setLoading(true);
       setError("");
       try {
-        const now = Date.now();
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
+        const idToken = await user.getIdToken();
+        const payload = await fetchAdminFunctionJson<RevenueSummary>({
+          endpoint: `${functionsBaseUrl}/adminGetRevenueSummary`,
+          idToken,
+          body: {},
+        });
 
-        const [purchaseDocs, adReportDocs] = await Promise.all([
-          getDocs(query(collection(firestore, "purchase_verifications"), where("verified", "==", true))),
-          getDocs(collection(firestore, "ad_performance_reports")),
-        ]);
-
-        const purchasesByPackage = new Map<string, { count: number; revenueTry: number }>();
-        let activeSubscriptions = 0;
-        let verifiedSubscriptions = 0;
-        let verifiedInAppPurchases = 0;
-        let monthlyVerifiedPurchases = 0;
-        let monthlyVerifiedRevenueTry = 0;
-
-        for (const docSnap of purchaseDocs.docs) {
-          const data = docSnap.data() as Record<string, unknown>;
-          const packageName = typeof data.packageName === "string" ? data.packageName : "unknown";
-          const purchaseType = typeof data.purchaseType === "string" ? data.purchaseType : "inapp";
-          const updatedAt = toMillis(data.updatedAt);
-          const expiryTimeMillis = toMillis(data.expiryTimeMillis);
-          const revenueTry = inferRevenueTry(data);
-
-          if (purchaseType === "subs") {
-            verifiedSubscriptions += 1;
-            if (expiryTimeMillis !== null && expiryTimeMillis > now) {
-              activeSubscriptions += 1;
-            }
-          } else {
-            verifiedInAppPurchases += 1;
-          }
-
-          if (updatedAt !== null && updatedAt >= monthStart.getTime()) {
-            monthlyVerifiedPurchases += 1;
-            monthlyVerifiedRevenueTry += revenueTry;
-          }
-
-          const current = purchasesByPackage.get(packageName) ?? { count: 0, revenueTry: 0 };
-          current.count += 1;
-          current.revenueTry += revenueTry;
-          purchasesByPackage.set(packageName, current);
+        if (!isRevenueSummary(payload)) {
+          throw new Error("Revenue summary response is invalid.");
         }
 
-        const latestReport = adReportDocs.docs
-          .map((docSnap) => docSnap.data() as Record<string, unknown>)
-          .filter((item) => typeof item.generatedAt === "string")
-          .sort((left, right) =>
-            String(right.generatedAt).localeCompare(String(left.generatedAt)),
-          )[0] as (Record<string, unknown> & AdPerformanceReport) | undefined;
-
-        const adRevenueRangeTry =
-          latestReport?.totals && typeof latestReport.totals.earningsTry === "number"
-            ? latestReport.totals.earningsTry
-            : 0;
-        const latestReportToday = latestReport?.today as { earningsTry?: unknown } | undefined;
-        const adRevenueTodayTry =
-          typeof latestReportToday?.earningsTry === "number" ? latestReportToday.earningsTry : 0;
-
-        const summarizedPackages = Array.from(purchasesByPackage.entries())
-          .map(([packageName, value]) => ({
-            packageName,
-            count: value.count,
-            revenueTry: value.revenueTry,
-          }))
-          .sort((a, b) => b.revenueTry - a.revenueTry || b.count - a.count)
-          .slice(0, 12);
-
         if (!cancelled) {
-          setSummary({
-            activeSubscriptions,
-            verifiedSubscriptions,
-            verifiedInAppPurchases,
-            monthlyVerifiedPurchases,
-            monthlyVerifiedRevenueTry,
-            adRevenueTodayTry,
-            adRevenueRangeTry,
-            totalTrackedRevenueTry: monthlyVerifiedRevenueTry + adRevenueRangeTry,
-            purchasesByPackage: summarizedPackages,
-            adAlerts: Array.isArray(latestReport?.alerts) ? latestReport.alerts : [],
-            reportGeneratedAt:
-              typeof latestReport?.generatedAt === "string" ? latestReport.generatedAt : undefined,
-            reportRangeLabel:
-              typeof latestReport?.rangeStart === "string" &&
-              typeof latestReport?.rangeEnd === "string"
-                ? `${latestReport.rangeStart} → ${latestReport.rangeEnd}`
-                : undefined,
-            loadedAt: new Date().toISOString(),
-          });
+          setSummary(payload);
         }
       } catch (loadError) {
         console.error(loadError);
@@ -173,7 +59,7 @@ export default function RevenuePanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   return (
     <div
@@ -201,7 +87,7 @@ export default function RevenuePanel() {
             </div>
 
             <p className="muted">
-              Subscription metrics come from Firestore <code>purchase_verifications</code>. Ad metrics come from the latest <code>ad_performance_reports</code> snapshot.
+              Subscription metrics come from the admin revenue summary endpoint. Ad metrics come from the latest ad performance snapshot.
             </p>
 
             {error && <p className="inline-error" role="alert">{error}</p>}

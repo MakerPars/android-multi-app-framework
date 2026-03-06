@@ -186,6 +186,8 @@ export type RemoteConfigEntry = {
   value: string;
   valueType: RemoteConfigParameterValueType;
   description: string;
+  groupKey?: string;
+  groupLabel?: string;
 };
 
 export type RemoteConfigTemplateResponse = {
@@ -194,9 +196,59 @@ export type RemoteConfigTemplateResponse = {
     description?: string;
     valueType?: string;
   }>;
+  parameterGroups?: Record<string, {
+    description?: string;
+    parameters?: Record<string, {
+      defaultValue?: { value?: string };
+      description?: string;
+      valueType?: string;
+    }>;
+  }>;
   conditions?: unknown[];
   version?: unknown;
   etag?: string;
+};
+
+export type FlavorHubSummary = {
+  loadedAt: string;
+  source: "coverage_reports" | "devices";
+  coverage: Record<string, { active: number; total: number }>;
+};
+
+export type AnalyticsSummary = {
+  totalDevices: number;
+  activeDevices30d: number;
+  notificationsEnabled30d: number;
+  devicesByPackage: Array<{ packageName: string; count: number }>;
+  recentCoverageReports: Array<{
+    id: string;
+    days: number;
+    generatedAt: string;
+    packageCount: number;
+    totalActiveDevices: number;
+    totalDevices: number;
+  }>;
+  loadedAt: string;
+};
+
+export type RevenueSummary = {
+  activeSubscriptions: number;
+  verifiedSubscriptions: number;
+  verifiedInAppPurchases: number;
+  monthlyVerifiedPurchases: number;
+  monthlyVerifiedRevenueTry: number;
+  adRevenueTodayTry: number;
+  adRevenueRangeTry: number;
+  totalTrackedRevenueTry: number;
+  purchasesByPackage: Array<{
+    packageName: string;
+    count: number;
+    revenueTry: number;
+  }>;
+  adAlerts: AdPerformanceReport["alerts"];
+  reportGeneratedAt?: string;
+  reportRangeLabel?: string;
+  loadedAt: string;
 };
 
 export type FlavorVersionInfo = {

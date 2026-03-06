@@ -42,9 +42,26 @@ export default function RemoteConfigPanel({
     return entries.filter(
       (entry) =>
         entry.key.toLowerCase().includes(needle) ||
-        entry.description.toLowerCase().includes(needle),
+        entry.description.toLowerCase().includes(needle) ||
+        entry.groupLabel?.toLowerCase().includes(needle),
     );
   }, [entries, searchQuery]);
+
+  const groupedEntries = useMemo(() => {
+    const groups = new Map<string, { label: string; entries: RemoteConfigEntry[] }>();
+    for (const entry of filteredEntries) {
+      const key = entry.groupKey ?? "__ungrouped__";
+      const label = entry.groupLabel ?? "Ungrouped";
+      const current = groups.get(key) ?? { label, entries: [] };
+      current.entries.push(entry);
+      groups.set(key, current);
+    }
+    return Array.from(groups.entries()).map(([key, group]) => ({
+      key,
+      label: group.label,
+      entries: group.entries,
+    }));
+  }, [filteredEntries]);
 
   return (
     <div
@@ -98,77 +115,89 @@ export default function RemoteConfigPanel({
                 </p>
               </div>
             ) : (
-              <div className="remote-config-list" role="list" aria-label="Remote Config parameters">
-                {filteredEntries.map((entry) => {
-                  const draft = drafts[entry.key] ?? {
-                    value: entry.value,
-                    description: entry.description,
-                  };
-                  const isDirty = draft.value !== entry.value || draft.description !== entry.description;
-                  const isSaving = savingKey === entry.key;
+              <div className="remote-config-groups">
+                {groupedEntries.map((group) => (
+                  <section key={group.key} className="remote-config-group" aria-label={group.label}>
+                    <div className="device-preview-header">
+                      <strong>{group.label}</strong>
+                      <span className="muted">{group.entries.length} parameter</span>
+                    </div>
+                    <div className="remote-config-list" role="list" aria-label={`${group.label} parameters`}>
+                      {group.entries.map((entry) => {
+                        const draft = drafts[entry.key] ?? {
+                          value: entry.value,
+                          description: entry.description,
+                        };
+                        const isDirty = draft.value !== entry.value || draft.description !== entry.description;
+                        const isSaving = savingKey === entry.key;
 
-                  return (
-                    <article key={entry.key} className="remote-config-card glass-card" role="listitem">
-                      <div className="remote-config-card-header">
-                        <div className="remote-config-meta">
-                          <strong>{entry.key}</strong>
-                          <span className={`status-pill remote-config-type remote-config-type-${entry.valueType}`}>
-                            {entry.valueType}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          disabled={!isDirty || isSaving}
-                          onClick={() =>
-                            onSave({
-                              key: entry.key,
-                              value: draft.value,
-                              description: draft.description,
-                              valueType: entry.valueType,
-                            })
-                          }
-                        >
-                          {isSaving ? "Saving…" : "Save"}
-                        </button>
-                      </div>
+                        return (
+                          <article key={entry.key} className="remote-config-card glass-card" role="listitem">
+                            <div className="remote-config-card-header">
+                              <div className="remote-config-meta">
+                                <strong>{entry.key}</strong>
+                                <span className={`status-pill remote-config-type remote-config-type-${entry.valueType}`}>
+                                  {entry.valueType}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                disabled={!isDirty || isSaving}
+                                onClick={() =>
+                                  onSave({
+                                    key: entry.key,
+                                    value: draft.value,
+                                    description: draft.description,
+                                    valueType: entry.valueType,
+                                    groupKey: entry.groupKey,
+                                    groupLabel: entry.groupLabel,
+                                  })
+                                }
+                              >
+                                {isSaving ? "Saving…" : "Save"}
+                              </button>
+                            </div>
 
-                      <label>
-                        <span className="label-text">Value</span>
-                        <textarea
-                          rows={draft.value.length > 80 ? 4 : 2}
-                          value={draft.value}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [entry.key]: {
-                                ...draft,
-                                value: event.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </label>
+                            <label>
+                              <span className="label-text">Value</span>
+                              <textarea
+                                rows={draft.value.length > 80 ? 4 : 2}
+                                value={draft.value}
+                                onChange={(event) =>
+                                  setDrafts((prev) => ({
+                                    ...prev,
+                                    [entry.key]: {
+                                      ...draft,
+                                      value: event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </label>
 
-                      <label>
-                        <span className="label-text">Description</span>
-                        <input
-                          value={draft.description}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [entry.key]: {
-                                ...draft,
-                                description: event.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Optional description"
-                        />
-                      </label>
-                    </article>
-                  );
-                })}
+                            <label>
+                              <span className="label-text">Description</span>
+                              <input
+                                value={draft.description}
+                                onChange={(event) =>
+                                  setDrafts((prev) => ({
+                                    ...prev,
+                                    [entry.key]: {
+                                      ...draft,
+                                      description: event.target.value,
+                                    },
+                                  }))
+                                }
+                                placeholder="Optional description"
+                              />
+                            </label>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </div>

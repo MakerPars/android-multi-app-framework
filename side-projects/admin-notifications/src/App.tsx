@@ -48,6 +48,7 @@ import {
   type RemoteConfigTemplateResponse,
 } from "./types";
 import {
+  fetchAdminFunctionJson,
   parseEvent,
   parseDeviceFinderItem,
   parseRemoteConfigEntries,
@@ -165,6 +166,7 @@ export default function App() {
   const [remoteConfigMessage, setRemoteConfigMessage] = useState("");
   const [remoteConfigEntries, setRemoteConfigEntries] = useState<RemoteConfigEntry[]>([]);
   const [remoteConfigEtag, setRemoteConfigEtag] = useState("");
+  const [remoteConfigLoaded, setRemoteConfigLoaded] = useState(false);
 
   /* ── Derived ── */
   const isCreateMode = selectedId === null;
@@ -676,30 +678,18 @@ export default function App() {
     setRemoteConfigError("");
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch(`${functionsBaseUrl}/adminGetRemoteConfig`, {
+      const template = await fetchAdminFunctionJson<RemoteConfigTemplateResponse>({
+        endpoint: `${functionsBaseUrl}/adminGetRemoteConfig`,
+        idToken,
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
       });
-      let responseBody: unknown = null;
-      try {
-        responseBody = await response.json();
-      } catch {
-        responseBody = null;
-      }
-      if (!response.ok) {
-        throw new Error(
-          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to fetch Remote Config`),
-        );
-      }
-
-      const template = responseBody as RemoteConfigTemplateResponse;
       setRemoteConfigEntries(parseRemoteConfigEntries(template));
       setRemoteConfigEtag(typeof template.etag === "string" ? template.etag : "");
+      setRemoteConfigLoaded(true);
     } catch (e) {
       console.error(e);
       setRemoteConfigError(e instanceof Error ? e.message : "Failed to fetch Remote Config.");
+      setRemoteConfigLoaded(true);
     } finally {
       setRemoteConfigLoading(false);
     }
@@ -722,6 +712,7 @@ export default function App() {
           key: entry.key,
           value: entry.value,
           description: entry.description,
+          groupName: entry.groupKey,
         }),
       });
       let responseBody: unknown = null;
@@ -748,9 +739,9 @@ export default function App() {
 
   useEffect(() => {
     if (activeTab !== "remote-config") return;
-    if (remoteConfigLoading || remoteConfigEntries.length > 0) return;
+    if (remoteConfigLoading || remoteConfigLoaded) return;
     void loadRemoteConfig();
-  }, [activeTab, loadRemoteConfig, remoteConfigEntries.length, remoteConfigLoading]);
+  }, [activeTab, loadRemoteConfig, remoteConfigLoaded, remoteConfigLoading]);
 
   /* ════════════════════════════════════════════
    *  RENDER
@@ -802,7 +793,7 @@ export default function App() {
       )}
 
       <div id="main-content">
-        {activeTab === "flavor-hub" && <FlavorHubPanel />}
+        {activeTab === "flavor-hub" && <FlavorHubPanel user={user} />}
 
         {activeTab === "events" && (
           <div className="content-grid">
@@ -897,9 +888,9 @@ export default function App() {
           />
         )}
 
-        {activeTab === "analytics" && <AnalyticsPanel />}
+        {activeTab === "analytics" && <AnalyticsPanel user={user} />}
 
-        {activeTab === "revenue" && <RevenuePanel />}
+        {activeTab === "revenue" && <RevenuePanel user={user} />}
 
         {activeTab === "system-health" && <SystemHealthPanel />}
       </div>
