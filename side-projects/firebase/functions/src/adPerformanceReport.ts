@@ -108,7 +108,7 @@ const DEFAULT_FILL_THRESHOLD = 55;
 const DEFAULT_SHOW_THRESHOLD = 20;
 
 const WEEKLY_ALERT_SCHEDULE = "15 7 * * 1"; // Monday 07:15 UTC
-const AD_PERFORMANCE_DEPLOY_REVISION = "2026-03-06-env-refresh";
+const AD_PERFORMANCE_DEPLOY_REVISION = "2026-03-06-env-refresh-2";
 
 export const generateAdPerformanceWeeklyReport = onSchedule(
     {

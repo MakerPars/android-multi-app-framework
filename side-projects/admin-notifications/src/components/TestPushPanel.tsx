@@ -118,13 +118,36 @@ export default function TestPushPanel(props: TestPushPanelProps) {
   }, [deviceFinderResults, deviceFinderSearch]);
 
   const hasTriggeredIndexRecovery = useRef(false);
+  const hasTriggeredOAuthRecovery = useRef(false);
+  const hasAutoLoadedAdHealth = useRef(false);
+
+  const weeklyIssue = adPerformanceReport?.issue?.toLowerCase() ?? "";
+  const todayIssue = adPerformanceToday?.issue?.toLowerCase() ?? "";
+  const hasDeletedOAuthIssue = weeklyIssue.includes("oauth client was deleted")
+    || todayIssue.includes("oauth client was deleted");
 
   useEffect(() => {
-    const issue = adPerformanceReport?.issue?.toLowerCase() ?? "";
+    if (testPushSubTab !== "ad-health") return;
+    if (hasAutoLoadedAdHealth.current) return;
+    if (adReportLoading || adTodayLoading) return;
+    if (adPerformanceReport || adPerformanceToday) return;
+
+    hasAutoLoadedAdHealth.current = true;
+    void onRefreshAdHealth(false);
+  }, [
+    adPerformanceReport,
+    adPerformanceToday,
+    adReportLoading,
+    adTodayLoading,
+    onRefreshAdHealth,
+    testPushSubTab,
+  ]);
+
+  useEffect(() => {
     if (testPushSubTab !== "ad-health") return;
     if (!adPerformanceReport || adReportLoading || adTodayLoading) return;
     if (hasTriggeredIndexRecovery.current) return;
-    if (!issue.includes("requires an index")) return;
+    if (!weeklyIssue.includes("requires an index")) return;
 
     hasTriggeredIndexRecovery.current = true;
     void onRefreshAdHealth(true);
@@ -132,6 +155,23 @@ export default function TestPushPanel(props: TestPushPanelProps) {
     adPerformanceReport,
     adReportLoading,
     adTodayLoading,
+    onRefreshAdHealth,
+    testPushSubTab,
+    weeklyIssue,
+  ]);
+
+  useEffect(() => {
+    if (testPushSubTab !== "ad-health") return;
+    if (adReportLoading || adTodayLoading) return;
+    if (hasTriggeredOAuthRecovery.current) return;
+    if (!hasDeletedOAuthIssue) return;
+
+    hasTriggeredOAuthRecovery.current = true;
+    void onRefreshAdHealth(true);
+  }, [
+    adReportLoading,
+    adTodayLoading,
+    hasDeletedOAuthIssue,
     onRefreshAdHealth,
     testPushSubTab,
   ]);
@@ -143,43 +183,34 @@ export default function TestPushPanel(props: TestPushPanelProps) {
           <h2>Operations</h2>
         </div>
 
-        <div className="sub-tab-groups" role="tablist" aria-label="Operations sections">
-          <div className="sub-tab-group">
-            <span className="sub-tab-group-label">Push</span>
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "single-device"}
-              onClick={() => onSubTabChange("single-device")}
-            >
-              <span className="tab-icon" aria-hidden="true">📱</span> Single Device
-            </button>
-          </div>
-          <div className="sub-tab-group">
-            <span className="sub-tab-group-label">Devices</span>
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "coverage"}
-              onClick={() => onSubTabChange("coverage")}
-            >
-              <span className="tab-icon" aria-hidden="true">📊</span> Coverage
-            </button>
-          </div>
-          <div className="sub-tab-group">
-            <span className="sub-tab-group-label">Revenue</span>
-            <button
-              type="button"
-              role="tab"
-              className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
-              aria-selected={testPushSubTab === "ad-health"}
-              onClick={() => onSubTabChange("ad-health")}
-            >
-              <span className="tab-icon" aria-hidden="true">💰</span> Ad Health
-            </button>
-          </div>
+        <div className="sub-tab-nav" role="tablist" aria-label="Operations sections">
+          <button
+            type="button"
+            role="tab"
+            className={`sub-tab-btn ${testPushSubTab === "single-device" ? "active" : ""}`}
+            aria-selected={testPushSubTab === "single-device"}
+            onClick={() => onSubTabChange("single-device")}
+          >
+            <span className="tab-icon" aria-hidden="true">📱</span> Single Device
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`sub-tab-btn ${testPushSubTab === "coverage" ? "active" : ""}`}
+            aria-selected={testPushSubTab === "coverage"}
+            onClick={() => onSubTabChange("coverage")}
+          >
+            <span className="tab-icon" aria-hidden="true">📊</span> Coverage
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`sub-tab-btn ${testPushSubTab === "ad-health" ? "active" : ""}`}
+            aria-selected={testPushSubTab === "ad-health"}
+            onClick={() => onSubTabChange("ad-health")}
+          >
+            <span className="tab-icon" aria-hidden="true">💰</span> Ad Health
+          </button>
         </div>
 
         {/* ── Single Device ── */}
