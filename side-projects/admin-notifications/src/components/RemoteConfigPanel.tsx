@@ -37,13 +37,18 @@ export default function RemoteConfigPanel({
   }, [entries]);
 
   const filteredEntries = useMemo(() => {
-    const needle = searchQuery.trim().toLowerCase();
-    if (!needle) return entries;
+    const needles = searchQuery
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    if (needles.length === 0) return entries;
     return entries.filter(
       (entry) =>
-        entry.key.toLowerCase().includes(needle) ||
-        entry.description.toLowerCase().includes(needle) ||
-        entry.groupLabel?.toLowerCase().includes(needle),
+        needles.some((needle) =>
+          entry.key.toLowerCase().includes(needle) ||
+          entry.description.toLowerCase().includes(needle) ||
+          entry.groupLabel?.toLowerCase().includes(needle),
+        ),
     );
   }, [entries, searchQuery]);
 

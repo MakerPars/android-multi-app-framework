@@ -126,43 +126,7 @@ export const adminGetAnalyticsSummary = onRequest(
 
         try {
             const packages = parsePackages(req.body);
-            const now = Date.now();
-            const activeSince = new Date(now - 30 * 24 * 60 * 60 * 1000);
-            const devicesRef = admin.firestore().collection("devices");
-
-            const [
-                totalDevices,
-                activeDevices30d,
-                notificationsEnabled30d,
-                devicesByPackage,
-                recentCoverageReports,
-            ] = await Promise.all([
-                countQuery(devicesRef),
-                countQuery(devicesRef.where("updatedAt", ">=", activeSince)),
-                countQuery(
-                    devicesRef
-                        .where("updatedAt", ">=", activeSince)
-                        .where("notificationsEnabled", "==", true),
-                ),
-                Promise.all(
-                    packages.map(async (packageName) => ({
-                        packageName,
-                        count: await countQuery(devicesRef.where("packageName", "==", packageName)),
-                    })),
-                ),
-                loadRecentCoverageReports(),
-            ]);
-
-            const payload: AnalyticsSummary = {
-                totalDevices,
-                activeDevices30d,
-                notificationsEnabled30d,
-                devicesByPackage: devicesByPackage
-                    .filter((item) => item.count > 0)
-                    .sort((left, right) => right.count - left.count),
-                recentCoverageReports,
-                loadedAt: new Date().toISOString(),
-            };
+            const payload = await loadAnalyticsSummary(packages);
             res.status(200).json(payload);
         } catch (error) {
             logger.error("adminGetAnalyticsSummary error", { error, uid: auth.uid });
@@ -345,26 +309,152 @@ async function loadCoverageFromDevices(
     const devicesRef = admin.firestore().collection("devices");
     const activeSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const entries = await Promise.all(
-        packages.map(async (packageName) => {
-            const [total, active] = await Promise.all([
-                countQuery(devicesRef.where("packageName", "==", packageName)),
-                countQuery(
-                    devicesRef
-                        .where("packageName", "==", packageName)
-                        .where("updatedAt", ">=", activeSince),
-                ),
-            ]);
-            return [packageName, { active, total }] as const;
-        }),
-    );
+    try {
+        const entries = await Promise.all(
+            packages.map(async (packageName) => {
+                const [total, active] = await Promise.all([
+                    countQuery(devicesRef.where("packageName", "==", packageName)),
+                    countQuery(
+                        devicesRef
+                            .where("packageName", "==", packageName)
+                            .where("updatedAt", ">=", activeSince),
+                    ),
+                ]);
+                return [packageName, { active, total }] as const;
+            }),
+        );
 
-    return Object.fromEntries(entries);
+        return Object.fromEntries(entries);
+    } catch (error) {
+        if (!isMissingIndexError(error)) {
+            throw error;
+        }
+
+        logger.warn("loadCoverageFromDevices missing index, using full snapshot fallback", {
+            activeSince: activeSince.toISOString(),
+            packageCount: packages.length,
+        });
+
+        const packageSet = new Set(packages);
+        const coverage = Object.fromEntries(packages.map((packageName) => [packageName, { active: 0, total: 0 }]));
+        const snapshot = await devicesRef.get();
+
+        for (const doc of snapshot.docs) {
+            const data = doc.data() as Record<string, unknown>;
+            const packageName = typeof data.packageName === "string" ? data.packageName : "";
+            if (!packageSet.has(packageName)) continue;
+
+            coverage[packageName].total += 1;
+            const updatedAt = toMillis(data.updatedAt);
+            if (updatedAt !== null && updatedAt >= activeSince.getTime()) {
+                coverage[packageName].active += 1;
+            }
+        }
+
+        return coverage;
+    }
 }
 
 async function countQuery(query: FirebaseFirestore.Query): Promise<number> {
     const aggregate = await query.count().get();
     return aggregate.data().count;
+}
+
+async function loadAnalyticsSummary(packages: string[]): Promise<AnalyticsSummary> {
+    const devicesRef = admin.firestore().collection("devices");
+    const now = Date.now();
+    const activeSince = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    try {
+        const [
+            totalDevices,
+            activeDevices30d,
+            notificationsEnabled30d,
+            devicesByPackage,
+            recentCoverageReports,
+        ] = await Promise.all([
+            countQuery(devicesRef),
+            countQuery(devicesRef.where("updatedAt", ">=", activeSince)),
+            countQuery(
+                devicesRef
+                    .where("updatedAt", ">=", activeSince)
+                    .where("notificationsEnabled", "==", true),
+            ),
+            Promise.all(
+                packages.map(async (packageName) => ({
+                    packageName,
+                    count: await countQuery(devicesRef.where("packageName", "==", packageName)),
+                })),
+            ),
+            loadRecentCoverageReports(),
+        ]);
+
+        return {
+            totalDevices,
+            activeDevices30d,
+            notificationsEnabled30d,
+            devicesByPackage: devicesByPackage
+                .filter((item) => item.count > 0)
+                .sort((left, right) => right.count - left.count),
+            recentCoverageReports,
+            loadedAt: new Date().toISOString(),
+        };
+    } catch (error) {
+        if (!isMissingIndexError(error)) {
+            throw error;
+        }
+
+        logger.warn("loadAnalyticsSummary missing index, using full snapshot fallback", {
+            activeSince: activeSince.toISOString(),
+            packageCount: packages.length,
+        });
+
+        return buildAnalyticsSummaryFallback(packages, activeSince.getTime());
+    }
+}
+
+async function buildAnalyticsSummaryFallback(
+    packages: string[],
+    activeSinceMs: number,
+): Promise<AnalyticsSummary> {
+    const snapshot = await admin.firestore().collection("devices").get();
+    const packageCounts = new Map<string, number>();
+    let totalDevices = 0;
+    let activeDevices30d = 0;
+    let notificationsEnabled30d = 0;
+
+    for (const doc of snapshot.docs) {
+        totalDevices += 1;
+        const data = doc.data() as Record<string, unknown>;
+        const packageName = typeof data.packageName === "string" ? data.packageName : "";
+        if (packageName) {
+            packageCounts.set(packageName, (packageCounts.get(packageName) ?? 0) + 1);
+        }
+
+        const updatedAt = toMillis(data.updatedAt);
+        if (updatedAt !== null && updatedAt >= activeSinceMs) {
+            activeDevices30d += 1;
+            if (data.notificationsEnabled === true) {
+                notificationsEnabled30d += 1;
+            }
+        }
+    }
+
+    const recentCoverageReports = await loadRecentCoverageReports();
+    return {
+        totalDevices,
+        activeDevices30d,
+        notificationsEnabled30d,
+        devicesByPackage: packages
+            .map((packageName) => ({
+                packageName,
+                count: packageCounts.get(packageName) ?? 0,
+            }))
+            .filter((item) => item.count > 0)
+            .sort((left, right) => right.count - left.count),
+        recentCoverageReports,
+        loadedAt: new Date().toISOString(),
+    };
 }
 
 function parsePackages(body: unknown): string[] {
@@ -376,6 +466,17 @@ function parsePackages(body: unknown): string[] {
 }
 
 function toMillis(value: unknown): number | null {
+    if (typeof value === "object" && value !== null && "toMillis" in value) {
+        const toMillisFn = (value as { toMillis?: unknown }).toMillis;
+        if (typeof toMillisFn === "function") {
+            try {
+                const millis = toMillisFn.call(value);
+                return typeof millis === "number" && Number.isFinite(millis) ? millis : null;
+            } catch {
+                return null;
+            }
+        }
+    }
     if (typeof value === "number" && Number.isFinite(value)) return value;
     if (typeof value === "string" && value.trim() !== "") {
         const parsed = Number(value);
@@ -407,4 +508,9 @@ function inferRevenueTry(raw: Record<string, unknown>): number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
+}
+
+function isMissingIndexError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    return message.includes("The query requires an index") || message.includes("FAILED_PRECONDITION");
 }
