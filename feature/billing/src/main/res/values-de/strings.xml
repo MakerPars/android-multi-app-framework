@@ -6,6 +6,8 @@
     <string name="billing_active_subtitle">Genieße ein werbefreies Erlebnis</string>
 
     <string name="billing_error_prefix">Fehler: %s</string>
+    <string name="billing_error_connecting">Verbindung zum Zahlungsdienst wird hergestellt, bitte versuche es erneut</string>
+    <string name="billing_error_reconnecting">Verbindung zum Zahlungsdienst wird erneut hergestellt, bitte versuche es erneut</string>
     <string name="billing_plans_loading">Pläne werden geladen...</string>
     <string name="billing_selected_badge">Ausgewählt</string>
     <string name="billing_subscribe">Abonnieren</string>
@@ -25,4 +27,3 @@
     <string name="billing_plan_generic">Plan</string>
     <string name="billing_back">Zuruck</string>
 </resources>
-
