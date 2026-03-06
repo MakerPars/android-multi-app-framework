@@ -9,6 +9,7 @@
 .gradle-user-home/
 **/build/
 .kotlin/
+**/*.tsbuildinfo
 TEMP_FOLDER/
 TEMP_*/
 SECRET/
