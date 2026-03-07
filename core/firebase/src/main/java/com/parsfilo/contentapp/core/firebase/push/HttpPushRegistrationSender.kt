@@ -80,7 +80,7 @@ class HttpPushRegistrationSender @Inject constructor(
             .header("Accept", "application/json")
             .build()
 
-        return try {
+        return runCatching {
             okHttpClient.newCall(request).execute().use { response ->
                 val statusCode = response.code
                 val bodySnippet = readBodySnippet(response.body.string())
@@ -95,7 +95,7 @@ class HttpPushRegistrationSender @Inject constructor(
                     )
                 }
             }
-        } catch (throwable: Throwable) {
+        }.getOrElse { throwable ->
             if (throwable is CancellationException) {
                 throw throwable
             }

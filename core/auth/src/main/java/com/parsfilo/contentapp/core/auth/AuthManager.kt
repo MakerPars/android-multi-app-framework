@@ -278,7 +278,7 @@ class AuthManager @Inject constructor(
             Timber.e(e, "[Auth][$attemptId] Security exception during sign-in. msg=%s", e.message)
             SignInResult.Failure
         } catch (e: CancellationException) {
-            Timber.i("[Auth][$attemptId] Sign-in coroutine cancelled")
+            Timber.i(e, "[Auth][$attemptId] Sign-in coroutine cancelled")
             SignInResult.Cancelled
         } catch (e: java.util.concurrent.ExecutionException) {
             Timber.e(e, "[Auth][$attemptId] Credential execution failed. msg=%s", e.message)
@@ -400,7 +400,7 @@ class AuthManager @Inject constructor(
             Timber.e(e, "[Auth][$attemptId] Button flow security exception. msg=%s", e.message)
             SignInResult.Failure
         } catch (e: CancellationException) {
-            Timber.i("[Auth][$attemptId] Button flow coroutine cancelled")
+            Timber.i(e, "[Auth][$attemptId] Button flow coroutine cancelled")
             SignInResult.Cancelled
         } catch (e: java.util.concurrent.ExecutionException) {
             Timber.e(e, "[Auth][$attemptId] Button flow credential execution failed. msg=%s", e.message)

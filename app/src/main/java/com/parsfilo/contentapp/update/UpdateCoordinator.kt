@@ -48,11 +48,15 @@ class UpdateCoordinator @Inject constructor(
         if (forceFetch) {
             Timber.d("Force update check requested (debug fetch interval still applies).")
         }
-        try {
+        runCatching {
             remoteConfigManager.fetchAndActivate()
-        } catch (t: Throwable) {
-            Timber.w(t, "Remote Config fetch failed for force update; cached/default values will be used.")
         }
+            .onFailure { throwable ->
+                Timber.w(
+                    throwable,
+                    "Remote Config fetch failed for force update; cached/default values will be used.",
+                )
+            }
 
         val config = readConfigFromRemote()
         val versionCode = currentVersionCode()
@@ -118,7 +122,7 @@ class UpdateCoordinator @Inject constructor(
 }
 
 internal fun resolveCurrentVersionCode(context: Context): Long =
-    try {
+    runCatching {
         val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.packageManager.getPackageInfo(
                 context.packageName,
@@ -135,7 +139,7 @@ internal fun resolveCurrentVersionCode(context: Context): Long =
             @Suppress("DEPRECATION")
             packageInfo.versionCode.toLong()
         }
-    } catch (t: Throwable) {
-        Timber.w(t, "Failed to read installed package versionCode; using BuildConfig fallback.")
+    }.getOrElse { throwable ->
+        Timber.w(throwable, "Failed to read installed package versionCode; using BuildConfig fallback.")
         com.parsfilo.contentapp.BuildConfig.VERSION_CODE.toLong()
     }

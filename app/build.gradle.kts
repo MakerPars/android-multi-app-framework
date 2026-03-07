@@ -197,7 +197,9 @@ val validateReleaseConfig =
                         appendLine("Release/publish configuration validation failed:")
                         errors.forEach { appendLine("  - $it") }
                         appendLine()
-                        appendLine("Tip: app/build.gradle.kts reads values from -P, .env, then providers.environmentVariable().")
+                        appendLine(
+                            "Tip: app/build.gradle.kts reads values from -P, .env, then providers.environmentVariable().",
+                        )
                     },
                 )
             }
@@ -225,7 +227,7 @@ val validatePublishConfig =
                     buildString {
                         appendLine("Publish configuration validation failed:")
                         errors.forEach { appendLine("  - $it") }
-                    }
+                    },
                 )
             }
         }

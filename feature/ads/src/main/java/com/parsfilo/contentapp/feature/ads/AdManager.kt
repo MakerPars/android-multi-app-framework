@@ -454,7 +454,7 @@ class AdManager @Inject constructor(
 
     private fun applyFirebaseConsent(consentGranted: Boolean) {
         if (lastFirebaseConsentGranted == consentGranted) return
-        try {
+        runCatching {
             val consentFlags = mapToFirebaseConsentGrantedFlags(consentGranted)
             appAnalytics.setConsent(
                 adStorageGranted = consentFlags.adStorageGranted,
@@ -465,9 +465,10 @@ class AdManager @Inject constructor(
             appAnalytics.setAnalyticsCollectionEnabled(consentGranted)
             Timber.d("Firebase consent updated: granted=%s", consentGranted)
             lastFirebaseConsentGranted = consentGranted
-        } catch (t: Throwable) {
-            Timber.w(t, "Failed to update Firebase consent mapping")
         }
+            .onFailure { throwable ->
+                Timber.w(throwable, "Failed to update Firebase consent mapping")
+            }
     }
 
     private suspend fun resolveAgeGateStatus(): AdAgeGateStatus =

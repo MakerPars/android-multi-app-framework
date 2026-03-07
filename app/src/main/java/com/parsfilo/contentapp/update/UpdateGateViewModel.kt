@@ -57,8 +57,11 @@ class UpdateGateViewModel @Inject constructor(
     fun fetchNowForDebug() {
         viewModelScope.launch {
             _isChecking.value = true
-            try {
+            runCatching {
                 val snapshot = updateCoordinator.getDebugSnapshot(forceFetch = true)
+                snapshot
+            }
+                .onSuccess { snapshot ->
                 _debugSnapshot.value = snapshot
                 _basePolicy.value = snapshot.resolvedPolicy
                 _debugOverridePolicy.value = null
@@ -66,12 +69,12 @@ class UpdateGateViewModel @Inject constructor(
                 if (snapshot.resolvedPolicy !is UpdatePolicy.Soft) {
                     _softPromptDismissedThisSession.value = false
                 }
-            } catch (t: Throwable) {
-                Timber.w(t, "Force update debug fetch failed.")
-            } finally {
-                _isChecking.value = false
-                recomputeActivePolicy()
             }
+                .onFailure { throwable ->
+                    Timber.w(throwable, "Force update debug fetch failed.")
+                }
+            _isChecking.value = false
+            recomputeActivePolicy()
         }
     }
 
@@ -105,8 +108,11 @@ class UpdateGateViewModel @Inject constructor(
     private fun fetchPolicy(forceFetch: Boolean) {
         viewModelScope.launch {
             _isChecking.value = true
-            try {
+            runCatching {
                 val snapshot = updateCoordinator.getDebugSnapshot(forceFetch = forceFetch)
+                snapshot
+            }
+                .onSuccess { snapshot ->
                 _debugSnapshot.value = snapshot
                 _basePolicy.value = snapshot.resolvedPolicy
                 Timber.d("Force update resolved policy=%s", snapshot.resolvedPolicy::class.simpleName)
@@ -114,12 +120,12 @@ class UpdateGateViewModel @Inject constructor(
                     _softPromptDismissedThisSession.value = false
                 }
                 _debugOverridePolicy.value = null
-            } catch (t: Throwable) {
-                Timber.w(t, "Force update check failed; keeping previous policy.")
-            } finally {
-                _isChecking.value = false
-                recomputeActivePolicy()
             }
+                .onFailure { throwable ->
+                    Timber.w(throwable, "Force update check failed; keeping previous policy.")
+                }
+            _isChecking.value = false
+            recomputeActivePolicy()
         }
     }
 
