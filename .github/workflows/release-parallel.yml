@@ -1,0 +1,312 @@
+name: Release Parallel Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_flavors:
+        description: 'Target flavors (comma-separated) or "all"'
+        required: true
+        default: "all"
+        type: string
+      publish_track:
+        description: "Play publish track"
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - internal
+      update_play_listing:
+        description: "Update Play listing/metadata/screenshots/release-notes"
+        required: false
+        default: false
+        type: boolean
+      max_parallel:
+        description: "Maximum parallel flavor publish jobs"
+        required: true
+        default: "8"
+        type: string
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
+  JAVA_VERSION: "21"
+  ANDROID_API_LEVEL: 36
+
+jobs:
+  resolve-flavors:
+    name: Resolve flavors
+    runs-on: ubuntu-latest
+    outputs:
+      resolved_flavors_json: ${{ steps.resolve.outputs.resolved_json }}
+      resolved_flavors_csv: ${{ steps.resolve.outputs.resolved_csv }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Resolve Flavors
+        id: resolve
+        uses: ./.github/actions/resolve-flavors
+        with:
+          target_flavors: ${{ github.event.inputs.target_flavors }}
+
+  publish-flavor:
+    name: Publish ${{ matrix.flavor }} (${{ github.event.inputs.publish_track }})
+    needs: resolve-flavors
+    runs-on: ubuntu-latest
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      FLAVOR: ${{ matrix.flavor }}
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(github.event.inputs.max_parallel) }}
+      matrix:
+        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
+    concurrency:
+      # Parallel across different flavors, serialized for same flavor+track.
+      group: play-publish-${{ matrix.flavor }}-${{ github.event.inputs.publish_track }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;36.0.0"
+
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          set +o pipefail
+          yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Validate CI apps catalog (strict)
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_ci_apps_catalog.py --mode strict --target-flavors "$FLAVOR"
+
+      - name: Validate AdMob inventory (strict)
+        run: |
+          set -euo pipefail
+          python3 ./scripts/ci/validate_admob_inventory.py --mode strict --target-flavors "$FLAVOR"
+
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Export firebase override + web client from Doppler
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          map_secret() {
+            local src="$1"
+            local dst="$2"
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
+            fi
+          }
+
+          map_secret_if_missing() {
+            local src="$1"
+            local dst="$2"
+            if [ -n "${!dst:-}" ]; then
+              return 0
+            fi
+            map_secret "$src" "$dst"
+          }
+
+          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
+          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
+          map_secret CF_R2_BUCKET CF_R2_BUCKET
+          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
+          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret CF_API_TOKEN CF_API_TOKEN
+          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
+
+      - name: Firebase Config Override (R2 preferred, Base64 fallback)
+        uses: ./.github/actions/firebase-config
+        with:
+          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ env.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
+
+      - name: Validate Google Sign-In Config (strict)
+        env:
+          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
+        run: |
+          python3 ./scripts/ci/verify_google_signin_config.py \
+            --flavors "$FLAVOR" \
+            --require-web-client-id
+
+      - name: Resolve release secrets (Doppler-only)
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+
+          load_from_doppler() {
+            local key="$1"
+            local val
+            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf -v "$key" '%s' "$val"
+              export "$key"
+              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+            fi
+          }
+
+          load_from_doppler KEYSTORE_BASE64
+          load_from_doppler KEYSTORE_PASSWORD
+          load_from_doppler KEY_ALIAS
+          load_from_doppler KEY_PASSWORD
+          load_from_doppler PUSH_REGISTRATION_URL
+          load_from_doppler PURCHASE_VERIFICATION_URL
+          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
+          PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" | tr -d '\r\n\t ')"
+          [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] && printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
+
+          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL PURCHASE_VERIFICATION_URL; do
+            [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
+          done
+          [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] || { echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
+          if [ "${#PLAY_SERVICE_ACCOUNT_JSON_BASE64}" -lt 500 ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 is too short to be valid (len=${#PLAY_SERVICE_ACCOUNT_JSON_BASE64})"
+            exit 1
+          fi
+
+      - name: Decode secrets
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
+          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
+          [ -s "${{ runner.temp }}/service-account.json" ] || { echo "::error::Decoded Play service account is empty."; exit 1; }
+          python3 - <<'PY'
+          import json, os, sys
+          p = os.path.join(os.environ["RUNNER_TEMP"], "service-account.json")
+          try:
+              with open(p, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception as e:
+              print(f"::error::Decoded Play service account is not valid JSON: {e}")
+              sys.exit(1)
+          missing = [k for k in ("project_id", "client_email", "private_key") if not data.get(k)]
+          if missing:
+              print(f"::error::Decoded Play service account missing keys: {', '.join(missing)}")
+              sys.exit(1)
+          print("::notice::Decoded Play service account JSON structure looks valid.")
+          PY
+          echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
+          echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Verify Play service account project
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          python3 ./scripts/ci/verify_play_service_account_project.py \
+            --expected-project-id makerpars-oaslananka-mobil
+
+      - name: Auto-bump Play versionCode (single flavor)
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ runner.temp }}/service-account.json
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet google-api-python-client google-auth
+          python3 ./scripts/ci/fetch_play_version_codes.py \
+            --flavors "$FLAVOR" \
+            --tracks all \
+            --suggest-next \
+            --apply-to-app-versions \
+            --sync-version-names
+
+      - name: Build release AAB (single flavor)
+        run: |
+          set -euo pipefail
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
+          ./gradlew "bundle${cap}Release" --stacktrace --no-daemon --max-workers=2
+
+      - name: Publish flavor to Play Console
+        run: |
+          set -euo pipefail
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
+          TASKS=()
+          if [ "${{ github.event.inputs.update_play_listing }}" = "true" ]; then
+            if [ ! -d "app/src/${FLAVOR}/play" ]; then
+              echo "::error::updatePlayListing=true but missing: app/src/${FLAVOR}/play"
+              exit 1
+            fi
+            TASKS+=("publish${cap}ReleaseListing")
+          fi
+          TASKS+=("publish${cap}ReleaseBundle")
+
+          max_attempts=3
+          attempt=1
+          delay_seconds=20
+          while true; do
+            log_file="$(mktemp)"
+            set +e
+            ./gradlew "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then
+              rm -f "$log_file"
+              break
+            fi
+            if ! grep -Eiq "Connection reset|SocketException|Read timed out|timed out|HTTP 429|HTTP 5[0-9]{2}" "$log_file"; then
+              echo "Publish failed with non-transient error. Not retrying."
+              rm -f "$log_file"
+              exit "$status"
+            fi
+            rm -f "$log_file"
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Publish failed after ${max_attempts} attempts."
+              exit "$status"
+            fi
+            echo "Transient publish error detected. Retrying in ${delay_seconds}s (attempt ${attempt}/${max_attempts})..."
+            sleep "$delay_seconds"
+            attempt=$((attempt + 1))
+            delay_seconds=$((delay_seconds * 2))
+          done
+
+      - name: Upload single flavor AAB artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-bundle-${{ matrix.flavor }}
+          path: app/build/outputs/bundle/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Cleanup secrets
+        if: always()
+        run: rm -f "${{ runner.temp }}/release.jks" "${{ runner.temp }}/service-account.json"

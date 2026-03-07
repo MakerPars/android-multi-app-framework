@@ -106,3 +106,31 @@ Tag formati: `v<major>.<minor>.<patch>+<build>` (ornek: `v1.0.0+12`)
 
 - Manuel regresyon checklist: `docs/ADS_QURAN_RELEASE_QA_CHECKLIST.md`
 - CI release dogrulama plani (workflow patchsiz): `docs/CI_RELEASE_VALIDATION_PLAN.md`
+
+## GitHub Actions: Paralel Publish Stratejisi
+
+Mevcut `Release` workflow'u korunmustur ve publish tarafinda global seri calisma davranisi devam eder.
+
+Yeni eklenen workflow:
+
+- `.github/workflows/release-parallel.yml`
+
+Ne saglar:
+
+- Farkli flavor'lari ayri runner job'larinda ayni anda publish edebilir.
+- Ayni flavor + ayni track icin eszamanli publish'i engeller (job-level concurrency lock).
+- Boylece:
+  - `amenerrasulu` ve `ayetelkursi` ayni anda publish olabilir
+  - ama iki ayri run'da `amenerrasulu + production` ayni anda publish olamaz
+
+Workflow inputlari:
+
+- `target_flavors`: `all` veya virgulle ayrilmis flavor listesi
+- `publish_track`: `production` veya `internal`
+- `update_play_listing`: listing update ac/kapa
+- `max_parallel`: ayni anda calisacak max flavor job sayisi (ornek: `16`)
+
+Onerilen kullanim:
+
+1. Coklu ve bagimsiz flavor publish icin `Release Parallel Publish`.
+2. Tek flavor veya daha konservatif akis icin mevcut `Release`.
