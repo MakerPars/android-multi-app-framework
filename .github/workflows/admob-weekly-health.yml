@@ -2,6 +2,12 @@ name: AdMob Weekly Health
 
 on:
   workflow_dispatch:
+    inputs:
+      fail_on_alert:
+        description: "Fail workflow when low-performing/zero-impression alerts exist"
+        required: false
+        default: false
+        type: boolean
   schedule:
     # Friday 09:00 Europe/Istanbul is 06:00 UTC (DST period may shift by 1 hour).
     - cron: "0 6 * * 5"
@@ -15,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      FAIL_ON_ALERT: ${{ (github.event_name == 'workflow_dispatch' && inputs.fail_on_alert) || 'false' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -82,6 +89,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p TEMP_OUT
+          EXTRA_ARGS=""
+          if [ "${FAIL_ON_ALERT}" = "true" ]; then
+            EXTRA_ARGS="--fail-on-alert"
+          fi
           python ./scripts/ci/check_admob_today.py \
             --token-file "${ADMOB_TOKEN_FILE}" \
             --publisher "${ADMOB_PUBLISHER_ID}" \
@@ -90,7 +101,7 @@ jobs:
             --show-rate-threshold 0.20 \
             --match-rate-threshold 0.50 \
             --out-json "TEMP_OUT/admob_today_report.json" \
-            --fail-on-alert
+            ${EXTRA_ARGS}
 
       - name: Append report summary
         if: always()
