@@ -1,12 +1,7 @@
 name: Dependency Submission
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
-  schedule:
-    - cron: '22 3 * * 1'
 
 permissions:
   contents: write
