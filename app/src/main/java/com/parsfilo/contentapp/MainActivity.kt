@@ -7,13 +7,12 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -22,7 +21,6 @@ import com.parsfilo.contentapp.core.common.NotificationIntentKeys
 import com.parsfilo.contentapp.core.database.dao.NotificationDao
 import com.parsfilo.contentapp.core.database.model.NotificationEntity
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
-import com.parsfilo.contentapp.core.designsystem.theme.app_transparent
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.monetization.AdOrchestrator
@@ -337,25 +335,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyEdgeToEdge(isDarkMode: Boolean) {
-        val transparent = app_transparent.toArgb()
-        enableEdgeToEdge(
-            statusBarStyle = if (isDarkMode) {
-                SystemBarStyle.dark(scrim = transparent)
-            } else {
-                SystemBarStyle.light(
-                    scrim = transparent,
-                    darkScrim = transparent,
-                )
-            },
-            navigationBarStyle = if (isDarkMode) {
-                SystemBarStyle.dark(scrim = transparent)
-            } else {
-                SystemBarStyle.light(
-                    scrim = transparent,
-                    darkScrim = transparent,
-                )
-            },
-        )
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        val useLightBars = !isDarkMode
+        insetsController.isAppearanceLightStatusBars = useLightBars
+        insetsController.isAppearanceLightNavigationBars = useLightBars
     }
 
     private fun resolveInitialDarkMode(): Boolean {
