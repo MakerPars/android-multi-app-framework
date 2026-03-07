@@ -24,13 +24,14 @@ from typing import Any
 
 import requests
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 
 
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/admob.readonly",
-    "https://www.googleapis.com/auth/admob.report",
 ]
+READONLY_SCOPE = "https://www.googleapis.com/auth/admob.readonly"
 
 
 def parse_args() -> argparse.Namespace:
@@ -128,6 +129,41 @@ def normalize_label(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", ascii_only)
 
 
+def refresh_credentials_with_fallback(token_info: dict[str, Any]) -> Credentials:
+    token_scopes = token_info.get("scopes")
+    scope_candidates: list[list[str]] = []
+
+    if isinstance(token_scopes, list):
+        parsed = [str(s).strip() for s in token_scopes if str(s).strip()]
+        if parsed:
+            scope_candidates.append(parsed)
+
+    scope_candidates.append(DEFAULT_SCOPES.copy())
+    if [READONLY_SCOPE] not in scope_candidates:
+        scope_candidates.append([READONLY_SCOPE])
+
+    last_error: Exception | None = None
+    for scopes in scope_candidates:
+        creds = Credentials.from_authorized_user_info(token_info, scopes=scopes)
+        if creds.valid:
+            return creds
+        try:
+            creds.refresh(Request())
+            return creds
+        except RefreshError as exc:
+            if "invalid_scope" in str(exc):
+                last_error = exc
+                continue
+            raise
+
+    if last_error is not None:
+        raise SystemExit(
+            "Failed to refresh AdMob credentials due to invalid OAuth scopes. "
+            "Re-authorize ADMOB_REFRESH_TOKEN with AdMob readonly/report access."
+        ) from last_error
+    raise SystemExit("Failed to refresh AdMob credentials.")
+
+
 def parse_versions(path: Path) -> dict[str, str]:
     if not path.exists():
         raise SystemExit(f"versions file not found: {path}")
@@ -190,10 +226,7 @@ def main() -> None:
         raise SystemExit(f"Token file not found: {token_path}")
 
     token_info = json.loads(token_path.read_text(encoding="utf-8"))
-    scopes = token_info.get("scopes") or DEFAULT_SCOPES
-    creds = Credentials.from_authorized_user_info(token_info, scopes=scopes)
-    if not creds.valid:
-        creds.refresh(Request())
+    creds = refresh_credentials_with_fallback(token_info)
 
     headers = {
         "Authorization": f"Bearer {creds.token}",
@@ -420,4 +453,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
