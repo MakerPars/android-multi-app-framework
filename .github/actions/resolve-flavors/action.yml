@@ -33,6 +33,15 @@ runs:
         INPUT="$(echo "${INPUT:-}" | tr -d '\r' | sed 's/[[:space:]]//g')"
 
         RESOLVED=()
+        add_unique_resolved() {
+          local candidate="$1"
+          for existing in "${RESOLVED[@]}"; do
+            if [ "$existing" = "$candidate" ]; then
+              return 0
+            fi
+          done
+          RESOLVED+=("$candidate")
+        }
         if [ "$INPUT" = "all" ]; then
           RESOLVED=("${ALL[@]}")
         elif [[ "$INPUT" == *","* ]]; then
@@ -47,7 +56,7 @@ runs:
               echo "Invalid flavor '$r'. Allowed: ${ALL[*]}"
               exit 1
             fi
-            RESOLVED+=("$r")
+            add_unique_resolved "$r"
           done
         else
           ok="false"
@@ -58,7 +67,7 @@ runs:
             echo "Invalid flavor '$INPUT'. Allowed: all, ${ALL[*]}"
             exit 1
           fi
-          RESOLVED+=("$INPUT")
+          add_unique_resolved "$INPUT"
         fi
 
         out="["

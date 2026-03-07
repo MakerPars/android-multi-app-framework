@@ -47,7 +47,7 @@ concurrency:
   cancel-in-progress: ${{ github.event.inputs.do_internal_test != 'true' && github.event.inputs.do_publish != 'true' }}
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false -Dksp.incremental=false
   JAVA_VERSION: '21'
   ANDROID_API_LEVEL: 36
 
@@ -109,6 +109,11 @@ jobs:
               echo "buildType must be Release when publishing."
               exit 1
             fi
+          fi
+
+          if [ "${{ github.event.inputs.do_internal_test }}" = "true" ] && [ "${{ github.event.inputs.do_publish }}" = "true" ]; then
+            echo "Aynı run içinde hem do_internal_test hem do_publish true olamaz. İki ayrı run başlatın."
+            exit 1
           fi
 
       - name: Resolve Flavors
@@ -209,6 +214,9 @@ jobs:
           python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ steps.resolve.outputs.resolved_csv }}"
 
       - name: Resolve release secrets (Doppler-only)
+        if: >-
+          github.event.inputs.build_type == 'Release' &&
+          (github.event.inputs.do_build == 'true' || github.event.inputs.do_internal_test == 'true' || github.event.inputs.do_publish == 'true')
         run: |
           set -euo pipefail
 

@@ -28,7 +28,7 @@ on:
         type: string
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false -Dksp.incremental=false
   JAVA_VERSION: "21"
   ANDROID_API_LEVEL: 36
 

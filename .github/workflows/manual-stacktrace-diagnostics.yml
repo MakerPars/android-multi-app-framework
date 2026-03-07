@@ -55,7 +55,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false -Dksp.incremental=false
   JAVA_VERSION: '21'
   ANDROID_API_LEVEL: 36
 
@@ -130,10 +130,6 @@ jobs:
             fi
           }
 
-          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
-          map_secret CF_R2_BUCKET CF_R2_BUCKET
-          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
-          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
           map_secret_if_missing() {
             local src="$1"
             local dst="$2"
@@ -142,6 +138,11 @@ jobs:
             fi
             map_secret "$src" "$dst"
           }
+
+          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
+          map_secret CF_R2_BUCKET CF_R2_BUCKET
+          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
+          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
           map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
           map_secret CF_API_TOKEN CF_API_TOKEN
           map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
@@ -376,7 +377,7 @@ jobs:
 
       - name: Upload diagnostics artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: manual-stacktrace-diagnostics-${{ github.run_id }}
           path: |

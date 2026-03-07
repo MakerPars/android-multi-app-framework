@@ -32,7 +32,7 @@ concurrency:
   cancel-in-progress: ${{ github.event.inputs.publish_to_play != 'true' }}
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Dorg.gradle.daemon=false -Dksp.incremental=false
   JAVA_VERSION: '21'
   ANDROID_API_LEVEL: 36
 
@@ -362,13 +362,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
 
       - name: Download AAB Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v6
         with:
           name: release-bundles
           path: app/build/outputs/bundle
 
       - name: Download bumped app-versions.properties
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v6
         with:
           name: bumped-app-versions
           path: TEMP_OUT/release-sync
