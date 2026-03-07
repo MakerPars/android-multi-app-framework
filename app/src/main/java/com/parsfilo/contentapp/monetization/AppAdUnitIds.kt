@@ -5,6 +5,7 @@ import com.parsfilo.contentapp.R
 import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdUnitIds
+import timber.log.Timber
 
 /**
  * Resolves AdMob unit IDs for the current app/flavor.
@@ -16,6 +17,8 @@ import com.parsfilo.contentapp.feature.ads.AdUnitIds
  * AdMob IDs are not secrets; using resources keeps the build reproducible and flavor-correct.
  */
 object AppAdUnitIds {
+    @Volatile
+    private var rewardedInterstitialFallbackWarningLogged = false
     const val GOOGLE_TEST_PUBLISHER_PREFIX = "ca-app-pub-3940256099942544"
 
     data class Ids(
@@ -39,14 +42,22 @@ object AppAdUnitIds {
             )
         } else {
             val rewarded = context.getString(R.string.ad_unit_rewarded)
+            val rewardedInterstitial = stringByNameOrNull(context, "ad_unit_rewarded_interstitial")
+                ?: rewarded.also {
+                    if (!rewardedInterstitialFallbackWarningLogged) {
+                        rewardedInterstitialFallbackWarningLogged = true
+                        Timber.w(
+                            "Missing ad_unit_rewarded_interstitial in ads.xml for %s. Falling back to rewarded unit id.",
+                            context.packageName,
+                        )
+                    }
+                }
             Ids(
                 banner = context.getString(R.string.ad_unit_banner),
                 interstitial = context.getString(R.string.ad_unit_interstitial),
                 native = context.getString(R.string.ad_unit_native),
                 rewarded = rewarded,
-                // Falls back to rewarded unit if flavor does not provide dedicated rewarded-interstitial id.
-                rewardedInterstitial = stringByNameOrNull(context, "ad_unit_rewarded_interstitial")
-                    ?: rewarded,
+                rewardedInterstitial = rewardedInterstitial,
                 appOpen = context.getString(R.string.ad_unit_open_app),
             )
         }

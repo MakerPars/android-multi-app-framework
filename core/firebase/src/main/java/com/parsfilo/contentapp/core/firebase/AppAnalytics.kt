@@ -41,7 +41,12 @@ class AppAnalytics @Inject constructor(
         analytics.setAnalyticsCollectionEnabled(enabled)
     }
 
-    fun setConsent(adStorageGranted: Boolean, analyticsStorageGranted: Boolean) {
+    fun setConsent(
+        adStorageGranted: Boolean,
+        analyticsStorageGranted: Boolean,
+        adUserDataGranted: Boolean = adStorageGranted,
+        adPersonalizationGranted: Boolean = adStorageGranted,
+    ) {
         analytics.setConsent(
             mapOf(
                 FirebaseAnalytics.ConsentType.AD_STORAGE to
@@ -52,6 +57,18 @@ class AppAnalytics @Inject constructor(
                     },
                 FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to
                     if (analyticsStorageGranted) {
+                        FirebaseAnalytics.ConsentStatus.GRANTED
+                    } else {
+                        FirebaseAnalytics.ConsentStatus.DENIED
+                    },
+                FirebaseAnalytics.ConsentType.AD_USER_DATA to
+                    if (adUserDataGranted) {
+                        FirebaseAnalytics.ConsentStatus.GRANTED
+                    } else {
+                        FirebaseAnalytics.ConsentStatus.DENIED
+                    },
+                FirebaseAnalytics.ConsentType.AD_PERSONALIZATION to
+                    if (adPersonalizationGranted) {
                         FirebaseAnalytics.ConsentStatus.GRANTED
                     } else {
                         FirebaseAnalytics.ConsentStatus.DENIED

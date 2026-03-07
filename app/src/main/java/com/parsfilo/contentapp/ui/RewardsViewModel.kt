@@ -13,6 +13,7 @@ import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.billing.BillingManager
 import com.parsfilo.contentapp.feature.billing.model.BillingProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -104,30 +105,48 @@ class RewardsViewModel @Inject constructor(
     }
 
     fun showRewardedAd(activity: Activity, adUnitId: String) {
+        data class RewardOutcome(val rewardMinutesEarned: Int, val totalWatchCount: Int)
         val watchStartedAtMs = System.currentTimeMillis()
-        var rewardEarned = false
-        var rewardMinutesEarned = 0
+        val rewardOutcomeDeferred = CompletableDeferred<RewardOutcome?>()
         rewardedAdManager.showAd(
             activity = activity,
             onUserEarnedReward = {
-                rewardEarned = true
                 viewModelScope.launch {
                     val currentPrefs = preferencesDataSource.userData.first()
-                    rewardMinutesEarned = AdGateChecker.calculateRewardMinutes(currentPrefs.rewardWatchCount + 1)
+                    val rewardMinutesEarned = AdGateChecker.calculateRewardMinutes(currentPrefs.rewardWatchCount + 1)
                     adGateChecker.onRewardEarned()
+                    val latestPrefs = preferencesDataSource.userData.first()
+                    if (!rewardOutcomeDeferred.isCompleted) {
+                        rewardOutcomeDeferred.complete(
+                            RewardOutcome(
+                                rewardMinutesEarned = rewardMinutesEarned,
+                                totalWatchCount = latestPrefs.rewardWatchCount,
+                            ),
+                        )
+                    }
                 }
             },
             onAdDismissed = {
-                val watchDurationSeconds = ((System.currentTimeMillis() - watchStartedAtMs).coerceAtLeast(0L) / 1000L)
+                val watchDurationSeconds =
+                    ((System.currentTimeMillis() - watchStartedAtMs).coerceAtLeast(0L) / 1000L)
                 viewModelScope.launch {
+                    val rewardOutcome = withTimeoutOrNull(1500L) {
+                        rewardOutcomeDeferred.await()
+                    }
                     val latestPrefs = preferencesDataSource.userData.first()
-                    if (rewardEarned) {
+                    if (rewardOutcome != null) {
                         appAnalytics.logEvent(
                             AnalyticsEventName.REWARDED_WATCH_COMPLETE,
                             android.os.Bundle().apply {
                                 putLong(AnalyticsParamKey.WATCH_DURATION_S, watchDurationSeconds)
-                                putLong(AnalyticsParamKey.REWARD_MINUTES_EARNED, rewardMinutesEarned.toLong())
-                                putLong(AnalyticsParamKey.TOTAL_WATCH_COUNT, latestPrefs.rewardWatchCount.toLong())
+                                putLong(
+                                    AnalyticsParamKey.REWARD_MINUTES_EARNED,
+                                    rewardOutcome.rewardMinutesEarned.toLong(),
+                                )
+                                putLong(
+                                    AnalyticsParamKey.TOTAL_WATCH_COUNT,
+                                    rewardOutcome.totalWatchCount.toLong(),
+                                )
                             },
                         )
                     } else {
@@ -139,10 +158,12 @@ class RewardsViewModel @Inject constructor(
                             },
                         )
                     }
+                    val rewardWindowActive = latestPrefs.rewardedAdFreeUntil > System.currentTimeMillis()
+                    if (!latestPrefs.isPremium && !rewardWindowActive) {
+                        rewardedAdManager.loadAd(adUnitId)
+                    }
                 }
-                // Yeni reklam ön yükle
-                rewardedAdManager.loadAd(adUnitId)
-            }
+            },
         )
     }
 

@@ -225,3 +225,114 @@ Not:
 ## Güvenlik notu
 - OAuth `client_secret.json` ve refresh token dosyaları gizli kalmalı.
 - Şüpheli sızıntıda client secret + refresh token rotate edilmeli.
+
+## Rapor Sonrasi Operasyon Runbook (Mart 2026)
+
+Bu bolum, `TEMP_FOLDER/admob-analiz-raporu.md` icindeki kod-disinda kalan 3 kritik operasyon maddesini kapatmak icindir.
+
+### 1) Amenerrasulu anomalous version / IVT incelemesi
+
+Amac:
+- `142.1.8`, `24.4.13.1`, `production1` gibi beklenmeyen version stringlerinin kaynagini ayirmak.
+- Gercek eski istemci mi, yoksa invalid traffic/sahte trafik mi netlestirmek.
+
+Adimlar:
+1. AdMob > Policy Center ve Traffic Quality ekranindan son 30 gunu package `com.parsfilo.amenerrasulu` icin filtrele.
+2. AdMob report export ile su kirilimlari cikar:
+   - app version
+   - sdk version
+   - country
+   - ad unit
+   - request / matched / impression / click
+3. Asagidaki siniflandirmayi uygula:
+   - `Legacy`: version patterni senin release semanigine yakin (`1.0.x`, `2.x` vb.)
+   - `Suspicious`: semantik disi (`production1`, cok uzun build label, alakasiz major pattern)
+4. `Suspicious` segmentte su iki kontrolu yap:
+   - anormal yuksek request, dusuk impression, dusuk session quality
+   - tek/az sayida country veya beklenmeyen geo yogunlasmasi
+5. Yuksek riskte acil aksiyon:
+   - ilgili ad unitleri AdMob tarafinda gecici disable et
+   - gerekirse yeni ad unit acip uygulama tarafinda rotasyon planla
+   - `ads_incident_mode=true` ile app-open/interstitial/rewarded-interstitial kapat
+
+Karar esikleri (ops):
+- `Suspicious requests / total requests > %10` => yuksek risk
+- `Suspicious segment show rate < %5` ve request buyukse => IVT adayi
+- Policy Center warning sayisi artiyorsa => incident moduna gec
+
+### 2) Eski GMA SDK kullanicilarinin azaltilmasi
+
+Amac:
+- Eski istemcilerden gelen NPA agirligini azaltmak.
+- Consent Mode v2 ve UMP 4.x davranisinin aktif istemci tabaninda oranini artirmak.
+
+Adimlar:
+1. Firebase/BigQuery veya internal analytics ile app version dagilimini haftalik raporla.
+2. `min_supported_ad_sdk_cohort` listesi olustur:
+   - `GMA < 23.x` olanlar legacy risk segmenti
+3. Eski segment icin rollout:
+   - force update (soft -> hard)
+   - in-app update prompt
+   - release note ve push kampanyasi
+4. Haftalik KPI takibi:
+   - `legacy_active_devices_30d`
+   - `npa_impression_ratio`
+   - `consent_granted_ratio`
+
+Hedef:
+- 30 gun icinde legacy cihaz oranini <%5 seviyesine dusurmek.
+
+### 3) Yasin Suresi limited ads (%28) kok neden ayrisma
+
+Amac:
+- Limited Ads oraninin yas/TFUA kararindan mi, consent eksiginden mi, geo/policy etkisinden mi geldigini ayirmak.
+
+Adimlar:
+1. Package `com.parsfilo.yasinsuresi` icin kirilimli rapor al:
+   - app version
+   - country
+   - age gate state (`UNDER_13`, `AGE_13_TO_15`, `AGE_16_OR_OVER`, `UNKNOWN`)
+   - consent state (`granted`, `denied`, `not required`)
+2. Su capraz kontrolleri yap:
+   - `limited_ads_ratio` by app version
+   - `limited_ads_ratio` by country
+   - `limited_ads_ratio` by age bucket
+3. Beklenen degilse:
+   - age gate defaults ve migration davranisini tekrar denetle
+   - ayarlar ekranindan privacy options / consent revoke akisini manuel QA et
+4. Aksiyon:
+   - belirli surumde patlama varsa o surume update kampanyasi
+   - belirli geoda patlama varsa UMP mesaj yayini ve metin/publisher ayarlarini kontrol et
+
+Karar esikleri (ops):
+- `limited_ads_ratio > %20` 7 gun ust uste => P1 incident
+- `%30+` ve gelir dususu birlikteyse => P0 incident
+
+### 4) Haftalik kontrol rutini (zorunlu)
+
+Her Cuma:
+1. GitHub Actions `AdMob Weekly Health` workflow'unu calistir (veya schedule'i bekle).
+2. Artifact `admob-health-report` icindeki `admob_today_report.json` ve summary'yi incele.
+3. Lokal teyit gerekiyorsa `admob_checker.py` calistir, output'u sakla.
+4. `Suspicious version` listesi guncelle.
+5. `limited_ads_ratio` ve `npa_ratio` trendini onceki hafta ile karsilastir.
+6. Esikler asildiysa `ADS_INCIDENT_RUNBOOK.md` adimlarini uygula.
+
+### 4.1 Gunluk latest-version kontrolu (zorunlu)
+
+Gunluk otomasyon:
+1. GitHub Actions `AdMob Daily Latest Health` workflow'u calisir.
+2. Bu workflow sadece `.ci/apps.json` + `app-versions.properties` ile eslesen en guncel surum satirlarini dahil eder.
+3. Eski surum satirlari toplamlardan dislanir.
+4. Artifact `admob-daily-latest-health-report` icindeki JSON/summary operasyon panelinde referans kabul edilir.
+
+Not:
+- Eger app label -> katalog eslesmesi saglanamazsa (`--strict`), job fail eder.
+- Bu bilincli bir fail-fast davranisidir; eslesme duzeltilmeden metriklere guvenilmez.
+
+### 5) Kapanis kriteri
+
+Bu rapor maddeleri operasyonel olarak kapandi kabul edilmesi icin:
+1. Anomalous version segmenti siniflandirilmis ve aksiyonlanmis olacak.
+2. Legacy SDK cihaz oraninda haftalik dusus trendi gorulecek.
+3. Yasin limited ads orani kalici olarak %20 altina indirilecek veya net kok neden belgelenmis olacak.

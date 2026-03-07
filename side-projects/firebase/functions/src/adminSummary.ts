@@ -326,13 +326,11 @@ async function loadCoverageFromDevices(
 
         return Object.fromEntries(entries);
     } catch (error) {
-        if (!isMissingIndexError(error)) {
-            throw error;
-        }
-
-        logger.warn("loadCoverageFromDevices missing index, using full snapshot fallback", {
+        logger.warn("loadCoverageFromDevices aggregate failed, using full snapshot fallback", {
             activeSince: activeSince.toISOString(),
             packageCount: packages.length,
+            fallbackReason: isMissingIndexError(error) ? "missing-index" : "aggregate-failure",
+            error: error instanceof Error ? error.message : String(error ?? "unknown"),
         });
 
         const packageSet = new Set(packages);
@@ -400,15 +398,12 @@ async function loadAnalyticsSummary(packages: string[]): Promise<AnalyticsSummar
             loadedAt: new Date().toISOString(),
         };
     } catch (error) {
-        if (!isMissingIndexError(error)) {
-            throw error;
-        }
-
-        logger.warn("loadAnalyticsSummary missing index, using full snapshot fallback", {
+        logger.warn("loadAnalyticsSummary aggregate failed, using full snapshot fallback", {
             activeSince: activeSince.toISOString(),
             packageCount: packages.length,
+            fallbackReason: isMissingIndexError(error) ? "missing-index" : "aggregate-failure",
+            error: error instanceof Error ? error.message : String(error ?? "unknown"),
         });
-
         return buildAnalyticsSummaryFallback(packages, activeSince.getTime());
     }
 }

@@ -5,18 +5,22 @@ import org.junit.Test
 
 class FirebaseConsentMappingTest {
     @Test
-    fun `granted maps both firebase consent flags to true`() {
+    fun `granted maps all firebase consent flags to true`() {
         val result = mapToFirebaseConsentGrantedFlags(granted = true)
 
-        assertThat(result.first).isTrue()
-        assertThat(result.second).isTrue()
+        assertThat(result.adStorageGranted).isTrue()
+        assertThat(result.analyticsStorageGranted).isTrue()
+        assertThat(result.adUserDataGranted).isTrue()
+        assertThat(result.adPersonalizationGranted).isTrue()
     }
 
     @Test
-    fun `denied maps both firebase consent flags to false`() {
+    fun `denied maps all firebase consent flags to false`() {
         val result = mapToFirebaseConsentGrantedFlags(granted = false)
 
-        assertThat(result.first).isFalse()
-        assertThat(result.second).isFalse()
+        assertThat(result.adStorageGranted).isFalse()
+        assertThat(result.analyticsStorageGranted).isFalse()
+        assertThat(result.adUserDataGranted).isFalse()
+        assertThat(result.adPersonalizationGranted).isFalse()
     }
 }

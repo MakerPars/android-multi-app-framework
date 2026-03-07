@@ -1,6 +1,7 @@
 package com.parsfilo.contentapp.monetization
 
 import android.app.Activity
+import android.content.Context
 import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.feature.ads.AdEligibility
@@ -26,6 +27,8 @@ import com.parsfilo.contentapp.feature.ads.RewardedInterstitialLaunchToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -62,15 +65,18 @@ class AdOrchestrator @Inject constructor(
     private var interstitialShownThisSession: Int = 0
     @Volatile
     private var adSessionContext: AdSessionContext = AdSessionContext()
+    @Volatile
+    private var adGateObserverStarted: Boolean = false
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
         adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
+        startAdGateObserver(activity.applicationContext)
         adManager.initialize(activity) {
             scope.launch(Main.immediate) {
                 if (!adGateChecker.shouldShowAds.first()) {
                     return@launch
                 }
-                preloadAds(activity)
+                preloadAds(activity.applicationContext)
             }
         }
     }
@@ -308,6 +314,27 @@ class AdOrchestrator @Inject constructor(
         )
     }
 
+    private fun startAdGateObserver(context: Context) {
+        if (adGateObserverStarted) return
+        adGateObserverStarted = true
+        orchestratorScope.launch {
+            combine(
+                AdsConsentRuntimeState.canRequestAds,
+                adGateChecker.shouldShowAds,
+            ) { consentGranted, adsAllowedByGate ->
+                consentGranted && adsAllowedByGate
+            }
+                .distinctUntilChanged()
+                .collect { canPreload ->
+                    if (canPreload) {
+                        preloadAds(context)
+                    } else {
+                        clearPreloadedAds()
+                    }
+                }
+        }
+    }
+
     fun refreshConsent(activity: Activity, scope: CoroutineScope) {
         adManager.refreshConsent(activity) { canRequestAds ->
             scope.launch(Main.immediate) {
@@ -319,42 +346,48 @@ class AdOrchestrator @Inject constructor(
                     clearPreloadedAds()
                     return@launch
                 }
-                preloadAds(activity)
+                preloadAds(activity.applicationContext)
             }
         }
     }
 
-    private fun preloadAds(activity: Activity) {
+    private fun preloadAds(context: Context) {
         val policy = adsPolicyProvider.getPolicy()
         appOpenAdManager.loadAd(
-            AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+            AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
             AdPlacement.APP_OPEN_RESUME,
         )
-
         interstitialAdManager.loadAd(
-            activity,
+            context,
             AppAdUnitIds.resolvePlacement(
-                activity,
+                context,
                 AdPlacement.INTERSTITIAL_NAV_BREAK,
                 BuildConfig.USE_TEST_ADS,
             ),
             AdPlacement.INTERSTITIAL_NAV_BREAK,
         )
-
         nativeAdManager.loadAds(
-            activity,
-            AppAdUnitIds.resolvePlacement(activity, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
+            context,
+            AppAdUnitIds.resolvePlacement(context, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
             AdPlacement.NATIVE_FEED_HOME,
             policy.nativePoolMax,
         )
-
         rewardedInterstitialAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(
-                activity,
+                context,
                 AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
                 BuildConfig.USE_TEST_ADS,
             ),
             AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+        )
+        rewardedAdManager.loadAd(
+            adUnitId = AppAdUnitIds.resolvePlacement(
+                context,
+                AdPlacement.REWARDED_DEFAULT,
+                BuildConfig.USE_TEST_ADS,
+            ),
+            placement = AdPlacement.REWARDED_DEFAULT,
+            route = adSessionContext.activeRoute,
         )
     }
 

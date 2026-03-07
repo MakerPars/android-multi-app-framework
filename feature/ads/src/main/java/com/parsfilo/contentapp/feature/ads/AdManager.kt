@@ -63,7 +63,7 @@ class AdManager @Inject constructor(
     @Volatile
     private var onAdsInitialized: (() -> Unit)? = null
 
-    private val initScope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private val _consentStatus = MutableStateFlow<ConsentStatus>(ConsentStatus.Unknown)
@@ -134,6 +134,11 @@ class AdManager @Inject constructor(
                         privacyOptionsRequired = _privacyOptionsRequired.value,
                         canRequestAds = consentInformation.canRequestAds(),
                     )
+                    if (consentInformation.canRequestAds()) {
+                        initializeMobileAdsSdk(ageGateStatus)
+                    } else {
+                        applyGlobalRequestConfiguration(ageGateStatus)
+                    }
                 },
             )
 
@@ -450,11 +455,12 @@ class AdManager @Inject constructor(
     private fun applyFirebaseConsent(consentGranted: Boolean) {
         if (lastFirebaseConsentGranted == consentGranted) return
         try {
-            val (adStorageGranted, analyticsStorageGranted) =
-                mapToFirebaseConsentGrantedFlags(consentGranted)
+            val consentFlags = mapToFirebaseConsentGrantedFlags(consentGranted)
             appAnalytics.setConsent(
-                adStorageGranted = adStorageGranted,
-                analyticsStorageGranted = analyticsStorageGranted,
+                adStorageGranted = consentFlags.adStorageGranted,
+                analyticsStorageGranted = consentFlags.analyticsStorageGranted,
+                adUserDataGranted = consentFlags.adUserDataGranted,
+                adPersonalizationGranted = consentFlags.adPersonalizationGranted,
             )
             appAnalytics.setAnalyticsCollectionEnabled(consentGranted)
             Timber.d("Firebase consent updated: granted=%s", consentGranted)
@@ -487,8 +493,20 @@ class AdManager @Inject constructor(
         (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 }
 
-internal fun mapToFirebaseConsentGrantedFlags(granted: Boolean): Pair<Boolean, Boolean> =
-    granted to granted
+internal data class FirebaseConsentGrantedFlags(
+    val adStorageGranted: Boolean,
+    val analyticsStorageGranted: Boolean,
+    val adUserDataGranted: Boolean,
+    val adPersonalizationGranted: Boolean,
+)
+
+internal fun mapToFirebaseConsentGrantedFlags(granted: Boolean): FirebaseConsentGrantedFlags =
+    FirebaseConsentGrantedFlags(
+        adStorageGranted = granted,
+        analyticsStorageGranted = granted,
+        adUserDataGranted = granted,
+        adPersonalizationGranted = granted,
+    )
 
 private fun Boolean.analyticsConsentStatus(): String = if (this) "granted" else "denied"
 

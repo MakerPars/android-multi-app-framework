@@ -40,6 +40,11 @@ def parse_args() -> argparse.Namespace:
         help="Path to OAuth token JSON (default: SECRET/token.json)",
     )
     parser.add_argument(
+        "--publisher",
+        default="",
+        help="Preferred AdMob publisher id/account (pub-xxx or accounts/pub-xxx). If empty, first accessible account is used.",
+    )
+    parser.add_argument(
         "--top",
         type=int,
         default=5,
@@ -68,6 +73,11 @@ def parse_args() -> argparse.Namespace:
         default="TEMP_OUT/admob_today_report.json",
         help="Output JSON path (default: TEMP_OUT/admob_today_report.json)",
     )
+    parser.add_argument(
+        "--fail-on-alert",
+        action="store_true",
+        help="Exit with non-zero code when low_performing_apps or zero_impressions_apps is not empty.",
+    )
     return parser.parse_args()
 
 
@@ -85,6 +95,13 @@ def micros_metric(metrics: dict[str, Any], key: str) -> int:
 
 def ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def normalize_account_name(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+    return value if value.startswith("accounts/") else f"accounts/{value}"
 
 
 def main() -> None:
@@ -111,7 +128,17 @@ def main() -> None:
     accounts = account_resp.json().get("account", [])
     if not accounts:
         raise SystemExit("No AdMob account returned by API.")
-    account_name = accounts[0]["name"]
+    account_names = [item.get("name", "") for item in accounts if item.get("name")]
+    requested_account = normalize_account_name(args.publisher)
+    if requested_account:
+        if requested_account not in account_names:
+            raise SystemExit(
+                f"Requested publisher/account is not accessible: {requested_account} "
+                f"(accessible={account_names})"
+            )
+        account_name = requested_account
+    else:
+        account_name = account_names[0]
 
     report_body = {
         "reportSpec": {
@@ -230,6 +257,12 @@ def main() -> None:
     print("totals_from_rows:", json.dumps(result["totals_from_rows"], ensure_ascii=False))
     print(f"top_apps={len(result['top_apps'])} low_performing={len(low_performing)} zero_impressions={len(zero_impressions)}")
     print(f"wrote={out_path}")
+
+    if args.fail_on_alert and (low_performing or zero_impressions):
+        raise SystemExit(
+            "AdMob health alerts detected "
+            f"(low_performing={len(low_performing)}, zero_impressions={len(zero_impressions)})"
+        )
 
 
 if __name__ == "__main__":
