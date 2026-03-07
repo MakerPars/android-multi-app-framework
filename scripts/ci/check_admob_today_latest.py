@@ -3,7 +3,7 @@
 Fetch AdMob "today until now" performance summary filtered to latest app versions only.
 
 Data source:
-- AdMob networkReport with dimensions APP + APP_VERSION
+- AdMob networkReport with dimensions APP + APP_VERSION_NAME
 
 Latest-version source of truth:
 - .ci/apps.json (flavor <-> app display name)
@@ -262,7 +262,7 @@ def main() -> None:
                 "startDate": {"year": now.year, "month": now.month, "day": now.day},
                 "endDate": {"year": now.year, "month": now.month, "day": now.day},
             },
-            "dimensions": ["APP", "APP_VERSION"],
+            "dimensions": ["APP", "APP_VERSION_NAME"],
             "metrics": [
                 "AD_REQUESTS",
                 "IMPRESSIONS",
@@ -281,7 +281,11 @@ def main() -> None:
         json=report_body,
         timeout=120,
     )
-    report_resp.raise_for_status()
+    if report_resp.status_code >= 400:
+        raise SystemExit(
+            "AdMob networkReport request failed: "
+            f"HTTP {report_resp.status_code} {report_resp.text[:2000]}"
+        )
     payload = report_resp.json()
     if not isinstance(payload, list):
         raise SystemExit("Unexpected report payload (expected streamed JSON array).")
@@ -318,7 +322,7 @@ def main() -> None:
             unmapped_apps[str(app_label)] = unmapped_apps.get(str(app_label), 0) + int_metric(metrics, "AD_REQUESTS")
             continue
 
-        app_version_dim = dim.get("APP_VERSION", {}) or {}
+        app_version_dim = dim.get("APP_VERSION_NAME", {}) or dim.get("APP_VERSION", {}) or {}
         app_version = str(app_version_dim.get("displayLabel") or app_version_dim.get("value") or "").strip()
         latest_version = app_meta["latest_version"]
 
@@ -401,7 +405,11 @@ def main() -> None:
         if a["ad_requests"] >= args.min_requests
         and (a["show_rate"] < args.show_rate_threshold or a["match_rate"] < args.match_rate_threshold)
     ]
-    zero_impressions = [a for a in apps_out if a["ad_requests"] > 0 and a["impressions"] == 0]
+    zero_impressions = [
+        a
+        for a in apps_out
+        if a["ad_requests"] >= args.min_requests and a["impressions"] == 0
+    ]
 
     result = {
         "account": account_name,

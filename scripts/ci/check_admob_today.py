@@ -251,7 +251,11 @@ def main() -> None:
         if a["ad_requests"] >= args.min_requests
         and (a["show_rate"] < args.show_rate_threshold or a["match_rate"] < args.match_rate_threshold)
     ]
-    zero_impressions = [a for a in apps if a["ad_requests"] > 0 and a["impressions"] == 0]
+    zero_impressions = [
+        a
+        for a in apps
+        if a["ad_requests"] >= args.min_requests and a["impressions"] == 0
+    ]
 
     result = {
         "account": account_name,
