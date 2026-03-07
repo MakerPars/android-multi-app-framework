@@ -37,7 +37,7 @@ turbine = "1.2.1"
 truth = "1.4.5"
 androidxTestCore = "1.7.0"
 robolectric = "4.16.1"
-detekt = "2.0.0-alpha.2"
+detekt = "1.23.8"
 ktlintGradle = "14.0.1"
 playPublisher = "4.0.0"
 guava = "33.5.0-android"
@@ -157,6 +157,6 @@ google-services = { id = "com.google.gms.google-services", version.ref = "google
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
 firebase-perf = { id = "com.google.firebase.firebase-perf", version.ref = "firebasePerfPlugin" }
 room = { id = "androidx.room", version.ref = "room" }
-detekt = { id = "dev.detekt", version.ref = "detekt" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

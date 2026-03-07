@@ -1,4 +1,4 @@
-import dev.detekt.gradle.Detekt
+import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
@@ -19,15 +19,8 @@ plugins {
 
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ▸ Gradle CPU Limiter (≈ %70–80 kullanım)
-// ═══════════════════════════════════════════════════════════════
-val cores = Runtime.getRuntime().availableProcessors()
-
-// Tüm Gradle worker'larını sınırla (compile, dex, KSP, etc.)
-gradle.startParameter.maxWorkerCount = (cores - 2).coerceAtLeast(1)
-
 // Test JVM paralelliğini de sınırla
+val cores = Runtime.getRuntime().availableProcessors()
 tasks.withType<Test>().configureEach {
     maxParallelForks = (cores / 3).coerceAtLeast(1)
 }
@@ -121,13 +114,14 @@ subprojects {
             outputToConsole.set(true)
 
             val isCi =
-                (System.getenv("GITHUB_ACTIONS") ?: "").equals("true", ignoreCase = true) ||
-                    (System.getenv("CI") ?: "").equals("true", ignoreCase = true)
-            val githubEventName = (System.getenv("GITHUB_EVENT_NAME") ?: "").lowercase()
-            val isPullRequest = githubEventName == "pull_request" || githubEventName == "pull_request_target"
+                providers.environmentVariable("GITHUB_ACTIONS")
+                    .orElse(providers.environmentVariable("CI"))
+                    .map { it.equals("true", ignoreCase = true) }
+                    .orElse(false)
+                    .get()
 
-            // PR kalite kapısında ktlint ihlali pipeline'ı kırmalıdır.
-            ignoreFailures.set(isCi && !isPullRequest)
+            // CI'da ihlaller pipeline'ı kırmalı; local geliştirmede raporlayıp devam edilebilir.
+            ignoreFailures.set(!isCi)
 
             reporters {
                 reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)

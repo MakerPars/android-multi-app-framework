@@ -30,9 +30,15 @@ if (appVersionsFile.exists()) {
     appVersionsFile.inputStream().use { appVersionsProps.load(it) }
 }
 
-fun pick(name: String): String? =
-    project.findProperty(name)?.toString() ?: envProps.getProperty(name)?.trim('"')
-        ?: System.getenv(name)
+fun pick(name: String): String? {
+    val gradleValue = providers.gradleProperty(name).orNull
+    if (!gradleValue.isNullOrBlank()) return gradleValue
+
+    val envFileValue = envProps.getProperty(name)?.trim('"')
+    if (!envFileValue.isNullOrBlank()) return envFileValue
+
+    return providers.environmentVariable(name).orNull
+}
 
 fun asBuildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
@@ -48,6 +54,15 @@ fun isReleasePublishTask(taskName: String): Boolean =
     normalizedTaskName(taskName).let { normalized ->
         normalized.startsWith("publish") && normalized.contains("Release")
     }
+
+val pushRegistrationUrlValue = pick("PUSH_REGISTRATION_URL").orEmpty().trim()
+val purchaseVerificationUrlValue = pick("PURCHASE_VERIFICATION_URL").orEmpty().trim()
+if (pushRegistrationUrlValue.isBlank()) {
+    logger.warn("⚠️ PUSH_REGISTRATION_URL is empty. Push registration requests will be skipped.")
+}
+if (purchaseVerificationUrlValue.isBlank()) {
+    logger.warn("⚠️ PURCHASE_VERIFICATION_URL is empty. Purchase verification requests will be skipped.")
+}
 
 data class ResolvedVersion(
     val versionCode: Int,
@@ -137,22 +152,15 @@ val validateFlavorVersions =
 val validateReleaseConfig =
     tasks.register("validateReleaseConfig") {
         group = "verification"
-        description =
-            "Validates release/publish configuration (keystore, push URL, and Play credentials for publish tasks)."
-
-        val requestedTasks = gradle.startParameter.taskNames.toList()
-        val publishRequested = requestedTasks.any(::isReleasePublishTask)
+        description = "Validates release signing and runtime endpoint configuration."
 
         val keystorePath = pick("KEYSTORE_FILE").orEmpty().trim()
         val keystoreFile = keystorePath.takeIf { it.isNotBlank() }?.let { project.file(it) }
         val keystorePassword = pick("KEYSTORE_PASSWORD").orEmpty()
         val keyAlias = pick("KEY_ALIAS").orEmpty()
         val keyPassword = pick("KEY_PASSWORD").orEmpty()
-        val pushRegistrationUrl = pick("PUSH_REGISTRATION_URL").orEmpty().trim()
-        val purchaseVerificationUrl = pick("PURCHASE_VERIFICATION_URL").orEmpty().trim()
-        val playServiceAccountJsonPath = pick("PLAY_SERVICE_ACCOUNT_JSON").orEmpty().trim()
-        val playServiceAccountJsonFile =
-            playServiceAccountJsonPath.takeIf { it.isNotBlank() }?.let { project.file(it) }
+        val pushRegistrationUrl = pushRegistrationUrlValue
+        val purchaseVerificationUrl = purchaseVerificationUrlValue
 
         doLast {
             val errors = mutableListOf<String>()
@@ -183,22 +191,41 @@ val validateReleaseConfig =
                 errors += "PURCHASE_VERIFICATION_URL must start with https:// (resolved='$purchaseVerificationUrl')"
             }
 
-            if (publishRequested) {
-                if (playServiceAccountJsonPath.isBlank()) {
-                    errors += "Missing PLAY_SERVICE_ACCOUNT_JSON (required for publishRelease tasks)"
-                } else if (playServiceAccountJsonFile?.exists() != true) {
-                    errors += "PLAY_SERVICE_ACCOUNT_JSON file does not exist: $playServiceAccountJsonPath"
-                }
-            }
-
             if (errors.isNotEmpty()) {
                 throw GradleException(
                     buildString {
                         appendLine("Release/publish configuration validation failed:")
                         errors.forEach { appendLine("  - $it") }
                         appendLine()
-                        appendLine("Tip: app/build.gradle.kts reads values from -P, .env, then System.getenv().")
+                        appendLine("Tip: app/build.gradle.kts reads values from -P, .env, then providers.environmentVariable().")
                     },
+                )
+            }
+        }
+    }
+
+val validatePublishConfig =
+    tasks.register("validatePublishConfig") {
+        group = "verification"
+        description = "Validates Play Publisher credentials for publishRelease tasks."
+
+        val playServiceAccountJsonPath = pick("PLAY_SERVICE_ACCOUNT_JSON").orEmpty().trim()
+        val playServiceAccountJsonFile =
+            playServiceAccountJsonPath.takeIf { it.isNotBlank() }?.let { project.file(it) }
+
+        doLast {
+            val errors = mutableListOf<String>()
+            if (playServiceAccountJsonPath.isBlank()) {
+                errors += "Missing PLAY_SERVICE_ACCOUNT_JSON (required for publishRelease tasks)"
+            } else if (playServiceAccountJsonFile?.exists() != true) {
+                errors += "PLAY_SERVICE_ACCOUNT_JSON file does not exist: $playServiceAccountJsonPath"
+            }
+            if (errors.isNotEmpty()) {
+                throw GradleException(
+                    buildString {
+                        appendLine("Publish configuration validation failed:")
+                        errors.forEach { appendLine("  - $it") }
+                    }
                 )
             }
         }
@@ -271,12 +298,12 @@ android {
         buildConfigField(
             "String",
             "PUSH_REGISTRATION_URL",
-            asBuildConfigString(pick("PUSH_REGISTRATION_URL") ?: ""),
+            asBuildConfigString(pushRegistrationUrlValue),
         )
         buildConfigField(
             "String",
             "PURCHASE_VERIFICATION_URL",
-            asBuildConfigString(pick("PURCHASE_VERIFICATION_URL") ?: ""),
+            asBuildConfigString(purchaseVerificationUrlValue),
         )
     }
 
@@ -444,4 +471,11 @@ tasks
     }.configureEach {
         dependsOn(validateFlavorVersions)
         dependsOn(validateReleaseConfig)
+    }
+
+tasks
+    .matching { task ->
+        isReleasePublishTask(task.name)
+    }.configureEach {
+        dependsOn(validatePublishConfig)
     }

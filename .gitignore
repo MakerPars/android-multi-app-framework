@@ -16,6 +16,7 @@ SECRET/
 
 # Local config
 local.properties
+**/local.properties
 
 # Mac / Windows
 .DS_Store
