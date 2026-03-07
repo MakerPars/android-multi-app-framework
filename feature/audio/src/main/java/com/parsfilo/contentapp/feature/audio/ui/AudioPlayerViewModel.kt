@@ -411,7 +411,7 @@ class AudioPlayerViewModel @Inject constructor(
                 Timber.w("Uzak ses indirme başarısız. key=%s code=%s", source.key, response.code)
                 return null
             }
-            val responseBody = response.body ?: return null
+            val responseBody = response.body
 
             BufferedInputStream(responseBody.byteStream()).use { input ->
                 BufferedOutputStream(temp.outputStream()).use { output ->
@@ -469,7 +469,7 @@ class AudioPlayerViewModel @Inject constructor(
                 return null
             }
 
-            val body = response.body?.string().orEmpty()
+            val body = response.body.string()
             val json = JSONObject(body)
             val packageAudio = mutableMapOf<String, String>()
             val packageAudioObj = json.optJSONObject("packageAudio")

@@ -16,8 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,13 +32,11 @@ class ContentViewModel @Inject constructor(
     private var defaultModeApplied = false
     private val reloadSignal = MutableStateFlow(0)
 
-    private val versesFlow = reloadSignal.flatMapLatest {
-        flow {
-            when (val result = contentRepository.getVerses()) {
-                is Result.Success -> emit(result.data)
-                is Result.Error -> throw result.exception
-                is Result.Loading -> emit(emptyList())
-            }
+    private val versesFlow = reloadSignal.map {
+        when (val result = contentRepository.getVerses()) {
+            is Result.Success -> result.data
+            is Result.Error -> throw result.exception
+            is Result.Loading -> emptyList()
         }
     }
 

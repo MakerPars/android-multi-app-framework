@@ -3,9 +3,9 @@ package com.parsfilo.contentapp.feature.ads
 import android.os.Bundle
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.ResponseInfo
-import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.AnalyticsEventName
 import com.parsfilo.contentapp.core.firebase.AnalyticsParamKey
+import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton

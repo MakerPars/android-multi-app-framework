@@ -5,10 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,20 +22,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdPaidEventContext
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
-import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.ads.findActivity
 import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.max
@@ -87,7 +87,7 @@ fun BannerAd(
     ) {
         val adWidthDp = max(1, maxWidth.value.toInt())
         val adSize = remember(adWidthDp, adContext) {
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(adContext, adWidthDp)
+            AdSize.getCurrentOrientationInlineAdaptiveBannerAdSize(adContext, adWidthDp)
         }
         val adView = remember(adUnitId, adWidthDp) {
             var loadStartedAtMillis = SystemTimeProvider.nowMillis()

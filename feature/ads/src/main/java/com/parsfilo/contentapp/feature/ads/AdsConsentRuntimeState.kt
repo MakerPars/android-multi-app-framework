@@ -1,5 +1,6 @@
 package com.parsfilo.contentapp.feature.ads
 
+import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState.canRequestAds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

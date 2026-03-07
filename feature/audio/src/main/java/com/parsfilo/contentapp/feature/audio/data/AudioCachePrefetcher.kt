@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.feature.audio.data
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.edit
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.OkHttpClient
@@ -82,7 +83,7 @@ class AudioCachePrefetcher @Inject constructor(
         }
 
         if (fullPrefetchEnabled && downloadedOrCachedCount == remoteSources.size) {
-            prefs.edit().putBoolean(completionKey, true).apply()
+            prefs.edit { putBoolean(completionKey, true) }
             Timber.i("Audio prefetch full-complete: $downloadedOrCachedCount/${remoteSources.size} files")
         } else {
             Timber.i("Audio prefetch result: $downloadedOrCachedCount/${remoteSources.size} files")
@@ -167,7 +168,7 @@ class AudioCachePrefetcher @Inject constructor(
                 return null
             }
 
-            val body = response.body?.string().orEmpty()
+            val body = response.body.string()
             val json = JSONObject(body)
             val packageAudio = mutableMapOf<String, String>()
             json.optJSONObject("packageAudio")?.let { obj ->
@@ -212,7 +213,7 @@ class AudioCachePrefetcher @Inject constructor(
                 return false
             }
 
-            val responseBody = response.body ?: return false
+            val responseBody = response.body
             BufferedInputStream(responseBody.byteStream()).use { input ->
                 BufferedOutputStream(temp.outputStream()).use { output ->
                     val buffer = ByteArray(AUDIO_BUFFER_SIZE)
