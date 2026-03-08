@@ -5,8 +5,8 @@ import java.util.Locale
 
 object HijriCalendarConverter {
     fun toHijri(year: Int, month: Int, day: Int): Triple<Int, Int, Int> {
-        val jd = (367 * year) - (7 * (year + (month + 9) / 12)) / 4 +
-            (275 * month) / 9 + day + 1721013
+        val jd =
+            (367 * year) - (7 * (year + (month + 9) / 12)) / 4 + (275 * month) / 9 + day + 1721013
         val z = jd.toLong()
         val a = z + 32082L
         val b = (4 * a + 3) / 1461

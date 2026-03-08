@@ -22,11 +22,11 @@ class EzanVaktiHttpException(
 @Singleton
 class EzanVaktiApiClient @Inject constructor() {
     private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder().apply {
-            connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-            readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-            addInterceptor(buildNetworkLoggingInterceptor())
-        }.build()
+        val builder = OkHttpClient.Builder()
+        builder.connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+        builder.readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+        builder.addInterceptor(buildNetworkLoggingInterceptor())
+        builder.build()
     }
 
     fun getCountries(): List<ApiCountry> =
