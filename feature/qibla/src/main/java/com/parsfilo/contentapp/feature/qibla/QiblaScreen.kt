@@ -130,6 +130,20 @@ fun QiblaRoute(
             viewModel.onLocationUnavailable()
             return@LaunchedEffect
         }
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            viewModel.onPermissionStateChanged(false)
+            viewModel.onLocationUnavailable()
+            return@LaunchedEffect
+        }
         val location = resolveBestLocation(context)
         if (location == null) {
             viewModel.onLocationUnavailable()
@@ -744,9 +758,8 @@ private fun hasLocationPermission(context: Context): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
+@SuppressLint("MissingPermission")
 private suspend fun resolveBestLocation(context: Context): Location? {
-    if (!hasLocationPermission(context)) return null
-
     val fused = LocationServices.getFusedLocationProviderClient(context)
     val currentRequest =
         CurrentLocationRequest.Builder().setPriority(Priority.PRIORITY_HIGH_ACCURACY)

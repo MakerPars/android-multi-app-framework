@@ -1,6 +1,7 @@
 package com.parsfilo.contentapp.feature.prayertimes.data
 
 import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -20,11 +21,12 @@ class EzanVaktiHttpException(
 @Singleton
 class EzanVaktiApiClient @Inject constructor() {
     private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-            .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-            .addInterceptor(TimberNetworkLoggingInterceptor("ezanvakti_api"))
-            .build()
+        val loggingInterceptor: Interceptor = TimberNetworkLoggingInterceptor("ezanvakti_api")
+        OkHttpClient.Builder().apply {
+            connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            addInterceptor(loggingInterceptor)
+        }.build()
     }
 
     fun getCountries(): List<ApiCountry> =
