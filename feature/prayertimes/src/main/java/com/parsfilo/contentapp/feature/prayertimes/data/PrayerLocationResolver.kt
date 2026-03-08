@@ -11,12 +11,14 @@ import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.io.IOException
+import java.lang.ReflectiveOperationException
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -76,10 +78,33 @@ class PrayerLocationResolver @Inject constructor(
                     city = first.adminArea.orEmpty().ifBlank { first.locality.orEmpty() },
                     district = first.subAdminArea.orEmpty().ifBlank { first.subLocality.orEmpty() },
                 )
-            } catch (throwable: Throwable) {
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: IOException) {
                 // Common on some devices/networks: "service not available / UNAVAILABLE"
-                lastException = throwable
-                Timber.w(throwable, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
+                lastException = error
+                Timber.w(error, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
+                if (attempt < GEOCODER_MAX_RETRIES - 1) {
+                    delay(GEOCODER_RETRY_DELAY_MS)
+                }
+            } catch (error: IllegalArgumentException) {
+                // Invalid lat/lon values should not happen, but if they do retry once.
+                lastException = error
+                Timber.w(error, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
+                if (attempt < GEOCODER_MAX_RETRIES - 1) {
+                    delay(GEOCODER_RETRY_DELAY_MS)
+                }
+            } catch (error: ReflectiveOperationException) {
+                // Legacy reflection path may fail on OEM implementations.
+                lastException = error
+                Timber.w(error, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
+                if (attempt < GEOCODER_MAX_RETRIES - 1) {
+                    delay(GEOCODER_RETRY_DELAY_MS)
+                }
+            } catch (error: SecurityException) {
+                // Common on some devices/networks: "service not available / UNAVAILABLE"
+                lastException = error
+                Timber.w(error, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
                 if (attempt < GEOCODER_MAX_RETRIES - 1) {
                     delay(GEOCODER_RETRY_DELAY_MS)
                 }
