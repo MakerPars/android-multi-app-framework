@@ -35,6 +35,7 @@ interface DeviceDoc {
 }
 
 const FIRESTORE_IN_QUERY_LIMIT = 10;
+const DELIVERY_WINDOW_MINUTES = 60;
 
 /**
  * dispatchNotifications — Her saat başı çalışır.
@@ -48,7 +49,7 @@ const FIRESTORE_IN_QUERY_LIMIT = 10;
  */
 export const dispatchNotifications = onSchedule(
     {
-        schedule: "0 */3 * * *", // Her 3 saatte bir
+        schedule: "0 * * * *", // Her saat başı
         region: "europe-west1",
         timeZone: "UTC",
     },
@@ -94,15 +95,19 @@ async function processEvent(
     const targetTimezones = normalizeTargetTimezones(effectiveEvent.targetTimezones);
 
     // 2. Hedef teslimat saatine uyan timezone'ları bul
-    const matchingTimezones = getMatchingTimezones(effectiveEvent.localDeliveryTime, now)
+    const matchingTimezones = getMatchingTimezones(
+        effectiveEvent.localDeliveryTime,
+        now,
+        DELIVERY_WINDOW_MINUTES,
+    )
         .filter((tz) => targetTimezones.length === 0 || targetTimezones.includes(tz));
 
     // Daha önce gönderilenleri çıkar
-    const newTimezones = matchingTimezones.filter(
+    const unsentTimezones = matchingTimezones.filter(
         (tz) => !sentTimezones.includes(tz),
     );
 
-    if (newTimezones.length === 0) {
+    if (unsentTimezones.length === 0) {
         return; // Bu saat dilimlerine zaten gönderilmiş veya eşleşen yok
     }
 
@@ -113,32 +118,30 @@ async function processEvent(
         );
     }
 
-    // 3. Tarih/gün kontrolü
-    // Tek bir referans timezone'u üzerinden (ilk eşleşen) kontrol yapalım
-    const refTz = newTimezones[0];
+    // 3. Tarih/gün kontrolü (timezone bazlı)
+    const eligibleTimezones = unsentTimezones.filter((timezone) => {
+        if (effectiveEvent.date) {
+            return getLocalDate(timezone, now) === effectiveEvent.date;
+        }
+        if (effectiveEvent.recurrence) {
+            return matchesRecurrence(effectiveEvent.recurrence, timezone, now);
+        }
+        return true;
+    });
 
-    if (effectiveEvent.date) {
-        // Tek seferlik event → tarih eşleşmesi kontrol et
-        const localDate = getLocalDate(refTz, now);
-        if (localDate !== effectiveEvent.date) {
-            return; // Bu tarih değil
-        }
-    } else if (effectiveEvent.recurrence) {
-        // Tekrarlayan event → gün kontrolü
-        if (!matchesRecurrence(effectiveEvent.recurrence, refTz, now)) {
-            return;
-        }
+    if (eligibleTimezones.length === 0) {
+        return;
     }
 
-    logger.info(`Processing event "${effectiveEvent.name}" for timezone(s): ${newTimezones.join(", ")}`);
+    logger.info(`Processing event "${effectiveEvent.name}" for timezone(s): ${eligibleTimezones.join(", ")}`);
 
     // 4. Bu timezone'lardaki cihazları çek
-    const devices = await getDevicesForTimezones(db, newTimezones, effectiveEvent.packages);
+    const devices = await getDevicesForTimezones(db, eligibleTimezones, effectiveEvent.packages);
 
     if (devices.length === 0) {
-        logger.info(`No devices found for timezones: ${newTimezones.join(", ")}`);
+        logger.info(`No devices found for timezones: ${eligibleTimezones.join(", ")}`);
         // Yine de timezone'ları gönderildi olarak işaretle
-        await markTimezonesAsSent(db, eventId, newTimezones);
+        await markTimezonesAsSent(db, eventId, eligibleTimezones);
         return;
     }
 
@@ -175,7 +178,7 @@ async function processEvent(
     }
 
     // 7. Gönderilen timezone'ları kaydet
-    await markTimezonesAsSent(db, eventId, newTimezones);
+    await markTimezonesAsSent(db, eventId, eligibleTimezones);
 }
 
 async function resetSentTimezonesIfPeriodElapsed(
@@ -349,10 +352,14 @@ async function markTimezonesAsSent(
             sentTimezones: allSent,
         };
 
-        // Tek seferlik event ve tüm büyük timezone'lara gönderildiyse → "sent"
-        if (!event.recurrence && allSent.length >= ALL_TIMEZONES.length) {
+        const targetTimezones = normalizeTargetTimezones(event.targetTimezones);
+        const requiredTimezoneCount =
+            targetTimezones.length > 0 ? targetTimezones.length : ALL_TIMEZONES.length;
+
+        // Tek seferlik event ve hedeflenen timezone'lara gönderim tamamlandıysa → "sent"
+        if (!event.recurrence && allSent.length >= requiredTimezoneCount) {
             updateData.status = "sent";
-            logger.info(`Event "${event.name}" marked as SENT (all timezones covered).`);
+            logger.info(`Event "${event.name}" marked as SENT (targeted timezones covered).`);
         }
 
         transaction.update(eventRef, updateData);

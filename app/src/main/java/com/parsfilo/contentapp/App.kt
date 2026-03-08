@@ -74,6 +74,8 @@ class App : Application() {
         ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
             runCatching {
                 pushRegistrationManager.subscribeToTopics(DEFAULT_FCM_TOPICS)
+            }.onFailure { error ->
+                Timber.w(error, "Failed to subscribe to default FCM topics")
             }
         }
         PushRegistrationSyncWorker.schedule(this)
@@ -87,6 +89,8 @@ class App : Application() {
                         fallbackAudioFileName = BuildConfig.AUDIO_FILE_NAME,
                         prefetchAllAudioOnFirstLaunch = BuildConfig.FLAVOR_NAME == "namazsurelerivedualarsesli",
                     )
+                }.onFailure { error ->
+                    Timber.w(error, "Audio prefetch failed at startup")
                 }
             }
         }
@@ -144,6 +148,9 @@ class App : Application() {
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 prayerAlarmScheduler.scheduleNextForCurrentFlavor()
                 runCatching { PrayerTimesWidgetReceiver.refreshAll(this@App) }
+                    .onFailure { error ->
+                        Timber.w(error, "Prayer widget refresh failed at startup")
+                    }
             }
         }
 
@@ -152,6 +159,8 @@ class App : Application() {
                 runCatching {
                     zikirReminderScheduler.scheduleOrCancelFromPreferences()
                     zikirReminderScheduler.scheduleStreakCheckWorker()
+                }.onFailure { error ->
+                    Timber.w(error, "Failed to sync zikirmatik reminder schedule at startup")
                 }
             }
         }

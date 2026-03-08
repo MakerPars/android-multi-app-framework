@@ -53,6 +53,7 @@ class ContentViewModelTest {
         rewardedAdFreeUntil = 0L,
         rewardWatchCount = 0,
         lastInterstitialShown = 0L,
+        lastRewardedInterstitialShown = 0L,
         notificationsEnabled = true
     )
 
