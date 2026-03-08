@@ -1,14 +1,16 @@
 package com.parsfilo.contentapp.feature.prayertimes.data
 
-import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import timber.log.Timber
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 
 private const val BASE_URL = "https://ezanvakti.emushaf.net"
 
@@ -23,7 +25,7 @@ class EzanVaktiApiClient @Inject constructor() {
         OkHttpClient.Builder().apply {
             connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
             readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-            addInterceptor(TimberNetworkLoggingInterceptor("ezanvakti_api"))
+            addInterceptor(buildNetworkLoggingInterceptor())
         }.build()
     }
 
@@ -103,10 +105,51 @@ class EzanVaktiApiClient @Inject constructor() {
     }
 
     private companion object {
+        private const val NETWORK_LOG_SOURCE = "ezanvakti_api"
         private const val HTTP_SUCCESS_CODE_MIN = 200
         private const val HTTP_SUCCESS_CODE_MAX = 299
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
+    }
+
+    private fun buildNetworkLoggingInterceptor(): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            val startNs = System.nanoTime()
+            val method = request.method
+            val url = request.url.toString()
+            Timber.d("[Net][%s] -> %s %s", NETWORK_LOG_SOURCE, method, url)
+
+            runCatching {
+                chain.proceed(request)
+            }.fold(
+                onSuccess = { response: Response ->
+                    val durationMs = ((System.nanoTime() - startNs) / 1_000_000.0).roundToInt()
+                    Timber.d(
+                        "[Net][%s] <- %s %s code=%d success=%s durationMs=%d",
+                        NETWORK_LOG_SOURCE,
+                        method,
+                        request.url,
+                        response.code,
+                        response.isSuccessful,
+                        durationMs,
+                    )
+                    response
+                },
+                onFailure = { error ->
+                    val durationMs = ((System.nanoTime() - startNs) / 1_000_000.0).roundToInt()
+                    Timber.w(
+                        error,
+                        "[Net][%s] xx %s %s durationMs=%d",
+                        NETWORK_LOG_SOURCE,
+                        method,
+                        url,
+                        durationMs,
+                    )
+                    throw error
+                },
+            )
+        }
     }
 }
 

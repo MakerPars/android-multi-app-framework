@@ -11,10 +11,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object PrayerTimesModule {
-
     @Provides
     @Singleton
-    fun providePrayerTimesRepository(
-        impl: DefaultPrayerTimesRepository,
-    ): PrayerTimesRepository = impl
+    fun providePrayerTimesRepository(impl: DefaultPrayerTimesRepository): PrayerTimesRepository =
+        impl
 }

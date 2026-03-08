@@ -163,7 +163,7 @@ class PrayerLocationResolver @Inject constructor(
     }
 
     private fun buildNominatimUrl(latitude: Double, longitude: Double): String =
-        "https://nominatim.openstreetmap.org/reverse" + "?format=json" + "&lat=$latitude" + "&lon=$longitude" + "&zoom=$NOMINATIM_ZOOM_LEVEL" + "&addressdetails=1"
+        "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=$NOMINATIM_ZOOM_LEVEL&addressdetails=1"
 }
 
 data class PrayerAddressCandidate(
