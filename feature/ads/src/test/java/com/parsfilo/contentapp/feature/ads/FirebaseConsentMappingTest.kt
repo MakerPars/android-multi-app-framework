@@ -23,4 +23,43 @@ class FirebaseConsentMappingTest {
         assertThat(result.adUserDataGranted).isFalse()
         assertThat(result.adPersonalizationGranted).isFalse()
     }
+
+    @Test
+    fun `tcf purpose consents map granular flags`() {
+        val result = mapToFirebaseConsentGrantedFlags(
+            canRequestAds = true,
+            signals = ConsentSignalSnapshot(
+                // p1=1, p3=0, p4=1, p7=1
+                tcfPurposeConsents = "1001001",
+                tcfVendorConsents = null,
+                gdprApplies = true,
+                usPrivacyString = null,
+                gppString = null,
+            ),
+        )
+
+        assertThat(result.adStorageGranted).isTrue()
+        assertThat(result.analyticsStorageGranted).isTrue()
+        assertThat(result.adUserDataGranted).isTrue()
+        assertThat(result.adPersonalizationGranted).isFalse()
+    }
+
+    @Test
+    fun `us privacy opt out disables user data and personalization`() {
+        val result = mapToFirebaseConsentGrantedFlags(
+            canRequestAds = true,
+            signals = ConsentSignalSnapshot(
+                tcfPurposeConsents = null,
+                tcfVendorConsents = null,
+                gdprApplies = null,
+                usPrivacyString = "1YYN",
+                gppString = null,
+            ),
+        )
+
+        assertThat(result.adStorageGranted).isTrue()
+        assertThat(result.analyticsStorageGranted).isTrue()
+        assertThat(result.adUserDataGranted).isFalse()
+        assertThat(result.adPersonalizationGranted).isFalse()
+    }
 }

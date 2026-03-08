@@ -37,14 +37,17 @@ class PrayerAlarmScheduler @Inject constructor(
     }
 
     suspend fun scheduleNext(variant: PrayerAppVariant): Boolean = withContext(ioDispatcher) {
+        Timber.d("Prayer alarm scheduling started variant=%s", variant.name)
         val preferences = prayerPreferencesDataSource.preferences.first()
         if (!preferences.alarmEnabled) {
+            Timber.d("Prayer alarm scheduling skipped: alarm disabled in preferences")
             cancelScheduledAlarm()
             return@withContext false
         }
 
         val districtId = preferences.selectedDistrictId
             ?: run {
+                Timber.d("Prayer alarm scheduling skipped: district is not selected")
                 cancelScheduledAlarm()
                 return@withContext false
             }
@@ -89,6 +92,14 @@ class PrayerAlarmScheduler @Inject constructor(
 
         alarmManager.cancel(pendingIntent)
         setAlarm(alarmManager, nextAlarm.triggerAtMillis, pendingIntent)
+        Timber.d(
+            "Prayer alarm scheduled variant=%s prayerKey=%s localDate=%s timeHm=%s triggerAt=%d",
+            variant.name,
+            nextAlarm.prayerKey,
+            nextAlarm.localDate,
+            nextAlarm.timeHm,
+            nextAlarm.triggerAtMillis,
+        )
 
         appAnalytics.logEvent(
             "prayer_alarm_scheduled",
@@ -105,6 +116,7 @@ class PrayerAlarmScheduler @Inject constructor(
 
     fun cancelScheduledAlarm() {
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
+        Timber.d("Cancelling all scheduled prayer alarms")
 
         ALL_PRAYER_KEYS.forEach { prayerKey ->
             val pendingIntent = buildPendingIntent(
@@ -131,6 +143,7 @@ class PrayerAlarmScheduler @Inject constructor(
             alarmManager.cancel(it)
             it.cancel()
         }
+        Timber.d("Prayer alarm cancellation completed")
     }
 
     private fun findNextAlarm(
@@ -248,6 +261,7 @@ class PrayerAlarmScheduler @Inject constructor(
         triggerAtMillis: Long,
         pendingIntent: PendingIntent,
     ) {
+        Timber.d("Setting prayer alarm with setAndAllowWhileIdle triggerAt=%d", triggerAtMillis)
         alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerAtMillis,

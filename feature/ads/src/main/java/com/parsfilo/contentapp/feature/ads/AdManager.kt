@@ -79,12 +79,15 @@ class AdManager @Inject constructor(
     val debugGeography: StateFlow<UmpDebugGeography> = _debugGeography.asStateFlow()
     private val _lastRequestDebugGeography = MutableStateFlow(UmpDebugGeography.NONE)
     val lastRequestDebugGeography: StateFlow<UmpDebugGeography> = _lastRequestDebugGeography.asStateFlow()
-    private var lastFirebaseConsentGranted: Boolean? = null
+    private var lastFirebaseConsentFlags: FirebaseConsentGrantedFlags? = null
 
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
+        Timber.d("AdManager initialize requested")
         onAdsInitialized = onReady
         launchWithResolvedAgeGateStatus("initialize") { ageGateStatus ->
+            Timber.d("AdManager initialize ageGate=%s", ageGateStatus.analyticsValue())
             AdsConsentRuntimeState.update(AdsPrivacyState.Gathering(ageGateStatus))
+            ConsentFunnelDebugDashboard.onConsentStarted(trigger = "cold_start")
             appAnalytics.logConsentFlowStarted(trigger = "cold_start")
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
@@ -135,14 +138,27 @@ class AdManager @Inject constructor(
                         canRequestAds = consentInformation.canRequestAds(),
                     )
                     if (consentInformation.canRequestAds()) {
+                        ConsentFunnelDebugDashboard.onConsentOutcome(
+                            granted = true,
+                            trigger = "cold_start_error",
+                        )
                         initializeMobileAdsSdk(ageGateStatus)
                     } else {
+                        ConsentFunnelDebugDashboard.onConsentOutcome(
+                            granted = false,
+                            trigger = "cold_start_error",
+                        )
                         applyGlobalRequestConfiguration(ageGateStatus)
                     }
                 },
             )
 
             if (consentInformation.canRequestAds()) {
+                Timber.d("AdManager initialize: consent already granted from previous session")
+                ConsentFunnelDebugDashboard.onConsentOutcome(
+                    granted = true,
+                    trigger = "cold_start_cached",
+                )
                 updatePrivacyOptionsState(consentInformation)
                 _consentStatus.value = ConsentStatus.NotRequired
                 applyConsentRuntimeState(
@@ -170,6 +186,7 @@ class AdManager @Inject constructor(
     }
 
     fun refreshConsent(activity: Activity, onUpdated: (Boolean) -> Unit = {}) {
+        Timber.d("AdManager refreshConsent requested")
         launchWithResolvedAgeGateStatus("refreshConsent") { ageGateStatus ->
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
@@ -180,6 +197,7 @@ class AdManager @Inject constructor(
                 {
                     updatePrivacyOptionsState(consentInformation)
                     val canRequestAds = consentInformation.canRequestAds()
+                    Timber.d("AdManager refreshConsent updated canRequestAds=%s", canRequestAds)
                     applyConsentRuntimeState(
                         consentStatus = if (canRequestAds) ConsentStatus.Obtained else ConsentStatus.Required,
                         ageGateStatus = ageGateStatus,
@@ -230,6 +248,7 @@ class AdManager @Inject constructor(
     }
 
     fun showPrivacyOptions(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+        Timber.d("AdManager showPrivacyOptions requested")
         val consentInformation = UserMessagingPlatform.getConsentInformation(context)
         updatePrivacyOptionsState(consentInformation)
         val isRequired =
@@ -257,8 +276,10 @@ class AdManager @Inject constructor(
     }
 
     fun showConsentFormIfRequired(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+        Timber.d("AdManager showConsentFormIfRequired requested")
         launchWithResolvedAgeGateStatus("showConsentFormIfRequired") { ageGateStatus ->
             AdsConsentRuntimeState.update(AdsPrivacyState.Gathering(ageGateStatus))
+            ConsentFunnelDebugDashboard.onConsentStarted(trigger = "debug_menu")
             appAnalytics.logConsentFlowStarted(trigger = "debug_menu")
             val params = buildConsentRequestParameters(ageGateStatus, _debugGeography.value)
             val consentInformation = UserMessagingPlatform.getConsentInformation(context)
@@ -275,6 +296,10 @@ class AdManager @Inject constructor(
                                 trigger = "debug_menu",
                                 message = formError.message ?: "Debug consent form error",
                                 ageGateResult = ageGateStatus.analyticsValue(),
+                            )
+                            ConsentFunnelDebugDashboard.onConsentOutcome(
+                                granted = consentInformation.canRequestAds(),
+                                trigger = "debug_menu_error",
                             )
                             refreshConsent(activity) { onCompleted(false) }
                         } else {
@@ -295,6 +320,10 @@ class AdManager @Inject constructor(
                         message = requestError.message ?: "Debug consent request update error",
                         ageGateResult = ageGateStatus.analyticsValue(),
                     )
+                    ConsentFunnelDebugDashboard.onConsentOutcome(
+                        granted = consentInformation.canRequestAds(),
+                        trigger = "debug_menu_request_error",
+                    )
                     refreshConsent(activity) { onCompleted(false) }
                 },
             )
@@ -302,6 +331,7 @@ class AdManager @Inject constructor(
     }
 
     fun resetConsent() {
+        Timber.d("AdManager resetConsent")
         UserMessagingPlatform.getConsentInformation(context).reset()
         AdsConsentRuntimeState.update(AdsPrivacyState.Unknown)
         applyFirebaseConsent(false)
@@ -335,6 +365,10 @@ class AdManager @Inject constructor(
         trigger: String,
         umpFormShown: Boolean,
     ) {
+        ConsentFunnelDebugDashboard.onConsentOutcome(
+            granted = consentInformation.canRequestAds(),
+            trigger = trigger,
+        )
         if (consentInformation.canRequestAds()) {
             _consentStatus.value = ConsentStatus.Obtained
             applyConsentRuntimeState(
@@ -369,7 +403,10 @@ class AdManager @Inject constructor(
     private fun initializeMobileAdsSdk(ageGateStatus: AdAgeGateStatus) {
         applyGlobalRequestConfiguration(ageGateStatus)
 
-        if (isMobileAdsInitializeCalled.getAndSet(true)) return
+        if (isMobileAdsInitializeCalled.getAndSet(true)) {
+            Timber.d("MobileAds initialize skipped: already initialized")
+            return
+        }
 
         initScope.launch {
             MobileAds.initialize(context) { initStatus ->
@@ -383,6 +420,13 @@ class AdManager @Inject constructor(
     }
 
     private fun applyGlobalRequestConfiguration(ageGateStatus: AdAgeGateStatus) {
+        Timber.d(
+            "Applying request configuration ageGate=%s childTag=%d underAgeTag=%d maxRating=%s",
+            ageGateStatus.analyticsValue(),
+            ageGateStatus.childDirectedTreatmentTag(),
+            ageGateStatus.underAgeOfConsentTag(),
+            ageGateStatus.maxAdContentRating(),
+        )
         val builder = MobileAds.getRequestConfiguration().toBuilder()
             .setTagForChildDirectedTreatment(ageGateStatus.childDirectedTreatmentTag())
             .setTagForUnderAgeOfConsent(ageGateStatus.underAgeOfConsentTag())
@@ -453,22 +497,66 @@ class AdManager @Inject constructor(
     }
 
     private fun applyFirebaseConsent(consentGranted: Boolean) {
-        if (lastFirebaseConsentGranted == consentGranted) return
         runCatching {
-            val consentFlags = mapToFirebaseConsentGrantedFlags(consentGranted)
+            val consentSignals = readConsentSignals()
+            val consentFlags = mapToFirebaseConsentGrantedFlags(
+                canRequestAds = consentGranted,
+                signals = consentSignals,
+            )
+            if (lastFirebaseConsentFlags == consentFlags) return
             appAnalytics.setConsent(
                 adStorageGranted = consentFlags.adStorageGranted,
                 analyticsStorageGranted = consentFlags.analyticsStorageGranted,
                 adUserDataGranted = consentFlags.adUserDataGranted,
                 adPersonalizationGranted = consentFlags.adPersonalizationGranted,
             )
-            appAnalytics.setAnalyticsCollectionEnabled(consentGranted)
-            Timber.d("Firebase consent updated: granted=%s", consentGranted)
-            lastFirebaseConsentGranted = consentGranted
+            appAnalytics.setAnalyticsCollectionEnabled(consentFlags.analyticsStorageGranted)
+            Timber.d(
+                "Firebase consent updated canRequestAds=%s flags={adStorage=%s analyticsStorage=%s adUserData=%s adPersonalization=%s} tcfPurposeLen=%d gdprApplies=%s usPrivacy=%s gppPresent=%s",
+                consentGranted,
+                consentFlags.adStorageGranted,
+                consentFlags.analyticsStorageGranted,
+                consentFlags.adUserDataGranted,
+                consentFlags.adPersonalizationGranted,
+                consentSignals.tcfPurposeConsents?.length ?: 0,
+                consentSignals.gdprApplies,
+                consentSignals.usPrivacyString ?: "none",
+                !consentSignals.gppString.isNullOrBlank(),
+            )
+            lastFirebaseConsentFlags = consentFlags
         }
             .onFailure { throwable ->
                 Timber.w(throwable, "Failed to update Firebase consent mapping")
             }
+    }
+
+    private fun readConsentSignals(): ConsentSignalSnapshot {
+        val prefsCandidates = listOf(
+            context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE),
+            context.getSharedPreferences("__GOOGLE_FUNDING_CHOICE_SDK_INTERNAL__", Context.MODE_PRIVATE),
+            context.getSharedPreferences("__GOOGLE_FUNDING_CHOICE_SDK_STORAGE__", Context.MODE_PRIVATE),
+        )
+
+        fun readString(key: String): String? =
+            prefsCandidates
+                .asSequence()
+                .mapNotNull { prefs ->
+                    runCatching { prefs.getString(key, null) }.getOrNull()
+                }
+                .firstOrNull { !it.isNullOrBlank() }
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+
+        val gdprAppliesRaw = readString("IABTCF_gdprApplies")
+        val gdprApplies = parseIabBoolean(gdprAppliesRaw)
+
+        return ConsentSignalSnapshot(
+            tcfPurposeConsents = readString("IABTCF_PurposeConsents"),
+            tcfVendorConsents = readString("IABTCF_VendorConsents"),
+            gdprApplies = gdprApplies,
+            usPrivacyString = readString("IABUSPrivacy_String"),
+            gppString = readString("IABGPP_HDR_GppString"),
+        )
     }
 
     private suspend fun resolveAgeGateStatus(): AdAgeGateStatus =
@@ -501,15 +589,107 @@ internal data class FirebaseConsentGrantedFlags(
     val adPersonalizationGranted: Boolean,
 )
 
-internal fun mapToFirebaseConsentGrantedFlags(granted: Boolean): FirebaseConsentGrantedFlags =
-    FirebaseConsentGrantedFlags(
-        adStorageGranted = granted,
-        analyticsStorageGranted = granted,
-        adUserDataGranted = granted,
-        adPersonalizationGranted = granted,
+internal data class ConsentSignalSnapshot(
+    val tcfPurposeConsents: String?,
+    val tcfVendorConsents: String?,
+    val gdprApplies: Boolean?,
+    val usPrivacyString: String?,
+    val gppString: String?,
+)
+
+internal fun mapToFirebaseConsentGrantedFlags(
+    granted: Boolean,
+): FirebaseConsentGrantedFlags =
+    mapToFirebaseConsentGrantedFlags(
+        canRequestAds = granted,
+        signals = null,
     )
 
+internal fun mapToFirebaseConsentGrantedFlags(
+    canRequestAds: Boolean,
+    signals: ConsentSignalSnapshot?,
+): FirebaseConsentGrantedFlags {
+    if (!canRequestAds) {
+        return FirebaseConsentGrantedFlags(
+            adStorageGranted = false,
+            analyticsStorageGranted = false,
+            adUserDataGranted = false,
+            adPersonalizationGranted = false,
+        )
+    }
+
+    var adStorageGranted = true
+    var analyticsStorageGranted = true
+    var adUserDataGranted = true
+    var adPersonalizationGranted = true
+
+    if (signals != null) {
+        val tcfApplies = signals.gdprApplies == true || !signals.tcfPurposeConsents.isNullOrBlank()
+        if (tcfApplies) {
+            val purpose1 = hasConsentBit(signals.tcfPurposeConsents, 1)
+            val purpose3 = hasConsentBit(signals.tcfPurposeConsents, 3)
+            val purpose4 = hasConsentBit(signals.tcfPurposeConsents, 4)
+            val purpose7 = hasConsentBit(signals.tcfPurposeConsents, 7)
+
+            purpose1?.let {
+                adStorageGranted = adStorageGranted && it
+                analyticsStorageGranted = analyticsStorageGranted && it
+            }
+
+            val adUserByTcf =
+                when {
+                    purpose1 == null && purpose7 == null -> null
+                    else -> (purpose1 ?: true) && (purpose7 ?: true)
+                }
+            adUserByTcf?.let { adUserDataGranted = adUserDataGranted && it }
+
+            val personalizationByTcf =
+                when {
+                    purpose3 == null && purpose4 == null -> null
+                    else -> (purpose3 ?: true) && (purpose4 ?: true)
+                }
+            personalizationByTcf?.let { adPersonalizationGranted = adPersonalizationGranted && it }
+        }
+
+        val usOptOutSale = parseUsPrivacyOptOutSale(signals.usPrivacyString)
+        if (usOptOutSale == true) {
+            adUserDataGranted = false
+            adPersonalizationGranted = false
+        }
+    }
+
+    return FirebaseConsentGrantedFlags(
+        adStorageGranted = adStorageGranted,
+        analyticsStorageGranted = analyticsStorageGranted,
+        adUserDataGranted = adUserDataGranted,
+        adPersonalizationGranted = adPersonalizationGranted,
+    )
+}
+
 private fun Boolean.analyticsConsentStatus(): String = if (this) "granted" else "denied"
+
+private fun hasConsentBit(bits: String?, purposeIndex: Int): Boolean? {
+    if (bits.isNullOrBlank() || purposeIndex <= 0 || bits.length < purposeIndex) return null
+    return bits[purposeIndex - 1] == '1'
+}
+
+private fun parseIabBoolean(value: String?): Boolean? =
+    when (value?.trim()?.lowercase()) {
+        "1", "true", "yes", "on" -> true
+        "0", "false", "no", "off" -> false
+        else -> null
+    }
+
+private fun parseUsPrivacyOptOutSale(value: String?): Boolean? {
+    if (value.isNullOrBlank()) return null
+    val normalized = value.trim().uppercase()
+    if (normalized.length < 3 || normalized[0] != '1') return null
+    return when (normalized[2]) {
+        'Y' -> true
+        'N' -> false
+        else -> null
+    }
+}
 
 private fun AdAgeGateStatus.analyticsValue(): String =
     when (this) {

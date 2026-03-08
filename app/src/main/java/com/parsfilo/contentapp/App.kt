@@ -1,6 +1,8 @@
 package com.parsfilo.contentapp
 
 import android.app.Application
+import android.app.Activity
+import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -20,6 +22,7 @@ import com.parsfilo.contentapp.feature.counter.alarm.ZikirReminderScheduler
 import com.parsfilo.contentapp.feature.prayertimes.alarm.PrayerAlarmScheduler
 import com.parsfilo.contentapp.feature.prayertimes.widget.PrayerTimesWidgetReceiver
 import com.parsfilo.contentapp.feature.prayertimes.worker.PrayerTimesRefreshWorker
+import com.parsfilo.contentapp.monetization.AppOpenLifecycleCoordinator
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,8 +58,27 @@ class App : Application() {
     @Inject
     lateinit var endpointsProvider: EndpointsProvider
 
+    @Inject
+    lateinit var appOpenLifecycleCoordinator: AppOpenLifecycleCoordinator
+
     override fun onCreate() {
         super.onCreate()
+
+        // Timber must be initialized as early as possible to capture startup logs.
+        if (BuildConfig.DEBUG) {
+            Timber.plant(FixedTagDebugTree())
+        } else {
+            Timber.plant(CrashlyticsTree())
+        }
+        installGlobalExceptionLogging()
+        registerDebugActivityLifecycleLogging()
+        Timber.i(
+            "App onCreate started flavor=%s buildType=%s package=%s debug=%s",
+            BuildConfig.FLAVOR_NAME,
+            BuildConfig.BUILD_TYPE,
+            packageName,
+            BuildConfig.DEBUG,
+        )
 
         // Start with analytics collection disabled until UMP consent result is finalized.
         // Crashlytics remains independent and continues collecting crashes.
@@ -124,12 +146,7 @@ class App : Application() {
             }
         }
 
-        // Timber initialization
-        if (BuildConfig.DEBUG) {
-            Timber.plant(FixedTagDebugTree())
-        } else {
-            Timber.plant(CrashlyticsTree())
-        }
+        appOpenLifecycleCoordinator.register(this)
 
         // BillingManager lifecycle yönetimi:
         // Uygulama arka plana geçince dinleyiciyi bırak, öne gelince yeniden bağlan.
@@ -164,6 +181,57 @@ class App : Application() {
                 }
             }
         }
+        Timber.i("App onCreate completed flavor=%s", BuildConfig.FLAVOR_NAME)
+    }
+
+    private fun installGlobalExceptionLogging() {
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Timber.e(
+                throwable,
+                "Uncaught exception thread=%s id=%d",
+                thread.name,
+                thread.id,
+            )
+            previousHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
+    private fun registerDebugActivityLifecycleLogging() {
+        if (!BuildConfig.DEBUG) return
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                Timber.d(
+                    "Lifecycle created activity=%s savedState=%s",
+                    activity::class.java.simpleName,
+                    savedInstanceState != null,
+                )
+            }
+
+            override fun onActivityStarted(activity: Activity) {
+                Timber.d("Lifecycle started activity=%s", activity::class.java.simpleName)
+            }
+
+            override fun onActivityResumed(activity: Activity) {
+                Timber.d("Lifecycle resumed activity=%s", activity::class.java.simpleName)
+            }
+
+            override fun onActivityPaused(activity: Activity) {
+                Timber.d("Lifecycle paused activity=%s", activity::class.java.simpleName)
+            }
+
+            override fun onActivityStopped(activity: Activity) {
+                Timber.d("Lifecycle stopped activity=%s", activity::class.java.simpleName)
+            }
+
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+                Timber.d("Lifecycle saveState activity=%s", activity::class.java.simpleName)
+            }
+
+            override fun onActivityDestroyed(activity: Activity) {
+                Timber.d("Lifecycle destroyed activity=%s", activity::class.java.simpleName)
+            }
+        })
     }
 
     private companion object {

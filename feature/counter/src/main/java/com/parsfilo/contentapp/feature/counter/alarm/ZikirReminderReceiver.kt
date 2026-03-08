@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -26,6 +27,7 @@ class ZikirReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
+        Timber.d("ZikirReminderReceiver triggered action=%s", action)
         val pendingResult = goAsync()
 
         val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -34,6 +36,7 @@ class ZikirReminderReceiver : BroadcastReceiver() {
                 when (action) {
                     ZikirReminderScheduler.ACTION_ZIKIR_REMINDER -> {
                         val todayTotal = zikirRepository.getTodayTotalCount().first()
+                        Timber.d("Zikir daily reminder fired todayTotal=%d", todayTotal)
                         zikirReminderNotifier.showDailyReminder(todayTotalCount = todayTotal)
                         zikirReminderScheduler.scheduleOrCancelFromPreferences()
                     }
@@ -42,11 +45,13 @@ class ZikirReminderReceiver : BroadcastReceiver() {
                     Intent.ACTION_MY_PACKAGE_REPLACED,
                     Intent.ACTION_TIME_CHANGED,
                     Intent.ACTION_TIMEZONE_CHANGED -> {
+                        Timber.d("Zikir schedule refresh requested by system action=%s", action)
                         zikirReminderScheduler.scheduleOrCancelFromPreferences()
                         zikirReminderScheduler.scheduleStreakCheckWorker()
                     }
                 }
             } finally {
+                Timber.d("ZikirReminderReceiver finished action=%s", action)
                 pendingResult.finish()
             }
         }

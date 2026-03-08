@@ -681,10 +681,12 @@ class AudioPlayerViewModel @Inject constructor(
     }
 
     fun play() {
+        Timber.d("AudioPlayer action=play")
         player?.play()
     }
 
     fun playFromUrl(url: String) {
+        Timber.d("AudioPlayer action=playFromUrl url=%s", url)
         val mediaPlayer = player ?: return
         val mediaItem = MediaItem.fromUri(Uri.parse(url))
 
@@ -706,10 +708,12 @@ class AudioPlayerViewModel @Inject constructor(
     }
 
     fun pause() {
+        Timber.d("AudioPlayer action=pause")
         player?.pause()
     }
 
     fun stop() {
+        Timber.d("AudioPlayer action=stop")
         player?.pause()
         player?.seekTo(0)
         stopPositionTracking()
@@ -721,6 +725,7 @@ class AudioPlayerViewModel @Inject constructor(
      * Kullanıcı geri döndüğünde oynatma otomatik başlamaz.
      */
     fun stopForAppBackground() {
+        Timber.d("AudioPlayer action=stopForAppBackground")
         val player = this.player ?: return
         if (player.isPlaying || player.currentPosition > 0L) {
             player.pause()
@@ -732,6 +737,7 @@ class AudioPlayerViewModel @Inject constructor(
 
     fun togglePlayPause() {
         val player = this.player ?: return
+        Timber.d("AudioPlayer action=togglePlayPause currentlyPlaying=%s", player.isPlaying)
         if (player.isPlaying) {
             player.pause()
         } else {
@@ -740,6 +746,7 @@ class AudioPlayerViewModel @Inject constructor(
     }
 
     fun seekTo(position: Long) {
+        Timber.d("AudioPlayer action=seekTo position=%d", position)
         player?.seekTo(position)
         updateState()
     }
@@ -747,12 +754,14 @@ class AudioPlayerViewModel @Inject constructor(
     fun skipForward() {
         val player = this.player ?: return
         val newPos = (player.currentPosition + 10_000).coerceAtMost(player.duration)
+        Timber.d("AudioPlayer action=skipForward newPosition=%d", newPos)
         player.seekTo(newPos)
     }
 
     fun skipBackward() {
         val player = this.player ?: return
         val newPos = (player.currentPosition - 10_000).coerceAtLeast(0)
+        Timber.d("AudioPlayer action=skipBackward newPosition=%d", newPos)
         player.seekTo(newPos)
     }
 
@@ -777,6 +786,7 @@ class AudioPlayerViewModel @Inject constructor(
         val normalized = normalizeAudioFileName(fileName)
         if (overrideAudioFileName == normalized) return
 
+        Timber.d("AudioPlayer override file changed old=%s new=%s", overrideAudioFileName, normalized)
         overrideAudioFileName = normalized
         savedStateHandle[STATE_KEY_POSITION] = 0L
         stopPositionTracking()

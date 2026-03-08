@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -104,11 +105,13 @@ class MainViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            Timber.d("MainViewModel init: refreshing other apps feed")
             otherAppsRepository.refreshIfNeeded()
         }
     }
 
     fun onNotificationPermissionResult(granted: Boolean) {
+        Timber.d("MainViewModel notification permission result granted=%s", granted)
         viewModelScope.launch {
             preferencesDataSource.setNotificationPermissionPrompted(true)
             if (!granted) {
@@ -119,12 +122,14 @@ class MainViewModel @Inject constructor(
     }
 
     fun onLocationPermissionResult() {
+        Timber.d("MainViewModel location permission prompt marked as seen")
         viewModelScope.launch {
             prayerPreferencesDataSource.setLocationPermissionPrompted(true)
         }
     }
 
     fun onTopLevelRouteVisited(route: AppRoute) {
+        Timber.d("MainViewModel top-level route visited=%s", route.route)
         when (route) {
             AppRoute.OtherApps -> markOtherAppsBadgeAsSeen()
             else -> Unit
@@ -133,6 +138,7 @@ class MainViewModel @Inject constructor(
 
     private fun markOtherAppsBadgeAsSeen() {
         viewModelScope.launch {
+            Timber.d("MainViewModel marking other-apps badge as seen signature=%s", latestOtherAppsBadgeSignature.value)
             preferencesDataSource.setOtherAppsBadgeSeenSignature(latestOtherAppsBadgeSignature.value)
         }
     }

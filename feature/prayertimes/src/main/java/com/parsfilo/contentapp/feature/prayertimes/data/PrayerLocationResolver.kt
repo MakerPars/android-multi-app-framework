@@ -1,20 +1,25 @@
 package com.parsfilo.contentapp.feature.prayertimes.data
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.os.Build
 import android.location.Geocoder
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.io.IOException
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,7 +41,6 @@ class PrayerLocationResolver @Inject constructor(
         return fineGranted || coarseGranted
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun resolveAddressCandidate(): PrayerAddressCandidate? {
         if (!hasLocationPermission()) return null
 
@@ -53,59 +57,112 @@ class PrayerLocationResolver @Inject constructor(
         // Geocoder.getFromLocation() is a blocking network call —
         // must run on IO dispatcher to avoid ANR and to ensure IOException
         // is properly caught within the coroutine context.
-        return withContext(Dispatchers.IO) {
-            geocodeWithRetry(location.latitude, location.longitude)
-        }
+        return withContext(Dispatchers.IO) { geocodeWithRetry(location.latitude, location.longitude) }
     }
 
-    private fun geocodeWithRetry(
+    private suspend fun geocodeWithRetry(
         latitude: Double,
         longitude: Double,
     ): PrayerAddressCandidate? {
         val geocoder = Geocoder(context, Locale.getDefault())
-        var lastException: IOException? = null
+        var lastException: Throwable? = null
 
         repeat(GEOCODER_MAX_RETRIES) { attempt ->
             try {
-                @Suppress("DEPRECATION")
-                val addresses = geocoder.getFromLocation(
-                    latitude,
-                    longitude,
-                    MAX_GEOCODER_RESULTS,
-                )
-                val first = addresses?.firstOrNull() ?: return null
+                val addresses = reverseGeocode(geocoder, latitude, longitude)
+                val first = addresses.firstOrNull() ?: return null
                 return PrayerAddressCandidate(
                     country = first.countryName.orEmpty(),
                     city = first.adminArea.orEmpty().ifBlank { first.locality.orEmpty() },
                     district = first.subAdminArea.orEmpty().ifBlank { first.subLocality.orEmpty() },
                 )
-            } catch (io: IOException) {
+            } catch (throwable: Throwable) {
                 // Common on some devices/networks: "service not available / UNAVAILABLE"
-                lastException = io
-                Timber.w(io, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
+                lastException = throwable
+                Timber.w(throwable, "Geocoder attempt ${attempt + 1}/$GEOCODER_MAX_RETRIES failed")
                 if (attempt < GEOCODER_MAX_RETRIES - 1) {
-                    try {
-                        Thread.sleep(GEOCODER_RETRY_DELAY_MS)
-                    } catch (ie: InterruptedException) {
-                        Thread.currentThread().interrupt()
-                        Timber.w(ie, "Geocoder retry sleep interrupted")
-                        return null
-                    }
+                    delay(GEOCODER_RETRY_DELAY_MS)
                 }
-            } catch (se: SecurityException) {
-                Timber.w(se, "Location permission was revoked while resolving geocoder")
-                return null
-            } catch (e: IllegalStateException) {
-                Timber.w(e, "Unexpected geocoder failure")
-                return null
-            } catch (e: IllegalArgumentException) {
-                Timber.w(e, "Unexpected geocoder failure")
-                return null
             }
         }
 
         Timber.w(lastException, "Geocoder exhausted $GEOCODER_MAX_RETRIES retries")
         return null
+    }
+
+    private suspend fun reverseGeocode(
+        geocoder: Geocoder,
+        latitude: Double,
+        longitude: Double,
+    ): List<Address> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return geocodeAsync(
+                geocoder = geocoder,
+                latitude = latitude,
+                longitude = longitude,
+                maxResults = MAX_GEOCODER_RESULTS,
+            )
+        }
+
+        return geocodeLegacyReflective(
+            geocoder = geocoder,
+            latitude = latitude,
+            longitude = longitude,
+            maxResults = MAX_GEOCODER_RESULTS,
+        )
+    }
+
+    private suspend fun geocodeAsync(
+        geocoder: Geocoder,
+        latitude: Double,
+        longitude: Double,
+        maxResults: Int,
+    ): List<Address> =
+        suspendCancellableCoroutine { continuation ->
+            geocoder.getFromLocation(
+                latitude,
+                longitude,
+                maxResults,
+                object : Geocoder.GeocodeListener {
+                    override fun onGeocode(addresses: List<Address>) {
+                        if (continuation.isActive) {
+                            continuation.resume(addresses)
+                        }
+                    }
+
+                    override fun onError(errorMessage: String?) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(
+                                IOException(
+                                    errorMessage ?: "Geocoder asynchronous call returned an unknown error.",
+                                ),
+                            )
+                        }
+                    }
+                },
+            )
+        }
+
+    private fun geocodeLegacyReflective(
+        geocoder: Geocoder,
+        latitude: Double,
+        longitude: Double,
+        maxResults: Int,
+    ): List<Address> {
+        val result = Geocoder::class.java
+            .getMethod(
+                "getFromLocation",
+                Double::class.javaPrimitiveType,
+                Double::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+            )
+            .invoke(geocoder, latitude, longitude, maxResults)
+
+        if (result !is List<*>) {
+            return emptyList()
+        }
+
+        return result.mapNotNull { it as? Address }
     }
 }
 

@@ -6,7 +6,7 @@ $testBanner = "ca-app-pub-3940256099942544/6300978111"
 $testInterstitial = "ca-app-pub-3940256099942544/1033173712"
 $testNative = "ca-app-pub-3940256099942544/2247696110"
 $testRewarded = "ca-app-pub-3940256099942544/5224354917"
-$testOpenApp = "ca-app-pub-3940256099942544/3419835294"
+$testOpenApp = "ca-app-pub-3940256099942544/9257395921"
 
 foreach ($app in $jsonContent) {
     $flavor = $app.flavor

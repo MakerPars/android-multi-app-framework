@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,11 +34,22 @@ class AppOpenAdManager @Inject constructor(
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile
+    private var isShowingAd = false
+    private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
+
+    fun isShowingAdNow(): Boolean = isShowingAd
 
     fun loadAd(
         adUnitId: String,
         placement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT,
     ) {
+        Timber.d(
+            "AppOpen load requested placement=%s adUnit=%s canRequestAds=%s",
+            placement.analyticsValue,
+            adUnitId,
+            AdsConsentRuntimeState.canRequestAds.value,
+        )
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isAppOpenPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
@@ -62,8 +74,23 @@ class AppOpenAdManager @Inject constructor(
             return
         }
         val now = SystemTimeProvider.nowMillis()
-        if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) return
-        if (isLoadingAd || isAdAvailable()) return
+        if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) {
+            Timber.d(
+                "AppOpen load throttled placement=%s nextAllowedAt=%d",
+                placement.analyticsValue,
+                loadBackoffState.nextLoadAllowedAtMillis,
+            )
+            return
+        }
+        if (isLoadingAd || isAdAvailable()) {
+            Timber.d(
+                "AppOpen load skipped placement=%s loading=%s available=%s",
+                placement.analyticsValue,
+                isLoadingAd,
+                isAdAvailable(),
+            )
+            return
+        }
 
         currentAdUnitId = adUnitId
         currentPlacement = placement
@@ -82,6 +109,12 @@ class AppOpenAdManager @Inject constructor(
             request,
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
+                    Timber.d(
+                        "AppOpen loaded placement=%s adUnit=%s responseId=%s",
+                        currentPlacement.analyticsValue,
+                        ad.adUnitId,
+                        ad.responseInfo.responseId,
+                    )
                     appOpenAd = ad
                     isLoadingAd = false
                     loadTime = Date().time
@@ -110,6 +143,13 @@ class AppOpenAdManager @Inject constructor(
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    Timber.d(
+                        "AppOpen failedToLoad placement=%s adUnit=%s code=%d msg=%s",
+                        currentPlacement.analyticsValue,
+                        adUnitId,
+                        loadAdError.code,
+                        loadAdError.message,
+                    )
                     isLoadingAd = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
                         nowMillis = SystemTimeProvider.nowMillis(),
@@ -136,7 +176,13 @@ class AppOpenAdManager @Inject constructor(
         onAdImpression: (String) -> Unit = {},
         onShowComplete: () -> Unit,
     ) {
+        if (isShowingAd) {
+            Timber.d("AppOpen show skipped: ad already showing route=%s", route)
+            onShowComplete()
+            return
+        }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            Timber.d("AppOpen show blocked: no consent route=%s", route)
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
@@ -153,6 +199,11 @@ class AppOpenAdManager @Inject constructor(
         val policy = adsPolicyProvider.getPolicy()
 
         if (!policy.isAppOpenPlacementEnabled(currentPlacement)) {
+            Timber.d(
+                "AppOpen show blocked: placement disabled placement=%s route=%s",
+                currentPlacement.analyticsValue,
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
@@ -166,6 +217,11 @@ class AppOpenAdManager @Inject constructor(
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
             val reason = if (prefs.isPremium) AdSuppressReason.PREMIUM else AdSuppressReason.REWARDED_FREE
+            Timber.d(
+                "AppOpen show blocked: premiumOrRewardedFree reason=%s route=%s",
+                reason.analyticsValue,
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
@@ -177,8 +233,13 @@ class AppOpenAdManager @Inject constructor(
             return
         }
 
-        val cooldownMs = policy.appOpenCooldownMs
+        val cooldownMs = effectiveCooldownMs(policy.appOpenCooldownMs)
         if (now - prefs.lastAppOpenAdShown < cooldownMs) {
+            Timber.d(
+                "AppOpen show blocked: cooldown remainingMs=%d route=%s",
+                cooldownMs - (now - prefs.lastAppOpenAdShown),
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
@@ -192,6 +253,12 @@ class AppOpenAdManager @Inject constructor(
 
         val ad = appOpenAd
         if (ad == null || !isAdAvailable()) {
+            Timber.d(
+                "AppOpen show blocked: not loaded adNull=%s available=%s route=%s",
+                ad == null,
+                isAdAvailable(),
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
@@ -204,8 +271,21 @@ class AppOpenAdManager @Inject constructor(
         }
 
         var impressionStampRecorded = false
+        isShowingAd = true
+        Timber.d(
+            "AppOpen show starting placement=%s route=%s adUnit=%s",
+            currentPlacement.analyticsValue,
+            route,
+            ad.adUnitId,
+        )
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                Timber.d(
+                    "AppOpen dismissed placement=%s route=%s adUnit=%s",
+                    currentPlacement.analyticsValue,
+                    route,
+                    ad.adUnitId,
+                )
                 adRevenueLogger.logDismissed(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
@@ -213,10 +293,18 @@ class AppOpenAdManager @Inject constructor(
                     route = route,
                 )
                 appOpenAd = null
+                isShowingAd = false
                 onShowComplete()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                Timber.d(
+                    "AppOpen failedToShow placement=%s route=%s code=%d msg=%s",
+                    currentPlacement.analyticsValue,
+                    route,
+                    adError.code,
+                    adError.message,
+                )
                 adRevenueLogger.logFailedToShow(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
@@ -226,10 +314,17 @@ class AppOpenAdManager @Inject constructor(
                     route = route,
                 )
                 appOpenAd = null
+                isShowingAd = false
                 onShowComplete()
             }
 
             override fun onAdImpression() {
+                Timber.d(
+                    "AppOpen impression placement=%s route=%s adUnit=%s",
+                    currentPlacement.analyticsValue,
+                    route,
+                    ad.adUnitId,
+                )
                 adRevenueLogger.logImpression(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
@@ -246,6 +341,12 @@ class AppOpenAdManager @Inject constructor(
             }
 
             override fun onAdClicked() {
+                Timber.d(
+                    "AppOpen clicked placement=%s route=%s adUnit=%s",
+                    currentPlacement.analyticsValue,
+                    route,
+                    ad.adUnitId,
+                )
                 adRevenueLogger.logClick(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
@@ -255,6 +356,12 @@ class AppOpenAdManager @Inject constructor(
             }
 
             override fun onAdShowedFullScreenContent() {
+                Timber.d(
+                    "AppOpen showedFullScreen placement=%s route=%s adUnit=%s",
+                    currentPlacement.analyticsValue,
+                    route,
+                    ad.adUnitId,
+                )
                 adRevenueLogger.logServed(
                     adFormat = AdFormat.APP_OPEN,
                     placement = currentPlacement,
@@ -268,9 +375,17 @@ class AppOpenAdManager @Inject constructor(
     }
 
     fun clearAd() {
+        Timber.d(
+            "AppOpen clearAd placement=%s hasAd=%s loading=%s showing=%s",
+            currentPlacement.analyticsValue,
+            appOpenAd != null,
+            isLoadingAd,
+            isShowingAd,
+        )
         appOpenAd = null
         isLoadingAd = false
         loadTime = 0L
+        isShowingAd = false
     }
 
     private fun isAdAvailable(): Boolean = appOpenAd != null && wasLoadTimeLessThanNHoursAgo(4)

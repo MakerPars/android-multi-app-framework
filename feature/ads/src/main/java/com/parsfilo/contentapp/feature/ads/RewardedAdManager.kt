@@ -39,6 +39,13 @@ class RewardedAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.REWARDED_DEFAULT,
         route: String? = null,
     ) {
+        Timber.d(
+            "Rewarded load requested placement=%s route=%s adUnit=%s canRequestAds=%s",
+            placement.analyticsValue,
+            route,
+            adUnitId,
+            AdsConsentRuntimeState.canRequestAds.value,
+        )
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isRewardedPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
@@ -62,9 +69,15 @@ class RewardedAdManager @Inject constructor(
             clearAd()
             return
         }
-        if (isLoading || rewardedAd != null) return
+        if (isLoading || rewardedAd != null) {
+            Timber.d("Rewarded load skipped loading=%s adReady=%s", isLoading, rewardedAd != null)
+            return
+        }
         val now = SystemTimeProvider.nowMillis()
-        if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) return
+        if (!AdLoadBackoffPolicy.canLoad(now, loadBackoffState)) {
+            Timber.d("Rewarded load throttled nextAllowedAt=%d", loadBackoffState.nextLoadAllowedAtMillis)
+            return
+        }
         currentAdUnitId = adUnitId
         currentPlacement = placement
         currentRoute = route
@@ -143,6 +156,12 @@ class RewardedAdManager @Inject constructor(
     }
 
     fun showAd(activity: Activity, onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) {
+        Timber.d(
+            "Rewarded show requested placement=%s route=%s adReady=%s",
+            currentPlacement.analyticsValue,
+            currentRoute,
+            rewardedAd != null,
+        )
         if (!adsPolicyProvider.getPolicy().isRewardedPlacementEnabled(currentPlacement)) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED,
@@ -244,6 +263,12 @@ class RewardedAdManager @Inject constructor(
     }
 
     fun clearAd() {
+        Timber.d(
+            "Rewarded clearAd placement=%s hasAd=%s loading=%s",
+            currentPlacement.analyticsValue,
+            rewardedAd != null,
+            isLoading,
+        )
         rewardedAd = null
         _isAdReady.value = false
         isLoading = false

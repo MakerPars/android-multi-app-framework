@@ -63,7 +63,7 @@ fun ContentRoute(
     appName: String,
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
-    onModeChanged: (DisplayMode) -> Unit = {},
+    onModeChanged: (DisplayMode, DisplayMode) -> Unit = { _, _ -> },
     audioPlayerContent: @Composable () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     bannerAdUnitId: String,
@@ -82,7 +82,9 @@ fun ContentRoute(
             val currentMode = (uiState as? ContentUiState.Success)?.displayMode
             if (currentMode != newMode) {
                 viewModel.updateDisplayMode(newMode)
-                onModeChanged(newMode)
+                if (currentMode != null) {
+                    onModeChanged(currentMode, newMode)
+                }
             }
         },
         onSettingsClick = onSettingsClick,
@@ -160,7 +162,8 @@ fun ContentScreen(
                 if (uiState.shouldShowAds) {
                     BannerAd(
                         adUnitId = bannerAdUnitId,
-                        modifier = Modifier.padding(horizontal = dimens.space6, vertical = dimens.space4)
+                        showPlacementLabels = false,
+                        modifier = Modifier.padding(horizontal = dimens.space6)
                     )
                 }
 

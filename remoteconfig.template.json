@@ -1,0 +1,206 @@
+{
+  "conditions": [],
+  "parameters": {
+    "ads_banner_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_native_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_app_open_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_interstitial_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_rewarded_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_rewarded_interstitial_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_interstitial_frequency_cap_ms": {
+      "defaultValue": {
+        "value": "150000"
+      }
+    },
+    "ads_interstitial_relaxed_frequency_cap_ms": {
+      "defaultValue": {
+        "value": "240000"
+      }
+    },
+    "ads_interstitial_relaxed_packages_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_app_open_cooldown_ms": {
+      "defaultValue": {
+        "value": "240000"
+      }
+    },
+    "ads_app_open_resume_gap_ms": {
+      "defaultValue": {
+        "value": "45000"
+      }
+    },
+    "ads_app_open_max_per_session": {
+      "defaultValue": {
+        "value": "1"
+      }
+    },
+    "ads_interstitial_max_per_session": {
+      "defaultValue": {
+        "value": "4"
+      }
+    },
+    "ads_rewarded_interstitial_min_interval_ms": {
+      "defaultValue": {
+        "value": "900000"
+      }
+    },
+    "ads_rewarded_interstitial_max_per_session": {
+      "defaultValue": {
+        "value": "2"
+      }
+    },
+    "ads_rewarded_interstitial_intro_required": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
+    "ads_native_pool_max": {
+      "defaultValue": {
+        "value": "2"
+      }
+    },
+    "ads_native_ttl_ms": {
+      "defaultValue": {
+        "value": "1800000"
+      }
+    },
+    "ads_interstitial_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_banner_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_native_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_app_open_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_rewarded_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_rewarded_interstitial_placements_disabled_csv": {
+      "defaultValue": {
+        "value": ""
+      }
+    },
+    "ads_app_open_route_blocklist_csv": {
+      "defaultValue": {
+        "value": "quran_sura_detail/{suranumber},prayer_detail/{prayerid},subscription,rewards"
+      }
+    },
+    "ads_interstitial_route_blocklist_csv": {
+      "defaultValue": {
+        "value": "content,prayer_detail/{prayerid}"
+      }
+    },
+    "audio_base_url": {
+      "defaultValue": {
+        "value": "https://contentapp-content-api.oaslananka.workers.dev/api/audio"
+      }
+    },
+    "audio_manifest_url": {
+      "defaultValue": {
+        "value": "https://contentapp-content-api.oaslananka.workers.dev/api/audio-manifest"
+      }
+    },
+    "other_apps_url": {
+      "defaultValue": {
+        "value": "https://contentapp-content-api.oaslananka.workers.dev/api/other-apps"
+      }
+    },
+    "min_supported_version_code": {
+      "defaultValue": {
+        "value": "1"
+      }
+    },
+    "latest_version_code": {
+      "defaultValue": {
+        "value": "1"
+      }
+    },
+    "update_mode": {
+      "defaultValue": {
+        "value": "none"
+      }
+    },
+    "update_title_tr": {
+      "defaultValue": {
+        "value": "Güncelleme gerekli"
+      }
+    },
+    "update_message_tr": {
+      "defaultValue": {
+        "value": "Devam etmek için lütfen uygulamayı güncelleyin."
+      }
+    },
+    "update_title_en": {
+      "defaultValue": {
+        "value": "Update required"
+      }
+    },
+    "update_message_en": {
+      "defaultValue": {
+        "value": "Please update the app to continue."
+      }
+    },
+    "update_button_tr": {
+      "defaultValue": {
+        "value": "Güncelle"
+      }
+    },
+    "update_button_en": {
+      "defaultValue": {
+        "value": "Update"
+      }
+    },
+    "later_button_tr": {
+      "defaultValue": {
+        "value": "Daha sonra"
+      }
+    },
+    "later_button_en": {
+      "defaultValue": {
+        "value": "Later"
+      }
+    }
+  },
+  "parameterGroups": {}
+}

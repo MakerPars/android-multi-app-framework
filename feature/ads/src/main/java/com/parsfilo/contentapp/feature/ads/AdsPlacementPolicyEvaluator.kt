@@ -2,6 +2,7 @@ package com.parsfilo.contentapp.feature.ads
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 data class AdRequestContext(
     val format: AdFormat,
@@ -25,96 +26,140 @@ sealed interface AdEligibility {
 class AdsPlacementPolicyEvaluator @Inject constructor(
     private val adsPolicyProvider: AdsPolicyProvider,
 ) {
+    private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
+
     fun evaluateInterstitial(context: AdRequestContext): AdEligibility {
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isInterstitialPlacementEnabled(context.placement)) {
-            return AdEligibility.Blocked(AdSuppressReason.PLACEMENT_DISABLED)
+            return blocked("interstitial", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return AdEligibility.Blocked(
+            return blocked(
+                "interstitial",
                 if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
                     AdSuppressReason.PRIVACY_LIMITED
                 } else {
                     AdSuppressReason.NO_CONSENT
                 },
+                context,
             )
         }
-        if (context.isPremium) return AdEligibility.Blocked(AdSuppressReason.PREMIUM)
-        if (context.isRewardedAdFree) return AdEligibility.Blocked(AdSuppressReason.REWARDED_FREE)
-        if (context.contentInProgress) return AdEligibility.Blocked(AdSuppressReason.CONTENT_IN_PROGRESS)
+        if (context.isPremium) return blocked("interstitial", AdSuppressReason.PREMIUM, context)
+        if (context.isRewardedAdFree) return blocked("interstitial", AdSuppressReason.REWARDED_FREE, context)
+        if (context.contentInProgress) return blocked("interstitial", AdSuppressReason.CONTENT_IN_PROGRESS, context)
         if (context.route?.lowercase() in policy.interstitialRouteBlocklist) {
-            return AdEligibility.Blocked(AdSuppressReason.ROUTE_BLOCKED)
+            return blocked("interstitial", AdSuppressReason.ROUTE_BLOCKED, context)
         }
         val lastShownAtMs = context.lastShownAtMs
         if (lastShownAtMs != null) {
-            val cooldownMs = policy.interstitialFrequencyCapMs
+            val cooldownMs = effectiveCooldownMs(policy.interstitialFrequencyCapMs)
             if (SystemTimeProvider.nowMillis() - lastShownAtMs < cooldownMs) {
-                return AdEligibility.Blocked(AdSuppressReason.COOLDOWN)
+                return blocked("interstitial", AdSuppressReason.COOLDOWN, context)
             }
         }
         if (context.sessionCount >= policy.interstitialMaxPerSession) {
-            return AdEligibility.Blocked(AdSuppressReason.SESSION_CAP)
+            return blocked("interstitial", AdSuppressReason.SESSION_CAP, context)
         }
-        return AdEligibility.Allowed
+        return allowed("interstitial", context)
     }
 
     fun evaluateAppOpen(context: AdRequestContext): AdEligibility {
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isAppOpenPlacementEnabled(context.placement)) {
-            return AdEligibility.Blocked(AdSuppressReason.PLACEMENT_DISABLED)
+            return blocked("app_open", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return AdEligibility.Blocked(
+            return blocked(
+                "app_open",
                 if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
                     AdSuppressReason.PRIVACY_LIMITED
                 } else {
                     AdSuppressReason.NO_CONSENT
                 },
+                context,
             )
         }
-        if (context.isPremium) return AdEligibility.Blocked(AdSuppressReason.PREMIUM)
-        if (context.isRewardedAdFree) return AdEligibility.Blocked(AdSuppressReason.REWARDED_FREE)
-        if (context.contentInProgress) return AdEligibility.Blocked(AdSuppressReason.CONTENT_IN_PROGRESS)
+        if (context.isPremium) return blocked("app_open", AdSuppressReason.PREMIUM, context)
+        if (context.isRewardedAdFree) return blocked("app_open", AdSuppressReason.REWARDED_FREE, context)
+        if (context.contentInProgress) return blocked("app_open", AdSuppressReason.CONTENT_IN_PROGRESS, context)
         if (context.route?.lowercase() in policy.appOpenRouteBlocklist) {
-            return AdEligibility.Blocked(AdSuppressReason.ROUTE_BLOCKED)
+            return blocked("app_open", AdSuppressReason.ROUTE_BLOCKED, context)
         }
-        if ((context.resumeGapMs ?: Long.MAX_VALUE) < policy.appOpenResumeGapMs) {
-            return AdEligibility.Blocked(AdSuppressReason.RESUME_SPAM)
+        val resumeGapMs = effectiveCooldownMs(policy.appOpenResumeGapMs)
+        if ((context.resumeGapMs ?: Long.MAX_VALUE) < resumeGapMs) {
+            return blocked("app_open", AdSuppressReason.RESUME_SPAM, context)
         }
         val lastShownAtMs = context.lastShownAtMs
-        if (lastShownAtMs != null && SystemTimeProvider.nowMillis() - lastShownAtMs < policy.appOpenCooldownMs) {
-            return AdEligibility.Blocked(AdSuppressReason.COOLDOWN)
+        val appOpenCooldownMs = effectiveCooldownMs(policy.appOpenCooldownMs)
+        if (lastShownAtMs != null && SystemTimeProvider.nowMillis() - lastShownAtMs < appOpenCooldownMs) {
+            return blocked("app_open", AdSuppressReason.COOLDOWN, context)
         }
-        if (context.sessionCount >= policy.appOpenMaxPerSession) {
-            return AdEligibility.Blocked(AdSuppressReason.SESSION_CAP)
+        val appOpenMaxPerSession = if (BuildConfig.DEBUG) Int.MAX_VALUE else policy.appOpenMaxPerSession
+        if (context.sessionCount >= appOpenMaxPerSession) {
+            return blocked("app_open", AdSuppressReason.SESSION_CAP, context)
         }
-        return AdEligibility.Allowed
+        return allowed("app_open", context)
     }
 
     fun evaluateRewardedInterstitial(context: AdRequestContext): AdEligibility {
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isRewardedInterstitialPlacementEnabled(context.placement)) {
-            return AdEligibility.Blocked(AdSuppressReason.PLACEMENT_DISABLED)
+            return blocked("rewarded_interstitial", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return AdEligibility.Blocked(
+            return blocked(
+                "rewarded_interstitial",
                 if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
                     AdSuppressReason.PRIVACY_LIMITED
                 } else {
                     AdSuppressReason.NO_CONSENT
                 },
+                context,
             )
         }
-        if (context.isPremium) return AdEligibility.Blocked(AdSuppressReason.PREMIUM)
-        if (context.isRewardedAdFree) return AdEligibility.Blocked(AdSuppressReason.REWARDED_FREE)
-        if (context.contentInProgress) return AdEligibility.Blocked(AdSuppressReason.CONTENT_IN_PROGRESS)
+        if (context.isPremium) return blocked("rewarded_interstitial", AdSuppressReason.PREMIUM, context)
+        if (context.isRewardedAdFree) return blocked("rewarded_interstitial", AdSuppressReason.REWARDED_FREE, context)
+        if (context.contentInProgress) return blocked("rewarded_interstitial", AdSuppressReason.CONTENT_IN_PROGRESS, context)
         val lastShownAtMs = context.lastShownAtMs
-        if (lastShownAtMs != null && SystemTimeProvider.nowMillis() - lastShownAtMs < policy.rewardedInterstitialMinIntervalMs) {
-            return AdEligibility.Blocked(AdSuppressReason.COOLDOWN)
+        val minIntervalMs = effectiveCooldownMs(policy.rewardedInterstitialMinIntervalMs)
+        if (lastShownAtMs != null && SystemTimeProvider.nowMillis() - lastShownAtMs < minIntervalMs) {
+            return blocked("rewarded_interstitial", AdSuppressReason.COOLDOWN, context)
         }
         if (context.sessionCount >= policy.rewardedInterstitialMaxPerSession) {
-            return AdEligibility.Blocked(AdSuppressReason.SESSION_CAP)
+            return blocked("rewarded_interstitial", AdSuppressReason.SESSION_CAP, context)
         }
+        return allowed("rewarded_interstitial", context)
+    }
+
+    private fun blocked(
+        gate: String,
+        reason: AdSuppressReason,
+        context: AdRequestContext,
+    ): AdEligibility.Blocked {
+        Timber.d(
+            "Ad eligibility blocked gate=%s format=%s placement=%s route=%s reason=%s sessionCount=%d contentInProgress=%s premium=%s rewardedFree=%s",
+            gate,
+            context.format.analyticsValue,
+            context.placement.analyticsValue,
+            context.route,
+            reason.analyticsValue,
+            context.sessionCount,
+            context.contentInProgress,
+            context.isPremium,
+            context.isRewardedAdFree,
+        )
+        return AdEligibility.Blocked(reason)
+    }
+
+    private fun allowed(gate: String, context: AdRequestContext): AdEligibility.Allowed {
+        Timber.d(
+            "Ad eligibility allowed gate=%s format=%s placement=%s route=%s sessionCount=%d",
+            gate,
+            context.format.analyticsValue,
+            context.placement.analyticsValue,
+            context.route,
+            context.sessionCount,
+        )
         return AdEligibility.Allowed
     }
 }

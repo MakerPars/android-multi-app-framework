@@ -50,6 +50,13 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Timber.d(
+            "FCM message received id=%s from=%s hasNotification=%s dataKeys=%s",
+            remoteMessage.messageId,
+            remoteMessage.from,
+            remoteMessage.notification != null,
+            remoteMessage.data.keys.joinToString(","),
+        )
         val notificationId = remoteMessage.messageId ?: System.currentTimeMillis().toString()
         val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: ""
         val body = remoteMessage.notification?.body ?: remoteMessage.data["body"] ?: ""
@@ -74,6 +81,11 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
         scope.launch {
             val rowId = persistNotification(entity)
             if (shouldShowSystemNotification()) {
+                Timber.d(
+                    "FCM will show system notification externalId=%s rowId=%s",
+                    notificationId,
+                    rowId,
+                )
                 showNotification(
                     title = title,
                     body = body,
@@ -89,18 +101,35 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
 
     private suspend fun persistNotification(entity: NotificationEntity): Long? {
         val inserted = notificationDao.insertNotification(entity)
-        if (inserted > 0L) return inserted
-        return notificationDao.getByNotificationId(entity.notificationId)?.id
+        if (inserted > 0L) {
+            Timber.d("Notification persisted insertId=%d externalId=%s", inserted, entity.notificationId)
+            return inserted
+        }
+        val existingId = notificationDao.getByNotificationId(entity.notificationId)?.id
+        Timber.d(
+            "Notification upsert fallback externalId=%s resolvedRowId=%s",
+            entity.notificationId,
+            existingId,
+        )
+        return existingId
     }
 
     private suspend fun shouldShowSystemNotification(): Boolean {
         val notificationsEnabled = preferencesDataSource.userData.first().notificationsEnabled
-        if (!notificationsEnabled) return false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
-        return ContextCompat.checkSelfPermission(
+        if (!notificationsEnabled) {
+            Timber.d("System notification blocked: user preference disabled")
+            return false
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Timber.d("System notification allowed: pre-Tiramisu device")
+            return true
+        }
+        val hasPermission = ContextCompat.checkSelfPermission(
             this,
             android.Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
+        Timber.d("System notification permission granted=%s", hasPermission)
+        return hasPermission
     }
 
     private fun showNotification(
@@ -159,10 +188,17 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
             .apply { pendingIntent?.let { setContentIntent(it) } }
             .build()
 
+        Timber.d(
+            "Showing system notification id=%d channel=%s hasPendingIntent=%s",
+            id,
+            CHANNEL_ID,
+            pendingIntent != null,
+        )
         notificationManager.notify(id, notification)
     }
 
     override fun onNewToken(token: String) {
+        Timber.d("FCM token refreshed length=%d", token.length)
         scope.launch {
             pushRegistrationManager.syncRegistration(
                 reason = "token_refresh",
@@ -172,6 +208,7 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onDestroy() {
+        Timber.d("AppFirebaseMessagingService destroyed")
         job.cancel()
         super.onDestroy()
     }

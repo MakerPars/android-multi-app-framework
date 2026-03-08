@@ -24,6 +24,7 @@ import com.parsfilo.contentapp.core.firebase.logAudioPause
 import com.parsfilo.contentapp.core.firebase.logAudioPlay
 import com.parsfilo.contentapp.core.firebase.logAudioStop
 import com.parsfilo.contentapp.core.firebase.logScreenView
+import com.parsfilo.contentapp.core.model.DisplayMode
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialIntroSpec
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
@@ -59,6 +60,7 @@ import com.parsfilo.contentapp.navigation.AppRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun AppNavHost(
@@ -80,10 +82,24 @@ fun AppNavHost(
     val nativeAd by nativeAdViewModel.nativeAdState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val hostActivity = context as? MainActivity
+    val flavorName = remember { BuildConfig.FLAVOR_NAME }
+    val useTestAds = remember { BuildConfig.USE_TEST_ADS }
+    val isPrayerTimesFlavor = remember { BuildConfig.IS_PRAYER_TIMES_FLAVOR }
+    val isImsakiyeFlavor = remember(flavorName) { flavorName == "imsakiye" }
+    val isQuranFlavor = remember(flavorName) { flavorName == "kuran_kerim" }
+    val isEsmaFlavor = remember(flavorName) { flavorName == "esmaulhusna" }
+    val showVerseCount = remember(flavorName) { flavorName != "namazsurelerivedualarsesli" }
+    val homeStartDestination = remember(flavorName, isPrayerTimesFlavor) {
+        resolveHomeStartDestination(flavorName = flavorName, isPrayerTimesFlavor = isPrayerTimesFlavor)
+    }
     val coroutineScope = rememberCoroutineScope()
     var rewardedInterstitialIntroRequest by remember { mutableStateOf<RewardedInterstitialIntroRequest?>(null) }
-    val adUnitIds = remember(context, BuildConfig.USE_TEST_ADS) {
-        AppAdUnitIds.resolve(context, BuildConfig.USE_TEST_ADS)
+    val adUnitIds = remember(context, useTestAds) {
+        AppAdUnitIds.resolve(context, useTestAds)
+    }
+
+    fun clearRewardedInterstitialIntroRequest() {
+        rewardedInterstitialIntroRequest = null
     }
 
     fun requestInterstitialAd(
@@ -92,6 +108,11 @@ fun AppNavHost(
         onAdDismissed: () -> Unit = {},
     ) {
         val activity = hostActivity ?: return
+        Timber.d(
+            "AppNavigation interstitial requested placement=%s route=%s",
+            placement.analyticsValue,
+            route,
+        )
         coroutineScope.launch {
             activity.adOrchestrator.showInterstitialIfEligible(
                 activity = activity,
@@ -105,9 +126,10 @@ fun AppNavHost(
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow
             // Keep route template names (avoid ids in analytics to reduce cardinality).
-            .map { entry -> entry.destination.route ?: entry.destination.displayName }
+            .map { entry -> entry.destination.route ?: "destination_${entry.destination.id}" }
             .distinctUntilChanged()
             .collect { route ->
+                Timber.d("AppNavigation route changed route=%s", route)
                 appAnalytics.logScreenView(screenName = route, screenClass = "AppNavHost")
                 hostActivity?.adOrchestrator?.updateSessionContext(
                     activeRoute = route,
@@ -124,15 +146,7 @@ fun AppNavHost(
         // Home Graph
         navigation(
             route = AppRoute.HomeGraph.route,
-            startDestination = when {
-                BuildConfig.IS_PRAYER_TIMES_FLAVOR -> AppRoute.PrayerTimesHome.route
-                BuildConfig.FLAVOR == "kible" -> AppRoute.Qibla.route
-                BuildConfig.FLAVOR == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
-                BuildConfig.FLAVOR == "mucizedualar" || BuildConfig.FLAVOR == "esmaulhusna" -> AppRoute.MiraclesList.route
-                BuildConfig.FLAVOR == "zikirmatik" -> AppRoute.ZikirCounter.route
-                BuildConfig.FLAVOR == "kuran_kerim" -> AppRoute.QuranSuraList.route
-                else -> AppRoute.Content.route
-            }
+            startDestination = homeStartDestination
         ) {
             composable(AppRoute.PrayerTimesHome.route) {
                 LaunchedEffect(Unit) {
@@ -140,7 +154,7 @@ fun AppNavHost(
                 }
                 PrayerTimesRoute(
                     appName = stringResource(com.parsfilo.contentapp.R.string.app_name),
-                    variant = if (BuildConfig.FLAVOR == "imsakiye") {
+                    variant = if (isImsakiyeFlavor) {
                         PrayerAppVariant.IMSAKIYE
                     } else {
                         PrayerAppVariant.NAMAZ_VAKITLERI
@@ -222,16 +236,13 @@ fun AppNavHost(
                         )
                     },
                     onShowRewardedHistoryAd = { onUnlocked ->
-                        val activity = hostActivity
-                        if (activity == null) {
-                            onUnlocked()
-                        } else {
+                        hostActivity?.let { activity ->
                             val placement = AdPlacement.REWARDED_INTERSTITIAL_HISTORY_UNLOCK
                             val route = AppRoute.ZikirCounter.route
                             val adUnitId = AppAdUnitIds.resolvePlacement(
                                 activity,
                                 placement,
-                                BuildConfig.USE_TEST_ADS,
+                                useTestAds,
                             )
                             val introSpec = activity.adOrchestrator.buildRewardedInterstitialIntro(placement)
                             activity.adOrchestrator.onRewardedInterstitialIntroShown(
@@ -246,7 +257,7 @@ fun AppNavHost(
                                 spec = introSpec,
                                 onRewardEarned = onUnlocked,
                             )
-                        }
+                        } ?: onUnlocked()
                     },
                     bannerAdContent = {
                         BannerAd(
@@ -260,15 +271,14 @@ fun AppNavHost(
                     },
                 )
             }
-            if (BuildConfig.FLAVOR_NAME == "kuran_kerim") {
+            if (isQuranFlavor) {
                 composable(AppRoute.QuranSuraList.route) {
                     LaunchedEffect(Unit) {
                         nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
                     }
                     QuranSuraListRoute(
                         onSuraClick = { suraNumber ->
-                            val activity = hostActivity
-                            if (activity == null) {
+                            if (hostActivity == null) {
                                 navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
                             } else {
                                 requestInterstitialAd(
@@ -372,7 +382,14 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Settings.route)
                     }, onRewardsClick = {
                         navController.navigate(AppRoute.Rewards.route)
-                    }, onModeChanged = { _ -> }, audioPlayerContent = {
+                    }, onModeChanged = { oldMode, newMode ->
+                        if (isDisplayModeSwitch(oldMode, newMode)) {
+                            requestInterstitialAd(
+                                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                route = "mode_switch_content",
+                            )
+                        }
+                    }, audioPlayerContent = {
                         InlineAudioPlayer(
                             state = audioState,
                             onPlayPause = {
@@ -380,6 +397,10 @@ fun AppNavHost(
                                     appAnalytics.logAudioPause(
                                         positionMs = audioState.currentPosition,
                                         durationMs = audioState.duration,
+                                    )
+                                    requestInterstitialAd(
+                                        placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                        route = "audio_pause_content",
                                     )
                                 } else {
                                     hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
@@ -395,6 +416,12 @@ fun AppNavHost(
                                     positionMs = audioState.currentPosition,
                                     durationMs = audioState.duration,
                                 )
+                                if (audioState.currentPosition > 0L || audioState.isPlaying) {
+                                    requestInterstitialAd(
+                                        placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                        route = "audio_stop_content",
+                                    )
+                                }
                                 audioPlayerViewModel.stop()
                             },
                             onSeek = audioPlayerViewModel::seekTo,
@@ -428,7 +455,7 @@ fun AppNavHost(
                     nativeAdContent = {
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
-                    showVerseCount = BuildConfig.FLAVOR != "namazsurelerivedualarsesli",
+                    showVerseCount = showVerseCount,
                     bannerAdUnitId = adUnitIds.banner
                 )
             }
@@ -439,7 +466,6 @@ fun AppNavHost(
                 LaunchedEffect(Unit) {
                     nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
                 }
-                backStackEntry.arguments?.getInt("prayerId") ?: 0
                 PrayerDetailRoute(
                     onBackClick = { navController.popBackStack() },
                     onSettingsClick = {
@@ -451,7 +477,14 @@ fun AppNavHost(
                     onAudioFileChanged = { mediaKey ->
                         audioPlayerViewModel.setOverrideAudioFileName(mediaKey)
                     },
-                    onModeChanged = { _ -> },
+                    onModeChanged = { oldMode, newMode ->
+                        if (isDisplayModeSwitch(oldMode, newMode)) {
+                            requestInterstitialAd(
+                                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                route = "mode_switch_prayer_detail",
+                            )
+                        }
+                    },
                     audioPlayerContent = {
                         InlineAudioPlayer(
                             state = audioState,
@@ -460,6 +493,10 @@ fun AppNavHost(
                                     appAnalytics.logAudioPause(
                                         positionMs = audioState.currentPosition,
                                         durationMs = audioState.duration,
+                                    )
+                                    requestInterstitialAd(
+                                        placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                        route = "audio_pause_prayer_detail",
                                     )
                                 } else {
                                     hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
@@ -475,6 +512,12 @@ fun AppNavHost(
                                     positionMs = audioState.currentPosition,
                                     durationMs = audioState.duration,
                                 )
+                                if (audioState.currentPosition > 0L || audioState.isPlaying) {
+                                    requestInterstitialAd(
+                                        placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                        route = "audio_stop_prayer_detail",
+                                    )
+                                }
                                 audioPlayerViewModel.stop()
                             },
                             onSeek = audioPlayerViewModel::seekTo,
@@ -486,14 +529,13 @@ fun AppNavHost(
                             NativeAdItem(nativeAd = ad)
                         }
                     },
-                    isDebug = BuildConfig.USE_TEST_ADS
+                    isDebug = useTestAds
                 )
             }
             composable(AppRoute.MiraclesList.route) {
                 LaunchedEffect(Unit) {
                     nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_HOME)
                 }
-                val isEsmaFlavor = BuildConfig.FLAVOR == "esmaulhusna"
                 if (isEsmaFlavor) {
                     LaunchedEffect(Unit) {
                         // Esma listesi için flavor default sesine dön.
@@ -552,7 +594,6 @@ fun AppNavHost(
                 LaunchedEffect(Unit) {
                     nativeAdViewModel.setPlacement(AdPlacement.NATIVE_FEED_CONTENT)
                 }
-                backStackEntry.arguments?.getInt("prayerIndex") ?: 0
                 MiraclesDetailRoute(
                     onBackClick = { navController.popBackStack() },
                     onSettingsClick = {
@@ -565,7 +606,7 @@ fun AppNavHost(
                         nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
                     },
                     bannerAdUnitId = adUnitIds.banner,
-                    variant = if (BuildConfig.FLAVOR == "esmaulhusna") {
+                    variant = if (isEsmaFlavor) {
                         MiraclesContentVariant.ESMAUL_HUSNA
                     } else {
                         MiraclesContentVariant.MUCIZEDUALAR
@@ -655,7 +696,7 @@ fun AppNavHost(
                     route = request.route,
                     adUnitId = request.adUnitId,
                 )
-                rewardedInterstitialIntroRequest = null
+                clearRewardedInterstitialIntroRequest()
                 coroutineScope.launch {
                     activity.adOrchestrator.showRewardedInterstitialIfEligible(
                         activity = activity,
@@ -667,19 +708,30 @@ fun AppNavHost(
                 }
             },
             onDismiss = {
-                val activity = hostActivity
-                if (activity != null) {
-                    activity.adOrchestrator.onRewardedInterstitialIntroSkipped(
-                        placement = request.placement,
-                        route = request.route,
-                        adUnitId = request.adUnitId,
-                    )
-                }
-                rewardedInterstitialIntroRequest = null
+                hostActivity?.adOrchestrator?.onRewardedInterstitialIntroSkipped(
+                    placement = request.placement,
+                    route = request.route,
+                    adUnitId = request.adUnitId,
+                )
+                clearRewardedInterstitialIntroRequest()
             },
         )
     }
 }
+
+private fun resolveHomeStartDestination(
+    flavorName: String,
+    isPrayerTimesFlavor: Boolean,
+): String =
+    when {
+        isPrayerTimesFlavor -> AppRoute.PrayerTimesHome.route
+        flavorName == "kible" -> AppRoute.Qibla.route
+        flavorName == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
+        flavorName == "mucizedualar" || flavorName == "esmaulhusna" -> AppRoute.MiraclesList.route
+        flavorName == "zikirmatik" -> AppRoute.ZikirCounter.route
+        flavorName == "kuran_kerim" -> AppRoute.QuranSuraList.route
+        else -> AppRoute.Content.route
+    }
 
 private fun routeToContentType(route: String): String =
     when {
@@ -696,6 +748,12 @@ private fun routeToContentType(route: String): String =
         route.startsWith(AppRoute.Qibla.route) -> "qibla"
         else -> "other"
     }
+
+private fun isDisplayModeSwitch(
+    oldMode: DisplayMode,
+    newMode: DisplayMode,
+): Boolean =
+    oldMode != newMode
 
 private data class RewardedInterstitialIntroRequest(
     val placement: AdPlacement,

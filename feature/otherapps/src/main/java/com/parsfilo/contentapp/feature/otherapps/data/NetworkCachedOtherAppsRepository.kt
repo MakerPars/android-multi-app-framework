@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.feature.otherapps.data
 import android.content.Context
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
+import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
 import com.parsfilo.contentapp.core.firebase.config.EndpointsProvider
 import com.parsfilo.contentapp.feature.otherapps.model.OtherApp
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +35,7 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
         OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
             .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .addInterceptor(TimberNetworkLoggingInterceptor("other_apps_feed"))
             .build()
     }
 
@@ -69,7 +71,16 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
             if (staleCache != null) {
                 _apps.value = filterCurrentApp(parseApps(staleCache))
             } else {
-                Timber.w("Other apps list could not be loaded from remote or cache")
+                val fallback = fallbackApps()
+                if (fallback.isNotEmpty()) {
+                    Timber.w(
+                        "Other apps list could not be loaded from remote/cache, using local fallback size=%d",
+                        fallback.size,
+                    )
+                    _apps.value = fallback
+                } else {
+                    Timber.w("Other apps list could not be loaded from remote or cache")
+                }
             }
         }
     }
@@ -147,7 +158,13 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
 
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.code !in 200..299) {
-                    Timber.w("Other apps fetch failed for $url with HTTP ${response.code}")
+                    val errorBody = response.body.string().take(MAX_ERROR_BODY_LOG_CHARS)
+                    Timber.w(
+                        "Other apps fetch failed for %s with HTTP %d body=%s",
+                        url,
+                        response.code,
+                        errorBody,
+                    )
                     null
                 } else {
                     response.body.string()
@@ -162,11 +179,47 @@ class NetworkCachedOtherAppsRepository @Inject constructor(
         }
     }
 
+    private fun fallbackApps(): List<OtherApp> {
+        // Fallback list is used only when remote endpoint and disk cache are both unavailable.
+        return DEFAULT_FALLBACK_APPS
+            .filterNot { it.packageName.equals(currentPackageName, ignoreCase = true) }
+            .sortedWith(compareByDescending<OtherApp> { it.isNew }.thenBy { it.appName.lowercase() })
+    }
+
     private companion object {
         private const val CACHE_FILE_NAME = "other_apps_cache.json"
         private const val CACHE_TTL_MILLIS = 24 * 60 * 60 * 1000L
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
+        private const val MAX_ERROR_BODY_LOG_CHARS = 200
+        private const val DEFAULT_ICON_URL = "https://www.gstatic.com/android/market_images/web/play_prism_hlock_2x.png"
+
+        private val DEFAULT_FALLBACK_APPS = listOf(
+            OtherApp(
+                appName = "Kuran-ı Kerim",
+                packageName = "com.parsfilo.kuran_kerim",
+                appIconUrl = DEFAULT_ICON_URL,
+                isNew = false,
+            ),
+            OtherApp(
+                appName = "Namaz Vakitleri",
+                packageName = "com.parsfilo.namazvakitleri",
+                appIconUrl = DEFAULT_ICON_URL,
+                isNew = false,
+            ),
+            OtherApp(
+                appName = "Zikirmatik",
+                packageName = "com.parsfilo.zikirmatik",
+                appIconUrl = DEFAULT_ICON_URL,
+                isNew = false,
+            ),
+            OtherApp(
+                appName = "Esmaül Hüsna",
+                packageName = "com.parsfilo.esmaulhusna",
+                appIconUrl = DEFAULT_ICON_URL,
+                isNew = false,
+            ),
+        )
     }
 }
 

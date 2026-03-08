@@ -1,6 +1,5 @@
 package com.parsfilo.contentapp.feature.ads.ui
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -35,19 +37,21 @@ import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
 import com.parsfilo.contentapp.feature.ads.findActivity
 import dagger.hilt.android.EntryPointAccessors
+import timber.log.Timber
 import kotlin.math.max
 
-@SuppressLint("MissingPermission")
 @Composable
 fun BannerAd(
     adUnitId: String,
     placement: AdPlacement = AdPlacement.BANNER_DEFAULT,
     route: String? = null,
+    showPlacementLabels: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
 
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val dimens = LocalDimens.current
     val adContext = remember(context) { context.findActivity() ?: context }
     val appContext = context.applicationContext
@@ -67,6 +71,13 @@ fun BannerAd(
     }
     if (suppressReason != null) {
         LaunchedEffect(adUnitId, placement, route, suppressReason) {
+            Timber.d(
+                "Banner suppressed placement=%s route=%s reason=%s adUnit=%s",
+                placement.analyticsValue,
+                route,
+                suppressReason,
+                adUnitId,
+            )
             revenueLogger.logSuppressed(
                 adFormat = AdFormat.BANNER,
                 placement = placement,
@@ -83,17 +94,28 @@ fun BannerAd(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimens.space8, vertical = dimens.space8),
+            .padding(
+                horizontal = if (showPlacementLabels) dimens.space8 else dimens.space6,
+                vertical = if (showPlacementLabels) dimens.space8 else dimens.space2,
+            ),
     ) {
         val adWidthDp = max(1, maxWidth.value.toInt())
-        val adSize = remember(adWidthDp, adContext) {
-            AdSize.getCurrentOrientationInlineAdaptiveBannerAdSize(adContext, adWidthDp)
-        }
-        val adView = remember(adUnitId, adWidthDp) {
-            var loadStartedAtMillis = SystemTimeProvider.nowMillis()
+        // Force standard banner height to keep layout stable across devices.
+        val adSize = remember { AdSize.BANNER }
+        val adView = remember(adUnitId, adWidthDp, showPlacementLabels) {
+            val loadStartedAtMillis = SystemTimeProvider.nowMillis()
             AdView(adContext).apply {
                 this.adUnitId = adUnitId
                 setAdSize(adSize)
+                Timber.d(
+                    "Banner load requested placement=%s widthDp=%d heightDp=%d route=%s adUnit=%s labels=%s",
+                    placement.analyticsValue,
+                    adWidthDp,
+                    adSize.height,
+                    route,
+                    adUnitId,
+                    showPlacementLabels,
+                )
                 adListener = object : AdListener() {
                     override fun onAdLoaded() {
                         val fillLatencyMs = (SystemTimeProvider.nowMillis() - loadStartedAtMillis).coerceAtLeast(0L)
@@ -165,30 +187,76 @@ fun BannerAd(
             }
         }
 
-        DisposableEffect(adView) {
-            onDispose { adView.destroy() }
+        DisposableEffect(adView, lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> {
+                        Timber.d("Banner resume placement=%s route=%s", placement.analyticsValue, route)
+                        adView.resume()
+                    }
+                    Lifecycle.Event.ON_PAUSE -> {
+                        Timber.d("Banner pause placement=%s route=%s", placement.analyticsValue, route)
+                        adView.pause()
+                    }
+                    else -> Unit
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                Timber.d("Banner destroy placement=%s route=%s", placement.analyticsValue, route)
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                adView.destroy()
+            }
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
-                    shape = RoundedCornerShape(dimens.radiusLarge),
-                )
-                .padding(horizontal = dimens.space8, vertical = dimens.space8),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = "Reklam",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (showPlacementLabels) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = dimens.space6),
-            )
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(dimens.radiusLarge),
+                    )
+                    .padding(horizontal = dimens.space8, vertical = dimens.space8),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = "Reklam",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = dimens.space6),
+                )
 
+                AndroidView(
+                    modifier = Modifier.fillMaxWidth(),
+                    factory = { adView },
+                    update = { view ->
+                        if (view.adUnitId != adUnitId) {
+                            view.adUnitId = adUnitId
+                            view.setAdSize(adSize)
+                            revenueLogger.logRequest(
+                                adFormat = AdFormat.BANNER,
+                                placement = placement,
+                                adUnitId = adUnitId,
+                                route = route,
+                            )
+                            view.loadAd(adRequest)
+                        }
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(dimens.space4))
+                Text(
+                    text = "Sponsorlu içerik alanı",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
             AndroidView(
                 modifier = Modifier.fillMaxWidth(),
                 factory = { adView },
@@ -205,14 +273,6 @@ fun BannerAd(
                         view.loadAd(adRequest)
                     }
                 },
-            )
-
-            Spacer(modifier = Modifier.height(dimens.space4))
-            Text(
-                text = "Sponsorlu içerik alanı",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

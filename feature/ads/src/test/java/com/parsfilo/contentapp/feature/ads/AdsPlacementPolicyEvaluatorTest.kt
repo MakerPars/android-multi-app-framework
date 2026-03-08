@@ -69,7 +69,11 @@ class AdsPlacementPolicyEvaluatorTest {
             ),
         )
 
-        assertThat(result).isEqualTo(AdEligibility.Blocked(AdSuppressReason.RESUME_SPAM))
+        if (BuildConfig.DEBUG) {
+            assertThat(result).isEqualTo(AdEligibility.Allowed)
+        } else {
+            assertThat(result).isEqualTo(AdEligibility.Blocked(AdSuppressReason.RESUME_SPAM))
+        }
     }
 
     @Test

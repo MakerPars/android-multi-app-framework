@@ -32,6 +32,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         intent: Intent?,
     ) {
         if (intent?.action != PrayerAlarmScheduler.ACTION_FIRE_ALARM) return
+        Timber.d(
+            "PrayerAlarmReceiver triggered action=%s variant=%s prayerKey=%s localDate=%s timeHm=%s",
+            intent.action,
+            intent.getStringExtra(PrayerAlarmScheduler.EXTRA_VARIANT),
+            intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_KEY),
+            intent.getStringExtra(PrayerAlarmScheduler.EXTRA_LOCAL_DATE),
+            intent.getStringExtra(PrayerAlarmScheduler.EXTRA_TIME_HM),
+        )
         val pendingResult = goAsync()
 
         val receiverJob = SupervisorJob()
@@ -58,12 +66,14 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                     val soundUri = prayerPreferencesDataSource.preferences.first().alarmSoundUri
                     prayerAlarmNotifier.show(payload = payload, variant = variant, soundUri = soundUri)
                     prayerAlarmScheduler.scheduleNext(variant)
+                    Timber.d("PrayerAlarmReceiver handled and scheduled next alarm variant=%s", variant.name)
                 }.onFailure { error ->
                     if (error is CancellationException) throw error
                     Timber.w(error, "Prayer alarm receiver failed")
                 }
             } finally {
                 receiverJob.cancel()
+                Timber.d("PrayerAlarmReceiver finished")
                 pendingResult.finish()
             }
         }

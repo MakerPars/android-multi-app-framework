@@ -36,6 +36,11 @@ class AdRevenueLogger @Inject constructor(
         adUnitId: String,
         route: String? = null,
     ) {
+        ConsentFunnelDebugDashboard.onAdRequestSent(
+            adFormat = adFormat,
+            placement = placement,
+            canRequestAds = AdsConsentRuntimeState.canRequestAds.value,
+        )
         appAnalytics.logEvent(
             AnalyticsEventName.AD_REQUEST_SENT,
             adEventBundle(adFormat, placement, adUnitId, route),

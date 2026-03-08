@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.feature.quran.data
 import android.content.Context
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
+import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
 import com.parsfilo.contentapp.core.common.result.Result
 import com.parsfilo.contentapp.core.database.dao.quran.QuranDao
 import com.parsfilo.contentapp.core.database.model.quran.QuranAudioCacheEntity
@@ -43,6 +44,7 @@ class QuranRepository @Inject constructor(
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(TimberNetworkLoggingInterceptor("quran_api"))
             .build()
     }
 
@@ -81,7 +83,6 @@ class QuranRepository @Inject constructor(
                 }
             }
             quranDao.insertSuras(entities)
-            Unit
         }.fold(
             onSuccess = { Result.Success(Unit) },
             onFailure = { throwable ->
@@ -134,7 +135,6 @@ class QuranRepository @Inject constructor(
 
                     quranDao.replaceAyahsForSura(suraNumber = suraNumber, ayahs = entities)
                 }
-                Unit
             }.fold(
                 onSuccess = { Result.Success(Unit) },
                 onFailure = { throwable ->
@@ -430,4 +430,3 @@ private fun String.toRevelationTypeName(): String {
         else -> RevelationType.MEDINAN.name
     }
 }
-

@@ -49,25 +49,30 @@ class PrayerTimesViewModelTest {
     }
 
     @Test
-    fun `auto mode with unresolved location keeps user on home and shows message`() = runTest(testDispatcher) {
-        val repository = FakePrayerTimesRepository().apply {
-            modeFlow.value = PrayerTimesMode.AUTO
-            selectionFlow.value = null
-            resolveResult = ResolveResult.NoMatch
+    fun `auto mode with unresolved location keeps user on home and shows message`() =
+        runTest(testDispatcher) {
+            val repository = FakePrayerTimesRepository().apply {
+                modeFlow.value = PrayerTimesMode.AUTO
+                selectionFlow.value = null
+                resolveResult = ResolveResult.NoMatch
+            }
+
+            val viewModel = PrayerTimesViewModel(
+                repository,
+                prayerPreferencesDataSource,
+                prayerAlarmSoundPlayer
+            )
+
+            viewModel.events.test {
+                runCurrent()
+                expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertThat(viewModel.snackBarMessage.value).isEqualTo(
+                UiText.StringResource(R.string.prayertimes_resolve_failed),
+            )
         }
-
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
-
-        viewModel.events.test {
-            runCurrent()
-            expectNoEvents()
-            cancelAndIgnoreRemainingEvents()
-        }
-
-        assertThat(viewModel.snackBarMessage.value).isEqualTo(
-            UiText.StringResource(R.string.prayertimes_resolve_failed),
-        )
-    }
 
     @Test
     fun `selection change triggers background refresh`() = runTest(testDispatcher) {
@@ -75,7 +80,8 @@ class PrayerTimesViewModelTest {
             modeFlow.value = PrayerTimesMode.MANUAL
             selectionFlow.value = null
         }
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
+        val viewModel =
+            PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
 
         repository.selectionFlow.value = PrayerLocationSelection(
             countryId = 1,
@@ -90,30 +96,35 @@ class PrayerTimesViewModelTest {
     }
 
     @Test
-    fun `manual refresh with invalid selection shows actionable message`() = runTest(testDispatcher) {
-        val repository = FakePrayerTimesRepository().apply {
-            modeFlow.value = PrayerTimesMode.MANUAL
-            selectionFlow.value = PrayerLocationSelection(
-                countryId = 1,
-                cityId = 2,
-                districtId = 11,
-                displayName = "Test District",
+    fun `manual refresh with invalid selection shows actionable message`() =
+        runTest(testDispatcher) {
+            val repository = FakePrayerTimesRepository().apply {
+                modeFlow.value = PrayerTimesMode.MANUAL
+                selectionFlow.value = PrayerLocationSelection(
+                    countryId = 1,
+                    cityId = 2,
+                    districtId = 11,
+                    displayName = "Test District",
+                )
+                refreshResult = RefreshResult.SkippedFresh
+            }
+            val viewModel = PrayerTimesViewModel(
+                repository,
+                prayerPreferencesDataSource,
+                prayerAlarmSoundPlayer
             )
-            refreshResult = RefreshResult.SkippedFresh
+            val uiCollector = backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            repository.refreshResult = RefreshResult.InvalidSelection
+            viewModel.refresh()
+            runCurrent()
+
+            assertThat(viewModel.snackBarMessage.value).isEqualTo(
+                UiText.StringResource(R.string.prayertimes_selection_refresh_needed),
+            )
+            uiCollector.cancel()
         }
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
-        val uiCollector = backgroundScope.launch { viewModel.uiState.collect {} }
-        runCurrent()
-
-        repository.refreshResult = RefreshResult.InvalidSelection
-        viewModel.refresh()
-        runCurrent()
-
-        assertThat(viewModel.snackBarMessage.value).isEqualTo(
-            UiText.StringResource(R.string.prayertimes_selection_refresh_needed),
-        )
-        uiCollector.cancel()
-    }
 
     @Test
     fun `resolve success refreshes selected district`() = runTest(testDispatcher) {
@@ -130,7 +141,8 @@ class PrayerTimesViewModelTest {
             )
         }
 
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
+        val viewModel =
+            PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
         runCurrent()
         viewModel.resolveByDeviceLocation()
         runCurrent()
@@ -157,7 +169,8 @@ class PrayerTimesViewModelTest {
             resolveResult = ResolveResult.NoMatch
         }
 
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
+        val viewModel =
+            PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
         viewModel.events.test {
             runCurrent()
             viewModel.resolveByDeviceLocation()
@@ -180,7 +193,8 @@ class PrayerTimesViewModelTest {
             resolveResult = ResolveResult.NoMatch
         }
 
-        val viewModel = PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
+        val viewModel =
+            PrayerTimesViewModel(repository, prayerPreferencesDataSource, prayerAlarmSoundPlayer)
         runCurrent()
 
         viewModel.onModeChanged(PrayerTimesMode.AUTO)
@@ -238,7 +252,6 @@ private class FakePrayerTimesRepository : PrayerTimesRepository {
 
     override fun observeAlarmSettings(): Flow<PrayerAlarmSettings> = alarmSettingsFlow
 
-    @Suppress("UNUSED_PARAMETER")
     override fun observeTodayAndUpcoming(districtId: Int): Flow<List<PrayerTimesDay>> {
         return timesFlow
     }
@@ -257,7 +270,8 @@ private class FakePrayerTimesRepository : PrayerTimesRepository {
         return result
     }
 
-    override suspend fun suggestManualSelectionByDeviceLocation(): PrayerLocationSuggestion? = suggestion
+    override suspend fun suggestManualSelectionByDeviceLocation(): PrayerLocationSuggestion? =
+        suggestion
 
     override suspend fun getCountries(forceRefresh: Boolean): List<PrayerCountry> = countries
 

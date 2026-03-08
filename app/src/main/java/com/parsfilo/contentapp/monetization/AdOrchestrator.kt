@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -69,25 +70,32 @@ class AdOrchestrator @Inject constructor(
     private var adGateObserverStarted: Boolean = false
 
     fun initialize(activity: Activity, scope: CoroutineScope) {
+        Timber.d("AdOrchestrator initialize package=%s testAds=%s", activity.packageName, BuildConfig.USE_TEST_ADS)
         adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
         startAdGateObserver(activity.applicationContext)
         adManager.initialize(activity) {
             scope.launch(Main.immediate) {
                 if (!adGateChecker.shouldShowAds.first()) {
+                    Timber.d("AdOrchestrator initialize: ad gate closed, preload skipped")
                     return@launch
                 }
+                Timber.d("AdOrchestrator initialize: preloading ads")
                 preloadAds(activity.applicationContext)
             }
         }
     }
 
     fun destroy() {
+        Timber.d("AdOrchestrator destroy")
         nativeAdManager.destroyAds()
     }
 
     fun onAppPaused() {
+        Timber.d("AdOrchestrator onAppPaused")
         appOpenEligibilityTracker.onPause()
     }
+
+    fun isAppOpenAdShowing(): Boolean = appOpenAdManager.isShowingAdNow()
 
     fun updateSessionContext(
         activeRoute: String? = null,
@@ -101,6 +109,13 @@ class AdOrchestrator @Inject constructor(
             contentType = contentType ?: previous.contentType,
             verseReadCount = (previous.verseReadCount + verseReadIncrement).coerceAtLeast(0),
             audioPlayedThisSession = audioPlayed ?: previous.audioPlayedThisSession,
+        )
+        Timber.d(
+            "Ad session updated route=%s contentType=%s verseReadCount=%d audioPlayed=%s",
+            adSessionContext.activeRoute,
+            adSessionContext.contentType,
+            adSessionContext.verseReadCount,
+            adSessionContext.audioPlayedThisSession,
         )
     }
 
@@ -143,6 +158,12 @@ class AdOrchestrator @Inject constructor(
         route: String? = null,
         onAdDismissed: () -> Unit = {},
     ) {
+        Timber.d(
+            "Interstitial show requested placement=%s route=%s sessionCount=%d",
+            placement.analyticsValue,
+            route ?: adSessionContext.activeRoute,
+            interstitialShownThisSession,
+        )
         val prefs = preferencesDataSource.userData.first()
         val contextRoute = route ?: adSessionContext.activeRoute
         when (
@@ -162,6 +183,12 @@ class AdOrchestrator @Inject constructor(
             )
         ) {
             is AdEligibility.Blocked -> {
+                Timber.d(
+                    "Interstitial blocked placement=%s route=%s reason=%s",
+                    placement.analyticsValue,
+                    contextRoute,
+                    eligibility.reason.analyticsValue,
+                )
                 adRevenueLogger.logSuppressed(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -174,12 +201,20 @@ class AdOrchestrator @Inject constructor(
             }
             AdEligibility.Allowed -> Unit
         }
+        Timber.d("Interstitial allowed placement=%s route=%s", placement.analyticsValue, contextRoute)
         interstitialAdManager.showAd(
             activity = activity,
             placement = placement,
             route = contextRoute,
             onAdImpression = { adUnitId ->
                 interstitialShownThisSession += 1
+                Timber.d(
+                    "Interstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
+                    placement.analyticsValue,
+                    contextRoute,
+                    interstitialShownThisSession,
+                    adUnitId,
+                )
                 logAdAfterEngagement(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -193,6 +228,7 @@ class AdOrchestrator @Inject constructor(
     }
 
     suspend fun showAppOpenAdIfEligible(activity: Activity) {
+        Timber.d("AppOpen show requested route=%s", adSessionContext.activeRoute)
         val prefs = preferencesDataSource.userData.first()
         val resumeSnapshot = appOpenEligibilityTracker.onResume()
         val route = adSessionContext.activeRoute
@@ -213,6 +249,11 @@ class AdOrchestrator @Inject constructor(
             )
         ) {
             is AdEligibility.Blocked -> {
+                Timber.d(
+                    "AppOpen blocked route=%s reason=%s",
+                    route,
+                    eligibility.reason.analyticsValue,
+                )
                 adRevenueLogger.logSuppressed(
                     adFormat = AdFormat.APP_OPEN,
                     placement = AdPlacement.APP_OPEN_RESUME,
@@ -224,11 +265,18 @@ class AdOrchestrator @Inject constructor(
             }
             AdEligibility.Allowed -> Unit
         }
+        Timber.d(
+            "AppOpen allowed route=%s coldStart=%s sessionCount=%d",
+            route,
+            resumeSnapshot.isColdStart,
+            resumeSnapshot.sessionCount,
+        )
         appOpenAdManager.showAdIfAvailable(
             activity = activity,
             route = route,
             onAdImpression = { adUnitId ->
                 appOpenEligibilityTracker.onShown()
+                Timber.d("AppOpen impression route=%s adUnit=%s", route, adUnitId)
                 logAdAfterEngagement(
                     adFormat = AdFormat.APP_OPEN,
                     placement = AdPlacement.APP_OPEN_RESUME,
@@ -237,6 +285,7 @@ class AdOrchestrator @Inject constructor(
                 )
             },
         ) {
+            Timber.d("AppOpen show completed; requesting reload")
             appOpenAdManager.loadAd(
                 AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
                 AdPlacement.APP_OPEN_RESUME,
@@ -252,6 +301,12 @@ class AdOrchestrator @Inject constructor(
         onUserEarnedReward: () -> Unit = {},
         onAdDismissed: () -> Unit = {},
     ) {
+        Timber.d(
+            "RewardedInterstitial show requested placement=%s route=%s sessionCount=%d",
+            placement.analyticsValue,
+            route ?: adSessionContext.activeRoute,
+            rewardedInterstitialShownThisSession,
+        )
         val prefs = preferencesDataSource.userData.first()
         val contextRoute = route ?: adSessionContext.activeRoute
         when (
@@ -271,6 +326,12 @@ class AdOrchestrator @Inject constructor(
             )
         ) {
             is AdEligibility.Blocked -> {
+                Timber.d(
+                    "RewardedInterstitial blocked placement=%s route=%s reason=%s",
+                    placement.analyticsValue,
+                    contextRoute,
+                    eligibility.reason.analyticsValue,
+                )
                 adRevenueLogger.logSuppressed(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
@@ -283,6 +344,7 @@ class AdOrchestrator @Inject constructor(
             }
             AdEligibility.Allowed -> Unit
         }
+        Timber.d("RewardedInterstitial allowed placement=%s route=%s", placement.analyticsValue, contextRoute)
         rewardedInterstitialAdManager.showAfterConfirmedIntro(
             launchToken = launchToken,
             activity = activity,
@@ -293,6 +355,13 @@ class AdOrchestrator @Inject constructor(
                     rewardedInterstitialShownThisSession += 1
                     preferencesDataSource.setLastRewardedInterstitialShown(System.currentTimeMillis())
                 }
+                Timber.d(
+                    "RewardedInterstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
+                    placement.analyticsValue,
+                    contextRoute,
+                    rewardedInterstitialShownThisSession,
+                    adUnitId,
+                )
                 logAdAfterEngagement(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
@@ -302,11 +371,13 @@ class AdOrchestrator @Inject constructor(
             },
             onUserEarnedReward = { _, _ ->
                 orchestratorScope.launch {
+                    Timber.d("RewardedInterstitial reward earned placement=%s route=%s", placement.analyticsValue, contextRoute)
                     adGateChecker.onRewardEarned()
                     onUserEarnedReward()
                 }
             },
             onAdDismissed = {
+                Timber.d("RewardedInterstitial dismissed; requesting reload placement=%s route=%s", placement.analyticsValue, contextRoute)
                 val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
                 rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial, placement, contextRoute)
                 onAdDismissed()
@@ -317,6 +388,7 @@ class AdOrchestrator @Inject constructor(
     private fun startAdGateObserver(context: Context) {
         if (adGateObserverStarted) return
         adGateObserverStarted = true
+        Timber.d("AdOrchestrator startAdGateObserver")
         orchestratorScope.launch {
             combine(
                 AdsConsentRuntimeState.canRequestAds,
@@ -326,6 +398,7 @@ class AdOrchestrator @Inject constructor(
             }
                 .distinctUntilChanged()
                 .collect { canPreload ->
+                    Timber.d("Ad gate observer changed canPreload=%s", canPreload)
                     if (canPreload) {
                         preloadAds(context)
                     } else {
@@ -336,16 +409,20 @@ class AdOrchestrator @Inject constructor(
     }
 
     fun refreshConsent(activity: Activity, scope: CoroutineScope) {
+        Timber.d("AdOrchestrator refreshConsent requested")
         adManager.refreshConsent(activity) { canRequestAds ->
             scope.launch(Main.immediate) {
+                Timber.d("AdOrchestrator refreshConsent result canRequestAds=%s", canRequestAds)
                 if (!canRequestAds) {
                     clearPreloadedAds()
                     return@launch
                 }
                 if (!adGateChecker.shouldShowAds.first()) {
+                    Timber.d("AdOrchestrator refreshConsent: ad gate closed, clear preloads")
                     clearPreloadedAds()
                     return@launch
                 }
+                Timber.d("AdOrchestrator refreshConsent: preloading ads")
                 preloadAds(activity.applicationContext)
             }
         }
@@ -353,6 +430,11 @@ class AdOrchestrator @Inject constructor(
 
     private fun preloadAds(context: Context) {
         val policy = adsPolicyProvider.getPolicy()
+        Timber.d(
+            "Preload ads route=%s nativePoolMax=%d",
+            adSessionContext.activeRoute,
+            policy.nativePoolMax,
+        )
         appOpenAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
             AdPlacement.APP_OPEN_RESUME,
@@ -392,6 +474,7 @@ class AdOrchestrator @Inject constructor(
     }
 
     private fun clearPreloadedAds() {
+        Timber.d("Clear preloaded ads")
         appOpenAdManager.clearAd()
         interstitialAdManager.clearAd()
         rewardedAdManager.clearAd()

@@ -58,5 +58,5 @@ class EndpointsProvider @Inject constructor(
 
 internal fun resolveEndpointValue(remoteValue: String?, defaultValue: String): String {
     val normalized = remoteValue?.trim().orEmpty()
-    return if (normalized.isBlank()) defaultValue else normalized
+    return normalized.ifBlank { defaultValue }
 }

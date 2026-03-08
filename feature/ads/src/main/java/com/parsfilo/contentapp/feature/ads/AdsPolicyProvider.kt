@@ -15,126 +15,128 @@ class AdsPolicyProvider @Inject constructor(
 
     fun getPolicy(): AdsPolicyConfig {
         val interstitialFrequencyCapMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_INTERSTITIAL_FREQUENCY_CAP_MS),
+            remoteConfigManager.getLongOrNull(KEY_INTERSTITIAL_FREQUENCY_CAP_MS)
+                ?: DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS,
             min = 60_000L,
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS,
         )
         val appOpenCooldownMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_APP_OPEN_COOLDOWN_MS),
+            remoteConfigManager.getLongOrNull(KEY_APP_OPEN_COOLDOWN_MS)
+                ?: DEFAULT_APP_OPEN_COOLDOWN_MS,
             min = 60_000L,
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_APP_OPEN_COOLDOWN_MS,
         )
         val appOpenResumeGapMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_APP_OPEN_RESUME_GAP_MS),
+            remoteConfigManager.getLongOrNull(KEY_APP_OPEN_RESUME_GAP_MS)
+                ?: DEFAULT_APP_OPEN_RESUME_GAP_MS,
             min = 0L,
             max = 30 * 60 * 1000L,
             fallback = DEFAULT_APP_OPEN_RESUME_GAP_MS,
         )
         val appOpenMaxPerSession = sanitizeInt(
-            remoteConfigManager.getLong(KEY_APP_OPEN_MAX_PER_SESSION).toInt(),
+            (remoteConfigManager.getLongOrNull(KEY_APP_OPEN_MAX_PER_SESSION)
+                ?: DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong()).toInt(),
             min = 0,
             max = 10,
             fallback = DEFAULT_APP_OPEN_MAX_PER_SESSION,
         )
         val interstitialMaxPerSession = sanitizeInt(
-            remoteConfigManager.getLong(KEY_INTERSTITIAL_MAX_PER_SESSION).toInt(),
+            (remoteConfigManager.getLongOrNull(KEY_INTERSTITIAL_MAX_PER_SESSION)
+                ?: DEFAULT_INTERSTITIAL_MAX_PER_SESSION.toLong()).toInt(),
             min = 0,
             max = 20,
             fallback = DEFAULT_INTERSTITIAL_MAX_PER_SESSION,
         )
         val interstitialRelaxedFrequencyCapMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS),
+            remoteConfigManager.getLongOrNull(KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS)
+                ?: DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
             min = 60_000L,
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
         )
         val rewardedInterstitialMinIntervalMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS),
+            remoteConfigManager.getLongOrNull(KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS)
+                ?: DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
             min = 0L,
             max = 24 * 60 * 60 * 1000L,
             fallback = DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
         )
         val rewardedInterstitialMaxPerSession = sanitizeInt(
-            remoteConfigManager.getLong(KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION).toInt(),
+            (remoteConfigManager.getLongOrNull(KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION)
+                ?: DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong()).toInt(),
             min = 0,
             max = 10,
             fallback = DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION,
         )
-        val rewardedInterstitialIntroRequired = parseBoolean(
-            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED),
-            DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED,
-        )
-        val bannerEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_BANNER_ENABLED),
-            DEFAULT_BANNER_ENABLED,
-        )
-        val appOpenEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_APP_OPEN_ENABLED),
-            DEFAULT_APP_OPEN_ENABLED,
-        )
-        val interstitialEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_INTERSTITIAL_ENABLED),
-            DEFAULT_INTERSTITIAL_ENABLED,
-        )
-        val nativeEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_NATIVE_ENABLED),
-            DEFAULT_NATIVE_ENABLED,
-        )
-        val rewardedEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_REWARDED_ENABLED),
-            DEFAULT_REWARDED_ENABLED,
-        )
-        val rewardedInterstitialEnabled = parseBoolean(
-            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_ENABLED),
-            DEFAULT_REWARDED_INTERSTITIAL_ENABLED,
-        )
+        val rewardedInterstitialIntroRequired =
+            remoteConfigManager.getBooleanOrNull(KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED)
+                ?: DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED
+        val bannerEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_BANNER_ENABLED)
+                ?: DEFAULT_BANNER_ENABLED
+        val appOpenEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_APP_OPEN_ENABLED)
+                ?: DEFAULT_APP_OPEN_ENABLED
+        val interstitialEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_INTERSTITIAL_ENABLED)
+                ?: DEFAULT_INTERSTITIAL_ENABLED
+        val nativeEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_NATIVE_ENABLED)
+                ?: DEFAULT_NATIVE_ENABLED
+        val rewardedEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_REWARDED_ENABLED)
+                ?: DEFAULT_REWARDED_ENABLED
+        val rewardedInterstitialEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_REWARDED_INTERSTITIAL_ENABLED)
+                ?: DEFAULT_REWARDED_INTERSTITIAL_ENABLED
         val nativePoolMax = sanitizeInt(
-            remoteConfigManager.getLong(KEY_NATIVE_POOL_MAX).toInt(),
+            (remoteConfigManager.getLongOrNull(KEY_NATIVE_POOL_MAX)
+                ?: DEFAULT_NATIVE_POOL_MAX.toLong()).toInt(),
             min = 1,
             max = 4,
             fallback = DEFAULT_NATIVE_POOL_MAX,
         )
         val nativeTtlMs = sanitizeLong(
-            remoteConfigManager.getLong(KEY_NATIVE_TTL_MS),
+            remoteConfigManager.getLongOrNull(KEY_NATIVE_TTL_MS) ?: DEFAULT_NATIVE_TTL_MS,
             min = 5 * 60 * 1000L,
             max = 6 * 60 * 60 * 1000L,
             fallback = DEFAULT_NATIVE_TTL_MS,
         )
 
         val bannerPlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_BANNER_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_BANNER_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.BANNER,
         )
         val appOpenPlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_APP_OPEN_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.APP_OPEN,
         )
         val interstitialPlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.INTERSTITIAL,
         )
         val nativePlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_NATIVE_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_NATIVE_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.NATIVE,
         )
         val rewardedPlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_REWARDED_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_REWARDED_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.REWARDED,
         )
         val rewardedInterstitialPlacementsDisabled = parsePlacementCsv(
-            remoteConfigManager.getString(KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
+            remoteConfigManager.getStringOrNull(KEY_REWARDED_INTERSTITIAL_PLACEMENTS_DISABLED_CSV),
             format = AdFormat.REWARDED_INTERSTITIAL,
         )
         val appOpenRouteBlocklist = parseStringCsv(
-            remoteConfigManager.getString(KEY_APP_OPEN_ROUTE_BLOCKLIST_CSV),
+            remoteConfigManager.getStringOrNull(KEY_APP_OPEN_ROUTE_BLOCKLIST_CSV),
         )
         val interstitialRouteBlocklist = parseStringCsv(
-            remoteConfigManager.getString(KEY_INTERSTITIAL_ROUTE_BLOCKLIST_CSV),
+            remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_ROUTE_BLOCKLIST_CSV),
         )
         val interstitialRelaxedPackages = parsePackageCsv(
-            remoteConfigManager.getString(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
+            remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
         )
 
         return AdsPolicyConfig(
@@ -167,8 +169,8 @@ class AdsPolicyProvider @Inject constructor(
         )
     }
 
-    private fun parsePlacementCsv(value: String, format: AdFormat): Set<String> {
-        if (value.isBlank()) return emptySet()
+    private fun parsePlacementCsv(value: String?, format: AdFormat): Set<String> {
+        if (value.isNullOrBlank()) return emptySet()
         val disabled = linkedSetOf<String>()
         value.split(',')
             .asSequence()
@@ -192,19 +194,8 @@ class AdsPolicyProvider @Inject constructor(
         return disabled
     }
 
-    private fun parseBoolean(value: String?, default: Boolean): Boolean =
-        when (value?.trim()?.lowercase()) {
-            "1", "true", "yes", "on" -> true
-            "0", "false", "no", "off" -> false
-            null, "" -> default
-            else -> {
-                Timber.w("Invalid RC boolean value=%s, fallback=%s", value, default)
-                default
-            }
-        }
-
-    private fun parsePackageCsv(value: String): Set<String> {
-        if (value.isBlank()) return emptySet()
+    private fun parsePackageCsv(value: String?): Set<String> {
+        if (value.isNullOrBlank()) return emptySet()
         return value.split(',')
             .asSequence()
             .map { it.trim() }
@@ -212,8 +203,8 @@ class AdsPolicyProvider @Inject constructor(
             .toSet()
     }
 
-    private fun parseStringCsv(value: String): Set<String> {
-        if (value.isBlank()) return emptySet()
+    private fun parseStringCsv(value: String?): Set<String> {
+        if (value.isNullOrBlank()) return emptySet()
         return value.split(',')
             .asSequence()
             .map { it.trim() }
@@ -279,7 +270,8 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED = true
         const val DEFAULT_NATIVE_POOL_MAX = 2
         const val DEFAULT_NATIVE_TTL_MS = 1_800_000L
-        const val DEFAULT_APP_OPEN_ROUTE_BLOCKLIST = "content,quran_sura_detail/{suranumber},prayer_detail/{prayerid},subscription,rewards"
+        const val DEFAULT_APP_OPEN_ROUTE_BLOCKLIST =
+            "quran_sura_detail/{suranumber},prayer_detail/{prayerid},subscription,rewards"
         const val DEFAULT_INTERSTITIAL_ROUTE_BLOCKLIST = "content,prayer_detail/{prayerid}"
 
         private val DEFAULTS = mapOf<String, Any>(

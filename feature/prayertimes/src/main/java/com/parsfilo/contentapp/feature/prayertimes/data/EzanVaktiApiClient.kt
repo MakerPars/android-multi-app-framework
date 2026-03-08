@@ -1,5 +1,6 @@
 package com.parsfilo.contentapp.feature.prayertimes.data
 
+import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -22,6 +23,7 @@ class EzanVaktiApiClient @Inject constructor() {
         OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
             .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .addInterceptor(TimberNetworkLoggingInterceptor("ezanvakti_api"))
             .build()
     }
 

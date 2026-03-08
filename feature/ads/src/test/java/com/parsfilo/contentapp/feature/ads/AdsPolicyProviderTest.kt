@@ -107,8 +107,15 @@ class AdsPolicyProviderTest {
     ): RemoteConfigManager {
         val remoteConfigManager = mockk<RemoteConfigManager>()
         every { remoteConfigManager.setDefaults(any()) } just runs
-        every { remoteConfigManager.getLong(any()) } answers { longs[firstArg()] ?: 0L }
-        every { remoteConfigManager.getString(any()) } answers { strings[firstArg()] ?: "" }
+        every { remoteConfigManager.getLongOrNull(any()) } answers { longs[firstArg()] }
+        every { remoteConfigManager.getBooleanOrNull(any()) } answers {
+            when (strings[firstArg<String>()]?.trim()?.lowercase()) {
+                "1", "true", "yes", "on" -> true
+                "0", "false", "no", "off" -> false
+                else -> null
+            }
+        }
+        every { remoteConfigManager.getStringOrNull(any()) } answers { strings[firstArg()] }
         return remoteConfigManager
     }
 }

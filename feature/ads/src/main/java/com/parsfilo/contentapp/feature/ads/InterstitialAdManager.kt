@@ -35,6 +35,7 @@ class InterstitialAdManager @Inject constructor(
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
 
     fun loadAd(
         loadContext: Context,
@@ -42,6 +43,13 @@ class InterstitialAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
     ) {
+        Timber.d(
+            "Interstitial load requested placement=%s route=%s adUnit=%s canRequestAds=%s",
+            placement.analyticsValue,
+            route,
+            adUnitId,
+            AdsConsentRuntimeState.canRequestAds.value,
+        )
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isInterstitialPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
@@ -130,6 +138,13 @@ class InterstitialAdManager @Inject constructor(
                 }
 
                 override fun onAdLoaded(ad: InterstitialAd) {
+                    Timber.d(
+                        "Interstitial loaded placement=%s route=%s adUnit=%s responseId=%s",
+                        currentPlacement.analyticsValue,
+                        currentRoute,
+                        ad.adUnitId,
+                        ad.responseInfo.responseId,
+                    )
                     isLoading = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadSuccess()
                     val fillLatencyMs = (SystemTimeProvider.nowMillis() - lastLoadStartedAtMillis).coerceAtLeast(0L)
@@ -166,6 +181,12 @@ class InterstitialAdManager @Inject constructor(
         onAdImpression: (String) -> Unit = {},
         onAdDismissed: () -> Unit,
     ) {
+        Timber.d(
+            "Interstitial show requested placement=%s route=%s adReady=%s",
+            placement.analyticsValue,
+            route,
+            interstitialAd != null,
+        )
         if (!AdsConsentRuntimeState.canRequestAds.value) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
@@ -184,6 +205,7 @@ class InterstitialAdManager @Inject constructor(
 
         if (prefs.isPremium || prefs.rewardedAdFreeUntil > now) {
             val reason = if (prefs.isPremium) AdSuppressReason.PREMIUM else AdSuppressReason.REWARDED_FREE
+            Timber.d("Interstitial show blocked reason=%s route=%s", reason.analyticsValue, route)
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
@@ -197,6 +219,7 @@ class InterstitialAdManager @Inject constructor(
 
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isInterstitialPlacementEnabled(placement)) {
+            Timber.d("Interstitial show blocked: placement disabled placement=%s route=%s", placement.analyticsValue, route)
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
@@ -207,8 +230,11 @@ class InterstitialAdManager @Inject constructor(
             onAdDismissed()
             return
         }
-        val frequencyCapMs = policy.interstitialFrequencyCapForPackage(appContext.packageName)
-        if (frequencyCapMs != policy.interstitialFrequencyCapMs) {
+        val frequencyCapMs = effectiveCooldownMs(
+            policy.interstitialFrequencyCapForPackage(appContext.packageName),
+        )
+        val baseFrequencyCapMs = effectiveCooldownMs(policy.interstitialFrequencyCapMs)
+        if (frequencyCapMs != baseFrequencyCapMs) {
             Timber.d(
                 "Interstitial frequency cap relaxed for package=%s capMs=%d",
                 appContext.packageName,
@@ -216,6 +242,11 @@ class InterstitialAdManager @Inject constructor(
             )
         }
         if (now - prefs.lastInterstitialShown < frequencyCapMs) {
+            Timber.d(
+                "Interstitial show blocked: cooldown remainingMs=%d route=%s",
+                frequencyCapMs - (now - prefs.lastInterstitialShown),
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
@@ -229,6 +260,7 @@ class InterstitialAdManager @Inject constructor(
 
         val ad = interstitialAd
         if (ad == null) {
+            Timber.d("Interstitial show blocked: ad not loaded placement=%s route=%s", placement.analyticsValue, route)
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
@@ -247,6 +279,7 @@ class InterstitialAdManager @Inject constructor(
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                Timber.d("Interstitial dismissed placement=%s route=%s adUnit=%s", placement.analyticsValue, route, ad.adUnitId)
                 adRevenueLogger.logDismissed(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -274,6 +307,7 @@ class InterstitialAdManager @Inject constructor(
             }
 
             override fun onAdShowedFullScreenContent() {
+                Timber.d("Interstitial showed placement=%s route=%s adUnit=%s", placement.analyticsValue, route, ad.adUnitId)
                 adRevenueLogger.logServed(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -284,6 +318,7 @@ class InterstitialAdManager @Inject constructor(
             }
 
             override fun onAdImpression() {
+                Timber.d("Interstitial impression placement=%s route=%s adUnit=%s", placement.analyticsValue, route, ad.adUnitId)
                 adRevenueLogger.logImpression(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -300,6 +335,7 @@ class InterstitialAdManager @Inject constructor(
             }
 
             override fun onAdClicked() {
+                Timber.d("Interstitial clicked placement=%s route=%s adUnit=%s", placement.analyticsValue, route, ad.adUnitId)
                 adRevenueLogger.logClick(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
@@ -319,6 +355,12 @@ class InterstitialAdManager @Inject constructor(
     }
 
     fun clearAd() {
+        Timber.d(
+            "Interstitial clearAd placement=%s hasAd=%s loading=%s",
+            currentPlacement.analyticsValue,
+            interstitialAd != null,
+            isLoading,
+        )
         interstitialAd = null
         isLoading = false
     }

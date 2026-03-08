@@ -21,6 +21,7 @@ class PushRegistrationSyncWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        Timber.d("PushRegistrationSyncWorker started runAttempt=%d", runAttemptCount)
         val deps = EntryPointAccessors.fromApplication(
             applicationContext,
             PushRegistrationSyncWorkerEntryPoint::class.java,
@@ -29,6 +30,7 @@ class PushRegistrationSyncWorker(
         return runCatching {
             val synced = deps.pushRegistrationManager().syncRegistration("periodic_worker")
             if (synced) {
+                Timber.d("PushRegistrationSyncWorker finished: success")
                 Result.success()
             } else {
                 Timber.w("Periodic push registration sync did not succeed.")
@@ -46,6 +48,11 @@ class PushRegistrationSyncWorker(
         private const val FLEX_INTERVAL_HOURS = 6L
 
         fun schedule(context: Context) {
+            Timber.d(
+                "Scheduling PushRegistrationSyncWorker repeatHours=%d flexHours=%d",
+                REPEAT_INTERVAL_HOURS,
+                FLEX_INTERVAL_HOURS,
+            )
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()

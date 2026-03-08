@@ -36,6 +36,13 @@ class RewardedInterstitialAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
         route: String? = null,
     ) {
+        Timber.d(
+            "RewardedInterstitial load requested placement=%s route=%s adUnit=%s canRequestAds=%s",
+            placement.analyticsValue,
+            route,
+            adUnitId,
+            AdsConsentRuntimeState.canRequestAds.value,
+        )
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isRewardedInterstitialPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
@@ -59,8 +66,21 @@ class RewardedInterstitialAdManager @Inject constructor(
             clearAd()
             return
         }
-        if (!AdLoadBackoffPolicy.canLoad(SystemTimeProvider.nowMillis(), loadBackoffState)) return
-        if (isLoading || rewardedInterstitialAd != null) return
+        if (!AdLoadBackoffPolicy.canLoad(SystemTimeProvider.nowMillis(), loadBackoffState)) {
+            Timber.d(
+                "RewardedInterstitial load throttled nextAllowedAt=%d",
+                loadBackoffState.nextLoadAllowedAtMillis,
+            )
+            return
+        }
+        if (isLoading || rewardedInterstitialAd != null) {
+            Timber.d(
+                "RewardedInterstitial load skipped loading=%s adReady=%s",
+                isLoading,
+                rewardedInterstitialAd != null,
+            )
+            return
+        }
         currentAdUnitId = adUnitId
         currentPlacement = placement
         currentRoute = route
@@ -147,6 +167,12 @@ class RewardedInterstitialAdManager @Inject constructor(
         onUserEarnedReward: (type: String, amount: Int) -> Unit,
         onAdDismissed: () -> Unit,
     ) {
+        Timber.d(
+            "RewardedInterstitial show requested placement=%s route=%s adReady=%s",
+            placement.analyticsValue,
+            route,
+            rewardedInterstitialAd != null,
+        )
         if (!adsPolicyProvider.getPolicy().isRewardedInterstitialPlacementEnabled(placement)) {
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
@@ -172,6 +198,11 @@ class RewardedInterstitialAdManager @Inject constructor(
             return
         }
         if (!rewardedInterstitialCoordinator.isTokenValid(launchToken, placement, route)) {
+            Timber.d(
+                "RewardedInterstitial show blocked: invalid intro token placement=%s route=%s",
+                placement.analyticsValue,
+                route,
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
                 placement = placement,
@@ -263,6 +294,12 @@ class RewardedInterstitialAdManager @Inject constructor(
     fun isAdReady(): Boolean = rewardedInterstitialAd != null
 
     fun clearAd() {
+        Timber.d(
+            "RewardedInterstitial clearAd placement=%s hasAd=%s loading=%s",
+            currentPlacement.analyticsValue,
+            rewardedInterstitialAd != null,
+            isLoading,
+        )
         rewardedInterstitialAd = null
         isLoading = false
     }

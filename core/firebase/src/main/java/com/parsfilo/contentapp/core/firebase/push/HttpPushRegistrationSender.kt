@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.core.firebase.push
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
+import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
@@ -32,6 +33,7 @@ class HttpPushRegistrationSender @Inject constructor(
         OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
             .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+            .addInterceptor(TimberNetworkLoggingInterceptor("push_registration"))
             .build()
     }
 

@@ -3,7 +3,7 @@ data class FlavorConfig(
     val name: String,
     val displayName: String,
     val packageName: String,
-    val audioFileName: String? = null, // Audio asset pack için mp3 dosya adı
+    val audioFileName: String? = null,
     val isPrayerTimesFlavor: Boolean = false,
 )
 

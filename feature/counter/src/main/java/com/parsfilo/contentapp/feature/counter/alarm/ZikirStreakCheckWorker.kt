@@ -10,6 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
+import timber.log.Timber
 
 class ZikirStreakCheckWorker(
     appContext: Context,
@@ -17,6 +18,7 @@ class ZikirStreakCheckWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        Timber.d("ZikirStreakCheckWorker started runAttempt=%d", runAttemptCount)
         val deps = EntryPointAccessors.fromApplication(
             applicationContext,
             ZikirStreakWorkerEntryPoint::class.java,
@@ -24,16 +26,35 @@ class ZikirStreakCheckWorker(
 
         val prefs = deps.preferencesDataSource()
         val streakReminderEnabled = prefs.zikirStreakReminderEnabled.first()
-        if (!streakReminderEnabled) return Result.success()
+        if (!streakReminderEnabled) {
+            Timber.d("ZikirStreakCheckWorker skipped: reminder disabled")
+            return Result.success()
+        }
 
         val dailyGoal = prefs.zikirDailyGoal.first()
         val todayTotal = deps.zikirRepository().getTodayTotalCount().first()
-        if (todayTotal >= dailyGoal) return Result.success()
+        if (todayTotal >= dailyGoal) {
+            Timber.d(
+                "ZikirStreakCheckWorker skipped: goal reached todayTotal=%d dailyGoal=%d",
+                todayTotal,
+                dailyGoal,
+            )
+            return Result.success()
+        }
 
         val streak = deps.zikirRepository().getOrCreateStreak()
-        if (streak.currentStreak <= 0) return Result.success()
+        if (streak.currentStreak <= 0) {
+            Timber.d("ZikirStreakCheckWorker skipped: no active streak")
+            return Result.success()
+        }
 
         deps.zikirReminderNotifier().showStreakReminder(streak.currentStreak)
+        Timber.d(
+            "ZikirStreakCheckWorker reminder shown currentStreak=%d todayTotal=%d dailyGoal=%d",
+            streak.currentStreak,
+            todayTotal,
+            dailyGoal,
+        )
         return Result.success()
     }
 }

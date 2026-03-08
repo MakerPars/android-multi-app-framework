@@ -3,6 +3,7 @@ package com.parsfilo.contentapp.update
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.pm.PackageInfoCompat
 import com.parsfilo.contentapp.core.common.network.AppDispatchers
 import com.parsfilo.contentapp.core.common.network.Dispatcher
 import com.parsfilo.contentapp.core.firebase.config.RemoteConfigManager
@@ -129,16 +130,10 @@ internal fun resolveCurrentVersionCode(context: Context): Long =
                 PackageManager.PackageInfoFlags.of(0),
             )
         } else {
-            @Suppress("DEPRECATION")
             context.packageManager.getPackageInfo(context.packageName, 0)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            packageInfo.longVersionCode
-        } else {
-            @Suppress("DEPRECATION")
-            packageInfo.versionCode.toLong()
-        }
+        PackageInfoCompat.getLongVersionCode(packageInfo)
     }.getOrElse { throwable ->
         Timber.w(throwable, "Failed to read installed package versionCode; using BuildConfig fallback.")
         com.parsfilo.contentapp.BuildConfig.VERSION_CODE.toLong()

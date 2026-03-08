@@ -41,10 +41,7 @@ object AdUnitIds {
      * ADMOB_APP_OPEN_ID=ca-app-pub-XXXXXXX/XXXXXXX
      * ```
      */
-    @Deprecated(
-        message = "Use app.monetization.AppAdUnitIds flavor resources as the only production source of truth.",
-        replaceWith = ReplaceWith("AppAdUnitIds.resolve(context, useTestAds = false)"),
-    )
+
     object Production {
         val APP_ID: String get() = BuildConfig.ADMOB_APP_ID
         val BANNER: String get() = BuildConfig.ADMOB_BANNER_ID
@@ -60,10 +57,13 @@ object AdUnitIds {
      * Debug → Test ID, Release → Production ID
      */
     fun banner(isDebug: Boolean): String = if (isDebug) Test.BANNER else Production.BANNER
-    fun interstitial(isDebug: Boolean): String = if (isDebug) Test.INTERSTITIAL else Production.INTERSTITIAL
+    fun interstitial(isDebug: Boolean): String =
+        if (isDebug) Test.INTERSTITIAL else Production.INTERSTITIAL
+
     fun native(isDebug: Boolean): String = if (isDebug) Test.NATIVE else Production.NATIVE
     fun rewarded(isDebug: Boolean): String = if (isDebug) Test.REWARDED else Production.REWARDED
     fun rewardedInterstitial(isDebug: Boolean): String =
         if (isDebug) Test.REWARDED_INTERSTITIAL else Production.REWARDED_INTERSTITIAL
+
     fun appOpen(isDebug: Boolean): String = if (isDebug) Test.APP_OPEN else Production.APP_OPEN
 }

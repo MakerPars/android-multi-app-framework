@@ -73,6 +73,14 @@ class NativeAdManager @Inject constructor(
         placement: AdPlacement = AdPlacement.NATIVE_DEFAULT,
         count: Int,
     ) {
+        Timber.d(
+            "Native load requested placement=%s count=%d adUnit=%s canRequestAds=%s gate=%s",
+            placement.analyticsValue,
+            count,
+            adUnitId,
+            AdsConsentRuntimeState.canRequestAds.value,
+            canShowAdsByGate,
+        )
         val policy = adsPolicyProvider.getPolicy()
         if (!canUseNativeAds(placement, policy)) {
             adRevenueLogger.logSuppressed(
@@ -218,6 +226,11 @@ class NativeAdManager @Inject constructor(
     fun getNativeAd(placement: AdPlacement = AdPlacement.NATIVE_DEFAULT): NativeAd? {
         val policy = adsPolicyProvider.getPolicy()
         if (!canUseNativeAds(placement, policy)) {
+            Timber.d(
+                "Native get blocked placement=%s reason=%s",
+                placement.analyticsValue,
+                resolveSuppressReasonForNative(placement, policy),
+            )
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.NATIVE,
                 placement = placement,
@@ -231,15 +244,31 @@ class NativeAdManager @Inject constructor(
         pruneExpiredAds()
 
         val pooled = synchronized(nativeAds) {
-            val idx = nativeAds.indexOfFirst { it.placement == placement }
-                .takeIf { it >= 0 }
-                ?: if (placement == AdPlacement.NATIVE_DEFAULT) nativeAds.indices.firstOrNull() else null
-            if (idx == null) null else nativeAds.removeAt(idx)
+            val exactIdx = nativeAds.indexOfFirst { it.placement == placement }
+            val idx = when {
+                exactIdx >= 0 -> exactIdx
+                nativeAds.isNotEmpty() -> 0
+                else -> null
+            }
+            if (idx == null) {
+                null
+            } else {
+                val selected = nativeAds.removeAt(idx)
+                if (selected.placement != placement) {
+                    Timber.d(
+                        "Native placement fallback requested=%s served=%s adUnit=%s",
+                        placement.analyticsValue,
+                        selected.placement.analyticsValue,
+                        selected.adUnitId,
+                    )
+                }
+                selected
+            }
         }
 
         val currentSize = synchronized(nativeAds) { nativeAds.size }
         if (currentSize <= 0 && currentAdUnitId.isNotEmpty() && !isLoading) {
-            loadAds(currentLoadContext ?: appContext, currentAdUnitId, currentPlacement, 1)
+            loadAds(currentLoadContext ?: appContext, currentAdUnitId, placement, 1)
         }
 
         if (pooled != null) {
@@ -252,6 +281,14 @@ class NativeAdManager @Inject constructor(
                 adFormat = AdFormat.NATIVE,
                 placement = pooled.placement,
                 adUnitId = pooled.adUnitId,
+            )
+        }
+        if (pooled == null) {
+            Timber.d(
+                "Native get returned null placement=%s poolSize=%d loading=%s",
+                placement.analyticsValue,
+                currentSize,
+                isLoading,
             )
         }
 

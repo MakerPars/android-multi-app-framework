@@ -17,6 +17,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 class PrayerTimesRefreshWorker(
@@ -25,6 +26,7 @@ class PrayerTimesRefreshWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        Timber.d("PrayerTimesRefreshWorker started runAttempt=%d", runAttemptCount)
         val deps = EntryPointAccessors.fromApplication(
             applicationContext,
             PrayerTimesWorkerEntryPoint::class.java,
@@ -32,10 +34,18 @@ class PrayerTimesRefreshWorker(
 
         val preferences = deps.prayerPreferencesDataSource().preferences.first()
 
-        val districtId = preferences.selectedDistrictId ?: return Result.success()
+        val districtId = preferences.selectedDistrictId ?: run {
+            Timber.d("PrayerTimesRefreshWorker skipped: district is not selected")
+            return Result.success()
+        }
+        Timber.d("PrayerTimesRefreshWorker refreshing districtId=%s", districtId)
         deps.prayerTimesRepository().refreshIfNeeded(districtId = districtId, force = false)
         deps.prayerAlarmScheduler().scheduleNextForCurrentFlavor()
         runCatching { PrayerTimesWidgetReceiver.refreshAll(applicationContext) }
+            .onFailure { error ->
+                Timber.w(error, "PrayerTimesRefreshWorker widget refresh failed")
+            }
+        Timber.d("PrayerTimesRefreshWorker finished: success")
         return Result.success()
     }
 
@@ -45,6 +55,11 @@ class PrayerTimesRefreshWorker(
         private const val FLEX_INTERVAL_HOURS = 2L
 
         fun schedule(context: Context) {
+            Timber.d(
+                "Scheduling PrayerTimesRefreshWorker repeatHours=%d flexHours=%d",
+                REPEAT_INTERVAL_HOURS,
+                FLEX_INTERVAL_HOURS,
+            )
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()

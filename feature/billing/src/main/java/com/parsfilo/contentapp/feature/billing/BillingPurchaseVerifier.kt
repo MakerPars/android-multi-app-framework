@@ -4,6 +4,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
+import com.parsfilo.contentapp.core.common.network.TimberNetworkLoggingInterceptor
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -28,7 +29,10 @@ class BillingPurchaseVerifier @Inject constructor(
 ) {
     private val okHttpClient: OkHttpClient =
         OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS).writeTimeout(15, TimeUnit.SECONDS).build()
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(TimberNetworkLoggingInterceptor("billing_verify"))
+            .build()
 
     suspend fun verify(
         packageName: String,

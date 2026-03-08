@@ -4,7 +4,8 @@ compatibility_date = "2026-02-21"
 workers_dev = true
 
 [vars]
-# Worker now handles icon enrichment directly (no Firebase Function proxy).\nOTHER_APPS_JSON_URL = "https://parsfilo.com/other_apps.json"
+# Worker now handles icon enrichment directly (no Firebase Function proxy).
+OTHER_APPS_JSON_URL = "https://parsfilo.com/other_apps.json"
 
 # Secret: GOOGLE_RECAPTCHA_SECRET_KEY
 # Set via: npx wrangler secret put GOOGLE_RECAPTCHA_SECRET_KEY

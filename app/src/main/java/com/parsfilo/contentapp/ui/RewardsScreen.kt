@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,8 +59,6 @@ import com.parsfilo.contentapp.core.designsystem.component.AppCard
 import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.model.SubscriptionState
-import com.parsfilo.contentapp.feature.billing.model.BillingProduct
-import com.parsfilo.contentapp.feature.billing.model.toUiLabel
 import com.parsfilo.contentapp.monetization.AppAdUnitIds
 
 @Composable
@@ -92,11 +89,6 @@ fun RewardsRoute(
             activity?.let {
                 viewModel.watchRewardedAd(it, adUnitIds.rewarded)
             }
-        },
-        onPurchase = { productDetails ->
-            activity?.let {
-                viewModel.launchBillingFlow(it, productDetails)
-            }
         }
     )
 }
@@ -108,8 +100,7 @@ fun RewardsScreen(
     remainingSeconds: Long,
     isAdLoading: Boolean,
     onBackClick: () -> Unit,
-    onWatchAd: () -> Unit,
-    onPurchase: (BillingProduct) -> Unit
+    onWatchAd: () -> Unit
 ) {
     val dimens = LocalDimens.current
     val colorScheme = MaterialTheme.colorScheme
@@ -145,7 +136,7 @@ fun RewardsScreen(
         ) {
             // Premium kullanıcıysa sadece abonelik durumunu göster
             if (uiState.isPremium || uiState.subscriptionState is SubscriptionState.Active) {
-                PremiumActiveCard()
+                AdFreeInfoCard()
                 Spacer(modifier = Modifier.height(dimens.space24))
                 return@Column
             }
@@ -159,22 +150,13 @@ fun RewardsScreen(
                 onWatchAd = onWatchAd
             )
 
-            Spacer(modifier = Modifier.height(dimens.space24))
-
-            // ═══ ABONELİK BÖLÜMÜ ═══
-            SubscriptionSection(
-                productDetails = uiState.productDetails,
-                subscriptionState = uiState.subscriptionState,
-                onPurchase = onPurchase
-            )
-
             Spacer(modifier = Modifier.height(dimens.space16))
         }
     }
 }
 
 @Composable
-private fun PremiumActiveCard() {
+private fun AdFreeInfoCard() {
     val dimens = LocalDimens.current
     val colorScheme = MaterialTheme.colorScheme
     AppCard(
@@ -200,7 +182,7 @@ private fun PremiumActiveCard() {
             )
             Spacer(modifier = Modifier.height(dimens.space12))
             Text(
-                text = "Premium Aktif",
+                text = "Reklamlar Devre Dışı",
                 color = colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
@@ -208,7 +190,7 @@ private fun PremiumActiveCard() {
             )
             Spacer(modifier = Modifier.height(dimens.space8))
             Text(
-                text = "Tüm reklamlar kaldırıldı. Kesintisiz deneyimin keyfini çıkarın!",
+                text = "Bu hesapta reklam gösterimi kapalı olduğu için ödüllü reklam bölümü kullanılmıyor.",
                 color = colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 fontSize = 14.sp
@@ -439,192 +421,5 @@ private fun RewardTierRow(label: String, reward: String) {
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
-    }
-}
-
-@Composable
-private fun SubscriptionSection(
-    productDetails: List<BillingProduct>,
-    subscriptionState: SubscriptionState,
-    onPurchase: (BillingProduct) -> Unit
-) {
-    val dimens = LocalDimens.current
-    val colorScheme = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Başlık
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.WorkspacePremium,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(dimens.space28)
-            )
-            Spacer(modifier = Modifier.width(dimens.space8))
-            Text(
-                text = "Premium Abonelik",
-                color = colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                fontFamily = FontFamily.Serif
-            )
-        }
-
-        Spacer(modifier = Modifier.height(dimens.space8))
-
-        Text(
-            text = "Abonelik alarak tüm reklamları kalıcı olarak kaldırın",
-            color = colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(dimens.space16))
-
-        // Avantajlar listesi
-        PremiumFeaturesList()
-
-        Spacer(modifier = Modifier.height(dimens.space16))
-
-        // Abonelik planları
-        if (productDetails.isEmpty()) {
-            Text(
-                text = "Abonelik planları yükleniyor...",
-                color = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                fontSize = 14.sp
-            )
-        } else {
-            productDetails.forEach { product ->
-                SubscriptionPlanCard(
-                    productPackage = product,
-                    isActive = subscriptionState is SubscriptionState.Active,
-                    onPurchase = { onPurchase(product) }
-                )
-                Spacer(modifier = Modifier.height(dimens.space8))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PremiumFeaturesList() {
-    val dimens = LocalDimens.current
-    val colorScheme = MaterialTheme.colorScheme
-    AppCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(dimens.radiusMedium),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(dimens.space16)) {
-            PremiumFeatureRow("Tüm reklamlar kaldırılır")
-            PremiumFeatureRow("Kesintisiz dinleme")
-            PremiumFeatureRow("Uygulama açılış reklamı yok")
-            PremiumFeatureRow("İstediğiniz zaman iptal edin")
-        }
-    }
-}
-
-@Composable
-private fun PremiumFeatureRow(feature: String) {
-    val dimens = LocalDimens.current
-    val colorScheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier.padding(vertical = dimens.space4),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Filled.CheckCircle,
-            contentDescription = null,
-            tint = colorScheme.primary,
-            modifier = Modifier.size(dimens.space16 + dimens.space2)
-        )
-        Spacer(modifier = Modifier.width(dimens.space8))
-        Text(
-            text = feature,
-            color = colorScheme.onSurface,
-            fontSize = 14.sp
-        )
-    }
-}
-
-@Composable
-private fun SubscriptionPlanCard(
-    productPackage: BillingProduct,
-    isActive: Boolean,
-    onPurchase: () -> Unit
-) {
-    val dimens = LocalDimens.current
-    val colorScheme = MaterialTheme.colorScheme
-    val price = productPackage.priceText
-    val periodText = productPackage.toUiLabel()
-
-    AppCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(dimens.radiusMedium),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimens.space16),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = periodText,
-                    color = colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = price,
-                    color = colorScheme.secondary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
-            }
-
-            if (isActive) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = colorScheme.primary,
-                        modifier = Modifier.size(dimens.iconSm)
-                    )
-                    Spacer(modifier = Modifier.width(dimens.space4))
-                    Text(
-                        text = "Aktif",
-                        color = colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-            } else {
-                AppButton(
-                    onClick = onPurchase,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(dimens.radiusSmall),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.primary,
-                        contentColor = colorScheme.onPrimary
-                    ),
-                    text = "Abone Ol"
-                ) {
-                    Text(
-                        text = "Abone Ol",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
     }
 }

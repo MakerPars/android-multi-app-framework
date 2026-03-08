@@ -64,7 +64,7 @@ fun PrayerDetailRoute(
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {},
-    onModeChanged: (DisplayMode) -> Unit = {},
+    onModeChanged: (DisplayMode, DisplayMode) -> Unit = { _, _ -> },
     onAudioFileChanged: (String?) -> Unit = {},
     audioPlayerContent: @Composable () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
@@ -83,7 +83,9 @@ fun PrayerDetailRoute(
             val currentMode = (uiState as? PrayerDetailUiState.Success)?.displayMode
             if (currentMode != newMode) {
                 viewModel.updateDisplayMode(newMode)
-                onModeChanged(newMode)
+                if (currentMode != null) {
+                    onModeChanged(currentMode, newMode)
+                }
             }
         },
         onSettingsClick = onSettingsClick,

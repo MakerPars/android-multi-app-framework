@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -71,6 +72,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Timber.d(
+            "MainActivity onCreate flavor=%s buildType=%s savedInstance=%s",
+            BuildConfig.FLAVOR_NAME,
+            BuildConfig.BUILD_TYPE,
+            savedInstanceState != null,
+        )
         applyEdgeToEdge(resolveInitialDarkMode())
         handleNotificationIntent(intent)
         setComposeContentSafely()
@@ -106,6 +113,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        Timber.d("MainActivity onNewIntent action=%s", intent.action)
         setIntent(intent)
         handleNotificationIntent(intent)
     }
@@ -120,9 +128,15 @@ class MainActivity : ComponentActivity() {
         )
 
         if (!shouldOpenNotifications) return
+        Timber.d("Notification intent detected action=%s extras=%d", sourceIntent.action, sourceIntent.extras?.size() ?: 0)
 
         lifecycleScope.launch {
             val openRequest = resolveNotificationOpenRequest(sourceIntent)
+            Timber.d(
+                "Notification open request resolved target=%s notificationRowId=%s",
+                openRequest.target,
+                openRequest.notificationRowId,
+            )
             openNotificationsEventsChannel.trySend(openRequest)
         }
     }
@@ -138,9 +152,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun resolveNotificationOpenRequest(sourceIntent: Intent): NotificationOpenRequest {
-        val explicitRowId = sourceIntent
-            .getLongExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, -1L)
-            .takeIf { it > 0L }
+        val explicitRowId =
+            sourceIntent.getLongExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, -1L)
+                .takeIf { it > 0L }
         if (explicitRowId != null) {
             return NotificationOpenRequest(
                 target = NotificationOpenRequest.Target.DETAIL,
@@ -148,10 +162,9 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val explicitExternalId = sourceIntent
-            .getStringExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID)
-            ?.trim()
-            .orEmpty()
+        val explicitExternalId =
+            sourceIntent.getStringExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID)
+                ?.trim().orEmpty()
         if (explicitExternalId.isNotBlank()) {
             val existing = notificationDao.getByNotificationId(explicitExternalId)
             if (existing != null) {
@@ -221,9 +234,12 @@ class MainActivity : ComponentActivity() {
             )
         )
         if (insertedRowId > 0L) {
+            Timber.d("Notification persisted rowId=%d notificationId=%s", insertedRowId, notificationId)
             return insertedRowId
         }
-        return notificationDao.getByNotificationId(notificationId)?.id
+        val existingId = notificationDao.getByNotificationId(notificationId)?.id
+        Timber.d("Notification persistence fallback existingId=%s notificationId=%s", existingId, notificationId)
+        return existingId
     }
 
     private fun setComposeContentSafely() {
@@ -241,6 +257,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
         } catch (_: NullPointerException) {
+            Timber.w("Compose setContent fallback path triggered due to NullPointerException")
             // OEM-specific Window/content initialization bug fallback.
             val composeView = ComposeView(this).apply {
                 setContent {
@@ -317,19 +334,8 @@ class MainActivity : ComponentActivity() {
         return BuildConfig.IS_PRAYER_TIMES_FLAVOR
     }
 
-    override fun onResume() {
-        super.onResume()
-        lifecycleScope.launch {
-            adOrchestrator.showAppOpenAdIfEligible(this@MainActivity)
-        }
-    }
-
-    override fun onPause() {
-        adOrchestrator.onAppPaused()
-        super.onPause()
-    }
-
     override fun onDestroy() {
+        Timber.d("MainActivity onDestroy")
         adOrchestrator.destroy()
         super.onDestroy()
     }
@@ -343,8 +349,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun resolveInitialDarkMode(): Boolean {
-        return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
+        return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
 }
 

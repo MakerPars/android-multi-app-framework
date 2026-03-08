@@ -21,6 +21,7 @@ android {
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
+    implementation(libs.okhttp)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.javax.inject)

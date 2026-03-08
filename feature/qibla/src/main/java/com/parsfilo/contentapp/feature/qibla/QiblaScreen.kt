@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -89,8 +88,6 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-@OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("MissingPermission")
 @Composable
 fun QiblaRoute(
     appName: String,
@@ -747,7 +744,6 @@ private fun hasLocationPermission(context: Context): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
-@SuppressLint("MissingPermission")
 private suspend fun resolveBestLocation(context: Context): Location? {
     val fused = LocationServices.getFusedLocationProviderClient(context)
     val currentRequest =
