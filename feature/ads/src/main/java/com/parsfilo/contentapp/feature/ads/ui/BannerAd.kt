@@ -1,16 +1,8 @@
 package com.parsfilo.contentapp.feature.ads.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -94,10 +86,7 @@ fun BannerAd(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = if (showPlacementLabels) dimens.space8 else dimens.space6,
-                vertical = if (showPlacementLabels) dimens.space8 else dimens.space2,
-            ),
+            .padding(horizontal = dimens.space6),
     ) {
         val adWidthDp = max(1, maxWidth.value.toInt())
         // Force standard banner height to keep layout stable across devices.
@@ -209,71 +198,22 @@ fun BannerAd(
             }
         }
 
-        if (showPlacementLabels) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(dimens.radiusLarge),
+        AndroidView(
+            modifier = Modifier.fillMaxWidth(),
+            factory = { adView },
+            update = { view ->
+                if (view.adUnitId != adUnitId) {
+                    view.adUnitId = adUnitId
+                    view.setAdSize(adSize)
+                    revenueLogger.logRequest(
+                        adFormat = AdFormat.BANNER,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        route = route,
                     )
-                    .padding(horizontal = dimens.space8, vertical = dimens.space8),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = "Reklam",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = dimens.space6),
-                )
-
-                AndroidView(
-                    modifier = Modifier.fillMaxWidth(),
-                    factory = { adView },
-                    update = { view ->
-                        if (view.adUnitId != adUnitId) {
-                            view.adUnitId = adUnitId
-                            view.setAdSize(adSize)
-                            revenueLogger.logRequest(
-                                adFormat = AdFormat.BANNER,
-                                placement = placement,
-                                adUnitId = adUnitId,
-                                route = route,
-                            )
-                            view.loadAd(adRequest)
-                        }
-                    },
-                )
-
-                Spacer(modifier = Modifier.height(dimens.space4))
-                Text(
-                    text = "Sponsorlu içerik alanı",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        } else {
-            AndroidView(
-                modifier = Modifier.fillMaxWidth(),
-                factory = { adView },
-                update = { view ->
-                    if (view.adUnitId != adUnitId) {
-                        view.adUnitId = adUnitId
-                        view.setAdSize(adSize)
-                        revenueLogger.logRequest(
-                            adFormat = AdFormat.BANNER,
-                            placement = placement,
-                            adUnitId = adUnitId,
-                            route = route,
-                        )
-                        view.loadAd(adRequest)
-                    }
-                },
-            )
-        }
+                    view.loadAd(adRequest)
+                }
+            },
+        )
     }
 }

@@ -143,9 +143,8 @@ fun MiraclesListScreen(
                 if (uiState.shouldShowAds) {
                     BannerAd(
                         adUnitId = bannerAdUnitId,
-                        modifier = Modifier.padding(horizontal = dimens.space8, vertical = dimens.space4)
+                        modifier = Modifier.padding(horizontal = dimens.space6)
                     )
-                    Spacer(modifier = Modifier.height(dimens.space8))
                 }
 
                 if (variant == MiraclesContentVariant.ESMAUL_HUSNA &&

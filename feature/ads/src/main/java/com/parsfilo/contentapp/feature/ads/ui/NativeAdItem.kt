@@ -53,8 +53,6 @@ fun NativeAdItem(
     val textPrimary = colorScheme.onSurface
     val textSecondary = colorScheme.onSurfaceVariant
     val borderColor = colorScheme.outline.copy(alpha = 0.35f)
-    val adLabelBg = colorScheme.secondaryContainer
-    val adLabelText = colorScheme.onSecondaryContainer
     val ctaBg = colorScheme.primary
     val ctaText = colorScheme.onPrimary
 
@@ -66,7 +64,7 @@ fun NativeAdItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimens.space12, vertical = dimens.space10),
+            .padding(horizontal = dimens.space12, vertical = dimens.space4),
         contentAlignment = Alignment.Center
     ) {
         NativeAdViewCompose(
@@ -84,25 +82,12 @@ fun NativeAdItem(
                     .border(dimens.stroke, borderColor, RoundedCornerShape(dimens.radiusLarge))
                     .padding(dimens.space12),
             ) {
-                // ── Üst: Reklam etiketi + AdChoices ──
+                // Keep only AdChoices to avoid extra label row text.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    NativeAdAttribution(
-                        text = "Reklam",
-                        containerColor = adLabelBg,
-                        contentColor = adLabelText,
-                    )
-                    Text(
-                        text = "Sponsorlu",
-                        color = textSecondary,
-                        fontSize = 11.sp,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = dimens.space8),
-                    )
                     NativeAdChoicesView(modifier = Modifier.size(dimens.iconMd))
                 }
 

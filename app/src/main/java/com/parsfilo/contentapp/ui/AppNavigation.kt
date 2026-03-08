@@ -444,7 +444,17 @@ fun AppNavHost(
                 }
                 PrayerListRoute(
                     onPrayerClick = { prayerId ->
-                        navController.navigate(AppRoute.PrayerDetail.createRoute(prayerId))
+                        if (hostActivity == null) {
+                            navController.navigate(AppRoute.PrayerDetail.createRoute(prayerId))
+                        } else {
+                            requestInterstitialAd(
+                                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                route = AppRoute.PrayerList.route,
+                                onAdDismissed = {
+                                    navController.navigate(AppRoute.PrayerDetail.createRoute(prayerId))
+                                },
+                            )
+                        }
                     },
                     onSettingsClick = {
                         navController.navigate(AppRoute.Settings.route)
@@ -544,7 +554,17 @@ fun AppNavHost(
                 }
                 MiraclesListRoute(
                     onPrayerClick = { prayerIndex ->
-                        navController.navigate(AppRoute.MiraclesDetail.createRoute(prayerIndex))
+                        if (hostActivity == null) {
+                            navController.navigate(AppRoute.MiraclesDetail.createRoute(prayerIndex))
+                        } else {
+                            requestInterstitialAd(
+                                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                route = AppRoute.MiraclesList.route,
+                                onAdDismissed = {
+                                    navController.navigate(AppRoute.MiraclesDetail.createRoute(prayerIndex))
+                                },
+                            )
+                        }
                     },
                     onSettingsClick = {
                         navController.navigate(AppRoute.Settings.route)
