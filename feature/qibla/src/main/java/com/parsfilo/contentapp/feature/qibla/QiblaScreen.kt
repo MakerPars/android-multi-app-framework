@@ -745,18 +745,29 @@ private fun hasLocationPermission(context: Context): Boolean {
 }
 
 private suspend fun resolveBestLocation(context: Context): Location? {
+    if (!hasLocationPermission(context)) return null
+
     val fused = LocationServices.getFusedLocationProviderClient(context)
     val currentRequest =
         CurrentLocationRequest.Builder().setPriority(Priority.PRIORITY_HIGH_ACCURACY)
             .setDurationMillis(7_500L).setMaxUpdateAgeMillis(60_000L).build()
 
-    val current = withTimeoutOrNull(8_500L) {
-        val cancellation = CancellationTokenSource()
-        fused.getCurrentLocation(currentRequest, cancellation.token).await()
+    val current = try {
+        withTimeoutOrNull(8_500L) {
+            val cancellation = CancellationTokenSource()
+            fused.getCurrentLocation(currentRequest, cancellation.token).await()
+        }
+    } catch (_: SecurityException) {
+        null
     }
+
     if (current != null) return current
 
-    return withTimeoutOrNull(2_000L) { fused.lastLocation.await() }
+    return try {
+        withTimeoutOrNull(2_000L) { fused.lastLocation.await() }
+    } catch (_: SecurityException) {
+        null
+    }
 }
 
 private fun remapForDisplay(
