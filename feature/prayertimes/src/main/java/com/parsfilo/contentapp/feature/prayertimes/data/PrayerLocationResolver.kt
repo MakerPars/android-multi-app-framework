@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import com.google.android.gms.common.api.ApiException
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -61,16 +62,29 @@ class PrayerLocationResolver @Inject constructor(
     @SuppressLint("MissingPermission")
     suspend fun resolveAddressCandidate(): PrayerAddressCandidate? {
         val fused = LocationServices.getFusedLocationProviderClient(context)
-        val location = try {
-            fused.lastLocation.await()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: SecurityException) {
-            Timber.w(error, "Location permission rejected while reading last location")
-            null
-        } catch (error: Exception) {
-            Timber.w(error, "Failed to fetch last known location")
-            null
+        val location = runCatching { fused.lastLocation.await() }.getOrElse { error ->
+            when (error) {
+                is CancellationException -> throw error
+                is SecurityException -> {
+                    Timber.w(error, "Location permission rejected while reading last location")
+                    null
+                }
+
+                is ApiException -> {
+                    Timber.w(
+                        error,
+                        "Failed to fetch last known location (ApiException code=${error.statusCode})",
+                    )
+                    null
+                }
+
+                is IllegalStateException, is IllegalArgumentException -> {
+                    Timber.w(error, "Failed to fetch last known location")
+                    null
+                }
+
+                else -> throw error
+            }
         } ?: return null
 
         return withContext(Dispatchers.IO) {
