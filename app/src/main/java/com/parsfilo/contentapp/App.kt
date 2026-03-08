@@ -103,13 +103,13 @@ class App : Application() {
         PushRegistrationSyncWorker.schedule(this)
 
         // Audio flavors: download once after first launch and keep local for offline playback.
-        if (BuildConfig.AUDIO_FILE_NAME != "content_audio.mp3") {
+        if (shouldPrefetchFlavorAudio(BuildConfig.AUDIO_FILE_NAME)) {
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 runCatching {
                     audioCachePrefetcher.prefetchIfNeeded(
                         packageName = packageName,
                         fallbackAudioFileName = BuildConfig.AUDIO_FILE_NAME,
-                        prefetchAllAudioOnFirstLaunch = BuildConfig.FLAVOR_NAME == "namazsurelerivedualarsesli",
+                        prefetchAllAudioOnFirstLaunch = shouldPrefetchAllAudioOnFirstLaunch(packageName),
                     )
                 }.onFailure { error ->
                     Timber.w(error, "Audio prefetch failed at startup")
@@ -131,7 +131,7 @@ class App : Application() {
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.AGE_GATE_STATUS, "unknown")
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.IS_PREMIUM, "false")
         appAnalytics.setDefaultEventParameters(
-            android.os.Bundle().apply {
+            Bundle().apply {
                 putString(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
                 putString(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
             }
@@ -160,7 +160,7 @@ class App : Application() {
             }
         })
 
-        if (BuildConfig.IS_PRAYER_TIMES_FLAVOR) {
+        if (isPrayerTimesFlavor(packageName)) {
             PrayerTimesRefreshWorker.schedule(this)
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 prayerAlarmScheduler.scheduleNextForCurrentFlavor()
@@ -171,7 +171,7 @@ class App : Application() {
             }
         }
 
-        if (BuildConfig.FLAVOR_NAME == "zikirmatik") {
+        if (isZikirmatikFlavor(packageName)) {
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 runCatching {
                     zikirReminderScheduler.scheduleOrCancelFromPreferences()
@@ -189,9 +189,8 @@ class App : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Timber.e(
                 throwable,
-                "Uncaught exception thread=%s id=%d",
+                "Uncaught exception thread=%s",
                 thread.name,
-                thread.id,
             )
             previousHandler?.uncaughtException(thread, throwable)
         }
@@ -235,11 +234,31 @@ class App : Application() {
     }
 
     private companion object {
+        private const val DEFAULT_CONTENT_AUDIO_FILE_NAME = "content_audio.mp3"
+        private const val PACKAGE_NAMAZ_SURELERI = "com.parsfilo.namazsurelerivedualarsesli"
+        private const val PACKAGE_ZIKIRMATIK = "com.parsfilo.zikirmatik"
+        private val PRAYER_TIMES_PACKAGES = setOf(
+            "com.parsfilo.imsakiye",
+            "com.parsfilo.namazvakitleri",
+        )
+
         private val DEFAULT_FCM_TOPICS = listOf(
             "dini-bildirim",
             "talep",
         )
     }
+
+    private fun shouldPrefetchFlavorAudio(audioFileName: String): Boolean =
+        audioFileName.trim().lowercase() != DEFAULT_CONTENT_AUDIO_FILE_NAME
+
+    private fun shouldPrefetchAllAudioOnFirstLaunch(packageName: String): Boolean =
+        packageName == PACKAGE_NAMAZ_SURELERI
+
+    private fun isPrayerTimesFlavor(packageName: String): Boolean =
+        packageName in PRAYER_TIMES_PACKAGES
+
+    private fun isZikirmatikFlavor(packageName: String): Boolean =
+        packageName == PACKAGE_ZIKIRMATIK
 }
 
 private const val DEBUG_TIMBER_TAG = "timber_log"

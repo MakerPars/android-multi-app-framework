@@ -331,7 +331,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun isPrayerTimesFlavor(): Boolean {
-        return BuildConfig.IS_PRAYER_TIMES_FLAVOR
+        return packageName in PRAYER_TIMES_PACKAGES
     }
 
     override fun onDestroy() {
@@ -360,29 +360,25 @@ class MainActivity : ComponentActivity() {
 private fun Bundle.getValueAsString(key: String): String? {
     if (!containsKey(key)) return null
 
-    var resolved: String? = null
-
-    // En yaygın: String / CharSequence
-    resolved = resolved ?: runCatching { getString(key) }.getOrNull()
-    resolved = resolved ?: runCatching { getCharSequence(key) }.getOrNull()?.toString()
-
-    // Primitive'ler
-    resolved = resolved ?: runCatching { getInt(key) }.getOrNull()?.toString()
-    resolved = resolved ?: runCatching { getLong(key) }.getOrNull()?.toString()
-    resolved = resolved ?: runCatching { getBoolean(key) }.getOrNull()?.toString()
-    resolved = resolved ?: runCatching { getDouble(key) }.getOrNull()?.toString()
-    resolved = resolved ?: runCatching { getFloat(key) }.getOrNull()?.toString()
-
-    // Array/StringArray
-    resolved = resolved ?: runCatching {
+    return runCatching { getString(key) }.getOrNull()
+        ?: runCatching { getCharSequence(key) }.getOrNull()?.toString()
+        ?: runCatching { getInt(key) }.getOrNull()?.toString()
+        ?: runCatching { getLong(key) }.getOrNull()?.toString()
+        ?: runCatching { getBoolean(key) }.getOrNull()?.toString()
+        ?: runCatching { getDouble(key) }.getOrNull()?.toString()
+        ?: runCatching { getFloat(key) }.getOrNull()?.toString()
+        ?: runCatching {
         getStringArray(key)?.joinToString(prefix = "[", postfix = "]")
     }.getOrNull()
-    resolved = resolved ?: runCatching {
+        ?: runCatching {
         getIntArray(key)?.joinToString(prefix = "[", postfix = "]")
     }.getOrNull()
-    resolved = resolved ?: runCatching {
+        ?: runCatching {
         getLongArray(key)?.joinToString(prefix = "[", postfix = "]")
     }.getOrNull()
-
-    return resolved
 }
+
+private val PRAYER_TIMES_PACKAGES = setOf(
+    "com.parsfilo.imsakiye",
+    "com.parsfilo.namazvakitleri",
+)
