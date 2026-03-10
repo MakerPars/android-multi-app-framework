@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -79,13 +80,19 @@ class RewardsViewModel @Inject constructor(
     }
 
     fun watchRewardedAd(activity: Activity, adUnitId: String) {
+        Timber.d(
+            "Rewarded funnel: watch tapped adReadyNow=%s",
+            rewardedAdManager.isAdReadyNow(),
+        )
         if (rewardedAdManager.isAdReadyNow()) {
             _isAdLoading.value = false
+            Timber.d("Rewarded funnel: showing immediately")
             showRewardedAd(activity, adUnitId)
             return
         }
 
         _isAdLoading.value = true
+        Timber.d("Rewarded funnel: load requested from watch action")
         rewardedAdManager.loadAd(adUnitId)
         viewModelScope.launch {
             val adReady = withTimeoutOrNull(10_000L) {
@@ -96,9 +103,11 @@ class RewardsViewModel @Inject constructor(
             _isAdLoading.value = false
 
             if (adReady) {
+                Timber.d("Rewarded funnel: load completed within timeout, showing ad")
                 showRewardedAd(activity, adUnitId)
             } else {
                 // İlk yükleme başarısızsa sonraki deneme için tekrar tetikleyelim.
+                Timber.w("Rewarded funnel: load timeout after 10s, queueing retry preload")
                 rewardedAdManager.loadAd(adUnitId)
             }
         }
@@ -108,6 +117,7 @@ class RewardsViewModel @Inject constructor(
         data class RewardOutcome(val rewardMinutesEarned: Int, val totalWatchCount: Int)
         val watchStartedAtMs = System.currentTimeMillis()
         val rewardOutcomeDeferred = CompletableDeferred<RewardOutcome?>()
+        Timber.d("Rewarded funnel: showAd invoked")
         rewardedAdManager.showAd(
             activity = activity,
             onUserEarnedReward = {
@@ -117,6 +127,11 @@ class RewardsViewModel @Inject constructor(
                     adGateChecker.onRewardEarned()
                     val latestPrefs = preferencesDataSource.userData.first()
                     if (!rewardOutcomeDeferred.isCompleted) {
+                        Timber.d(
+                            "Rewarded funnel: reward earned minutes=%d watchCount=%d",
+                            rewardMinutesEarned,
+                            latestPrefs.rewardWatchCount,
+                        )
                         rewardOutcomeDeferred.complete(
                             RewardOutcome(
                                 rewardMinutesEarned = rewardMinutesEarned,
@@ -159,7 +174,14 @@ class RewardsViewModel @Inject constructor(
                         )
                     }
                     val rewardWindowActive = latestPrefs.rewardedAdFreeUntil > System.currentTimeMillis()
+                    Timber.d(
+                        "Rewarded funnel: ad dismissed rewarded=%s rewardWindowActive=%s premium=%s",
+                        rewardOutcome != null,
+                        rewardWindowActive,
+                        latestPrefs.isPremium,
+                    )
                     if (!latestPrefs.isPremium && !rewardWindowActive) {
+                        Timber.d("Rewarded funnel: preloading next rewarded ad after dismiss")
                         rewardedAdManager.loadAd(adUnitId)
                     }
                 }

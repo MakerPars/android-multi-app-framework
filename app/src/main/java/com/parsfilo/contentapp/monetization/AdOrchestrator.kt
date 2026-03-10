@@ -462,14 +462,8 @@ class AdOrchestrator @Inject constructor(
             ),
             AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
         )
-        rewardedAdManager.loadAd(
-            adUnitId = AppAdUnitIds.resolvePlacement(
-                context,
-                AdPlacement.REWARDED_DEFAULT,
-                BuildConfig.USE_TEST_ADS,
-            ),
-            placement = AdPlacement.REWARDED_DEFAULT,
-            route = adSessionContext.activeRoute,
+        Timber.d(
+            "Rewarded startup preload skipped: rewarded loads on-demand from Rewards screen",
         )
     }
 
