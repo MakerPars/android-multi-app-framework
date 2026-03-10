@@ -578,6 +578,37 @@ small {
     margin-bottom: var(--space-md);
 }
 
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin: var(--space-lg) 0 var(--space-md);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    text-align: left;
+}
+
+.auth-email-btn {
+    width: 100%;
+    margin-top: var(--space-xs);
+}
+
 /* Glass card */
 .glass-card {
     background: var(--bg-glass);

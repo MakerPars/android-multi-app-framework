@@ -1,12 +1,32 @@
+import { FormEvent, useState } from "react";
+
 type AuthScreenProps = {
   error: string;
   onSignIn: () => void;
+  onEmailPasswordSignIn?: (email: string, password: string) => void;
+  emailSignInLoading?: boolean;
   mode: "login" | "unauthorized" | "loading" | "checking" | "error";
   userEmail?: string;
   onSignOut?: () => void;
 };
 
-export default function AuthScreen({ error, onSignIn, mode, userEmail, onSignOut }: AuthScreenProps) {
+export default function AuthScreen({
+  error,
+  onSignIn,
+  onEmailPasswordSignIn,
+  emailSignInLoading = false,
+  mode,
+  userEmail,
+  onSignOut,
+}: AuthScreenProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleEmailSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onEmailPasswordSignIn?.(email, password);
+  };
+
   if (mode === "loading") {
     return (
       <div className="center-screen" role="status" aria-label="Loading">
@@ -67,11 +87,47 @@ export default function AuthScreen({ error, onSignIn, mode, userEmail, onSignOut
       <div className="auth-card glass-card">
         <div className="auth-icon" aria-hidden="true">🔔</div>
         <h1>Notifications Admin</h1>
-        <p>Sign in with Google to manage scheduled push events.</p>
+        <p>Sign in with Google or email/password to manage scheduled push events.</p>
         <button className="btn-primary btn-google" onClick={onSignIn}>
           <span className="btn-icon" aria-hidden="true">G</span>
           Sign in with Google
         </button>
+        {onEmailPasswordSignIn && (
+          <>
+            <div className="auth-divider" role="presentation">
+              <span>or</span>
+            </div>
+            <form className="auth-form" onSubmit={handleEmailSubmit}>
+              <label htmlFor="admin-email">
+                <span className="label-text">Email</span>
+                <input
+                  id="admin-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  required
+                />
+              </label>
+              <label htmlFor="admin-password">
+                <span className="label-text">Password</span>
+                <input
+                  id="admin-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </label>
+              <button className="btn-secondary auth-email-btn" type="submit" disabled={emailSignInLoading}>
+                {emailSignInLoading ? "Signing in..." : "Sign in with Email"}
+              </button>
+            </form>
+          </>
+        )}
         {error && <p className="inline-error" role="alert">{error}</p>}
       </div>
     </div>

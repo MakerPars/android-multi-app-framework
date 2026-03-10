@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 import {
   getRedirectResult,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
   signInWithRedirect,
   signOut,
 } from "firebase/auth";
@@ -98,11 +99,41 @@ function readInitialSubTab(): TestPushSubTab {
   return "single-device";
 }
 
+function formatAuthError(err: unknown): string {
+  if (!(err instanceof FirebaseError)) {
+    return err instanceof Error ? err.message : "Authentication failed.";
+  }
+
+  switch (err.code) {
+    case "auth/unauthorized-domain":
+      return "This domain is not authorized in Firebase Auth. Add current host to Firebase Authentication > Settings > Authorized domains.";
+    case "auth/operation-not-allowed":
+      return "Google sign-in is disabled in Firebase Authentication > Sign-in method.";
+    case "auth/invalid-api-key":
+      return "Invalid Firebase API key. Check VITE_FIREBASE_API_KEY.";
+    case "auth/invalid-credential":
+      return "Invalid credential returned from Google sign-in.";
+    case "auth/network-request-failed":
+      return "Network request failed during sign-in.";
+    case "auth/invalid-email":
+      return "Invalid email format.";
+    case "auth/invalid-login-credentials":
+      return "Invalid email or password.";
+    case "auth/user-disabled":
+      return "This account is disabled.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Try again later.";
+    default:
+      return `${err.code}: ${err.message}`;
+  }
+}
+
 export default function App() {
   /* ── Auth state ── */
   const [authState, setAuthState] = useState<"loading" | "ready" | "error">("loading");
   const [user, setUser] = useState<User | null>(null);
   const [adminState, setAdminState] = useState<AdminState>("checking");
+  const [emailSignInLoading, setEmailSignInLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -196,6 +227,9 @@ export default function App() {
         getRedirectResult(auth).catch((err) => {
           if (err instanceof FirebaseError && err.code === "auth/popup-closed-by-user") return;
           console.error("getRedirectResult error:", err);
+          if (!cancelled) {
+            setError(formatAuthError(err));
+          }
         });
         const unsub = onAuthStateChanged(
           auth,
@@ -207,6 +241,7 @@ export default function App() {
           (err) => {
             console.error("onAuthStateChanged error:", err);
             if (cancelled) return;
+            setError(formatAuthError(err));
             setAuthState("error");
           },
         );
@@ -214,7 +249,10 @@ export default function App() {
       })
       .catch((err) => {
         console.error("Auth persistence error:", err);
-        if (!cancelled) setAuthState("error");
+        if (!cancelled) {
+          setError(formatAuthError(err));
+          setAuthState("error");
+        }
       });
     return () => {
       cancelled = true;
@@ -290,7 +328,7 @@ export default function App() {
     console.info(`Auth persistence mode: ${persistenceMode}`);
     signInWithRedirect(auth, googleProvider).catch((err) => {
       console.error("signInWithRedirect error:", err);
-      setError(err instanceof Error ? err.message : "Failed to start sign-in flow.");
+      setError(formatAuthError(err));
     });
   }, []);
 
@@ -298,6 +336,24 @@ export default function App() {
     signOut(auth).catch((err) => {
       console.error("signOut error:", err);
     });
+  }, []);
+
+  const handleEmailPasswordSignIn = useCallback(async (email: string, password: string) => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+    setError("");
+    setEmailSignInLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    } catch (err) {
+      console.error("signInWithEmailAndPassword error:", err);
+      setError(formatAuthError(err));
+    } finally {
+      setEmailSignInLoading(false);
+    }
   }, []);
 
   /* Event selection */
@@ -755,7 +811,15 @@ export default function App() {
     return <AuthScreen mode="error" error={error} onSignIn={handleSignIn} />;
   }
   if (!user) {
-    return <AuthScreen mode="login" error={error} onSignIn={handleSignIn} />;
+    return (
+      <AuthScreen
+        mode="login"
+        error={error}
+        onSignIn={handleSignIn}
+        onEmailPasswordSignIn={handleEmailPasswordSignIn}
+        emailSignInLoading={emailSignInLoading}
+      />
+    );
   }
   if (adminState === "checking") {
     return <AuthScreen mode="checking" error={error} onSignIn={handleSignIn} />;
