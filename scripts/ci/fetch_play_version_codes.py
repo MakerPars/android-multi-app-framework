@@ -345,8 +345,9 @@ def main() -> int:
             raise RuntimeError(f"Unknown flavors: {', '.join(missing)}")
         selected = [flavors[n] for n in names]
 
+    is_ci = os.environ.get("CI", "").strip().lower() == "true"
     raw_sa = os.environ.get("PLAY_SERVICE_ACCOUNT_JSON", "").strip()
-    if not raw_sa:
+    if not raw_sa and not is_ci:
         raw_sa = try_read_from_dotenv(repo_root)
 
     service_account_info = load_service_account_value(raw_sa)

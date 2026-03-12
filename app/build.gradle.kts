@@ -34,10 +34,13 @@ fun pick(name: String): String? {
     val gradleValue = providers.gradleProperty(name).orNull
     if (!gradleValue.isNullOrBlank()) return gradleValue
 
+    val environmentValue = providers.environmentVariable(name).orNull
+    if (!environmentValue.isNullOrBlank()) return environmentValue
+
     val envFileValue = envProps.getProperty(name)?.trim('"')
     if (!envFileValue.isNullOrBlank()) return envFileValue
 
-    return providers.environmentVariable(name).orNull
+    return null
 }
 
 fun asBuildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
@@ -198,7 +201,7 @@ val validateReleaseConfig =
                         errors.forEach { appendLine("  - $it") }
                         appendLine()
                         appendLine(
-                            "Tip: app/build.gradle.kts reads values from -P, .env, then providers.environmentVariable().",
+                            "Tip: app/build.gradle.kts reads values from -P, environment variables, then .env.",
                         )
                     },
                 )

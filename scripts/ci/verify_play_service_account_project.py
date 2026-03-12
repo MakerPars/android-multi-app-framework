@@ -85,9 +85,10 @@ def contains_forbidden(text: str) -> str | None:
 def main() -> int:
     args = parse_args()
     repo_root = pathlib.Path(__file__).resolve().parents[2]
+    is_ci = os.environ.get("CI", "").strip().lower() == "true"
 
     raw_sa = os.environ.get("PLAY_SERVICE_ACCOUNT_JSON", "").strip()
-    if not raw_sa:
+    if not raw_sa and not is_ci:
         raw_sa = try_read_from_dotenv(repo_root)
 
     try:
