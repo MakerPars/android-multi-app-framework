@@ -168,6 +168,39 @@ export type AdPerformanceToday = {
   issue?: string;
 };
 
+export type AdPerformanceTodayLatestApp = {
+  packageName: string;
+  appLabel: string;
+  liveVersionName: string;
+  adRequests: number;
+  matchedRequests: number;
+  impressions: number;
+  earningsTry: number;
+  ecpmTry?: number;
+  fillRatePct: number;
+  showRatePct: number;
+};
+
+export type AdPerformanceTodayLatest = {
+  generatedAt: string;
+  date: string;
+  status: "ok" | "misconfigured" | "error";
+  totals: {
+    earningsTry: number;
+    ecpmTry?: number;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+    fillRatePct: number;
+    showRatePct: number;
+  };
+  liveVersionCount: number;
+  filteredLegacyRows: number;
+  unmappedRows: number;
+  apps: AdPerformanceTodayLatestApp[];
+  issue?: string;
+};
+
 export type AdminAccessResponse = {
   authorized?: boolean;
   source?: "firestore" | "allowlist" | "none";

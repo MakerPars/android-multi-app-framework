@@ -86,6 +86,21 @@ GOOGLE_RECAPTCHA_SECRET_KEY=xxxxxxxx
 
 > **Not:** Lokalde `KEYSTORE_BASE64` gerekmez — direkt dosya yolu kullanılır.
 
+### Doppler ile Birebir Senkron (Önerilen)
+
+Env drift olmaması için kanonik kaynak `Doppler (android-multi-app-framework/prod)` kabul edilir.
+Tek komutla hem repo kökü `.env` hem de admin panel `.env` dosyasını eşitlemek için:
+
+```bash
+node scripts/sync-env-contract-from-doppler.mjs
+```
+
+Bu komut:
+- Doppler `prod` secret setini çeker,
+- Kök `.env` dosyasını kanonik anahtar sırasıyla yazar,
+- `side-projects/admin-notifications/.env` dosyasını `VITE_*` map ile günceller,
+- `.env.template` ile kanonik sözleşme farkını raporlar.
+
 ---
 
 ## Keystore (JKS) Oluşturma

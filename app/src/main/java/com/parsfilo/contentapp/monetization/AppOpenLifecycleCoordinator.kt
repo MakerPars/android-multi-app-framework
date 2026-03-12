@@ -46,7 +46,7 @@ class AppOpenLifecycleCoordinator @Inject constructor(
 
     override fun onStop(owner: LifecycleOwner) {
         Timber.d("Process onStop: notifying app paused")
-        adOrchestrator.onAppPaused()
+        adOrchestrator.onAppPaused(currentActivity?.applicationContext)
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit

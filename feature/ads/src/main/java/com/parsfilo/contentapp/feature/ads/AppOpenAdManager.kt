@@ -26,6 +26,12 @@ class AppOpenAdManager @Inject constructor(
     private val adRevenueLogger: AdRevenueLogger,
     private val adsPolicyProvider: AdsPolicyProvider,
 ) {
+    enum class ShowCompletionReason {
+        BLOCKED,
+        NOT_LOADED,
+        ATTEMPTED,
+    }
+
     private var appOpenAd: AppOpenAd? = null
     private var isLoadingAd = false
     private var loadTime: Long = 0
@@ -174,11 +180,11 @@ class AppOpenAdManager @Inject constructor(
         activity: Activity,
         route: String? = null,
         onAdImpression: (String) -> Unit = {},
-        onShowComplete: () -> Unit,
+        onShowComplete: (ShowCompletionReason) -> Unit,
     ) {
         if (isShowingAd) {
             Timber.d("AppOpen show skipped: ad already showing route=%s", route)
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
@@ -191,7 +197,7 @@ class AppOpenAdManager @Inject constructor(
                 route = route,
             )
             clearAd()
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
         val prefs = preferencesDataSource.userData.first()
@@ -211,7 +217,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
 
@@ -229,7 +235,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = reason,
                 route = route,
             )
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
 
@@ -247,7 +253,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
             )
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
 
@@ -266,7 +272,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.NOT_LOADED,
                 route = route,
             )
-            onShowComplete()
+            onShowComplete(ShowCompletionReason.NOT_LOADED)
             return
         }
 
@@ -294,7 +300,7 @@ class AppOpenAdManager @Inject constructor(
                 )
                 appOpenAd = null
                 isShowingAd = false
-                onShowComplete()
+                onShowComplete(ShowCompletionReason.ATTEMPTED)
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
@@ -315,7 +321,7 @@ class AppOpenAdManager @Inject constructor(
                 )
                 appOpenAd = null
                 isShowingAd = false
-                onShowComplete()
+                onShowComplete(ShowCompletionReason.ATTEMPTED)
             }
 
             override fun onAdImpression() {

@@ -16,6 +16,7 @@ import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsPlacementPolicyEvaluator
 import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
+import com.parsfilo.contentapp.feature.ads.AppOpenAdManager.ShowCompletionReason
 import com.parsfilo.contentapp.feature.ads.AppOpenEligibilityTracker
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
@@ -90,9 +91,18 @@ class AdOrchestrator @Inject constructor(
         nativeAdManager.destroyAds()
     }
 
-    fun onAppPaused() {
+    fun onAppPaused(context: Context? = null) {
         Timber.d("AdOrchestrator onAppPaused")
         appOpenEligibilityTracker.onPause()
+        if (context == null) {
+            Timber.d("AppOpen preload skipped on pause: context unavailable")
+            return
+        }
+        Timber.d("AppOpen preload requested on pause route=%s", adSessionContext.activeRoute)
+        appOpenAdManager.loadAd(
+            AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+            AdPlacement.APP_OPEN_RESUME,
+        )
     }
 
     fun isAppOpenAdShowing(): Boolean = appOpenAdManager.isShowingAdNow()
@@ -284,12 +294,22 @@ class AdOrchestrator @Inject constructor(
                     route = route,
                 )
             },
-        ) {
-            Timber.d("AppOpen show completed; requesting reload")
-            appOpenAdManager.loadAd(
-                AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-                AdPlacement.APP_OPEN_RESUME,
-            )
+        ) { completionReason ->
+            when (completionReason) {
+                ShowCompletionReason.ATTEMPTED -> {
+                    Timber.d("AppOpen show completed after attempt; requesting reload")
+                    appOpenAdManager.loadAd(
+                        AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
+                        AdPlacement.APP_OPEN_RESUME,
+                    )
+                }
+                ShowCompletionReason.NOT_LOADED -> {
+                    Timber.d("AppOpen show completed without loaded ad; waiting for next pause to preload")
+                }
+                ShowCompletionReason.BLOCKED -> {
+                    Timber.d("AppOpen show completed while blocked; reload skipped")
+                }
+            }
         }
     }
 
@@ -435,10 +455,6 @@ class AdOrchestrator @Inject constructor(
             adSessionContext.activeRoute,
             policy.nativePoolMax,
         )
-        appOpenAdManager.loadAd(
-            AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-            AdPlacement.APP_OPEN_RESUME,
-        )
         interstitialAdManager.loadAd(
             context,
             AppAdUnitIds.resolvePlacement(
@@ -452,7 +468,7 @@ class AdOrchestrator @Inject constructor(
             context,
             AppAdUnitIds.resolvePlacement(context, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
             AdPlacement.NATIVE_FEED_HOME,
-            policy.nativePoolMax,
+            1,
         )
         rewardedInterstitialAdManager.loadAd(
             AppAdUnitIds.resolvePlacement(
@@ -461,6 +477,9 @@ class AdOrchestrator @Inject constructor(
                 BuildConfig.USE_TEST_ADS,
             ),
             AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+        )
+        Timber.d(
+            "AppOpen startup preload skipped: resume placement preloads on pause and after attempted show",
         )
         Timber.d(
             "Rewarded startup preload skipped: rewarded loads on-demand from Rewards screen",

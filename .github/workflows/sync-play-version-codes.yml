@@ -56,6 +56,10 @@ jobs:
         if: ${{ env.DOPPLER_TOKEN != '' }}
         uses: dopplerhq/cli-action@v3
 
+      - name: Verify env contract (Doppler -> templates)
+        if: ${{ env.DOPPLER_TOKEN != '' }}
+        uses: ./.github/actions/verify-env-contract
+
       - name: Resolve Play secret (Doppler-only)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}

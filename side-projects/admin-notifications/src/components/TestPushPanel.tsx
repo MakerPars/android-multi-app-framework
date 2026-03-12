@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type {
   AdPerformanceReport,
   AdPerformanceToday,
+  AdPerformanceTodayLatest,
   DeviceCoverageReport,
   DeviceFinderItem,
   TestPushResult,
@@ -56,6 +57,9 @@ type TestPushPanelProps = {
   adTodayLoading: boolean;
   adTodayError: string;
   adPerformanceToday: AdPerformanceToday | null;
+  adTodayLatestLoading: boolean;
+  adTodayLatestError: string;
+  adPerformanceTodayLatest: AdPerformanceTodayLatest | null;
   onRefreshAdHealth: (forceWeekly: boolean) => void;
 };
 
@@ -102,6 +106,9 @@ export default function TestPushPanel(props: TestPushPanelProps) {
     adTodayLoading,
     adTodayError,
     adPerformanceToday,
+    adTodayLatestLoading,
+    adTodayLatestError,
+    adPerformanceTodayLatest,
     onRefreshAdHealth,
   } = props;
 
@@ -129,23 +136,25 @@ export default function TestPushPanel(props: TestPushPanelProps) {
   useEffect(() => {
     if (testPushSubTab !== "ad-health") return;
     if (hasAutoLoadedAdHealth.current) return;
-    if (adReportLoading || adTodayLoading) return;
-    if (adPerformanceReport || adPerformanceToday) return;
+    if (adReportLoading || adTodayLoading || adTodayLatestLoading) return;
+    if (adPerformanceReport || adPerformanceToday || adPerformanceTodayLatest) return;
 
     hasAutoLoadedAdHealth.current = true;
     void onRefreshAdHealth(false);
   }, [
     adPerformanceReport,
     adPerformanceToday,
+    adPerformanceTodayLatest,
     adReportLoading,
     adTodayLoading,
+    adTodayLatestLoading,
     onRefreshAdHealth,
     testPushSubTab,
   ]);
 
   useEffect(() => {
     if (testPushSubTab !== "ad-health") return;
-    if (!adPerformanceReport || adReportLoading || adTodayLoading) return;
+    if (!adPerformanceReport || adReportLoading || adTodayLoading || adTodayLatestLoading) return;
     if (hasTriggeredIndexRecovery.current) return;
     if (!weeklyIssue.includes("requires an index")) return;
 
@@ -155,6 +164,7 @@ export default function TestPushPanel(props: TestPushPanelProps) {
     adPerformanceReport,
     adReportLoading,
     adTodayLoading,
+    adTodayLatestLoading,
     onRefreshAdHealth,
     testPushSubTab,
     weeklyIssue,
@@ -162,7 +172,7 @@ export default function TestPushPanel(props: TestPushPanelProps) {
 
   useEffect(() => {
     if (testPushSubTab !== "ad-health") return;
-    if (adReportLoading || adTodayLoading) return;
+    if (adReportLoading || adTodayLoading || adTodayLatestLoading) return;
     if (hasTriggeredOAuthRecovery.current) return;
     if (!hasDeletedOAuthIssue) return;
 
@@ -171,6 +181,7 @@ export default function TestPushPanel(props: TestPushPanelProps) {
   }, [
     adReportLoading,
     adTodayLoading,
+    adTodayLatestLoading,
     hasDeletedOAuthIssue,
     onRefreshAdHealth,
     testPushSubTab,
@@ -478,17 +489,17 @@ export default function TestPushPanel(props: TestPushPanelProps) {
                     type="button"
                     className="btn-secondary"
                     onClick={() => onRefreshAdHealth(false)}
-                    disabled={adReportLoading || adTodayLoading}
+                    disabled={adReportLoading || adTodayLoading || adTodayLatestLoading}
                   >
-                    {adReportLoading || adTodayLoading ? "Loading…" : "Load latest"}
+                    {adReportLoading || adTodayLoading || adTodayLatestLoading ? "Loading…" : "Load latest"}
                   </button>
                   <button
                     type="button"
                     className="btn-secondary"
                     onClick={() => onRefreshAdHealth(true)}
-                    disabled={adReportLoading || adTodayLoading}
+                    disabled={adReportLoading || adTodayLoading || adTodayLatestLoading}
                   >
-                    {adReportLoading || adTodayLoading ? "Refreshing…" : "Force refresh"}
+                    {adReportLoading || adTodayLoading || adTodayLatestLoading ? "Refreshing…" : "Force refresh"}
                   </button>
                 </div>
               </div>
@@ -524,6 +535,70 @@ export default function TestPushPanel(props: TestPushPanelProps) {
                 </div>
               ) : (
                 !adTodayError && <p className="muted">Today report not loaded yet.</p>
+              )}
+
+              {/* Latest-version today report */}
+              {adTodayLatestError && <p className="inline-error" role="alert">{adTodayLatestError}</p>}
+              {adPerformanceTodayLatest && !adTodayLatestError ? (
+                <div className="ad-report-result ad-report-block">
+                  <h3>Today so far (live latest versions)</h3>
+                  <p className="muted">
+                    Today so far ({adPerformanceTodayLatest.date}) · generatedAt=
+                    {adPerformanceTodayLatest.generatedAt} · status=
+                    <strong>{adPerformanceTodayLatest.status}</strong> · liveVersions=
+                    <strong>{adPerformanceTodayLatest.liveVersionCount}</strong>
+                  </p>
+                  {adPerformanceTodayLatest.issue && (
+                    <div className="coverage-alert" role="alert">
+                      <strong>Issue</strong>
+                      <div>{adPerformanceTodayLatest.issue}</div>
+                    </div>
+                  )}
+                  <ul className="coverage-list">
+                    <li><span>Total earnings</span><strong>{formatTry(adPerformanceTodayLatest.totals.earningsTry)}</strong></li>
+                    <li><span>Total eCPM</span><strong>{formatTry(adPerformanceTodayLatest.totals.ecpmTry)}</strong></li>
+                    <li><span>Total ad requests</span><strong>{adPerformanceTodayLatest.totals.adRequests}</strong></li>
+                    <li><span>Total fill rate</span><strong>{formatPercent(adPerformanceTodayLatest.totals.fillRatePct)}</strong></li>
+                    <li><span>Total show rate</span><strong>{formatPercent(adPerformanceTodayLatest.totals.showRatePct)}</strong></li>
+                    <li><span>Filtered legacy rows</span><strong>{adPerformanceTodayLatest.filteredLegacyRows}</strong></li>
+                    <li><span>Unmapped rows</span><strong>{adPerformanceTodayLatest.unmappedRows}</strong></li>
+                  </ul>
+
+                  {adPerformanceTodayLatest.apps.length === 0 ? (
+                    <p className="muted">No live latest-version rows were matched yet.</p>
+                  ) : (
+                    <div className="ad-alert-list">
+                      {adPerformanceTodayLatest.apps.slice(0, 8).map((app) => (
+                        <div
+                          key={`${app.packageName}-${app.liveVersionName}`}
+                          className="ad-alert-item"
+                        >
+                          <div className="ad-alert-header">
+                            <strong>{app.appLabel}</strong>
+                            <code>{app.liveVersionName}</code>
+                          </div>
+                          <div className="ad-alert-metrics">
+                            requests={app.adRequests} · matched={app.matchedRequests} · impressions=
+                            {app.impressions}
+                          </div>
+                          <div className="ad-alert-metrics">
+                            fill={formatPercent(app.fillRatePct)} · show=
+                            {formatPercent(app.showRatePct)} · earnings=
+                            {formatTry(app.earningsTry)}
+                          </div>
+                          <div className="ad-alert-metrics">
+                            eCPM={formatTry(app.ecpmTry)}
+                          </div>
+                          <small className="muted">
+                            package=<code>{app.packageName}</code>
+                          </small>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                !adTodayLatestError && <p className="muted">Latest-version report not loaded yet.</p>
               )}
 
               {/* Weekly report */}

@@ -40,8 +40,13 @@ A multi-flavour Android application for delivering rich content experiences. Thi
 This project uses `.env` for local configuration.
 
 1. Copy `.env.template` to `.env`.
+2. (Recommended) Sync canonical values from Doppler:
 
-2. Fill in the required values:
+```bash
+node scripts/sync-env-contract-from-doppler.mjs
+```
+
+3. Fill in or verify the required values:
 
 ```properties
 KEYSTORE_FILE=C:/path/to/keystore.jks

@@ -59,6 +59,15 @@ def parse_args() -> argparse.Namespace:
         help="app-versions.properties path (default: app-versions.properties)",
     )
     parser.add_argument(
+        "--play-version-codes-json",
+        default="TEMP_OUT/play_version_codes.json",
+        help=(
+            "Optional Play version-code summary JSON from scripts/ci/fetch_play_version_codes.py. "
+            "When present, derive live latest versionName as 1.0.<maxVersionCode> and prefer it "
+            "over app-versions.properties for health filtering."
+        ),
+    )
+    parser.add_argument(
         "--top",
         type=int,
         default=10,
@@ -200,11 +209,39 @@ def parse_apps_catalog(path: Path) -> list[dict[str, str]]:
     return out
 
 
-def build_latest_map(apps: list[dict[str, str]], versions: dict[str, str]) -> dict[str, dict[str, str]]:
+def parse_play_version_codes(path: Path) -> dict[str, int]:
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    apps = payload.get("apps", {})
+    if not isinstance(apps, dict):
+        return {}
+    out: dict[str, int] = {}
+    for flavor, item in apps.items():
+        if not isinstance(item, dict):
+            continue
+        max_code = item.get("maxVersionCode")
+        try:
+            out[str(flavor).strip()] = int(max_code)
+        except Exception:
+            continue
+    return out
+
+
+def build_latest_map(
+    apps: list[dict[str, str]],
+    versions: dict[str, str],
+    play_version_codes: dict[str, int],
+) -> dict[str, dict[str, str]]:
     latest_map: dict[str, dict[str, str]] = {}
     for app in apps:
         flavor = app["flavor"]
-        latest_version = versions.get(flavor, "").strip()
+        configured_version = versions.get(flavor, "").strip()
+        play_live_version = ""
+        play_max_code = play_version_codes.get(flavor)
+        if play_max_code is not None:
+            play_live_version = f"1.0.{play_max_code}"
+        latest_version = play_live_version or configured_version
         if not latest_version:
             continue
         key = normalize_label(app["name"])
@@ -213,6 +250,8 @@ def build_latest_map(apps: list[dict[str, str]], versions: dict[str, str]) -> di
             "name": app["name"],
             "package": app["package"],
             "latest_version": latest_version,
+            "configured_version": configured_version,
+            "play_live_version": play_live_version,
         }
     return latest_map
 
@@ -251,8 +290,9 @@ def main() -> None:
         account_name = account_names[0]
 
     versions = parse_versions(Path(args.versions_file))
+    play_version_codes = parse_play_version_codes(Path(args.play_version_codes_json))
     apps = parse_apps_catalog(Path(args.apps_catalog))
-    latest_map = build_latest_map(apps, versions)
+    latest_map = build_latest_map(apps, versions, play_version_codes)
     if not latest_map:
         raise SystemExit("Latest app version map is empty (apps catalog / versions mismatch).")
 

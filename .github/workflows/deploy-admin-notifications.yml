@@ -33,6 +33,9 @@ jobs:
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
 
+      - name: Verify env contract (Doppler -> templates)
+        uses: ./.github/actions/verify-env-contract
+
       - name: Export deploy env from Doppler
         shell: bash
         run: |

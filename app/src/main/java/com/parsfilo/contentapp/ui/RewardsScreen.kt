@@ -75,11 +75,6 @@ fun RewardsRoute(
         AppAdUnitIds.resolve(context, BuildConfig.USE_TEST_ADS)
     }
 
-    // İlk yüklemede reklam ön yükle
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        viewModel.loadRewardedAd(adUnitIds.rewarded)
-    }
-
     RewardsScreen(
         uiState = uiState,
         remainingSeconds = remainingSeconds,

@@ -15,8 +15,10 @@ on:
       - 'settings.gradle.kts'
       - 'app-versions.properties'
       - 'scripts/ci/**'
+      - 'scripts/sync-env-contract-from-doppler.mjs'
       - '.github/actions/resolve-flavors/**'
       - '.github/actions/firebase-config/**'
+      - '.github/actions/verify-env-contract/**'
   pull_request:
     branches: ['*']
     paths:
@@ -30,8 +32,10 @@ on:
       - 'settings.gradle.kts'
       - 'app-versions.properties'
       - 'scripts/ci/**'
+      - 'scripts/sync-env-contract-from-doppler.mjs'
       - '.github/actions/resolve-flavors/**'
       - '.github/actions/firebase-config/**'
+      - '.github/actions/verify-env-contract/**'
 
 concurrency:
   group: ${{ format('ci-{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
@@ -97,6 +101,9 @@ jobs:
 
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
+
+      - name: Verify env contract (Doppler -> templates)
+        uses: ./.github/actions/verify-env-contract
 
       - name: Export firebase override + web client from Doppler
         run: |

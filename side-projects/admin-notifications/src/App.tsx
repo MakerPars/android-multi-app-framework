@@ -38,6 +38,7 @@ import {
   type DeviceFinderItem,
   type AdPerformanceReport,
   type AdPerformanceToday,
+  type AdPerformanceTodayLatest,
   type LoadState,
   type ScheduledEventForm,
   type ScheduledEventRecord,
@@ -189,6 +190,9 @@ export default function App() {
   const [adTodayLoading, setAdTodayLoading] = useState(false);
   const [adTodayError, setAdTodayError] = useState("");
   const [adPerformanceToday, setAdPerformanceToday] = useState<AdPerformanceToday | null>(null);
+  const [adTodayLatestLoading, setAdTodayLatestLoading] = useState(false);
+  const [adTodayLatestError, setAdTodayLatestError] = useState("");
+  const [adPerformanceTodayLatest, setAdPerformanceTodayLatest] = useState<AdPerformanceTodayLatest | null>(null);
 
   /* ── Remote Config state ── */
   const [remoteConfigLoading, setRemoteConfigLoading] = useState(false);
@@ -721,12 +725,53 @@ export default function App() {
     }
   }, [user]);
 
+  const loadAdPerformanceTodayLatest = useCallback(async () => {
+    if (!user) return;
+    setAdTodayLatestLoading(true);
+    setAdTodayLatestError("");
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${functionsBaseUrl}/adPerformance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          type: "today_latest",
+          catalog: sortedApps.map((app) => ({
+            packageName: app.package,
+            appName: app.name ?? app.flavor,
+          })),
+        }),
+      });
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      if (!response.ok) {
+        throw new Error(
+          summarizeApiError(responseBody, `HTTP ${response.status}: Failed to fetch latest-version ad performance`),
+        );
+      }
+      setAdPerformanceTodayLatest(responseBody as AdPerformanceTodayLatest);
+    } catch (e) {
+      console.error(e);
+      setAdTodayLatestError(e instanceof Error ? e.message : "Failed to fetch latest-version ad report.");
+    } finally {
+      setAdTodayLatestLoading(false);
+    }
+  }, [user]);
+
   const refreshAdHealth = useCallback(async (forceWeeklyRefresh: boolean) => {
     await Promise.all([
       loadAdPerformanceToday(),
+      loadAdPerformanceTodayLatest(),
       loadAdPerformanceReport(forceWeeklyRefresh),
     ]);
-  }, [loadAdPerformanceToday, loadAdPerformanceReport]);
+  }, [loadAdPerformanceReport, loadAdPerformanceToday, loadAdPerformanceTodayLatest]);
 
   const loadRemoteConfig = useCallback(async () => {
     if (!user) return;
@@ -935,6 +980,9 @@ export default function App() {
             adTodayLoading={adTodayLoading}
             adTodayError={adTodayError}
             adPerformanceToday={adPerformanceToday}
+            adTodayLatestLoading={adTodayLatestLoading}
+            adTodayLatestError={adTodayLatestError}
+            adPerformanceTodayLatest={adPerformanceTodayLatest}
             onRefreshAdHealth={refreshAdHealth}
           />
         )}

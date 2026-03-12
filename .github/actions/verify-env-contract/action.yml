@@ -1,0 +1,27 @@
+name: Verify Env Contract
+description: Verifies env template contract against Doppler canonical keys
+
+inputs:
+  doppler_project:
+    description: Doppler project name
+    required: false
+    default: android-multi-app-framework
+  doppler_config:
+    description: Doppler config/environment name
+    required: false
+    default: prod
+  verify_script:
+    description: Path to verification script
+    required: false
+    default: scripts/ci/verify_env_contract.sh
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        DOPPLER_PROJECT: ${{ inputs.doppler_project }}
+        DOPPLER_CONFIG: ${{ inputs.doppler_config }}
+      run: |
+        set -euo pipefail
+        bash "${{ inputs.verify_script }}"
