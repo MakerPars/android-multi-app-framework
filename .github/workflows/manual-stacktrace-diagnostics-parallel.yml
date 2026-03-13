@@ -1,48 +1,56 @@
-name: Auto Debug Ops
+name: Manual Stacktrace Diagnostics Parallel
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'app/**'
-      - 'core/**'
-      - 'feature/**'
-      - 'buildSrc/**'
-      - 'gradle/**'
-      - '*.gradle.kts'
-      - 'gradle.properties'
-      - 'settings.gradle.kts'
-      - 'app-versions.properties'
-      - 'scripts/ci/**'
-      - 'scripts/sync-env-contract-from-doppler.mjs'
-      - '.github/actions/resolve-flavors/**'
-      - '.github/actions/firebase-config/**'
-      - '.github/actions/verify-env-contract/**'
-  pull_request:
-    branches: ['*']
-    paths:
-      - 'app/**'
-      - 'core/**'
-      - 'feature/**'
-      - 'buildSrc/**'
-      - 'gradle/**'
-      - '*.gradle.kts'
-      - 'gradle.properties'
-      - 'settings.gradle.kts'
-      - 'app-versions.properties'
-      - 'scripts/ci/**'
-      - 'scripts/sync-env-contract-from-doppler.mjs'
-      - '.github/actions/resolve-flavors/**'
-      - '.github/actions/firebase-config/**'
-      - '.github/actions/verify-env-contract/**'
+  workflow_dispatch:
+    inputs:
+      target_flavor:
+        description: 'Target flavor or "all"'
+        required: true
+        default: 'all'
+        type: string
+      build_type:
+        description: 'Build type for assemble tasks'
+        required: true
+        default: 'Debug'
+        type: choice
+        options:
+          - Debug
+          - Release
+      run_static:
+        description: 'Run detekt + ktlintCheck'
+        required: false
+        default: true
+        type: boolean
+      run_lint:
+        description: 'Run Android lint per selected flavor'
+        required: false
+        default: true
+        type: boolean
+      run_tests:
+        description: 'Run unit tests per selected flavor'
+        required: false
+        default: true
+        type: boolean
+      run_assemble:
+        description: 'Run assemble per selected flavor'
+        required: false
+        default: true
+        type: boolean
+      max_parallel:
+        description: 'Maximum parallel flavor jobs'
+        required: false
+        default: '4'
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ format('ci-{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
-  cancel-in-progress: true
+  group: ${{ format('manual-diagnostics-parallel-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: false
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Djava.awt.headless=true -Dkotlin.daemon.jvmargs=-Xmx1g -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false -Dksp.incremental=false
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -Djava.awt.headless=true -Dorg.gradle.daemon=false -Dksp.incremental=false
   JAVA_VERSION: '21'
   ANDROID_API_LEVEL: 36
 
@@ -62,10 +70,11 @@ jobs:
         id: resolve
         uses: ./.github/actions/resolve-flavors
         with:
-          target_flavors: all
+          target_flavors: ${{ github.event.inputs.target_flavor }}
 
   static-analysis:
     name: Static analysis
+    if: github.event.inputs.run_static == 'true'
     needs: resolve-flavors
     runs-on: ubuntu-latest
     env:
@@ -103,8 +112,6 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
@@ -156,29 +163,26 @@ jobs:
           cf_api_token: ${{ env.CF_API_TOKEN }}
           cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
           cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
-
-      - name: Validate Google Sign-In Config
-        run: |
-          WEB_CLIENT_ID="${FIREBASE_WEB_CLIENT_ID:-}" python3 ./scripts/ci/verify_google_signin_config.py --flavors "${{ needs.resolve-flavors.outputs.resolved_flavors_csv }}"
 
       - name: Run detekt / ktlint
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+          ./gradlew detekt ktlintCheck --stacktrace --warning-mode all --no-daemon --console=plain --max-workers=2
 
   lint-flavor:
     name: Lint ${{ matrix.flavor }} Debug
+    if: github.event.inputs.run_lint == 'true'
     needs: resolve-flavors
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(github.event.inputs.max_parallel) }}
+      matrix:
+        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       FLAVOR: ${{ matrix.flavor }}
-    strategy:
-      fail-fast: false
-      max-parallel: 6
-      matrix:
-        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -212,8 +216,6 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
@@ -270,25 +272,26 @@ jobs:
         run: |
           WEB_CLIENT_ID="${FIREBASE_WEB_CLIENT_ID:-}" python3 ./scripts/ci/verify_google_signin_config.py --flavors "$FLAVOR"
 
-      - name: Run Android lint for flavor
+      - name: Run lint
         run: |
           set -euo pipefail
           chmod +x ./gradlew
           cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
-          ./gradlew "lint${cap}Debug" --stacktrace --no-daemon --max-workers=2
+          ./gradlew "lint${cap}Debug" --stacktrace --warning-mode all --no-daemon --console=plain --max-workers=2
 
-  build-debug-flavor:
-    name: Build ${{ matrix.flavor }} Debug
+  unit-tests-flavor:
+    name: Unit tests ${{ matrix.flavor }} Debug
+    if: github.event.inputs.run_tests == 'true'
     needs: resolve-flavors
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(github.event.inputs.max_parallel) }}
+      matrix:
+        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
     env:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       FLAVOR: ${{ matrix.flavor }}
-    strategy:
-      fail-fast: false
-      max-parallel: 6
-      matrix:
-        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -322,8 +325,6 @@ jobs:
           set -o pipefail
 
       - uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
@@ -380,19 +381,128 @@ jobs:
         run: |
           WEB_CLIENT_ID="${FIREBASE_WEB_CLIENT_ID:-}" python3 ./scripts/ci/verify_google_signin_config.py --flavors "$FLAVOR"
 
-      - name: Build Debug APK for flavor
+      - name: Run unit tests
         run: |
           set -euo pipefail
           chmod +x ./gradlew
           cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
-          ./gradlew "assemble${cap}Debug" --stacktrace --no-daemon --max-workers=2
+          ./gradlew "test${cap}DebugUnitTest" --stacktrace --warning-mode all --no-daemon --console=plain --max-workers=2
 
-      - name: Upload flavor build outputs
+  assemble-flavor:
+    name: Assemble ${{ matrix.flavor }} ${{ github.event.inputs.build_type }}
+    if: github.event.inputs.run_assemble == 'true'
+    needs: resolve-flavors
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(github.event.inputs.max_parallel) }}
+      matrix:
+        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
+    env:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      FLAVOR: ${{ matrix.flavor }}
+      BUILD_TYPE: ${{ github.event.inputs.build_type }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;36.0.0"
+
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          set +o pipefail
+          yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Load Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Verify env contract (Doppler -> templates)
+        uses: ./.github/actions/verify-env-contract
+
+      - name: Export firebase override + web client from Doppler
+        run: |
+          set -euo pipefail
+          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+          export DOPPLER_PROJECT="android-multi-app-framework"
+          export DOPPLER_CONFIG="prod"
+          map_secret() {
+            local src="$1"
+            local dst="$2"
+            local val
+            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+            if [ -n "$val" ]; then
+              echo "::add-mask::$val"
+              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
+              export "$dst=$val"
+            fi
+          }
+
+          map_secret_if_missing() {
+            local src="$1"
+            local dst="$2"
+            if [ -n "${!dst:-}" ]; then
+              return 0
+            fi
+            map_secret "$src" "$dst"
+          }
+
+          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
+          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
+          map_secret CF_R2_BUCKET CF_R2_BUCKET
+          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
+          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
+          map_secret CF_API_TOKEN CF_API_TOKEN
+          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
+
+      - name: Firebase Config Override (R2 preferred, Base64 fallback)
+        uses: ./.github/actions/firebase-config
+        with:
+          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
+          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
+          cf_api_token: ${{ env.CF_API_TOKEN }}
+          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
+          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
+
+      - name: Validate Google Sign-In Config
+        run: |
+          WEB_CLIENT_ID="${FIREBASE_WEB_CLIENT_ID:-}" python3 ./scripts/ci/verify_google_signin_config.py --flavors "$FLAVOR"
+
+      - name: Run assemble
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
+          ./gradlew "assemble${cap}${BUILD_TYPE}" --stacktrace --warning-mode all --no-daemon --console=plain --max-workers=2
+
+      - name: Upload build outputs
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: auto-debug-ops-build-outputs-${{ matrix.flavor }}
-          path: |
-            app/build/outputs/apk/
-            app/build/outputs/mapping/
+          name: manual-diagnostics-build-${{ matrix.flavor }}-${{ github.event.inputs.build_type }}
+          path: app/build/outputs/
+          if-no-files-found: warn
           retention-days: 7
