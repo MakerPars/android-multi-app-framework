@@ -133,6 +133,65 @@ export default function TestPushPanel(props: TestPushPanelProps) {
   const hasDeletedOAuthIssue = weeklyIssue.includes("oauth client was deleted")
     || todayIssue.includes("oauth client was deleted");
 
+  const renderFormatBreakdown = (
+    title: string,
+    items: Array<{
+      format: string;
+      adRequests: number;
+      matchedRequests: number;
+      impressions: number;
+      fillRatePct: number;
+      showRatePct: number;
+      earningsTry: number;
+      ecpmTry?: number;
+    }> | undefined,
+  ) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="ad-report-subsection">
+        <h4>{title}</h4>
+        <div className="ad-alert-list">
+          {items.map((item) => (
+            <div key={item.format} className="ad-alert-item">
+              <div className="ad-alert-header">
+                <strong>{item.format}</strong>
+              </div>
+              <div className="ad-alert-metrics">
+                requests={item.adRequests} · matched={item.matchedRequests} · impressions={item.impressions}
+              </div>
+              <div className="ad-alert-metrics">
+                fill={formatPercent(item.fillRatePct)} · show={formatPercent(item.showRatePct)} · earnings=
+                {formatTry(item.earningsTry)}
+              </div>
+              <div className="ad-alert-metrics">
+                eCPM={formatTry(item.ecpmTry)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDiagnosticReasons = (
+    counts: Record<string, number> | undefined,
+  ) => {
+    const entries = Object.entries(counts ?? {});
+    if (entries.length === 0) return null;
+    return (
+      <div className="ad-report-subsection">
+        <h4>Diagnostic reasons</h4>
+        <div className="ad-alert-reasons">
+          {entries.map(([reason, count]) => (
+            <span key={reason} className="status-pill status-paused">
+              {reason} ({count})
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (testPushSubTab !== "ad-health") return;
     if (hasAutoLoadedAdHealth.current) return;
@@ -532,6 +591,7 @@ export default function TestPushPanel(props: TestPushPanelProps) {
                     <li><span>Total fill rate</span><strong>{formatPercent(adPerformanceToday.totals.fillRatePct)}</strong></li>
                     <li><span>Total show rate</span><strong>{formatPercent(adPerformanceToday.totals.showRatePct)}</strong></li>
                   </ul>
+                  {renderFormatBreakdown("Format funnel", adPerformanceToday.formatBreakdown)}
                 </div>
               ) : (
                 !adTodayError && <p className="muted">Today report not loaded yet.</p>
@@ -563,6 +623,7 @@ export default function TestPushPanel(props: TestPushPanelProps) {
                     <li><span>Filtered legacy rows</span><strong>{adPerformanceTodayLatest.filteredLegacyRows}</strong></li>
                     <li><span>Unmapped rows</span><strong>{adPerformanceTodayLatest.unmappedRows}</strong></li>
                   </ul>
+                  {renderFormatBreakdown("Latest-version format funnel", adPerformanceTodayLatest.formatBreakdown)}
 
                   {adPerformanceTodayLatest.apps.length === 0 ? (
                     <p className="muted">No live latest-version rows were matched yet.</p>
@@ -624,6 +685,8 @@ export default function TestPushPanel(props: TestPushPanelProps) {
                     <li><span>Total fill rate</span><strong>{formatPercent(adPerformanceReport.totals.fillRatePct)}</strong></li>
                     <li><span>Total show rate</span><strong>{formatPercent(adPerformanceReport.totals.showRatePct)}</strong></li>
                   </ul>
+                  {renderFormatBreakdown("Weekly format funnel", adPerformanceReport.formatBreakdown)}
+                  {renderDiagnosticReasons(adPerformanceReport.diagnosticReasonCounts)}
 
                   <div className="muted">
                     Thresholds: minRequests={adPerformanceReport.thresholds.minRequests}, fillRate=

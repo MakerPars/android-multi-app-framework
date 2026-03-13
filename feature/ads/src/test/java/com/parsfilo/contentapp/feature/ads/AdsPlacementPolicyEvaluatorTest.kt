@@ -45,14 +45,15 @@ class AdsPlacementPolicyEvaluatorTest {
     @Test
     fun `interstitial blocks route blacklist`() {
         every { adsPolicyProvider.getPolicy() } returns defaultPolicy(
-            interstitialRouteBlocklist = setOf("quran_sura_list"),
+            interstitialRouteBlocklist = setOf(InterstitialTriggerKind.MODE_SWITCH.analyticsValue),
         )
 
         val result = evaluator.evaluateInterstitial(
             baseContext(
                 format = AdFormat.INTERSTITIAL,
                 placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
-                route = "quran_sura_list",
+                route = "content/2",
+                interstitialTriggerKind = InterstitialTriggerKind.MODE_SWITCH,
             ),
         )
 
@@ -106,6 +107,7 @@ class AdsPlacementPolicyEvaluatorTest {
         format: AdFormat,
         placement: AdPlacement,
         route: String? = null,
+        screenRoute: String? = route,
         privacyState: AdsPrivacyState = AdsPrivacyState.CanRequestAds(
             consentStatus = ConsentStatus.Obtained,
             privacyOptionsRequired = false,
@@ -117,10 +119,13 @@ class AdsPlacementPolicyEvaluatorTest {
         lastShownAtMs: Long? = null,
         resumeGapMs: Long? = null,
         contentInProgress: Boolean = false,
+        appOpenTriggerReason: AppOpenTriggerReason? = null,
+        interstitialTriggerKind: InterstitialTriggerKind? = null,
     ): AdRequestContext = AdRequestContext(
         format = format,
         placement = placement,
         route = route,
+        screenRoute = screenRoute,
         privacyState = privacyState,
         isPremium = isPremium,
         isRewardedAdFree = isRewardedAdFree,
@@ -128,6 +133,8 @@ class AdsPlacementPolicyEvaluatorTest {
         lastShownAtMs = lastShownAtMs,
         resumeGapMs = resumeGapMs,
         contentInProgress = contentInProgress,
+        appOpenTriggerReason = appOpenTriggerReason,
+        interstitialTriggerKind = interstitialTriggerKind,
     )
 
     private fun defaultPolicy(
@@ -159,5 +166,6 @@ class AdsPlacementPolicyEvaluatorTest {
         interstitialRouteBlocklist = interstitialRouteBlocklist,
         nativePoolMax = 1,
         nativeTtlMs = 30_000L,
+        nativeExactPlacementOnly = false,
     )
 }

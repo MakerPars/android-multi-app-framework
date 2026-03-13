@@ -129,6 +129,17 @@ export type AdPerformanceAlert = {
   reasons: string[];
 };
 
+export type AdFormatBreakdown = {
+  format: string;
+  earningsTry: number;
+  ecpmTry?: number;
+  adRequests: number;
+  matchedRequests: number;
+  impressions: number;
+  fillRatePct: number;
+  showRatePct: number;
+};
+
 export type AdPerformanceReport = {
   generatedAt: string;
   rangeStart: string;
@@ -148,6 +159,8 @@ export type AdPerformanceReport = {
     fillRatePct: number;
     showRatePct: number;
   };
+  formatBreakdown?: AdFormatBreakdown[];
+  diagnosticReasonCounts?: Record<string, number>;
   alerts: AdPerformanceAlert[];
   issue?: string;
 };
@@ -165,6 +178,7 @@ export type AdPerformanceToday = {
     fillRatePct: number;
     showRatePct: number;
   };
+  formatBreakdown?: AdFormatBreakdown[];
   issue?: string;
 };
 
@@ -197,6 +211,7 @@ export type AdPerformanceTodayLatest = {
   liveVersionCount: number;
   filteredLegacyRows: number;
   unmappedRows: number;
+  formatBreakdown?: AdFormatBreakdown[];
   apps: AdPerformanceTodayLatestApp[];
   issue?: string;
 };

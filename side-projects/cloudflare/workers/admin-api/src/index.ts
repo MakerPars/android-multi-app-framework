@@ -135,6 +135,7 @@ type VersionedNetworkRow = {
   appId: string;
   appLabel: string;
   versionName: string;
+  format: string;
   earningsMicros: number;
   adRequests: number;
   matchedRequests: number;
@@ -186,6 +187,17 @@ type AdTotals = {
   showRatePct: number;
 };
 
+type AdFormatBreakdown = {
+  format: string;
+  earningsTry: number;
+  ecpmTry: number;
+  adRequests: number;
+  matchedRequests: number;
+  impressions: number;
+  fillRatePct: number;
+  showRatePct: number;
+};
+
 type WeeklyReportPayload = {
   generatedAt: string;
   rangeStart: string;
@@ -198,6 +210,8 @@ type WeeklyReportPayload = {
     showRatePct: number;
   };
   totals: AdTotals;
+  formatBreakdown?: AdFormatBreakdown[];
+  diagnosticReasonCounts?: Record<string, number>;
   stats?: ReportStat[];
   alerts: ReportAlert[];
   issue?: string;
@@ -210,6 +224,7 @@ type TodayReportPayload = {
   source: "admob_api";
   status: "ok" | "misconfigured" | "error";
   totals: AdTotals;
+  formatBreakdown?: AdFormatBreakdown[];
   issue?: string;
 };
 
@@ -235,6 +250,7 @@ type TodayLatestReportPayload = {
   liveVersionCount: number;
   filteredLegacyRows: number;
   unmappedRows: number;
+  formatBreakdown?: AdFormatBreakdown[];
   apps: TodayLatestAppStat[];
   issue?: string;
 };
@@ -1523,6 +1539,65 @@ function zeroAdTotals(): AdTotals {
   };
 }
 
+function buildFormatBreakdownFromRows<
+  T extends {
+    format: string;
+    earningsMicros: number;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+  },
+>(rows: T[]): AdFormatBreakdown[] {
+  const grouped = new Map<string, {
+    format: string;
+    earningsMicros: number;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+  }>();
+
+  for (const row of rows) {
+    const key = row.format || "unknown";
+    const current = grouped.get(key) ?? {
+      format: key,
+      earningsMicros: 0,
+      adRequests: 0,
+      matchedRequests: 0,
+      impressions: 0,
+    };
+    current.earningsMicros += row.earningsMicros;
+    current.adRequests += row.adRequests;
+    current.matchedRequests += row.matchedRequests;
+    current.impressions += row.impressions;
+    grouped.set(key, current);
+  }
+
+  return Array.from(grouped.values())
+    .map((item) => ({
+      format: item.format,
+      earningsTry: round4(item.earningsMicros / 1_000_000),
+      ecpmTry: round4(calculateEcpmTry(item.earningsMicros, item.impressions)),
+      adRequests: item.adRequests,
+      matchedRequests: item.matchedRequests,
+      impressions: item.impressions,
+      fillRatePct: round2(calculateRate(item.matchedRequests, item.adRequests)),
+      showRatePct: round2(calculateRate(item.impressions, item.matchedRequests)),
+    }))
+    .sort((left, right) => right.adRequests - left.adRequests || right.earningsTry - left.earningsTry);
+}
+
+function countAlertReasons(alerts: ReportAlert[]): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const alert of alerts) {
+    for (const reason of alert.reasons) {
+      counts.set(reason, (counts.get(reason) ?? 0) + 1);
+    }
+  }
+  return Object.fromEntries(
+    Array.from(counts.entries()).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])),
+  );
+}
+
 function readThresholdEnv(envValue: string | undefined, fallback: number): number {
   const raw = Number(envValue);
   if (!Number.isFinite(raw)) return fallback;
@@ -1934,7 +2009,7 @@ async function fetchAdMobAppVersionRows(
           startDate: toAdMobDate(startDate),
           endDate: toAdMobDate(endDate),
         },
-        dimensions: ["APP", "APP_VERSION_NAME"],
+        dimensions: ["APP", "APP_VERSION_NAME", "FORMAT"],
         metrics: ["ESTIMATED_EARNINGS", "AD_REQUESTS", "MATCHED_REQUESTS", "IMPRESSIONS"],
       },
     }),
@@ -1955,6 +2030,7 @@ async function fetchAdMobAppVersionRows(
       appId: String(dimensions.APP?.value ?? ""),
       appLabel: String(dimensions.APP?.displayLabel ?? dimensions.APP?.value ?? "unknown"),
       versionName: String(dimensions.APP_VERSION_NAME?.value ?? ""),
+      format: String(dimensions.FORMAT?.value ?? "unknown"),
       earningsMicros: readMetric(row, "ESTIMATED_EARNINGS"),
       adRequests: readMetric(row, "AD_REQUESTS"),
       matchedRequests: readMetric(row, "MATCHED_REQUESTS"),
@@ -2216,6 +2292,9 @@ function buildWeeklyReport(
     .filter((item) => item.reasons.length > 0)
     .sort((left, right) => right.adRequests - left.adRequests);
 
+  const formatBreakdown = buildFormatBreakdownFromRows(stats);
+  const diagnosticReasonCounts = countAlertReasons(alerts);
+
   return {
     generatedAt: new Date().toISOString(),
     rangeStart,
@@ -2232,6 +2311,8 @@ function buildWeeklyReport(
       fillRatePct: round2(calculateRate(totalsRaw.matchedRequests, totalsRaw.adRequests)),
       showRatePct: round2(calculateRate(totalsRaw.impressions, totalsRaw.matchedRequests)),
     },
+    formatBreakdown,
+    diagnosticReasonCounts,
     stats: reportStats,
     alerts,
   };
@@ -2301,6 +2382,7 @@ async function generateTodayReport(env: Env): Promise<TodayReportPayload> {
         ...reportBase,
         status: "misconfigured",
         totals: zeroAdTotals(),
+        formatBreakdown: [],
         issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN)",
       };
     }
@@ -2308,6 +2390,7 @@ async function generateTodayReport(env: Env): Promise<TodayReportPayload> {
     const accessToken = await fetchAdMobAccessToken(config);
     const accountName = await resolveAdMobAccountName(config, accessToken);
     const rows = await fetchAdMobNetworkRows(accountName, accessToken, now, now);
+    const formatBreakdown = buildFormatBreakdownFromRows(rows);
 
     const totalsRaw = rows.reduce(
       (acc, item) => {
@@ -2332,12 +2415,14 @@ async function generateTodayReport(env: Env): Promise<TodayReportPayload> {
         fillRatePct: round2(calculateRate(totalsRaw.matchedRequests, totalsRaw.adRequests)),
         showRatePct: round2(calculateRate(totalsRaw.impressions, totalsRaw.matchedRequests)),
       },
+      formatBreakdown,
     };
   } catch (error) {
     return {
       ...reportBase,
       status: "error",
       totals: zeroAdTotals(),
+      formatBreakdown: [],
       issue: error instanceof Error ? error.message : "Unknown report generation error",
     };
   }
@@ -2363,6 +2448,7 @@ async function generateTodayLatestLiveReport(
         liveVersionCount: 0,
         filteredLegacyRows: 0,
         unmappedRows: 0,
+        formatBreakdown: [],
         apps: [],
         issue: "Missing app catalog for latest-version report",
       };
@@ -2377,6 +2463,7 @@ async function generateTodayLatestLiveReport(
         liveVersionCount: 0,
         filteredLegacyRows: 0,
         unmappedRows: 0,
+        formatBreakdown: [],
         apps: [],
         issue: "Missing AdMob env (ADMOB_CLIENT_ID/SECRET/REFRESH_TOKEN)",
       };
@@ -2400,6 +2487,7 @@ async function generateTodayLatestLiveReport(
     }>();
     let filteredLegacyRows = 0;
     let unmappedRows = 0;
+    const matchedRows: VersionedNetworkRow[] = [];
 
     for (const row of rows) {
       const packageName = resolvePackageForAdMobLabel(row.appLabel, catalog);
@@ -2413,6 +2501,7 @@ async function generateTodayLatestLiveReport(
         filteredLegacyRows += 1;
         continue;
       }
+      matchedRows.push(row);
 
       const current = grouped.get(packageName) ?? {
         packageName,
@@ -2455,6 +2544,7 @@ async function generateTodayLatestLiveReport(
       },
       { earningsTry: 0, adRequests: 0, matchedRequests: 0, impressions: 0 },
     );
+    const formatBreakdown = buildFormatBreakdownFromRows(matchedRows);
 
     return {
       ...reportBase,
@@ -2471,6 +2561,7 @@ async function generateTodayLatestLiveReport(
       liveVersionCount: liveVersionNames.size,
       filteredLegacyRows,
       unmappedRows,
+      formatBreakdown,
       apps,
     };
   } catch (error) {
@@ -2481,6 +2572,7 @@ async function generateTodayLatestLiveReport(
       liveVersionCount: 0,
       filteredLegacyRows: 0,
       unmappedRows: 0,
+      formatBreakdown: [],
       apps: [],
       issue: error instanceof Error ? error.message : "Unknown latest-version report generation error",
     };
@@ -2660,6 +2752,8 @@ function normalizeWeeklyReport(
       status: "misconfigured",
       thresholds: { minRequests: 500, fillRatePct: 55, showRatePct: 20 },
       totals: zeroAdTotals(),
+      formatBreakdown: [],
+      diagnosticReasonCounts: {},
       alerts: [],
       issue: "No ad performance report found yet.",
     };
@@ -2676,6 +2770,11 @@ function normalizeWeeklyReport(
     totals: (raw.totals && typeof raw.totals === "object")
       ? raw.totals
       : zeroAdTotals(),
+    formatBreakdown: Array.isArray(raw.formatBreakdown) ? raw.formatBreakdown : [],
+    diagnosticReasonCounts:
+      (raw.diagnosticReasonCounts && typeof raw.diagnosticReasonCounts === "object")
+        ? raw.diagnosticReasonCounts
+        : {},
     alerts: Array.isArray(raw.alerts) ? raw.alerts : [],
     issue: asString(raw.issue) || undefined,
     today: raw.today,
@@ -2689,6 +2788,7 @@ function normalizeTodayReport(raw: Record<string, unknown> | null): Record<strin
       date: new Date().toISOString().slice(0, 10),
       status: "misconfigured",
       totals: zeroAdTotals(),
+      formatBreakdown: [],
       issue: "No ad performance report found yet.",
     };
   }
@@ -2703,6 +2803,7 @@ function normalizeTodayReport(raw: Record<string, unknown> | null): Record<strin
       date: new Date().toISOString().slice(0, 10),
       status: "misconfigured",
       totals: zeroAdTotals(),
+      formatBreakdown: [],
       issue: "Today report is not available in latest ad report document.",
     };
   }
@@ -2712,6 +2813,7 @@ function normalizeTodayReport(raw: Record<string, unknown> | null): Record<strin
     date: asString(today.date) || new Date().toISOString().slice(0, 10),
     status: (asString(today.status) as "ok" | "misconfigured" | "error") || "ok",
     totals: (today.totals && typeof today.totals === "object") ? today.totals : zeroAdTotals(),
+    formatBreakdown: Array.isArray(today.formatBreakdown) ? today.formatBreakdown : [],
     issue: asString(today.issue) || undefined,
   };
 }

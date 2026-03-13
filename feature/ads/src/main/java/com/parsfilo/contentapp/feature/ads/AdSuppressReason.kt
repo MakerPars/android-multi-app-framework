@@ -14,4 +14,5 @@ enum class AdSuppressReason(val analyticsValue: String) {
     PLACEMENT_DISABLED("placement_disabled"),
     INTRO_SKIPPED("intro_skipped"),
     NOT_LOADED("not_loaded"),
+    AD_GATE("ad_gate"),
 }

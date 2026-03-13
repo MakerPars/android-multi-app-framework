@@ -45,6 +45,7 @@ class AppOpenAdManager @Inject constructor(
     private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
 
     fun isShowingAdNow(): Boolean = isShowingAd
+    fun isAdReady(): Boolean = isAdAvailable()
 
     fun loadAd(
         adUnitId: String,
@@ -179,11 +180,19 @@ class AppOpenAdManager @Inject constructor(
     suspend fun showAdIfAvailable(
         activity: Activity,
         route: String? = null,
+        triggerReason: AppOpenTriggerReason = AppOpenTriggerReason.RESUME,
         onAdImpression: (String) -> Unit = {},
         onShowComplete: (ShowCompletionReason) -> Unit,
     ) {
         if (isShowingAd) {
             Timber.d("AppOpen show skipped: ad already showing route=%s", route)
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                suppressReason = AdSuppressReason.RAPID_REPEAT,
+                route = route,
+                trigger = triggerReason.analyticsValue,
+            )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
@@ -195,6 +204,13 @@ class AppOpenAdManager @Inject constructor(
                 adUnitId = currentAdUnitId ?: "unknown",
                 suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
+            )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                suppressReason = AdSuppressReason.NO_CONSENT,
+                route = route,
+                trigger = triggerReason.analyticsValue,
             )
             clearAd()
             onShowComplete(ShowCompletionReason.BLOCKED)
@@ -217,6 +233,13 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
+                route = route,
+                trigger = triggerReason.analyticsValue,
+            )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
@@ -235,6 +258,13 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = reason,
                 route = route,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                suppressReason = reason,
+                route = route,
+                trigger = triggerReason.analyticsValue,
+            )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
         }
@@ -252,6 +282,13 @@ class AppOpenAdManager @Inject constructor(
                 adUnitId = currentAdUnitId ?: "unknown",
                 suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
+            )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                suppressReason = AdSuppressReason.COOLDOWN,
+                route = route,
+                trigger = triggerReason.analyticsValue,
             )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
@@ -272,12 +309,25 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.NOT_LOADED,
                 route = route,
             )
+            adRevenueLogger.logShowNotLoaded(
+                adFormat = AdFormat.APP_OPEN,
+                placement = currentPlacement,
+                route = route,
+                trigger = triggerReason.analyticsValue,
+            )
             onShowComplete(ShowCompletionReason.NOT_LOADED)
             return
         }
 
         var impressionStampRecorded = false
         isShowingAd = true
+        adRevenueLogger.logShowStarted(
+            adFormat = AdFormat.APP_OPEN,
+            placement = currentPlacement,
+            adUnitId = ad.adUnitId,
+            route = route,
+            trigger = triggerReason.analyticsValue,
+        )
         Timber.d(
             "AppOpen show starting placement=%s route=%s adUnit=%s",
             currentPlacement.analyticsValue,
@@ -297,6 +347,13 @@ class AppOpenAdManager @Inject constructor(
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,
                     route = route,
+                )
+                adRevenueLogger.logShowDismissed(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerReason.analyticsValue,
                 )
                 appOpenAd = null
                 isShowingAd = false
@@ -319,6 +376,15 @@ class AppOpenAdManager @Inject constructor(
                     errorMessage = adError.message,
                     route = route,
                 )
+                adRevenueLogger.logShowFailed(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerReason.analyticsValue,
+                    errorCode = adError.code,
+                    errorMessage = adError.message,
+                )
                 appOpenAd = null
                 isShowingAd = false
                 onShowComplete(ShowCompletionReason.ATTEMPTED)
@@ -336,6 +402,13 @@ class AppOpenAdManager @Inject constructor(
                     placement = currentPlacement,
                     adUnitId = ad.adUnitId,
                     route = route,
+                )
+                adRevenueLogger.logShowImpression(
+                    adFormat = AdFormat.APP_OPEN,
+                    placement = currentPlacement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerReason.analyticsValue,
                 )
                 onAdImpression(ad.adUnitId)
                 if (shouldRecordImpressionStamp(impressionStampRecorded)) {

@@ -27,6 +27,7 @@ data class AdsPolicyConfig(
     val interstitialRouteBlocklist: Set<String>,
     val nativePoolMax: Int,
     val nativeTtlMs: Long,
+    val nativeExactPlacementOnly: Boolean,
 ) {
     fun interstitialFrequencyCapForPackage(packageName: String): Long =
         if (packageName in interstitialRelaxedPackages) {
@@ -72,4 +73,14 @@ data class AdsPolicyConfig(
             AdFormat.REWARDED_INTERSTITIAL -> rewardedInterstitialEnabled
         }
     }
+
+    fun isBlockedContext(vararg values: String?): Boolean =
+        values
+            .asSequence()
+            .filterNotNull()
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+            .any { candidate ->
+                appOpenRouteBlocklist.contains(candidate) || interstitialRouteBlocklist.contains(candidate)
+            }
 }

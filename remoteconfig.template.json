@@ -33,7 +33,7 @@
     },
     "ads_interstitial_frequency_cap_ms": {
       "defaultValue": {
-        "value": "150000"
+        "value": "90000"
       }
     },
     "ads_interstitial_relaxed_frequency_cap_ms": {
@@ -48,22 +48,22 @@
     },
     "ads_app_open_cooldown_ms": {
       "defaultValue": {
-        "value": "240000"
+        "value": "120000"
       }
     },
     "ads_app_open_resume_gap_ms": {
       "defaultValue": {
-        "value": "45000"
+        "value": "15000"
       }
     },
     "ads_app_open_max_per_session": {
       "defaultValue": {
-        "value": "1"
+        "value": "2"
       }
     },
     "ads_interstitial_max_per_session": {
       "defaultValue": {
-        "value": "4"
+        "value": "5"
       }
     },
     "ads_rewarded_interstitial_min_interval_ms": {
@@ -89,6 +89,11 @@
     "ads_native_ttl_ms": {
       "defaultValue": {
         "value": "1800000"
+      }
+    },
+    "ads_native_exact_placement_only": {
+      "defaultValue": {
+        "value": "false"
       }
     },
     "ads_interstitial_placements_disabled_csv": {
@@ -123,12 +128,12 @@
     },
     "ads_app_open_route_blocklist_csv": {
       "defaultValue": {
-        "value": "quran_sura_detail/{suranumber},prayer_detail/{prayerid},subscription,rewards"
+        "value": "subscription,rewards,settings"
       }
     },
     "ads_interstitial_route_blocklist_csv": {
       "defaultValue": {
-        "value": "content,prayer_detail/{prayerid}"
+        "value": "subscription,rewards,settings"
       }
     },
     "audio_base_url": {

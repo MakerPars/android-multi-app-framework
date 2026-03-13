@@ -30,6 +30,128 @@ data class AdPaidEventContext(
 class AdRevenueLogger @Inject constructor(
     private val appAnalytics: AppAnalytics,
 ) {
+    fun logShowIntent(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        route: String? = null,
+        trigger: String? = null,
+        adReady: Boolean? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_intent format=%s placement=%s route=%s trigger=%s adReady=%s canRequestAds=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            adReady?.toString() ?: "n/a",
+            AdsConsentRuntimeState.canRequestAds.value,
+        )
+    }
+
+    fun logShowBlocked(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        suppressReason: AdSuppressReason,
+        route: String? = null,
+        trigger: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_blocked format=%s placement=%s route=%s trigger=%s reason=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            suppressReason.analyticsValue,
+        )
+    }
+
+    fun logShowNotLoaded(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        route: String? = null,
+        trigger: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_not_loaded format=%s placement=%s route=%s trigger=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+        )
+    }
+
+    fun logShowStarted(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        trigger: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_started format=%s placement=%s route=%s trigger=%s adUnit=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            adUnitId,
+        )
+    }
+
+    fun logShowImpression(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        trigger: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_impression format=%s placement=%s route=%s trigger=%s adUnit=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            adUnitId,
+        )
+    }
+
+    fun logShowDismissed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        trigger: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_dismissed format=%s placement=%s route=%s trigger=%s adUnit=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            adUnitId,
+        )
+    }
+
+    fun logShowFailed(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        trigger: String? = null,
+        errorCode: Int? = null,
+        errorMessage: String? = null,
+    ) {
+        Timber.tag("timber_log").d(
+            "show_failed format=%s placement=%s route=%s trigger=%s adUnit=%s code=%s msg=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            trigger ?: "unknown",
+            adUnitId,
+            errorCode?.toString() ?: "n/a",
+            errorMessage ?: "n/a",
+        )
+    }
+
     fun logRequest(
         adFormat: AdFormat,
         placement: AdPlacement,

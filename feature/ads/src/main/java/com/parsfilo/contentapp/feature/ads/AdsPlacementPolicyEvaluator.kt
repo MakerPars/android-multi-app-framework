@@ -8,6 +8,7 @@ data class AdRequestContext(
     val format: AdFormat,
     val placement: AdPlacement,
     val route: String?,
+    val screenRoute: String? = route,
     val privacyState: AdsPrivacyState,
     val isPremium: Boolean,
     val isRewardedAdFree: Boolean,
@@ -15,6 +16,8 @@ data class AdRequestContext(
     val lastShownAtMs: Long?,
     val resumeGapMs: Long?,
     val contentInProgress: Boolean,
+    val appOpenTriggerReason: AppOpenTriggerReason? = null,
+    val interstitialTriggerKind: InterstitialTriggerKind? = null,
 )
 
 sealed interface AdEligibility {
@@ -47,7 +50,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         if (context.isPremium) return blocked("interstitial", AdSuppressReason.PREMIUM, context)
         if (context.isRewardedAdFree) return blocked("interstitial", AdSuppressReason.REWARDED_FREE, context)
         if (context.contentInProgress) return blocked("interstitial", AdSuppressReason.CONTENT_IN_PROGRESS, context)
-        if (context.route?.lowercase() in policy.interstitialRouteBlocklist) {
+        if (matchesContext(policy.interstitialRouteBlocklist, context.screenRoute, context.route, context.interstitialTriggerKind?.analyticsValue)) {
             return blocked("interstitial", AdSuppressReason.ROUTE_BLOCKED, context)
         }
         val lastShownAtMs = context.lastShownAtMs
@@ -82,7 +85,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         if (context.isPremium) return blocked("app_open", AdSuppressReason.PREMIUM, context)
         if (context.isRewardedAdFree) return blocked("app_open", AdSuppressReason.REWARDED_FREE, context)
         if (context.contentInProgress) return blocked("app_open", AdSuppressReason.CONTENT_IN_PROGRESS, context)
-        if (context.route?.lowercase() in policy.appOpenRouteBlocklist) {
+        if (matchesContext(policy.appOpenRouteBlocklist, context.screenRoute, context.route, context.appOpenTriggerReason?.analyticsValue)) {
             return blocked("app_open", AdSuppressReason.ROUTE_BLOCKED, context)
         }
         val resumeGapMs = effectiveCooldownMs(policy.appOpenResumeGapMs)
@@ -162,4 +165,19 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         )
         return AdEligibility.Allowed
     }
+
+    private fun matchesContext(
+        blocklist: Set<String>,
+        vararg values: String?,
+    ): Boolean =
+        values
+            .asSequence()
+            .filterNotNull()
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+            .any { candidate ->
+                blocklist.any { blocked ->
+                    candidate == blocked || candidate.startsWith("$blocked/")
+                }
+            }
 }

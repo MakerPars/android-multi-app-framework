@@ -7,6 +7,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.parsfilo.contentapp.feature.ads.AppOpenTriggerReason
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,6 +25,7 @@ class AppOpenLifecycleCoordinator @Inject constructor(
 
     private val isRegistered = AtomicBoolean(false)
     private val pendingForegroundRequest = AtomicBoolean(false)
+    private val firstForegroundHandled = AtomicBoolean(false)
 
     fun register(application: Application) {
         if (isRegistered.getAndSet(true)) {
@@ -35,13 +38,8 @@ class AppOpenLifecycleCoordinator @Inject constructor(
     }
 
     override fun onStart(owner: LifecycleOwner) {
-        val foregroundActivity = currentActivity
-        if (foregroundActivity == null) {
-            pendingForegroundRequest.set(true)
-            Timber.d("Process onStart: activity not ready yet, app-open request queued")
-            return
-        }
-        requestAppOpen(foregroundActivity, source = "process_on_start")
+        pendingForegroundRequest.set(true)
+        Timber.d("Process onStart: app-open request queued for next resumed activity")
     }
 
     override fun onStop(owner: LifecycleOwner) {
@@ -55,13 +53,25 @@ class AppOpenLifecycleCoordinator @Inject constructor(
         if (!adOrchestrator.isAppOpenAdShowing()) {
             currentActivity = activity
             Timber.d("Activity started for app-open tracking=%s", activity::class.java.simpleName)
-            if (pendingForegroundRequest.compareAndSet(true, false)) {
-                requestAppOpen(activity, source = "activity_started_after_process_on_start")
-            }
         }
     }
 
-    override fun onActivityResumed(activity: Activity) = Unit
+    override fun onActivityResumed(activity: Activity) {
+        if (adOrchestrator.isAppOpenAdShowing()) return
+        currentActivity = activity
+        if (pendingForegroundRequest.compareAndSet(true, false)) {
+            val triggerReason = if (firstForegroundHandled.compareAndSet(false, true)) {
+                AppOpenTriggerReason.COLD_START
+            } else {
+                AppOpenTriggerReason.RESUME
+            }
+            requestAppOpen(
+                activity = activity,
+                source = "activity_resumed_after_process_on_start",
+                triggerReason = triggerReason,
+            )
+        }
+    }
 
     override fun onActivityPaused(activity: Activity) = Unit
 
@@ -76,7 +86,11 @@ class AppOpenLifecycleCoordinator @Inject constructor(
         }
     }
 
-    private fun requestAppOpen(activity: Activity, source: String) {
+    private fun requestAppOpen(
+        activity: Activity,
+        source: String,
+        triggerReason: AppOpenTriggerReason,
+    ) {
         Timber.d(
             "Requesting app-open source=%s activity=%s",
             source,
@@ -84,7 +98,8 @@ class AppOpenLifecycleCoordinator @Inject constructor(
         )
         ProcessLifecycleOwner.get().lifecycleScope.launch {
             runCatching {
-                adOrchestrator.showAppOpenAdIfEligible(activity)
+                delay(350L)
+                adOrchestrator.showAppOpenAdIfEligible(activity, triggerReason)
             }.onFailure { error ->
                 Timber.w(error, "Failed to show app open ad source=%s", source)
             }

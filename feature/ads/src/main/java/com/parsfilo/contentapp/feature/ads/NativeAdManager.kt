@@ -90,6 +90,11 @@ class NativeAdManager @Inject constructor(
                 suppressReason = resolveSuppressReasonForNative(placement, policy),
                 route = null,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                suppressReason = resolveSuppressReasonForNative(placement, policy),
+            )
             destroyAds()
             return
         }
@@ -225,6 +230,11 @@ class NativeAdManager @Inject constructor(
 
     fun getNativeAd(placement: AdPlacement = AdPlacement.NATIVE_DEFAULT): NativeAd? {
         val policy = adsPolicyProvider.getPolicy()
+        adRevenueLogger.logShowIntent(
+            adFormat = AdFormat.NATIVE,
+            placement = placement,
+            adReady = synchronized(nativeAds) { nativeAds.any { it.placement == placement } || nativeAds.isNotEmpty() },
+        )
         if (!canUseNativeAds(placement, policy)) {
             Timber.d(
                 "Native get blocked placement=%s reason=%s",
@@ -238,6 +248,11 @@ class NativeAdManager @Inject constructor(
                 suppressReason = resolveSuppressReasonForNative(placement, policy),
                 route = null,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                suppressReason = resolveSuppressReasonForNative(placement, policy),
+            )
             destroyAds()
             return null
         }
@@ -247,7 +262,7 @@ class NativeAdManager @Inject constructor(
             val exactIdx = nativeAds.indexOfFirst { it.placement == placement }
             val idx = when {
                 exactIdx >= 0 -> exactIdx
-                nativeAds.isNotEmpty() -> 0
+                !policy.nativeExactPlacementOnly && nativeAds.isNotEmpty() -> 0
                 else -> null
             }
             if (idx == null) {
@@ -277,6 +292,13 @@ class NativeAdManager @Inject constructor(
                 pooled.placement.analyticsValue,
                 pooled.adUnitId,
             )
+            adRevenueLogger.logShowStarted(
+                adFormat = AdFormat.NATIVE,
+                placement = pooled.placement,
+                adUnitId = pooled.adUnitId,
+                route = null,
+                trigger = "native_slot",
+            )
             adRevenueLogger.logServed(
                 adFormat = AdFormat.NATIVE,
                 placement = pooled.placement,
@@ -285,10 +307,16 @@ class NativeAdManager @Inject constructor(
         }
         if (pooled == null) {
             Timber.d(
-                "Native get returned null placement=%s poolSize=%d loading=%s",
+                "Native get returned null placement=%s poolSize=%d loading=%s exactOnly=%s",
                 placement.analyticsValue,
                 currentSize,
                 isLoading,
+                policy.nativeExactPlacementOnly,
+            )
+            adRevenueLogger.logShowNotLoaded(
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                trigger = if (policy.nativeExactPlacementOnly) "exact_only" else "pool_empty",
             )
         }
 
@@ -332,11 +360,11 @@ class NativeAdManager @Inject constructor(
     private fun resolveSuppressReasonForNative(
         placement: AdPlacement,
         policy: AdsPolicyConfig = adsPolicyProvider.getPolicy(),
-    ): String =
+    ): AdSuppressReason =
         when {
-            !AdsConsentRuntimeState.canRequestAds.value -> "no_consent"
-            !policy.isNativePlacementEnabled(placement) -> "placement_disabled"
-            !canShowAdsByGate -> "ad_gate"
-            else -> "not_loaded"
+            !AdsConsentRuntimeState.canRequestAds.value -> AdSuppressReason.NO_CONSENT
+            !policy.isNativePlacementEnabled(placement) -> AdSuppressReason.PLACEMENT_DISABLED
+            !canShowAdsByGate -> AdSuppressReason.AD_GATE
+            else -> AdSuppressReason.NOT_LOADED
         }
 }

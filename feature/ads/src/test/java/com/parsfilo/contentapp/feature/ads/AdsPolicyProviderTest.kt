@@ -47,6 +47,8 @@ class AdsPolicyProviderTest {
             .isEqualTo(AdsPolicyProvider.DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION)
         assertThat(policy.nativePoolMax).isEqualTo(AdsPolicyProvider.DEFAULT_NATIVE_POOL_MAX)
         assertThat(policy.nativeTtlMs).isEqualTo(AdsPolicyProvider.DEFAULT_NATIVE_TTL_MS)
+        assertThat(policy.nativeExactPlacementOnly)
+            .isEqualTo(AdsPolicyProvider.DEFAULT_NATIVE_EXACT_PLACEMENT_ONLY)
 
         assertThat(policy.bannerEnabled).isTrue()
         assertThat(policy.nativeEnabled).isFalse()
@@ -99,6 +101,7 @@ class AdsPolicyProviderTest {
             .isEqualTo(360_000L)
         assertThat(policy.interstitialFrequencyCapForPackage("com.parsfilo.kible"))
             .isEqualTo(180_000L)
+        assertThat(policy.nativeExactPlacementOnly).isFalse()
     }
 
     private fun mockRemoteConfig(

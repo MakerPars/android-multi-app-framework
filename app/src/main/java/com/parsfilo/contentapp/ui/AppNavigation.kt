@@ -26,6 +26,7 @@ import com.parsfilo.contentapp.core.firebase.logAudioStop
 import com.parsfilo.contentapp.core.firebase.logScreenView
 import com.parsfilo.contentapp.core.model.DisplayMode
 import com.parsfilo.contentapp.feature.ads.AdPlacement
+import com.parsfilo.contentapp.feature.ads.InterstitialTriggerKind
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialIntroSpec
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdItem
@@ -105,19 +106,22 @@ fun AppNavHost(
     fun requestInterstitialAd(
         placement: AdPlacement = AdPlacement.INTERSTITIAL_NAV_BREAK,
         route: String? = null,
+        triggerKind: InterstitialTriggerKind = InterstitialTriggerKind.NAV_BREAK,
         onAdDismissed: () -> Unit = {},
     ) {
         val activity = hostActivity ?: return
         Timber.d(
-            "AppNavigation interstitial requested placement=%s route=%s",
+            "AppNavigation interstitial requested placement=%s route=%s trigger=%s",
             placement.analyticsValue,
             route,
+            triggerKind.analyticsValue,
         )
         coroutineScope.launch {
             activity.adOrchestrator.showInterstitialIfEligible(
                 activity = activity,
                 placement = placement,
                 route = route,
+                triggerKind = triggerKind,
                 onAdDismissed = onAdDismissed,
             )
         }
@@ -233,6 +237,7 @@ fun AppNavHost(
                         requestInterstitialAd(
                             placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                             route = AppRoute.ZikirCounter.route,
+                            triggerKind = InterstitialTriggerKind.NAV_BREAK,
                         )
                     },
                     onShowRewardedHistoryAd = { onUnlocked ->
@@ -282,9 +287,10 @@ fun AppNavHost(
                                 navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
                             } else {
                                 requestInterstitialAd(
-                                    placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
-                                    route = AppRoute.QuranSuraList.route,
-                                    onAdDismissed = {
+                                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                                route = AppRoute.QuranSuraList.route,
+                                triggerKind = InterstitialTriggerKind.NAV_BREAK,
+                                onAdDismissed = {
                                         navController.navigate(AppRoute.QuranSuraDetail.createRoute(suraNumber))
                                     },
                                 )
@@ -387,6 +393,7 @@ fun AppNavHost(
                             requestInterstitialAd(
                                 placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                 route = "mode_switch_content",
+                                triggerKind = InterstitialTriggerKind.MODE_SWITCH,
                             )
                         }
                     }, audioPlayerContent = {
@@ -401,6 +408,7 @@ fun AppNavHost(
                                     requestInterstitialAd(
                                         placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                         route = "audio_pause_content",
+                                        triggerKind = InterstitialTriggerKind.AUDIO_PAUSE,
                                     )
                                 } else {
                                     hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
@@ -420,6 +428,7 @@ fun AppNavHost(
                                     requestInterstitialAd(
                                         placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                         route = "audio_stop_content",
+                                        triggerKind = InterstitialTriggerKind.AUDIO_STOP,
                                     )
                                 }
                                 audioPlayerViewModel.stop()
@@ -450,6 +459,7 @@ fun AppNavHost(
                             requestInterstitialAd(
                                 placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                 route = AppRoute.PrayerList.route,
+                                triggerKind = InterstitialTriggerKind.NAV_BREAK,
                                 onAdDismissed = {
                                     navController.navigate(AppRoute.PrayerDetail.createRoute(prayerId))
                                 },
@@ -492,6 +502,7 @@ fun AppNavHost(
                             requestInterstitialAd(
                                 placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                 route = "mode_switch_prayer_detail",
+                                triggerKind = InterstitialTriggerKind.MODE_SWITCH,
                             )
                         }
                     },
@@ -507,6 +518,7 @@ fun AppNavHost(
                                     requestInterstitialAd(
                                         placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                         route = "audio_pause_prayer_detail",
+                                        triggerKind = InterstitialTriggerKind.AUDIO_PAUSE,
                                     )
                                 } else {
                                     hostActivity?.adOrchestrator?.updateSessionContext(audioPlayed = true)
@@ -526,6 +538,7 @@ fun AppNavHost(
                                     requestInterstitialAd(
                                         placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                         route = "audio_stop_prayer_detail",
+                                        triggerKind = InterstitialTriggerKind.AUDIO_STOP,
                                     )
                                 }
                                 audioPlayerViewModel.stop()
@@ -560,6 +573,7 @@ fun AppNavHost(
                             requestInterstitialAd(
                                 placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
                                 route = AppRoute.MiraclesList.route,
+                                triggerKind = InterstitialTriggerKind.NAV_BREAK,
                                 onAdDismissed = {
                                     navController.navigate(AppRoute.MiraclesDetail.createRoute(prayerIndex))
                                 },

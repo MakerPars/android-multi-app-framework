@@ -36,6 +36,7 @@ class InterstitialAdManager @Inject constructor(
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
+    fun isAdReady(): Boolean = interstitialAd != null
 
     fun loadAd(
         loadContext: Context,
@@ -178,13 +179,22 @@ class InterstitialAdManager @Inject constructor(
         activity: Activity,
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
+        triggerKind: InterstitialTriggerKind = InterstitialTriggerKind.NAV_BREAK,
         onAdImpression: (String) -> Unit = {},
         onAdDismissed: () -> Unit,
     ) {
+        adRevenueLogger.logShowIntent(
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = placement,
+            route = route,
+            trigger = triggerKind.analyticsValue,
+            adReady = interstitialAd != null,
+        )
         Timber.d(
-            "Interstitial show requested placement=%s route=%s adReady=%s",
+            "Interstitial show requested placement=%s route=%s trigger=%s adReady=%s",
             placement.analyticsValue,
             route,
+            triggerKind.analyticsValue,
             interstitialAd != null,
         )
         if (!AdsConsentRuntimeState.canRequestAds.value) {
@@ -194,6 +204,13 @@ class InterstitialAdManager @Inject constructor(
                 adUnitId = currentAdUnitId ?: "unknown",
                 suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
+            )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                suppressReason = AdSuppressReason.NO_CONSENT,
+                route = route,
+                trigger = triggerKind.analyticsValue,
             )
             clearAd()
             onAdDismissed()
@@ -213,6 +230,13 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = reason,
                 route = route,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                suppressReason = reason,
+                route = route,
+                trigger = triggerKind.analyticsValue,
+            )
             onAdDismissed()
             return
         }
@@ -226,6 +250,13 @@ class InterstitialAdManager @Inject constructor(
                 adUnitId = currentAdUnitId ?: "unknown",
                 suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
+            )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
+                route = route,
+                trigger = triggerKind.analyticsValue,
             )
             onAdDismissed()
             return
@@ -254,6 +285,13 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
             )
+            adRevenueLogger.logShowBlocked(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                suppressReason = AdSuppressReason.COOLDOWN,
+                route = route,
+                trigger = triggerKind.analyticsValue,
+            )
             onAdDismissed()
             return
         }
@@ -268,6 +306,12 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.NOT_LOADED,
                 route = route,
             )
+            adRevenueLogger.logShowNotLoaded(
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                route = route,
+                trigger = triggerKind.analyticsValue,
+            )
             onAdDismissed()
             maybeReload()
             return
@@ -276,6 +320,13 @@ class InterstitialAdManager @Inject constructor(
         currentPlacement = placement
         currentRoute = route
         var impressionStampRecorded = false
+        adRevenueLogger.logShowStarted(
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = placement,
+            adUnitId = ad.adUnitId,
+            route = route,
+            trigger = triggerKind.analyticsValue,
+        )
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
@@ -285,6 +336,13 @@ class InterstitialAdManager @Inject constructor(
                     placement = placement,
                     adUnitId = ad.adUnitId,
                     route = route,
+                )
+                adRevenueLogger.logShowDismissed(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerKind.analyticsValue,
                 )
                 interstitialAd = null
                 onAdDismissed()
@@ -300,6 +358,15 @@ class InterstitialAdManager @Inject constructor(
                     errorCode = adError.code,
                     errorMessage = adError.message,
                     route = route,
+                )
+                adRevenueLogger.logShowFailed(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerKind.analyticsValue,
+                    errorCode = adError.code,
+                    errorMessage = adError.message,
                 )
                 interstitialAd = null
                 onAdDismissed()
@@ -324,6 +391,13 @@ class InterstitialAdManager @Inject constructor(
                     placement = placement,
                     adUnitId = ad.adUnitId,
                     route = route,
+                )
+                adRevenueLogger.logShowImpression(
+                    adFormat = AdFormat.INTERSTITIAL,
+                    placement = placement,
+                    adUnitId = ad.adUnitId,
+                    route = route,
+                    trigger = triggerKind.analyticsValue,
                 )
                 onAdImpression(ad.adUnitId)
                 if (shouldRecordImpressionStamp(impressionStampRecorded)) {
