@@ -411,6 +411,9 @@ private fun PlansList(
             color = MaterialTheme.colorScheme.onPrimary
         )
     }
+
+    Spacer(modifier = Modifier.height(dimens.space16))
+    SubscriptionDisclosureCard()
 }
 
 @Composable
@@ -445,6 +448,42 @@ private fun FeaturesList() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionDisclosureCard() {
+    val dimens = LocalDimens.current
+    val colorScheme = MaterialTheme.colorScheme
+
+    AppCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+        shape = RoundedCornerShape(dimens.radiusMedium)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(dimens.space16),
+            verticalArrangement = Arrangement.spacedBy(dimens.space8)
+        ) {
+            Text(
+                text = stringResource(R.string.billing_disclosure_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.billing_disclosure_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.billing_disclosure_footer),
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.onSurfaceVariant
+            )
         }
     }
 }
