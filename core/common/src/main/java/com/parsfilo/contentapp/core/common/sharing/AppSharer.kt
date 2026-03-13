@@ -9,7 +9,6 @@ import timber.log.Timber
  * USAGE: Only for recommending the app. NO verse sharing!
  */
 object AppSharer {
-
     private const val WHATSAPP_PACKAGE = "com.whatsapp"
 
     /**
@@ -20,28 +19,35 @@ object AppSharer {
      * @param appName Uygulama ismi
      * @param playStoreUrl Play Store URL
      */
-    fun shareApp(context: Context, appName: String, playStoreUrl: String) {
-        val message = """
+    fun shareApp(
+        context: Context,
+        appName: String,
+        playStoreUrl: String,
+    ) {
+        val message =
+            """
             📖 $appName uygulamasını kullanıyorum, çok beğendim!
 
             Sen de indir: $playStoreUrl
-        """.trimIndent()
+            """.trimIndent()
 
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            `package` = WHATSAPP_PACKAGE
-            putExtra(Intent.EXTRA_TEXT, message)
-        }
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                `package` = WHATSAPP_PACKAGE
+                putExtra(Intent.EXTRA_TEXT, message)
+            }
 
         try {
             context.startActivity(intent)
         } catch (e: android.content.ActivityNotFoundException) {
             Timber.w(e, "WhatsApp not installed, showing general share sheet")
             // WhatsApp yüklü değil - genel paylaşım
-            val fallback = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, message)
-            }
+            val fallback =
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, message)
+                }
             val chooser = Intent.createChooser(fallback, "Uygulamayı Paylaş")
             context.startActivity(chooser)
         }

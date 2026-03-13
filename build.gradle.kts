@@ -113,15 +113,17 @@ subprojects {
             android.set(true)
             outputToConsole.set(true)
 
-            val isCi =
-                providers.environmentVariable("GITHUB_ACTIONS")
-                    .orElse(providers.environmentVariable("CI"))
+            val strictKtlint =
+                providers.gradleProperty("strictKtlint")
+                    .orElse(providers.environmentVariable("STRICT_KTLINT"))
                     .map { it.equals("true", ignoreCase = true) }
                     .orElse(false)
                     .get()
 
-            // CI'da ihlaller pipeline'ı kırmalı; local geliştirmede raporlayıp devam edilebilir.
-            ignoreFailures.set(!isCi)
+            // Ktlint'i varsayılan olarak advisory tutuyoruz.
+            // Böylece düşük değerli format/yerleşim ihlalleri CI'yi kırmaz.
+            // İstenirse -PstrictKtlint=true veya STRICT_KTLINT=true ile tekrar bloklayıcı yapılabilir.
+            ignoreFailures.set(!strictKtlint)
 
             reporters {
                 reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)

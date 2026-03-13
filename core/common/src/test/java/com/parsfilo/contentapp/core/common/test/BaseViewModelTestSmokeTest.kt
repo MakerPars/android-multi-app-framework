@@ -11,16 +11,16 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseViewModelTestSmokeTest : BaseViewModelTest() {
-
     @Test
-    fun `main dispatcher is replaced in tests`() = runTest(testDispatcher) {
-        var ran = false
-        CoroutineScope(Dispatchers.Main).launch {
-            ran = true
-        }
+    fun `main dispatcher is replaced in tests`() =
+        runTest(testDispatcher) {
+            var ran = false
+            CoroutineScope(Dispatchers.Main).launch {
+                ran = true
+            }
 
-        assertThat(ran).isFalse()
-        advanceUntilIdle()
-        assertThat(ran).isTrue()
-    }
+            assertThat(ran).isFalse()
+            advanceUntilIdle()
+            assertThat(ran).isTrue()
+        }
 }

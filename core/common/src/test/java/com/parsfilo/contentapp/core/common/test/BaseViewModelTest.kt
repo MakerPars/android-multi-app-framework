@@ -36,7 +36,6 @@ import org.junit.Before
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class BaseViewModelTest {
-
     protected val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Before
