@@ -59,24 +59,30 @@ fun ContentApp(
     appAnalytics: AppAnalytics,
     onPrivacyOptionsUpdated: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
-    audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel()
+    audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val navController = rememberNavController()
     val adaptiveInfo = currentWindowAdaptiveInfo()
-    val isMediumOrExpanded = adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
-        WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
-    )
+    val isMediumOrExpanded =
+        adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
+            WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
+        )
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle(
-        initialValue = 0
+        initialValue = 0,
     )
-    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle(initialValue = 0)
-    val newOtherAppsCount by viewModel.newOtherAppsCount.collectAsStateWithLifecycle(initialValue = 0)
-    val shouldShowSubscriptionBadge by viewModel.shouldShowSubscriptionBadge.collectAsStateWithLifecycle(
-        initialValue = true
+    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle(
+        initialValue = 0,
     )
+    val newOtherAppsCount by viewModel.newOtherAppsCount.collectAsStateWithLifecycle(
+        initialValue = 0,
+    )
+    val shouldShowSubscriptionBadge by viewModel.shouldShowSubscriptionBadge
+        .collectAsStateWithLifecycle(
+            initialValue = true,
+        )
     val isUserSignedIn by viewModel.isUserSignedIn.collectAsStateWithLifecycle()
     val darkModeEnabled by viewModel.darkModeEnabled.collectAsStateWithLifecycle()
     val updateGateViewModel: UpdateGateViewModel = hiltViewModel()
@@ -86,13 +92,14 @@ fun ContentApp(
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = true
 
-    val topLevelRoutes = listOf(
-        AppRoute.Subscription,
-        AppRoute.OtherApps,
-        AppRoute.HomeGraph,
-        AppRoute.MessagesGraph,
-        AppRoute.NotificationsGraph,
-    )
+    val topLevelRoutes =
+        listOf(
+            AppRoute.Subscription,
+            AppRoute.OtherApps,
+            AppRoute.HomeGraph,
+            AppRoute.MessagesGraph,
+            AppRoute.NotificationsGraph,
+        )
 
     fun navigateToRoute(route: AppRoute) {
         if (route == AppRoute.HomeGraph) {
@@ -114,37 +121,41 @@ fun ContentApp(
         }
     }
 
-    val selectedTopLevelRoute = topLevelRoutes.firstOrNull { destination ->
-        currentDestination?.hierarchy?.any { it.route == destination.route } == true
-    } ?: AppRoute.HomeGraph
+    val selectedTopLevelRoute =
+        topLevelRoutes.firstOrNull { destination ->
+            currentDestination?.hierarchy?.any { it.route == destination.route } == true
+        } ?: AppRoute.HomeGraph
 
-    fun navBadgeText(route: AppRoute): String? {
-        return when (route) {
-            AppRoute.NotificationsGraph -> if (BadgeFeatureFlags.SHOW_NOTIFICATIONS_BADGE) {
-                unreadNotificationCount.toBadgeText()
-            } else {
-                null
-            }
-            AppRoute.OtherApps -> if (BadgeFeatureFlags.SHOW_OTHER_APPS_BADGE) {
-                newOtherAppsCount.toBadgeText()
-            } else {
-                null
-            }
-            AppRoute.MessagesGraph -> if (BadgeFeatureFlags.SHOW_MESSAGES_BADGE) {
-                unreadMessageCount.toBadgeText()
-            } else {
-                null
-            }
-            AppRoute.Subscription -> if (
-                BadgeFeatureFlags.SHOW_SUBSCRIPTION_BADGE && shouldShowSubscriptionBadge
-            ) {
-                "!"
-            } else {
-                null
-            }
+    fun navBadgeText(route: AppRoute): String? =
+        when (route) {
+            AppRoute.NotificationsGraph ->
+                if (BadgeFeatureFlags.SHOW_NOTIFICATIONS_BADGE) {
+                    unreadNotificationCount.toBadgeText()
+                } else {
+                    null
+                }
+            AppRoute.OtherApps ->
+                if (BadgeFeatureFlags.SHOW_OTHER_APPS_BADGE) {
+                    newOtherAppsCount.toBadgeText()
+                } else {
+                    null
+                }
+            AppRoute.MessagesGraph ->
+                if (BadgeFeatureFlags.SHOW_MESSAGES_BADGE) {
+                    unreadMessageCount.toBadgeText()
+                } else {
+                    null
+                }
+            AppRoute.Subscription ->
+                if (
+                    BadgeFeatureFlags.SHOW_SUBSCRIPTION_BADGE && shouldShowSubscriptionBadge
+                ) {
+                    "!"
+                } else {
+                    null
+                }
             else -> null
         }
-    }
 
     LaunchedEffect(selectedTopLevelRoute) {
         viewModel.onTopLevelRouteVisited(selectedTopLevelRoute)
@@ -177,14 +188,15 @@ fun ContentApp(
     }
 
     DisposableEffect(lifecycleOwner, audioPlayerViewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                val isConfigChange = (context as? Activity)?.isChangingConfigurations == true
-                if (!isConfigChange) {
-                    audioPlayerViewModel.stopForAppBackground()
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP) {
+                    val isConfigChange = (context as? Activity)?.isChangingConfigurations == true
+                    if (!isConfigChange) {
+                        audioPlayerViewModel.stopForAppBackground()
+                    }
                 }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -194,10 +206,11 @@ fun ContentApp(
         flavorName = com.parsfilo.contentapp.BuildConfig.FLAVOR_NAME,
     ) {
         Box(
-            modifier = Modifier
-                .testTag("app_root")
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+            modifier =
+                Modifier
+                    .testTag("app_root")
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             if (isMediumOrExpanded && showBottomBar) {
                 NavigationSuiteScaffold(
@@ -207,57 +220,93 @@ fun ContentApp(
                                 selected = route == selectedTopLevelRoute,
                                 onClick = { navigateToRoute(route) },
                                 icon = {
-                                    val iconId = when (route) {
-                                        AppRoute.Subscription -> R.drawable.ic_star
-                                        AppRoute.OtherApps -> R.drawable.ic_apps
-                                        AppRoute.HomeGraph -> R.drawable.ic_home
-                                        AppRoute.MessagesGraph -> R.drawable.ic_email
-                                        AppRoute.NotificationsGraph -> R.drawable.ic_notifications
-                                        else -> R.drawable.ic_home
-                                    }
+                                    val iconId =
+                                        when (route) {
+                                            AppRoute.Subscription -> R.drawable.ic_star
+                                            AppRoute.OtherApps -> R.drawable.ic_apps
+                                            AppRoute.HomeGraph -> R.drawable.ic_home
+                                            AppRoute.MessagesGraph -> R.drawable.ic_email
+                                            AppRoute.NotificationsGraph -> R.drawable.ic_notifications
+                                            else -> R.drawable.ic_home
+                                        }
                                     Icon(
                                         painter = painterResource(id = iconId),
-                                        contentDescription = when (route) {
-                                            AppRoute.Subscription -> stringResource(R.string.nav_premium)
-                                            AppRoute.OtherApps -> stringResource(R.string.nav_apps)
-                                            AppRoute.HomeGraph -> stringResource(R.string.nav_home)
-                                            AppRoute.MessagesGraph -> stringResource(R.string.nav_messages)
-                                            AppRoute.NotificationsGraph -> stringResource(R.string.nav_alerts)
-                                            else -> stringResource(R.string.nav_home)
-                                        }
+                                        contentDescription =
+                                            when (route) {
+                                                AppRoute.Subscription ->
+                                                    stringResource(
+                                                        R.string.nav_premium,
+                                                    )
+                                                AppRoute.OtherApps ->
+                                                    stringResource(
+                                                        R.string.nav_apps,
+                                                    )
+                                                AppRoute.HomeGraph ->
+                                                    stringResource(
+                                                        R.string.nav_home,
+                                                    )
+                                                AppRoute.MessagesGraph ->
+                                                    stringResource(
+                                                        R.string.nav_messages,
+                                                    )
+                                                AppRoute.NotificationsGraph ->
+                                                    stringResource(
+                                                        R.string.nav_alerts,
+                                                    )
+                                                else -> stringResource(R.string.nav_home)
+                                            },
                                     )
                                 },
                                 label = {
                                     Text(
-                                        text = when (route) {
-                                            AppRoute.Subscription -> stringResource(R.string.nav_premium)
-                                            AppRoute.OtherApps -> stringResource(R.string.nav_apps)
-                                            AppRoute.HomeGraph -> stringResource(R.string.nav_home)
-                                            AppRoute.MessagesGraph -> stringResource(R.string.nav_messages)
-                                            AppRoute.NotificationsGraph -> stringResource(R.string.nav_alerts)
-                                            else -> stringResource(R.string.nav_home)
-                                        }
+                                        text =
+                                            when (route) {
+                                                AppRoute.Subscription ->
+                                                    stringResource(
+                                                        R.string.nav_premium,
+                                                    )
+                                                AppRoute.OtherApps ->
+                                                    stringResource(
+                                                        R.string.nav_apps,
+                                                    )
+                                                AppRoute.HomeGraph ->
+                                                    stringResource(
+                                                        R.string.nav_home,
+                                                    )
+                                                AppRoute.MessagesGraph ->
+                                                    stringResource(
+                                                        R.string.nav_messages,
+                                                    )
+                                                AppRoute.NotificationsGraph ->
+                                                    stringResource(
+                                                        R.string.nav_alerts,
+                                                    )
+                                                else -> stringResource(R.string.nav_home)
+                                            },
                                     )
                                 },
-                                badge = navBadgeText(route)?.let { badgeText ->
-                                    { Text(text = badgeText) }
-                                },
+                                badge =
+                                    navBadgeText(route)?.let { badgeText ->
+                                        { Text(text = badgeText) }
+                                    },
                             )
                         }
                     },
                 ) {
                     Scaffold(
                         containerColor = app_transparent,
-                        contentWindowInsets = WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
-                        ),
+                        contentWindowInsets =
+                            WindowInsets.safeDrawing.only(
+                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                            ),
                     ) { innerPadding ->
                         AppNavHost(
                             navController = navController,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                                .consumeWindowInsets(innerPadding),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                                    .consumeWindowInsets(innerPadding),
                             isUserSignedIn = isUserSignedIn,
                             audioPlayerViewModel = audioPlayerViewModel,
                             appAnalytics = appAnalytics,
@@ -274,9 +323,10 @@ fun ContentApp(
             } else {
                 Scaffold(
                     containerColor = app_transparent,
-                    contentWindowInsets = WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
-                    ),
+                    contentWindowInsets =
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                        ),
                     bottomBar = {
                         if (showBottomBar) {
                             AppBottomBarWithFab(
@@ -292,10 +342,11 @@ fun ContentApp(
                 ) { innerPadding ->
                     AppNavHost(
                         navController = navController,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .consumeWindowInsets(innerPadding),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                                .consumeWindowInsets(innerPadding),
                         isUserSignedIn = isUserSignedIn,
                         audioPlayerViewModel = audioPlayerViewModel,
                         appAnalytics = appAnalytics,
@@ -311,17 +362,19 @@ fun ContentApp(
             }
 
             when (val policy = updatePolicy) {
-                is UpdatePolicy.Hard -> HardUpdateRequiredOverlay(
-                    policy = policy,
-                    onUpdateClick = { openPlayStore(context) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
+                is UpdatePolicy.Hard ->
+                    HardUpdateRequiredOverlay(
+                        policy = policy,
+                        onUpdateClick = { openPlayStore(context) },
+                        modifier = Modifier.align(Alignment.Center),
+                    )
 
-                is UpdatePolicy.Soft -> SoftUpdateDialog(
-                    policy = policy,
-                    onUpdateClick = { openPlayStore(context) },
-                    onLaterClick = updateGateViewModel::dismissSoftPromptForSession,
-                )
+                is UpdatePolicy.Soft ->
+                    SoftUpdateDialog(
+                        policy = policy,
+                        onUpdateClick = { openPlayStore(context) },
+                        onLaterClick = updateGateViewModel::dismissSoftPromptForSession,
+                    )
 
                 UpdatePolicy.None -> Unit
             }
@@ -329,11 +382,9 @@ fun ContentApp(
     }
 }
 
-private fun Int.toBadgeText(): String? {
-    return when {
+private fun Int.toBadgeText(): String? =
+    when {
         this <= 0 -> null
         this > 9 -> "9+"
         else -> toString()
     }
-}
-

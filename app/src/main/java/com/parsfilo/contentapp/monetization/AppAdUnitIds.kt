@@ -30,8 +30,11 @@ object AppAdUnitIds {
         val appOpen: String,
     )
 
-    fun resolve(context: Context, useTestAds: Boolean): Ids {
-        return if (useTestAds) {
+    fun resolve(
+        context: Context,
+        useTestAds: Boolean,
+    ): Ids =
+        if (useTestAds) {
             Ids(
                 banner = AdUnitIds.Test.BANNER,
                 interstitial = AdUnitIds.Test.INTERSTITIAL,
@@ -42,16 +45,17 @@ object AppAdUnitIds {
             )
         } else {
             val rewarded = context.getString(R.string.ad_unit_rewarded)
-            val rewardedInterstitial = stringByNameOrNull(context, "ad_unit_rewarded_interstitial")
-                ?: rewarded.also {
-                    if (!rewardedInterstitialFallbackWarningLogged) {
-                        rewardedInterstitialFallbackWarningLogged = true
-                        Timber.w(
-                            "Missing ad_unit_rewarded_interstitial in ads.xml for %s. Falling back to rewarded unit id.",
-                            context.packageName,
-                        )
+            val rewardedInterstitial =
+                stringByNameOrNull(context, "ad_unit_rewarded_interstitial")
+                    ?: rewarded.also {
+                        if (!rewardedInterstitialFallbackWarningLogged) {
+                            rewardedInterstitialFallbackWarningLogged = true
+                            Timber.w(
+                                "Missing ad_unit_rewarded_interstitial in ads.xml for %s. Falling back to rewarded unit id.",
+                                context.packageName,
+                            )
+                        }
                     }
-                }
             Ids(
                 banner = context.getString(R.string.ad_unit_banner),
                 interstitial = context.getString(R.string.ad_unit_interstitial),
@@ -61,7 +65,6 @@ object AppAdUnitIds {
                 appOpen = context.getString(R.string.ad_unit_open_app),
             )
         }
-    }
 
     fun resolvePlacement(
         context: Context,
@@ -69,13 +72,17 @@ object AppAdUnitIds {
         useTestAds: Boolean,
     ): String {
         val ids = resolve(context, useTestAds)
-        val placementValue = placement.resourceName
-            ?.let { stringByNameOrNull(context, it) }
-            ?.takeIf { it.isNotBlank() }
+        val placementValue =
+            placement.resourceName
+                ?.let { stringByNameOrNull(context, it) }
+                ?.takeIf { it.isNotBlank() }
         return placementOrDefault(placementValue, ids, placement.format)
     }
 
-    internal fun defaultIdForFormat(ids: Ids, format: AdFormat): String =
+    internal fun defaultIdForFormat(
+        ids: Ids,
+        format: AdFormat,
+    ): String =
         when (format) {
             AdFormat.BANNER -> ids.banner
             AdFormat.NATIVE -> ids.native
@@ -95,7 +102,10 @@ object AppAdUnitIds {
         listOf(banner, interstitial, native, rewarded, rewardedInterstitial, appOpen)
             .all { it.startsWith(GOOGLE_TEST_PUBLISHER_PREFIX) }
 
-    private fun stringByNameOrNull(context: Context, name: String): String? {
+    private fun stringByNameOrNull(
+        context: Context,
+        name: String,
+    ): String? {
         val resId = context.resources.getIdentifier(name, "string", context.packageName)
         if (resId == 0) return null
         return runCatching { context.getString(resId) }

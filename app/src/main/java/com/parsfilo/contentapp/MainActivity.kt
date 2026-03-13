@@ -85,7 +85,9 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                preferencesDataSource.userData.map { it.darkMode }.distinctUntilChanged()
+                preferencesDataSource.userData
+                    .map { it.darkMode }
+                    .distinctUntilChanged()
                     .collect { isDarkMode ->
                         applyEdgeToEdge(isDarkMode)
                     }
@@ -98,8 +100,10 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                preferencesDataSource.userData.map { it.notificationsEnabled }
-                    .distinctUntilChanged().collect {
+                preferencesDataSource.userData
+                    .map { it.notificationsEnabled }
+                    .distinctUntilChanged()
+                    .collect {
                         pushRegistrationManager.syncRegistration("notification_setting_changed")
                     }
             }
@@ -121,14 +125,22 @@ class MainActivity : ComponentActivity() {
     private fun handleNotificationIntent(sourceIntent: Intent?) {
         if (sourceIntent == null) return
 
-        val shouldOpenNotifications = sourceIntent.getBooleanExtra(
-            NotificationIntentKeys.EXTRA_OPEN_NOTIFICATIONS, false
-        ) || sourceIntent.action == NotificationIntentKeys.ACTION_OPEN_NOTIFICATIONS || isPotentialFcmIntent(
-            sourceIntent
-        )
+        val shouldOpenNotifications =
+            sourceIntent.getBooleanExtra(
+                NotificationIntentKeys.EXTRA_OPEN_NOTIFICATIONS,
+                false,
+            ) ||
+                sourceIntent.action == NotificationIntentKeys.ACTION_OPEN_NOTIFICATIONS ||
+                isPotentialFcmIntent(
+                    sourceIntent,
+                )
 
         if (!shouldOpenNotifications) return
-        Timber.d("Notification intent detected action=%s extras=%d", sourceIntent.action, sourceIntent.extras?.size() ?: 0)
+        Timber.d(
+            "Notification intent detected action=%s extras=%d",
+            sourceIntent.action,
+            sourceIntent.extras?.size() ?: 0,
+        )
 
         lifecycleScope.launch {
             val openRequest = resolveNotificationOpenRequest(sourceIntent)
@@ -145,15 +157,25 @@ class MainActivity : ComponentActivity() {
         val extras = sourceIntent.extras ?: return false
         val keys = extras.keySet()
         return keys.any { key ->
-            key.startsWith("google.") || key.startsWith("gcm.") || key in setOf(
-                "from", "collapse_key", "message_id", "title", "body", "image", "type"
-            )
+            key.startsWith("google.") ||
+                key.startsWith("gcm.") ||
+                key in
+                setOf(
+                    "from",
+                    "collapse_key",
+                    "message_id",
+                    "title",
+                    "body",
+                    "image",
+                    "type",
+                )
         }
     }
 
     private suspend fun resolveNotificationOpenRequest(sourceIntent: Intent): NotificationOpenRequest {
         val explicitRowId =
-            sourceIntent.getLongExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, -1L)
+            sourceIntent
+                .getLongExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_ROW_ID, -1L)
                 .takeIf { it > 0L }
         if (explicitRowId != null) {
             return NotificationOpenRequest(
@@ -163,8 +185,10 @@ class MainActivity : ComponentActivity() {
         }
 
         val explicitExternalId =
-            sourceIntent.getStringExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID)
-                ?.trim().orEmpty()
+            sourceIntent
+                .getStringExtra(NotificationIntentKeys.EXTRA_NOTIFICATION_EXTERNAL_ID)
+                ?.trim()
+                .orEmpty()
         if (explicitExternalId.isNotBlank()) {
             val existing = notificationDao.getByNotificationId(explicitExternalId)
             if (existing != null) {
@@ -189,16 +213,19 @@ class MainActivity : ComponentActivity() {
     private suspend fun persistNotificationFromIntentIfPossible(sourceIntent: Intent): Long? {
         val extras = sourceIntent.extras ?: return null
 
-        val hasFcmMarkers = extras.keySet().any { key ->
-            key.startsWith("google.") || key.startsWith("gcm.") || key == "from"
-        }
+        val hasFcmMarkers =
+            extras.keySet().any { key ->
+                key.startsWith("google.") || key.startsWith("gcm.") || key == "from"
+            }
 
-        val title = extras.getString("gcm.notification.title") ?: extras.getString("gcm.n.title")
-        ?: extras.getString("title") ?: extras.getString("google.c.a.c_l")
-        ?: getString(R.string.notifications_title)
+        val title =
+            extras.getString("gcm.notification.title") ?: extras.getString("gcm.n.title")
+                ?: extras.getString("title") ?: extras.getString("google.c.a.c_l")
+                ?: getString(R.string.notifications_title)
 
-        val body = extras.getString("gcm.notification.body") ?: extras.getString("gcm.n.body")
-        ?: extras.getString("body") ?: ""
+        val body =
+            extras.getString("gcm.notification.body") ?: extras.getString("gcm.n.body")
+                ?: extras.getString("body") ?: ""
 
         val type = extras.getString("type")
         val imageUrl = extras.getString("gcm.notification.image") ?: extras.getString("image")
@@ -209,36 +236,50 @@ class MainActivity : ComponentActivity() {
 
         val notificationId =
             extras.getString("google.message_id") ?: extras.getString("gcm.message_id")
-            ?: extras.getString("message_id") ?: run {
-                val signature = extras.keySet().sorted()
-                    .joinToString("|") { key -> "$key=${extras.getValueAsString(key)}" }
+                ?: extras.getString("message_id") ?: run {
+                val signature =
+                    extras
+                        .keySet()
+                        .sorted()
+                        .joinToString("|") { key -> "$key=${extras.getValueAsString(key)}" }
                 "tap_${signature.hashCode()}"
             }
 
-        val payloadJson = JSONObject().apply {
-            extras.keySet().sorted().forEach { key ->
-                put(key, extras.getValueAsString(key) ?: JSONObject.NULL)
-            }
-        }.toString()
+        val payloadJson =
+            JSONObject()
+                .apply {
+                    extras.keySet().sorted().forEach { key ->
+                        put(key, extras.getValueAsString(key) ?: JSONObject.NULL)
+                    }
+                }.toString()
 
-        val insertedRowId = notificationDao.insertNotification(
-            NotificationEntity(
-                notificationId = notificationId,
-                title = title,
-                body = body,
-                imageUrl = imageUrl,
-                type = type,
-                isRead = false,
-                timestamp = System.currentTimeMillis(),
-                dataPayloadJson = payloadJson
+        val insertedRowId =
+            notificationDao.insertNotification(
+                NotificationEntity(
+                    notificationId = notificationId,
+                    title = title,
+                    body = body,
+                    imageUrl = imageUrl,
+                    type = type,
+                    isRead = false,
+                    timestamp = System.currentTimeMillis(),
+                    dataPayloadJson = payloadJson,
+                ),
             )
-        )
         if (insertedRowId > 0L) {
-            Timber.d("Notification persisted rowId=%d notificationId=%s", insertedRowId, notificationId)
+            Timber.d(
+                "Notification persisted rowId=%d notificationId=%s",
+                insertedRowId,
+                notificationId,
+            )
             return insertedRowId
         }
         val existingId = notificationDao.getByNotificationId(notificationId)?.id
-        Timber.d("Notification persistence fallback existingId=%s notificationId=%s", existingId, notificationId)
+        Timber.d(
+            "Notification persistence fallback existingId=%s notificationId=%s",
+            existingId,
+            notificationId,
+        )
         return existingId
     }
 
@@ -259,20 +300,21 @@ class MainActivity : ComponentActivity() {
         } catch (_: NullPointerException) {
             Timber.w("Compose setContent fallback path triggered due to NullPointerException")
             // OEM-specific Window/content initialization bug fallback.
-            val composeView = ComposeView(this).apply {
-                setContent {
-                    ContentApp(
-                        openNotificationsEvents = openNotificationsEvents,
-                        appAnalytics = appAnalytics,
-                        onPrivacyOptionsUpdated = {
-                            adOrchestrator.refreshConsent(
-                                activity = this@MainActivity,
-                                scope = lifecycleScope,
-                            )
-                        },
-                    )
+            val composeView =
+                ComposeView(this).apply {
+                    setContent {
+                        ContentApp(
+                            openNotificationsEvents = openNotificationsEvents,
+                            appAnalytics = appAnalytics,
+                            onPrivacyOptionsUpdated = {
+                                adOrchestrator.refreshConsent(
+                                    activity = this@MainActivity,
+                                    scope = lifecycleScope,
+                                )
+                            },
+                        )
+                    }
                 }
-            }
             setContentView(composeView)
         }
     }
@@ -282,19 +324,24 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.shouldRequestNotificationPermission.collect { shouldRequest ->
-                        if (!shouldRequest || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                        if (!shouldRequest ||
+                            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                        ) {
                             return@collect
                         }
 
-                        val permissionGranted = ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        ) == PackageManager.PERMISSION_GRANTED
+                        val permissionGranted =
+                            ContextCompat.checkSelfPermission(
+                                this@MainActivity,
+                                Manifest.permission.POST_NOTIFICATIONS,
+                            ) == PackageManager.PERMISSION_GRANTED
 
                         if (permissionGranted) {
                             viewModel.onNotificationPermissionResult(granted = true)
                         } else {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            notificationPermissionLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS,
+                            )
                         }
                     }
                 }
@@ -305,14 +352,16 @@ class MainActivity : ComponentActivity() {
                             return@collect
                         }
 
-                        val fineGranted = ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                        ) == PackageManager.PERMISSION_GRANTED
-                        val coarseGranted = ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                        ) == PackageManager.PERMISSION_GRANTED
+                        val fineGranted =
+                            ContextCompat.checkSelfPermission(
+                                this@MainActivity,
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                            ) == PackageManager.PERMISSION_GRANTED
+                        val coarseGranted =
+                            ContextCompat.checkSelfPermission(
+                                this@MainActivity,
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                            ) == PackageManager.PERMISSION_GRANTED
 
                         if (fineGranted || coarseGranted) {
                             viewModel.onLocationPermissionResult()
@@ -321,7 +370,7 @@ class MainActivity : ComponentActivity() {
                                 arrayOf(
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.ACCESS_COARSE_LOCATION,
-                                )
+                                ),
                             )
                         }
                     }
@@ -330,9 +379,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun isPrayerTimesFlavor(): Boolean {
-        return packageName in PRAYER_TIMES_PACKAGES
-    }
+    private fun isPrayerTimesFlavor(): Boolean = packageName in PRAYER_TIMES_PACKAGES
 
     override fun onDestroy() {
         Timber.d("MainActivity onDestroy")
@@ -348,9 +395,9 @@ class MainActivity : ComponentActivity() {
         insetsController.isAppearanceLightNavigationBars = useLightBars
     }
 
-    private fun resolveInitialDarkMode(): Boolean {
-        return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-    }
+    private fun resolveInitialDarkMode(): Boolean =
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
 }
 
 /**
@@ -368,17 +415,18 @@ private fun Bundle.getValueAsString(key: String): String? {
         ?: runCatching { getDouble(key) }.getOrNull()?.toString()
         ?: runCatching { getFloat(key) }.getOrNull()?.toString()
         ?: runCatching {
-        getStringArray(key)?.joinToString(prefix = "[", postfix = "]")
-    }.getOrNull()
+            getStringArray(key)?.joinToString(prefix = "[", postfix = "]")
+        }.getOrNull()
         ?: runCatching {
-        getIntArray(key)?.joinToString(prefix = "[", postfix = "]")
-    }.getOrNull()
+            getIntArray(key)?.joinToString(prefix = "[", postfix = "]")
+        }.getOrNull()
         ?: runCatching {
-        getLongArray(key)?.joinToString(prefix = "[", postfix = "]")
-    }.getOrNull()
+            getLongArray(key)?.joinToString(prefix = "[", postfix = "]")
+        }.getOrNull()
 }
 
-private val PRAYER_TIMES_PACKAGES = setOf(
-    "com.parsfilo.imsakiye",
-    "com.parsfilo.namazvakitleri",
-)
+private val PRAYER_TIMES_PACKAGES =
+    setOf(
+        "com.parsfilo.imsakiye",
+        "com.parsfilo.namazvakitleri",
+    )

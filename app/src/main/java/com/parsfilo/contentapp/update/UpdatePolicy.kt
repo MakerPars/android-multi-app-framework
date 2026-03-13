@@ -40,18 +40,20 @@ internal fun resolveUpdatePolicy(
     }
 
     return when (normalizeUpdateMode(cfg.updateMode)) {
-        UpdateMode.HARD -> UpdatePolicy.Hard(
-            title = cfg.title,
-            message = cfg.message,
-            updateButton = cfg.updateButton,
-        )
+        UpdateMode.HARD ->
+            UpdatePolicy.Hard(
+                title = cfg.title,
+                message = cfg.message,
+                updateButton = cfg.updateButton,
+            )
 
-        UpdateMode.SOFT -> UpdatePolicy.Soft(
-            title = cfg.title,
-            message = cfg.message,
-            updateButton = cfg.updateButton,
-            laterButton = cfg.laterButton,
-        )
+        UpdateMode.SOFT ->
+            UpdatePolicy.Soft(
+                title = cfg.title,
+                message = cfg.message,
+                updateButton = cfg.updateButton,
+                laterButton = cfg.laterButton,
+            )
 
         UpdateMode.NONE -> {
             if (currentVersionCode < cfg.latestVersionCode) {

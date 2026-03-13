@@ -95,7 +95,7 @@ fun SettingsRoute(
     onUpdateDebugSimulateHard: () -> Unit = {},
     onUpdateDebugClearSimulation: () -> Unit = {},
     onUpdateDebugResetSoftPrompt: () -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
@@ -153,21 +153,23 @@ fun SettingsScreen(
         mutableStateOf(isNotificationPermissionEnabled(context))
     }
     var isPrivacyOptionsRequired by remember { mutableStateOf(false) }
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        systemNotificationsEnabled = isNotificationPermissionEnabled(context)
-        onNotificationsChanged(granted && systemNotificationsEnabled)
-    }
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            systemNotificationsEnabled = isNotificationPermissionEnabled(context)
+            onNotificationsChanged(granted && systemNotificationsEnabled)
+        }
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                systemNotificationsEnabled = isNotificationPermissionEnabled(context)
-                val status = adManager.privacyOptionsRequired.value
-                isPrivacyOptionsRequired = status
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    systemNotificationsEnabled = isNotificationPermissionEnabled(context)
+                    val status = adManager.privacyOptionsRequired.value
+                    isPrivacyOptionsRequired = status
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -201,24 +203,26 @@ fun SettingsScreen(
     var languageMenuExpanded by remember { mutableStateOf(false) }
     var ageGateMenuExpanded by remember { mutableStateOf(false) }
 
-    val languageOptions = remember {
-        listOf(
-            LanguageOption(tag = "", labelRes = R.string.settings_language_system),
-            LanguageOption(tag = "tr", labelRes = R.string.settings_language_tr),
-            LanguageOption(tag = "en", labelRes = R.string.settings_language_en),
-            LanguageOption(tag = "de", labelRes = R.string.settings_language_de),
-        )
-    }
+    val languageOptions =
+        remember {
+            listOf(
+                LanguageOption(tag = "", labelRes = R.string.settings_language_system),
+                LanguageOption(tag = "tr", labelRes = R.string.settings_language_tr),
+                LanguageOption(tag = "en", labelRes = R.string.settings_language_en),
+                LanguageOption(tag = "de", labelRes = R.string.settings_language_de),
+            )
+        }
 
     // Per-app locales:
     // - API 33+: LocaleManager (platform)
     // - API 32-: AppCompat storage
-    val appLocaleTags = if (Build.VERSION.SDK_INT >= 33) {
-        val lm = context.getSystemService(android.app.LocaleManager::class.java)
-        lm?.applicationLocales?.toLanguageTags().orEmpty()
-    } else {
-        AppCompatDelegate.getApplicationLocales().toLanguageTags()
-    }
+    val appLocaleTags =
+        if (Build.VERSION.SDK_INT >= 33) {
+            val lm = context.getSystemService(android.app.LocaleManager::class.java)
+            lm?.applicationLocales?.toLanguageTags().orEmpty()
+        } else {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        }
     val effectiveLanguageTag = appLocaleTags.ifBlank { Locale.getDefault().toLanguageTag() }
 
     LaunchedEffect(Unit) {
@@ -226,9 +230,10 @@ fun SettingsScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorScheme.background)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(colorScheme.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Top Bar
@@ -237,9 +242,10 @@ fun SettingsScreen(
                 navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 navigationIconContentDescription = stringResource(R.string.settings_back),
                 onNavigationClick = onBackClick,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = app_transparent
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = app_transparent,
+                    ),
                 titleStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Normal),
                 actions = {
                     Box {
@@ -288,20 +294,25 @@ fun SettingsScreen(
                                     },
                                     onClick = {
                                         if (Build.VERSION.SDK_INT >= 33) {
-                                            val localeManager = (activity
-                                                ?: context).getSystemService(android.app.LocaleManager::class.java)
-                                            val list = if (option.tag.isBlank()) {
-                                                LocaleList.getEmptyLocaleList()
-                                            } else {
-                                                LocaleList.forLanguageTags(option.tag)
-                                            }
+                                            val localeManager =
+                                                (
+                                                    activity
+                                                        ?: context
+                                                ).getSystemService(android.app.LocaleManager::class.java)
+                                            val list =
+                                                if (option.tag.isBlank()) {
+                                                    LocaleList.getEmptyLocaleList()
+                                                } else {
+                                                    LocaleList.forLanguageTags(option.tag)
+                                                }
                                             localeManager?.applicationLocales = list
                                         } else {
-                                            val locales = if (option.tag.isBlank()) {
-                                                LocaleListCompat.getEmptyLocaleList()
-                                            } else {
-                                                LocaleListCompat.forLanguageTags(option.tag)
-                                            }
+                                            val locales =
+                                                if (option.tag.isBlank()) {
+                                                    LocaleListCompat.getEmptyLocaleList()
+                                                } else {
+                                                    LocaleListCompat.forLanguageTags(option.tag)
+                                                }
                                             AppCompatDelegate.setApplicationLocales(locales)
                                         }
                                         languageMenuExpanded = false
@@ -320,13 +331,14 @@ fun SettingsScreen(
             HorizontalDivider(
                 thickness = dimens.stroke,
                 color = colorScheme.outline.copy(alpha = 0.3f),
-                modifier = Modifier.padding(horizontal = dimens.space16)
+                modifier = Modifier.padding(horizontal = dimens.space16),
             )
 
             when (uiState) {
                 SettingsUiState.Loading -> {
                     Box(
-                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = colorScheme.primary)
                     }
@@ -336,9 +348,10 @@ fun SettingsScreen(
                     val preferences = uiState.preferences
                     val notificationsChecked =
                         preferences.notificationsEnabled && systemNotificationsEnabled
-                    val isDebugBuild = remember(context) {
-                        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                    }
+                    val isDebugBuild =
+                        remember(context) {
+                            (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                        }
                     val debugGeography by adManager.debugGeography.collectAsStateWithLifecycle()
                     val lastRequestDebugGeography by adManager.lastRequestDebugGeography.collectAsStateWithLifecycle()
                     var debugFcmToken by remember(preferences.lastPushToken) {
@@ -353,120 +366,142 @@ fun SettingsScreen(
                         }
                     }
 
-                    val listItemColors = ListItemDefaults.colors(
-                        containerColor = app_transparent,
-                        headlineColor = colorScheme.onSurface,
-                        supportingColor = colorScheme.onSurfaceVariant
-                    )
-                    val switchColors = SwitchDefaults.colors(
-                        checkedThumbColor = colorScheme.onPrimary,
-                        checkedTrackColor = colorScheme.primary,
-                        uncheckedThumbColor = colorScheme.onSurfaceVariant,
-                        uncheckedTrackColor = colorScheme.surfaceVariant
-                    )
-                    val currentAgeGateStatus = remember(preferences.adsAgeGateStatus) {
-                        AdAgeGateStatus.fromStorage(preferences.adsAgeGateStatus)
-                    }
-                    val ageGateOptions = remember {
-                        listOf(
-                            AdAgeGateStatus.UNKNOWN to R.string.settings_ads_age_unknown,
-                            AdAgeGateStatus.UNDER_13 to R.string.settings_ads_age_under_13,
-                            AdAgeGateStatus.AGE_13_TO_15 to R.string.settings_ads_age_13_to_15,
-                            AdAgeGateStatus.AGE_16_OR_OVER to R.string.settings_ads_age_16_or_over,
+                    val listItemColors =
+                        ListItemDefaults.colors(
+                            containerColor = app_transparent,
+                            headlineColor = colorScheme.onSurface,
+                            supportingColor = colorScheme.onSurfaceVariant,
                         )
-                    }
+                    val switchColors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = colorScheme.onPrimary,
+                            checkedTrackColor = colorScheme.primary,
+                            uncheckedThumbColor = colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = colorScheme.surfaceVariant,
+                        )
+                    val currentAgeGateStatus =
+                        remember(preferences.adsAgeGateStatus) {
+                            AdAgeGateStatus.fromStorage(preferences.adsAgeGateStatus)
+                        }
+                    val ageGateOptions =
+                        remember {
+                            listOf(
+                                AdAgeGateStatus.UNKNOWN to R.string.settings_ads_age_unknown,
+                                AdAgeGateStatus.UNDER_13 to R.string.settings_ads_age_under_13,
+                                AdAgeGateStatus.AGE_13_TO_15 to R.string.settings_ads_age_13_to_15,
+                                AdAgeGateStatus.AGE_16_OR_OVER to R.string.settings_ads_age_16_or_over,
+                            )
+                        }
 
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .navigationBarsPadding()
-                            .padding(horizontal = dimens.space8, vertical = dimens.space8)
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .navigationBarsPadding()
+                                .padding(horizontal = dimens.space8, vertical = dimens.space8),
                     ) {
                         // Bildirimler toggle
                         ListItem(
                             headlineContent = {
-                            Text(stringResource(R.string.settings_notifications))
-                        }, supportingContent = {
-                            Text(stringResource(R.string.settings_notifications_desc))
-                        }, trailingContent = {
-                            Switch(
-                                checked = notificationsChecked, onCheckedChange = { enabled ->
-                                    if (!enabled) {
-                                        onNotificationsChanged(false)
-                                        return@Switch
-                                    }
-
-                                    if (isNotificationPermissionEnabled(context)) {
-                                        systemNotificationsEnabled = true
-                                        onNotificationsChanged(true)
-                                        return@Switch
-                                    }
-
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(
-                                            context, Manifest.permission.POST_NOTIFICATIONS
-                                        ) != PackageManager.PERMISSION_GRANTED
-                                    ) {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    } else {
-                                        openAppNotificationSettings(context)
-                                    }
-                                }, colors = switchColors
-                            )
-                        }, colors = listItemColors
-                        )
-
-                        HorizontalDivider(
-                            color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
-                        )
-
-                        ListItem(
-                            headlineContent = {
-                            Text(stringResource(R.string.settings_privacy_options))
-                        }, supportingContent = {
-                            Text(
-                                if (isPrivacyOptionsRequired) {
-                                    stringResource(R.string.settings_privacy_options_desc_required)
-                                } else {
-                                    stringResource(R.string.settings_privacy_options_desc_optional)
-                                }
-                            )
-                        }, trailingContent = {
-                            TextButton(
-                                onClick = {
-                                    if (activity == null) {
-                                        showMessage(privacyOptionsUnavailableText)
-                                        return@TextButton
-                                    }
-                                    if (!isPrivacyOptionsRequired) {
-                                        showMessage(privacyOptionsNotRequiredNowText)
-                                        return@TextButton
-                                    }
-                                    adManager.showPrivacyOptions(activity) { success ->
-                                        if (success) {
-                                            onPrivacyOptionsUpdated()
-                                            showMessage(privacyOptionsSavedText)
-                                        } else {
-                                            showMessage(privacyOptionsErrorText)
+                                Text(stringResource(R.string.settings_notifications))
+                            },
+                            supportingContent = {
+                                Text(stringResource(R.string.settings_notifications_desc))
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = notificationsChecked,
+                                    onCheckedChange = { enabled ->
+                                        if (!enabled) {
+                                            onNotificationsChanged(false)
+                                            return@Switch
                                         }
-                                        isPrivacyOptionsRequired =
-                                            adManager.privacyOptionsRequired.value
-                                    }
-                                }) {
-                                Text(stringResource(R.string.settings_privacy_options_button))
-                            }
-                        }, colors = listItemColors
+
+                                        if (isNotificationPermissionEnabled(context)) {
+                                            systemNotificationsEnabled = true
+                                            onNotificationsChanged(true)
+                                            return@Switch
+                                        }
+
+                                        val notificationPermissionMissing =
+                                            ContextCompat.checkSelfPermission(
+                                                context,
+                                                Manifest.permission.POST_NOTIFICATIONS,
+                                            ) != PackageManager.PERMISSION_GRANTED
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                            notificationPermissionMissing
+                                        ) {
+                                            notificationPermissionLauncher.launch(
+                                                Manifest.permission.POST_NOTIFICATIONS,
+                                            )
+                                        } else {
+                                            openAppNotificationSettings(context)
+                                        }
+                                    },
+                                    colors = switchColors,
+                                )
+                            },
+                            colors = listItemColors,
                         )
 
                         HorizontalDivider(
                             color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
+                            modifier = Modifier.padding(horizontal = dimens.space16),
                         )
 
                         ListItem(
                             headlineContent = {
-                                Text(stringResource(R.string.settings_ads_age_gate_title))
+                                Text(stringResource(R.string.settings_privacy_options))
+                            },
+                            supportingContent = {
+                                Text(
+                                    if (isPrivacyOptionsRequired) {
+                                        stringResource(R.string.settings_privacy_options_desc_required)
+                                    } else {
+                                        stringResource(R.string.settings_privacy_options_desc_optional)
+                                    },
+                                )
+                            },
+                            trailingContent = {
+                                TextButton(
+                                    onClick = {
+                                        if (activity == null) {
+                                            showMessage(privacyOptionsUnavailableText)
+                                            return@TextButton
+                                        }
+                                        if (!isPrivacyOptionsRequired) {
+                                            showMessage(privacyOptionsNotRequiredNowText)
+                                            return@TextButton
+                                        }
+                                        adManager.showPrivacyOptions(activity) { success ->
+                                            if (success) {
+                                                onPrivacyOptionsUpdated()
+                                                showMessage(privacyOptionsSavedText)
+                                            } else {
+                                                showMessage(privacyOptionsErrorText)
+                                            }
+                                            isPrivacyOptionsRequired =
+                                                adManager.privacyOptionsRequired.value
+                                        }
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.settings_privacy_options_button))
+                                }
+                            },
+                            colors = listItemColors,
+                        )
+
+                        HorizontalDivider(
+                            color = colorScheme.outline.copy(alpha = 0.3f),
+                            modifier = Modifier.padding(horizontal = dimens.space16),
+                        )
+
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.settings_ads_age_gate_title),
+                                )
                             },
                             supportingContent = {
                                 Text(stringResource(R.string.settings_ads_age_gate_desc))
@@ -475,10 +510,14 @@ fun SettingsScreen(
                                 Box {
                                     TextButton(onClick = { ageGateMenuExpanded = true }) {
                                         Text(
-                                            text = stringResource(
-                                                ageGateOptions.firstOrNull { it.first == currentAgeGateStatus }?.second
-                                                    ?: R.string.settings_ads_age_unknown,
-                                            ),
+                                            text =
+                                                stringResource(
+                                                    ageGateOptions
+                                                        .firstOrNull {
+                                                            it.first == currentAgeGateStatus
+                                                        }?.second
+                                                        ?: R.string.settings_ads_age_unknown,
+                                                ),
                                         )
                                     }
                                     DropdownMenu(
@@ -510,52 +549,58 @@ fun SettingsScreen(
 
                         HorizontalDivider(
                             color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
+                            modifier = Modifier.padding(horizontal = dimens.space16),
                         )
 
                         // Dark Mode toggle
                         ListItem(
                             headlineContent = {
-                            Text(stringResource(R.string.settings_dark_mode))
-                        }, trailingContent = {
-                            Switch(
-                                checked = preferences.darkMode,
-                                onCheckedChange = onDarkModeChanged,
-                                colors = switchColors
-                            )
-                        }, colors = listItemColors
+                                Text(stringResource(R.string.settings_dark_mode))
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = preferences.darkMode,
+                                    onCheckedChange = onDarkModeChanged,
+                                    colors = switchColors,
+                                )
+                            },
+                            colors = listItemColors,
                         )
 
                         HorizontalDivider(
                             color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
+                            modifier = Modifier.padding(horizontal = dimens.space16),
                         )
 
                         // Font Size slider
                         ListItem(
                             headlineContent = {
-                            Text(
-                                stringResource(
-                                    R.string.settings_font_size_value, preferences.fontSize
+                                Text(
+                                    stringResource(
+                                        R.string.settings_font_size_value,
+                                        preferences.fontSize,
+                                    ),
                                 )
-                            )
-                        }, supportingContent = {
-                            Slider(
-                                value = preferences.fontSize.toFloat(),
-                                onValueChange = { onFontSizeChanged(it.toInt()) },
-                                valueRange = 14f..40f,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = colorScheme.primary,
-                                    activeTrackColor = colorScheme.primary,
-                                    inactiveTrackColor = colorScheme.surfaceVariant
+                            },
+                            supportingContent = {
+                                Slider(
+                                    value = preferences.fontSize.toFloat(),
+                                    onValueChange = { onFontSizeChanged(it.toInt()) },
+                                    valueRange = 14f..40f,
+                                    colors =
+                                        SliderDefaults.colors(
+                                            thumbColor = colorScheme.primary,
+                                            activeTrackColor = colorScheme.primary,
+                                            inactiveTrackColor = colorScheme.surfaceVariant,
+                                        ),
                                 )
-                            )
-                        }, colors = listItemColors
+                            },
+                            colors = listItemColors,
                         )
 
                         HorizontalDivider(
                             color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16)
+                            modifier = Modifier.padding(horizontal = dimens.space16),
                         )
 
                         Spacer(modifier = Modifier.height(dimens.space8))
@@ -563,23 +608,24 @@ fun SettingsScreen(
                         AppCard(
                             modifier = Modifier.padding(horizontal = dimens.space8),
                             shape = MaterialTheme.shapes.large,
-                            colors = CardDefaults.cardColors(
-                                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                contentColor = colorScheme.onSurfaceVariant
-                            )
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                    contentColor = colorScheme.onSurfaceVariant,
+                                ),
                         ) {
                             Column(modifier = Modifier.padding(dimens.space16)) {
                                 Text(
                                     text = stringResource(R.string.settings_share_app),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = colorScheme.onSurface,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                                 Spacer(modifier = Modifier.height(dimens.space4))
                                 Text(
                                     text = stringResource(R.string.settings_share_app_desc),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = colorScheme.onSurfaceVariant
+                                    color = colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(modifier = Modifier.height(dimens.space12))
                                 AppButton(
@@ -589,10 +635,11 @@ fun SettingsScreen(
                                         shareApp(context)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                        containerColor = colorScheme.primary,
-                                        contentColor = colorScheme.onPrimary
-                                    )
+                                    colors =
+                                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.primary,
+                                            contentColor = colorScheme.onPrimary,
+                                        ),
                                 )
                             }
                         }
@@ -602,23 +649,24 @@ fun SettingsScreen(
                         AppCard(
                             modifier = Modifier.padding(horizontal = dimens.space8),
                             shape = MaterialTheme.shapes.large,
-                            colors = CardDefaults.cardColors(
-                                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                contentColor = colorScheme.onSurfaceVariant
-                            )
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                    contentColor = colorScheme.onSurfaceVariant,
+                                ),
                         ) {
                             Column(modifier = Modifier.padding(dimens.space16)) {
                                 Text(
                                     text = stringResource(R.string.settings_device_id_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = colorScheme.onSurface,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                                 Spacer(modifier = Modifier.height(dimens.space4))
                                 Text(
                                     text = stringResource(R.string.settings_device_id_desc),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = colorScheme.onSurfaceVariant
+                                    color = colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(modifier = Modifier.height(dimens.space10))
                                 Text(
@@ -636,18 +684,19 @@ fun SettingsScreen(
                                                 ClipEntry(
                                                     ClipData.newPlainText(
                                                         "installation_id",
-                                                        preferences.installationId
-                                                    )
-                                                )
+                                                        preferences.installationId,
+                                                    ),
+                                                ),
                                             )
                                         }
                                         showMessage(deviceIdCopiedText)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                        containerColor = colorScheme.secondary,
-                                        contentColor = colorScheme.onSecondary
-                                    )
+                                    colors =
+                                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = colorScheme.secondary,
+                                            contentColor = colorScheme.onSecondary,
+                                        ),
                                 )
                             }
                         }
@@ -658,10 +707,11 @@ fun SettingsScreen(
                             AppCard(
                                 modifier = Modifier.padding(horizontal = dimens.space8),
                                 shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                    contentColor = colorScheme.onSurfaceVariant,
-                                ),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        contentColor = colorScheme.onSurfaceVariant,
+                                    ),
                             ) {
                                 Column(modifier = Modifier.padding(dimens.space16)) {
                                     Text(
@@ -678,36 +728,44 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     Text(
-                                        text = stringResource(
-                                            R.string.settings_ads_debug_geo_status,
-                                            debugGeography.name,
-                                        ),
+                                        text =
+                                            stringResource(
+                                                R.string.settings_ads_debug_geo_status,
+                                                debugGeography.name,
+                                            ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurfaceVariant,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space4))
                                     Text(
-                                        text = stringResource(
-                                            R.string.settings_ads_debug_geo_last_request_status,
-                                            lastRequestDebugGeography.name,
-                                        ),
+                                        text =
+                                            stringResource(
+                                                R.string.settings_ads_debug_geo_last_request_status,
+                                                lastRequestDebugGeography.name,
+                                            ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurfaceVariant,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space4))
-                                    val requestStatusText = when {
-                                        debugGeography == UmpDebugGeography.NONE -> stringResource(R.string.settings_ads_debug_geo_effective_none)
+                                    val requestStatusText =
+                                        when {
+                                            debugGeography == UmpDebugGeography.NONE ->
+                                                stringResource(
+                                                    R.string.settings_ads_debug_geo_effective_none,
+                                                )
 
-                                        lastRequestDebugGeography == debugGeography -> stringResource(
-                                            R.string.settings_ads_debug_geo_effective_applied,
-                                            debugGeography.name,
-                                        )
+                                            lastRequestDebugGeography == debugGeography ->
+                                                stringResource(
+                                                    R.string.settings_ads_debug_geo_effective_applied,
+                                                    debugGeography.name,
+                                                )
 
-                                        else -> stringResource(
-                                            R.string.settings_ads_debug_geo_effective_pending,
-                                            debugGeography.name,
-                                        )
-                                    }
+                                            else ->
+                                                stringResource(
+                                                    R.string.settings_ads_debug_geo_effective_pending,
+                                                    debugGeography.name,
+                                                )
+                                        }
                                     Text(
                                         text = requestStatusText,
                                         style = MaterialTheme.typography.bodySmall,
@@ -732,10 +790,11 @@ fun SettingsScreen(
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.primary,
-                                            contentColor = colorScheme.onPrimary,
-                                        ),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.primary,
+                                                contentColor = colorScheme.onPrimary,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     AppButton(
@@ -752,10 +811,11 @@ fun SettingsScreen(
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.secondary,
-                                            contentColor = colorScheme.onSecondary,
-                                        ),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.secondary,
+                                                contentColor = colorScheme.onSecondary,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     AppButton(
@@ -772,10 +832,11 @@ fun SettingsScreen(
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.primary,
-                                            contentColor = colorScheme.onPrimary,
-                                        ),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.primary,
+                                                contentColor = colorScheme.onPrimary,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     Row(modifier = Modifier.fillMaxWidth()) {
@@ -799,10 +860,11 @@ fun SettingsScreen(
                                                 )
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.tertiary,
-                                                contentColor = colorScheme.onTertiary,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.tertiary,
+                                                    contentColor = colorScheme.onTertiary,
+                                                ),
                                         )
                                         Spacer(modifier = Modifier.width(dimens.space8))
                                         AppButton(
@@ -825,10 +887,11 @@ fun SettingsScreen(
                                                 )
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.tertiary,
-                                                contentColor = colorScheme.onTertiary,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.tertiary,
+                                                    contentColor = colorScheme.onTertiary,
+                                                ),
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(dimens.space8))
@@ -839,10 +902,11 @@ fun SettingsScreen(
                                             showMessage("UMP debug geography cleared")
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.surface,
-                                            contentColor = colorScheme.onSurface,
-                                        ),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.surface,
+                                                contentColor = colorScheme.onSurface,
+                                            ),
                                     )
                                 }
                             }
@@ -852,10 +916,11 @@ fun SettingsScreen(
                             AppCard(
                                 modifier = Modifier.padding(horizontal = dimens.space8),
                                 shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                    contentColor = colorScheme.onSurfaceVariant,
-                                ),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        contentColor = colorScheme.onSurfaceVariant,
+                                    ),
                             ) {
                                 Column(modifier = Modifier.padding(dimens.space16)) {
                                     Text(
@@ -872,8 +937,9 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space10))
                                     Text(
-                                        text = updateDebugSummary?.takeIf { it.isNotBlank() }
-                                            ?: stringResource(R.string.settings_update_debug_summary_empty),
+                                        text =
+                                            updateDebugSummary?.takeIf { it.isNotBlank() }
+                                                ?: stringResource(R.string.settings_update_debug_summary_empty),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurface,
                                     )
@@ -885,10 +951,11 @@ fun SettingsScreen(
                                             showMessage(updateDebugFetchStartedText)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.primary,
-                                            contentColor = colorScheme.onPrimary,
-                                        ),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.primary,
+                                                contentColor = colorScheme.onPrimary,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     Row(modifier = Modifier.fillMaxWidth()) {
@@ -899,10 +966,11 @@ fun SettingsScreen(
                                                 showMessage(updateDebugSimSoftText)
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.tertiary,
-                                                contentColor = colorScheme.onTertiary,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.tertiary,
+                                                    contentColor = colorScheme.onTertiary,
+                                                ),
                                         )
                                         Spacer(modifier = Modifier.width(dimens.space8))
                                         AppButton(
@@ -912,10 +980,11 @@ fun SettingsScreen(
                                                 showMessage(updateDebugSimHardText)
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.error,
-                                                contentColor = colorScheme.onError,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.error,
+                                                    contentColor = colorScheme.onError,
+                                                ),
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(dimens.space8))
@@ -927,10 +996,11 @@ fun SettingsScreen(
                                                 showMessage(updateDebugClearSimText)
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.secondary,
-                                                contentColor = colorScheme.onSecondary,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.secondary,
+                                                    contentColor = colorScheme.onSecondary,
+                                                ),
                                         )
                                         Spacer(modifier = Modifier.width(dimens.space8))
                                         AppButton(
@@ -940,10 +1010,11 @@ fun SettingsScreen(
                                                 showMessage(updateDebugResetSoftText)
                                             },
                                             modifier = Modifier.weight(1f),
-                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                                containerColor = colorScheme.surface,
-                                                contentColor = colorScheme.onSurface,
-                                            ),
+                                            colors =
+                                                androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                    containerColor = colorScheme.surface,
+                                                    contentColor = colorScheme.onSurface,
+                                                ),
                                         )
                                     }
                                 }
@@ -954,27 +1025,33 @@ fun SettingsScreen(
                             AppCard(
                                 modifier = Modifier.padding(horizontal = dimens.space8),
                                 shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                    contentColor = colorScheme.onSurfaceVariant
-                                )
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        contentColor = colorScheme.onSurfaceVariant,
+                                    ),
                             ) {
                                 Column(modifier = Modifier.padding(dimens.space16)) {
                                     Text(
                                         text = stringResource(R.string.settings_fcm_debug_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         color = colorScheme.onSurface,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.SemiBold,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space4))
                                     Text(
                                         text = stringResource(R.string.settings_fcm_debug_desc),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = colorScheme.onSurfaceVariant
+                                        color = colorScheme.onSurfaceVariant,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space10))
                                     Text(
-                                        text = debugFcmToken.ifBlank { stringResource(R.string.settings_fcm_debug_empty) },
+                                        text =
+                                            debugFcmToken.ifBlank {
+                                                stringResource(
+                                                    R.string.settings_fcm_debug_empty,
+                                                )
+                                            },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurface,
                                     )
@@ -983,39 +1060,41 @@ fun SettingsScreen(
                                         Text(
                                             text = debugFcmTokenError.orEmpty(),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = colorScheme.error
+                                            color = colorScheme.error,
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(dimens.space12))
                                     AppButton(
-                                        text = if (isFetchingDebugToken) {
-                                            stringResource(R.string.settings_fcm_debug_fetching)
-                                        } else {
-                                            stringResource(R.string.settings_fcm_debug_refresh)
-                                        },
+                                        text =
+                                            if (isFetchingDebugToken) {
+                                                stringResource(R.string.settings_fcm_debug_fetching)
+                                            } else {
+                                                stringResource(R.string.settings_fcm_debug_refresh)
+                                            },
                                         onClick = {
                                             if (isFetchingDebugToken) return@AppButton
                                             isFetchingDebugToken = true
                                             debugFcmTokenError = null
                                             FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                                                    isFetchingDebugToken = false
-                                                    if (task.isSuccessful) {
-                                                        debugFcmToken = task.result.orEmpty()
-                                                        if (debugFcmToken.isNotBlank()) {
-                                                            showMessage(fcmDebugRefreshedText)
-                                                        }
-                                                    } else {
-                                                        debugFcmTokenError =
-                                                            task.exception?.localizedMessage
-                                                                ?: fcmDebugErrorText
+                                                isFetchingDebugToken = false
+                                                if (task.isSuccessful) {
+                                                    debugFcmToken = task.result.orEmpty()
+                                                    if (debugFcmToken.isNotBlank()) {
+                                                        showMessage(fcmDebugRefreshedText)
                                                     }
+                                                } else {
+                                                    debugFcmTokenError =
+                                                        task.exception?.localizedMessage
+                                                            ?: fcmDebugErrorText
                                                 }
+                                            }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.primary,
-                                            contentColor = colorScheme.onPrimary
-                                        )
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.primary,
+                                                contentColor = colorScheme.onPrimary,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     AppButton(
@@ -1026,18 +1105,20 @@ fun SettingsScreen(
                                                 clipboard.setClipEntry(
                                                     ClipEntry(
                                                         ClipData.newPlainText(
-                                                            "fcm_token", debugFcmToken
-                                                        )
-                                                    )
+                                                            "fcm_token",
+                                                            debugFcmToken,
+                                                        ),
+                                                    ),
                                                 )
                                             }
                                             showMessage(fcmDebugCopiedText)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.secondary,
-                                            contentColor = colorScheme.onSecondary
-                                        )
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.secondary,
+                                                contentColor = colorScheme.onSecondary,
+                                            ),
                                     )
                                 }
                             }
@@ -1048,23 +1129,24 @@ fun SettingsScreen(
                             AppCard(
                                 modifier = Modifier.padding(horizontal = dimens.space8),
                                 shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = colorScheme.errorContainer.copy(alpha = 0.4f),
-                                    contentColor = colorScheme.onErrorContainer
-                                )
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = colorScheme.errorContainer.copy(alpha = 0.4f),
+                                        contentColor = colorScheme.onErrorContainer,
+                                    ),
                             ) {
                                 Column(modifier = Modifier.padding(dimens.space16)) {
                                     Text(
                                         text = stringResource(R.string.settings_crash_debug_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         color = colorScheme.onSurface,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.SemiBold,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space4))
                                     Text(
                                         text = stringResource(R.string.settings_crash_debug_desc),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = colorScheme.onSurfaceVariant
+                                        color = colorScheme.onSurfaceVariant,
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space12))
                                     AppButton(
@@ -1073,26 +1155,29 @@ fun SettingsScreen(
                                             throw RuntimeException("Crashlytics test crash — debug button")
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.error,
-                                            contentColor = colorScheme.onError
-                                        )
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.error,
+                                                contentColor = colorScheme.onError,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.height(dimens.space8))
                                     AppButton(
                                         text = stringResource(R.string.settings_crash_debug_non_fatal),
                                         onClick = {
-                                            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
+                                            com.google.firebase.crashlytics.FirebaseCrashlytics
+                                                .getInstance()
                                                 .recordException(
-                                                    RuntimeException("Crashlytics non-fatal test — debug button")
+                                                    RuntimeException("Crashlytics non-fatal test — debug button"),
                                                 )
                                             showMessage(nonFatalSentMessage)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.tertiary,
-                                            contentColor = colorScheme.onTertiary
-                                        )
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.tertiary,
+                                                contentColor = colorScheme.onTertiary,
+                                            ),
                                     )
                                 }
                             }
@@ -1106,19 +1191,21 @@ fun SettingsScreen(
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(dimens.space16)
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(dimens.space16),
         )
     }
 }
 
-private fun Context.findActivity(): android.app.Activity? = when (this) {
-    is android.app.Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
+private fun Context.findActivity(): android.app.Activity? =
+    when (this) {
+        is android.app.Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
 private data class LanguageOption(
     val tag: String,
@@ -1138,23 +1225,26 @@ private data class LanguageOption(
 private fun isNotificationPermissionEnabled(context: Context): Boolean {
     val managerEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
     val runtimeGranted =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
-            context, Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
     return managerEnabled && runtimeGranted
 }
 
 private fun openAppNotificationSettings(context: Context) {
-    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    val intent =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            }
+        } else {
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                "package:${context.packageName}".toUri(),
+            )
         }
-    } else {
-        Intent(
-            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-            "package:${context.packageName}".toUri(),
-        )
-    }
     context.startActivity(intent)
 }
 
@@ -1166,7 +1256,8 @@ private fun shareApp(context: Context) {
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, shareText)
-            }, null
-        )
+            },
+            null,
+        ),
     )
 }

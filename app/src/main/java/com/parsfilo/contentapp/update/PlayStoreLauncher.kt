@@ -18,10 +18,11 @@ fun openPlayStore(context: Context) {
         context.startActivity(marketIntent)
     } catch (error: ActivityNotFoundException) {
         Timber.w(error, "Play Store app not found; falling back to web.")
-        val webIntent = Intent(
-            Intent.ACTION_VIEW,
-            "https://play.google.com/store/apps/details?id=$packageName".toUri(),
-        )
+        val webIntent =
+            Intent(
+                Intent.ACTION_VIEW,
+                "https://play.google.com/store/apps/details?id=$packageName".toUri(),
+            )
         if (context !is Activity) {
             webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }

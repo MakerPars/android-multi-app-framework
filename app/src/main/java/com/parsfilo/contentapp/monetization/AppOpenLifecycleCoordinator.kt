@@ -16,93 +16,105 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AppOpenLifecycleCoordinator @Inject constructor(
-    private val adOrchestrator: AdOrchestrator,
-) : Application.ActivityLifecycleCallbacks, DefaultLifecycleObserver {
+class AppOpenLifecycleCoordinator
+    @Inject
+    constructor(
+        private val adOrchestrator: AdOrchestrator,
+    ) : Application.ActivityLifecycleCallbacks,
+        DefaultLifecycleObserver {
+        @Volatile
+        private var currentActivity: Activity? = null
 
-    @Volatile
-    private var currentActivity: Activity? = null
+        private val isRegistered = AtomicBoolean(false)
+        private val pendingForegroundRequest = AtomicBoolean(false)
+        private val firstForegroundHandled = AtomicBoolean(false)
 
-    private val isRegistered = AtomicBoolean(false)
-    private val pendingForegroundRequest = AtomicBoolean(false)
-    private val firstForegroundHandled = AtomicBoolean(false)
-
-    fun register(application: Application) {
-        if (isRegistered.getAndSet(true)) {
-            Timber.d("AppOpenLifecycleCoordinator already registered")
-            return
+        fun register(application: Application) {
+            if (isRegistered.getAndSet(true)) {
+                Timber.d("AppOpenLifecycleCoordinator already registered")
+                return
+            }
+            application.registerActivityLifecycleCallbacks(this)
+            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+            Timber.d("AppOpenLifecycleCoordinator registered")
         }
-        application.registerActivityLifecycleCallbacks(this)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        Timber.d("AppOpenLifecycleCoordinator registered")
-    }
 
-    override fun onStart(owner: LifecycleOwner) {
-        pendingForegroundRequest.set(true)
-        Timber.d("Process onStart: app-open request queued for next resumed activity")
-    }
+        override fun onStart(owner: LifecycleOwner) {
+            pendingForegroundRequest.set(true)
+            Timber.d("Process onStart: app-open request queued for next resumed activity")
+        }
 
-    override fun onStop(owner: LifecycleOwner) {
-        Timber.d("Process onStop: notifying app paused")
-        adOrchestrator.onAppPaused(currentActivity?.applicationContext)
-    }
+        override fun onStop(owner: LifecycleOwner) {
+            Timber.d("Process onStop: notifying app paused")
+            adOrchestrator.onAppPaused(currentActivity?.applicationContext)
+        }
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+        override fun onActivityCreated(
+            activity: Activity,
+            savedInstanceState: Bundle?,
+        ) = Unit
 
-    override fun onActivityStarted(activity: Activity) {
-        if (!adOrchestrator.isAppOpenAdShowing()) {
+        override fun onActivityStarted(activity: Activity) {
+            if (!adOrchestrator.isAppOpenAdShowing()) {
+                currentActivity = activity
+                Timber.d(
+                    "Activity started for app-open tracking=%s",
+                    activity::class.java.simpleName,
+                )
+            }
+        }
+
+        override fun onActivityResumed(activity: Activity) {
+            if (adOrchestrator.isAppOpenAdShowing()) return
             currentActivity = activity
-            Timber.d("Activity started for app-open tracking=%s", activity::class.java.simpleName)
-        }
-    }
-
-    override fun onActivityResumed(activity: Activity) {
-        if (adOrchestrator.isAppOpenAdShowing()) return
-        currentActivity = activity
-        if (pendingForegroundRequest.compareAndSet(true, false)) {
-            val triggerReason = if (firstForegroundHandled.compareAndSet(false, true)) {
-                AppOpenTriggerReason.COLD_START
-            } else {
-                AppOpenTriggerReason.RESUME
+            if (pendingForegroundRequest.compareAndSet(true, false)) {
+                val triggerReason =
+                    if (firstForegroundHandled.compareAndSet(false, true)) {
+                        AppOpenTriggerReason.COLD_START
+                    } else {
+                        AppOpenTriggerReason.RESUME
+                    }
+                requestAppOpen(
+                    activity = activity,
+                    source = "activity_resumed_after_process_on_start",
+                    triggerReason = triggerReason,
+                )
             }
-            requestAppOpen(
-                activity = activity,
-                source = "activity_resumed_after_process_on_start",
-                triggerReason = triggerReason,
+        }
+
+        override fun onActivityPaused(activity: Activity) = Unit
+
+        override fun onActivityStopped(activity: Activity) = Unit
+
+        override fun onActivitySaveInstanceState(
+            activity: Activity,
+            outState: Bundle,
+        ) = Unit
+
+        override fun onActivityDestroyed(activity: Activity) {
+            if (currentActivity === activity) {
+                Timber.d("Tracked activity destroyed=%s", activity::class.java.simpleName)
+                currentActivity = null
+            }
+        }
+
+        private fun requestAppOpen(
+            activity: Activity,
+            source: String,
+            triggerReason: AppOpenTriggerReason,
+        ) {
+            Timber.d(
+                "Requesting app-open source=%s activity=%s",
+                source,
+                activity::class.java.simpleName,
             )
-        }
-    }
-
-    override fun onActivityPaused(activity: Activity) = Unit
-
-    override fun onActivityStopped(activity: Activity) = Unit
-
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-
-    override fun onActivityDestroyed(activity: Activity) {
-        if (currentActivity === activity) {
-            Timber.d("Tracked activity destroyed=%s", activity::class.java.simpleName)
-            currentActivity = null
-        }
-    }
-
-    private fun requestAppOpen(
-        activity: Activity,
-        source: String,
-        triggerReason: AppOpenTriggerReason,
-    ) {
-        Timber.d(
-            "Requesting app-open source=%s activity=%s",
-            source,
-            activity::class.java.simpleName,
-        )
-        ProcessLifecycleOwner.get().lifecycleScope.launch {
-            runCatching {
-                delay(350L)
-                adOrchestrator.showAppOpenAdIfEligible(activity, triggerReason)
-            }.onFailure { error ->
-                Timber.w(error, "Failed to show app open ad source=%s", source)
+            ProcessLifecycleOwner.get().lifecycleScope.launch {
+                runCatching {
+                    delay(350L)
+                    adOrchestrator.showAppOpenAdIfEligible(activity, triggerReason)
+                }.onFailure { error ->
+                    Timber.w(error, "Failed to show app open ad source=%s", source)
+                }
             }
         }
     }
-}

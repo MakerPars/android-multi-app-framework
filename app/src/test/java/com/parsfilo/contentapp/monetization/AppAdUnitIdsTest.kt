@@ -5,15 +5,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AppAdUnitIdsTest {
-
-    private val ids = AppAdUnitIds.Ids(
-        banner = "banner-default",
-        interstitial = "interstitial-default",
-        native = "native-default",
-        rewarded = "rewarded-default",
-        rewardedInterstitial = "rewarded-inter-default",
-        appOpen = "app-open-default",
-    )
+    private val ids =
+        AppAdUnitIds.Ids(
+            banner = "banner-default",
+            interstitial = "interstitial-default",
+            native = "native-default",
+            rewarded = "rewarded-default",
+            rewardedInterstitial = "rewarded-inter-default",
+            appOpen = "app-open-default",
+        )
 
     @Test
     fun `placement value wins when present`() {

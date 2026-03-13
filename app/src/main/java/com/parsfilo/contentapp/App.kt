@@ -1,7 +1,7 @@
 package com.parsfilo.contentapp
 
-import android.app.Application
 import android.app.Activity
+import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -33,7 +33,6 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
-
     @Inject
     lateinit var billingManager: BillingManager
 
@@ -109,7 +108,10 @@ class App : Application() {
                     audioCachePrefetcher.prefetchIfNeeded(
                         packageName = packageName,
                         fallbackAudioFileName = BuildConfig.AUDIO_FILE_NAME,
-                        prefetchAllAudioOnFirstLaunch = shouldPrefetchAllAudioOnFirstLaunch(packageName),
+                        prefetchAllAudioOnFirstLaunch =
+                            shouldPrefetchAllAudioOnFirstLaunch(
+                                packageName,
+                            ),
                     )
                 }.onFailure { error ->
                     Timber.w(error, "Audio prefetch failed at startup")
@@ -134,7 +136,7 @@ class App : Application() {
             Bundle().apply {
                 putString(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
                 putString(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
-            }
+            },
         )
         ProcessLifecycleOwner.get().lifecycleScope.launch {
             billingManager.subscriptionState.collect { subscriptionState ->
@@ -150,15 +152,17 @@ class App : Application() {
 
         // BillingManager lifecycle yönetimi:
         // Uygulama arka plana geçince dinleyiciyi bırak, öne gelince yeniden bağlan.
-        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStop(owner: LifecycleOwner) {
-                billingManager.endConnection()
-            }
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStop(owner: LifecycleOwner) {
+                    billingManager.endConnection()
+                }
 
-            override fun onStart(owner: LifecycleOwner) {
-                billingManager.startConnection()
-            }
-        })
+                override fun onStart(owner: LifecycleOwner) {
+                    billingManager.startConnection()
+                }
+            },
+        )
 
         if (isPrayerTimesFlavor(packageName)) {
             PrayerTimesRefreshWorker.schedule(this)
@@ -198,54 +202,64 @@ class App : Application() {
 
     private fun registerDebugActivityLifecycleLogging() {
         if (!BuildConfig.DEBUG) return
-        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                Timber.d(
-                    "Lifecycle created activity=%s savedState=%s",
-                    activity::class.java.simpleName,
-                    savedInstanceState != null,
-                )
-            }
+        registerActivityLifecycleCallbacks(
+            object : ActivityLifecycleCallbacks {
+                override fun onActivityCreated(
+                    activity: Activity,
+                    savedInstanceState: Bundle?,
+                ) {
+                    Timber.d(
+                        "Lifecycle created activity=%s savedState=%s",
+                        activity::class.java.simpleName,
+                        savedInstanceState != null,
+                    )
+                }
 
-            override fun onActivityStarted(activity: Activity) {
-                Timber.d("Lifecycle started activity=%s", activity::class.java.simpleName)
-            }
+                override fun onActivityStarted(activity: Activity) {
+                    Timber.d("Lifecycle started activity=%s", activity::class.java.simpleName)
+                }
 
-            override fun onActivityResumed(activity: Activity) {
-                Timber.d("Lifecycle resumed activity=%s", activity::class.java.simpleName)
-            }
+                override fun onActivityResumed(activity: Activity) {
+                    Timber.d("Lifecycle resumed activity=%s", activity::class.java.simpleName)
+                }
 
-            override fun onActivityPaused(activity: Activity) {
-                Timber.d("Lifecycle paused activity=%s", activity::class.java.simpleName)
-            }
+                override fun onActivityPaused(activity: Activity) {
+                    Timber.d("Lifecycle paused activity=%s", activity::class.java.simpleName)
+                }
 
-            override fun onActivityStopped(activity: Activity) {
-                Timber.d("Lifecycle stopped activity=%s", activity::class.java.simpleName)
-            }
+                override fun onActivityStopped(activity: Activity) {
+                    Timber.d("Lifecycle stopped activity=%s", activity::class.java.simpleName)
+                }
 
-            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-                Timber.d("Lifecycle saveState activity=%s", activity::class.java.simpleName)
-            }
+                override fun onActivitySaveInstanceState(
+                    activity: Activity,
+                    outState: Bundle,
+                ) {
+                    Timber.d("Lifecycle saveState activity=%s", activity::class.java.simpleName)
+                }
 
-            override fun onActivityDestroyed(activity: Activity) {
-                Timber.d("Lifecycle destroyed activity=%s", activity::class.java.simpleName)
-            }
-        })
+                override fun onActivityDestroyed(activity: Activity) {
+                    Timber.d("Lifecycle destroyed activity=%s", activity::class.java.simpleName)
+                }
+            },
+        )
     }
 
     private companion object {
         private const val DEFAULT_CONTENT_AUDIO_FILE_NAME = "content_audio.mp3"
         private const val PACKAGE_NAMAZ_SURELERI = "com.parsfilo.namazsurelerivedualarsesli"
         private const val PACKAGE_ZIKIRMATIK = "com.parsfilo.zikirmatik"
-        private val PRAYER_TIMES_PACKAGES = setOf(
-            "com.parsfilo.imsakiye",
-            "com.parsfilo.namazvakitleri",
-        )
+        private val PRAYER_TIMES_PACKAGES =
+            setOf(
+                "com.parsfilo.imsakiye",
+                "com.parsfilo.namazvakitleri",
+            )
 
-        private val DEFAULT_FCM_TOPICS = listOf(
-            "dini-bildirim",
-            "talep",
-        )
+        private val DEFAULT_FCM_TOPICS =
+            listOf(
+                "dini-bildirim",
+                "talep",
+            )
     }
 
     private fun shouldPrefetchFlavorAudio(audioFileName: String): Boolean =
@@ -254,11 +268,9 @@ class App : Application() {
     private fun shouldPrefetchAllAudioOnFirstLaunch(packageName: String): Boolean =
         packageName == PACKAGE_NAMAZ_SURELERI
 
-    private fun isPrayerTimesFlavor(packageName: String): Boolean =
-        packageName in PRAYER_TIMES_PACKAGES
+    private fun isPrayerTimesFlavor(packageName: String): Boolean = packageName in PRAYER_TIMES_PACKAGES
 
-    private fun isZikirmatikFlavor(packageName: String): Boolean =
-        packageName == PACKAGE_ZIKIRMATIK
+    private fun isZikirmatikFlavor(packageName: String): Boolean = packageName == PACKAGE_ZIKIRMATIK
 }
 
 private const val DEBUG_TIMBER_TAG = "timber_log"
@@ -267,20 +279,26 @@ private const val DEBUG_TIMBER_TAG = "timber_log"
  * Forces all Timber logs to a single Logcat tag so filtering is easier during development.
  */
 class FixedTagDebugTree : Timber.DebugTree() {
-    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+    override fun log(
+        priority: Int,
+        tag: String?,
+        message: String,
+        t: Throwable?,
+    ) {
         if (!isLoggable(tag, priority)) return
-        val payload = buildString {
-            if (!tag.isNullOrBlank()) {
-                append('[')
-                append(tag)
-                append("] ")
+        val payload =
+            buildString {
+                if (!tag.isNullOrBlank()) {
+                    append('[')
+                    append(tag)
+                    append("] ")
+                }
+                append(message)
+                if (t != null) {
+                    append('\n')
+                    append(Log.getStackTraceString(t))
+                }
             }
-            append(message)
-            if (t != null) {
-                append('\n')
-                append(Log.getStackTraceString(t))
-            }
-        }
         Log.println(priority, DEBUG_TIMBER_TAG, payload)
     }
 }
@@ -290,7 +308,12 @@ class FixedTagDebugTree : Timber.DebugTree() {
  * Debug and info logs are suppressed in release builds.
  */
 class CrashlyticsTree : Timber.Tree() {
-    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+    override fun log(
+        priority: Int,
+        tag: String?,
+        message: String,
+        t: Throwable?,
+    ) {
         if (priority == Log.VERBOSE || priority == Log.DEBUG) {
             return
         }
@@ -305,8 +328,3 @@ class CrashlyticsTree : Timber.Tree() {
         }
     }
 }
-
-
-
-
-

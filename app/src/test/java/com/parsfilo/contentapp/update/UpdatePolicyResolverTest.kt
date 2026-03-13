@@ -39,25 +39,41 @@ class UpdatePolicyResolverTest {
 
     @Test
     fun `hard mode overrides to hard`() {
-        val policy = resolveUpdatePolicy(currentVersionCode = 10, cfg = config(min = 5, latest = 10, mode = "hard"))
+        val policy =
+            resolveUpdatePolicy(
+                currentVersionCode = 10,
+                cfg = config(min = 5, latest = 10, mode = "hard"),
+            )
         assertTrue(policy is UpdatePolicy.Hard)
     }
 
     @Test
     fun `soft mode overrides to soft`() {
-        val policy = resolveUpdatePolicy(currentVersionCode = 10, cfg = config(min = 5, latest = 10, mode = "soft"))
+        val policy =
+            resolveUpdatePolicy(
+                currentVersionCode = 10,
+                cfg = config(min = 5, latest = 10, mode = "soft"),
+            )
         assertTrue(policy is UpdatePolicy.Soft)
     }
 
     @Test
     fun `min supported hard remains highest priority even when mode soft`() {
-        val policy = resolveUpdatePolicy(currentVersionCode = 4, cfg = config(min = 5, latest = 99, mode = "soft"))
+        val policy =
+            resolveUpdatePolicy(
+                currentVersionCode = 4,
+                cfg = config(min = 5, latest = 99, mode = "soft"),
+            )
         assertTrue(policy is UpdatePolicy.Hard)
     }
 
     @Test
     fun `invalid mode falls back to version rules`() {
-        val policy = resolveUpdatePolicy(currentVersionCode = 10, cfg = config(min = 5, latest = 10, mode = "???"))
+        val policy =
+            resolveUpdatePolicy(
+                currentVersionCode = 10,
+                cfg = config(min = 5, latest = 10, mode = "???"),
+            )
         assertTrue(policy is UpdatePolicy.None)
     }
 }

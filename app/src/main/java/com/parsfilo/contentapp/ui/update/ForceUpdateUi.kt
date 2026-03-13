@@ -30,22 +30,25 @@ fun HardUpdateRequiredOverlay(
     BackHandler(enabled = true) {}
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.98f)),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.98f)),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             tonalElevation = dimens.space6,
-            modifier = Modifier
-                .padding(dimens.space16)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(dimens.space16)
+                    .fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(dimens.space20),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(dimens.space20),
                 verticalArrangement = Arrangement.spacedBy(dimens.space12),
             ) {
                 Text(

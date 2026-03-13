@@ -12,10 +12,16 @@ import javax.inject.Named
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
     @Provides
     @Named("audioFileName")
-    fun provideAudioFileName(): String = if (BuildConfig.FLAVOR_NAME == "kuran_kerim") "" else BuildConfig.AUDIO_FILE_NAME
+    fun provideAudioFileName(): String =
+        if (BuildConfig.FLAVOR_NAME ==
+            "kuran_kerim"
+        ) {
+            ""
+        } else {
+            BuildConfig.AUDIO_FILE_NAME
+        }
 
     @Provides
     @Named("useAssetPackAudio")
@@ -29,4 +35,3 @@ object AppModule {
     @Named(PURCHASE_VERIFICATION_URL)
     fun providePurchaseVerificationUrl(): String = BuildConfig.PURCHASE_VERIFICATION_URL
 }
-

@@ -40,69 +40,105 @@ fun AppBottomBarWithFab(
     val colorScheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
     val view = LocalView.current
-    val systemNavBottomInsetPx = ViewCompat.getRootWindowInsets(view)
-        ?.getInsets(WindowInsetsCompat.Type.navigationBars())
-        ?.bottom
-        ?.toFloat() ?: with(density) { 48.dp.toPx() }
+    val systemNavBottomInsetPx =
+        ViewCompat
+            .getRootWindowInsets(view)
+            ?.getInsets(WindowInsetsCompat.Type.navigationBars())
+            ?.bottom
+            ?.toFloat() ?: with(density) { 48.dp.toPx() }
 
-    val destinations = listOf(
-        BottomDestination("subscription", AppRoute.Subscription, stringResource(R.string.nav_premium), R.drawable.ic_star),
-        BottomDestination("other_apps", AppRoute.OtherApps, stringResource(R.string.nav_apps), R.drawable.ic_apps),
-        BottomDestination("home_graph", AppRoute.HomeGraph, stringResource(R.string.nav_home), R.drawable.ic_home),
-        BottomDestination("messages_graph", AppRoute.MessagesGraph, stringResource(R.string.nav_messages), R.drawable.ic_email),
-        BottomDestination("notifications_graph", AppRoute.NotificationsGraph, stringResource(R.string.nav_alerts), R.drawable.ic_notifications),
-    )
+    val destinations =
+        listOf(
+            BottomDestination(
+                "subscription",
+                AppRoute.Subscription,
+                stringResource(R.string.nav_premium),
+                R.drawable.ic_star,
+            ),
+            BottomDestination(
+                "other_apps",
+                AppRoute.OtherApps,
+                stringResource(R.string.nav_apps),
+                R.drawable.ic_apps,
+            ),
+            BottomDestination(
+                "home_graph",
+                AppRoute.HomeGraph,
+                stringResource(R.string.nav_home),
+                R.drawable.ic_home,
+            ),
+            BottomDestination(
+                "messages_graph",
+                AppRoute.MessagesGraph,
+                stringResource(R.string.nav_messages),
+                R.drawable.ic_email,
+            ),
+            BottomDestination(
+                "notifications_graph",
+                AppRoute.NotificationsGraph,
+                stringResource(R.string.nav_alerts),
+                R.drawable.ic_notifications,
+            ),
+        )
 
-    val selectedId = destinations.firstOrNull { destination ->
-        currentDestination?.hierarchy?.any { it.route == destination.route.route } == true
-    }?.id ?: destinations[2].id
+    val selectedId =
+        destinations
+            .firstOrNull { destination ->
+                currentDestination?.hierarchy?.any { it.route == destination.route.route } == true
+            }?.id ?: destinations[2].id
 
     NavigationBar(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                val stroke = 2.dp.toPx()
-                val insetTop = size.height - systemNavBottomInsetPx - (stroke / 2f)
-                drawLine(
-                    color = colorScheme.onSurface.copy(alpha = 0.82f),
-                    start = Offset(0f, insetTop),
-                    end = Offset(size.width, insetTop),
-                    strokeWidth = stroke,
-                )
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    val stroke = 2.dp.toPx()
+                    val insetTop = size.height - systemNavBottomInsetPx - (stroke / 2f)
+                    drawLine(
+                        color = colorScheme.onSurface.copy(alpha = 0.82f),
+                        start = Offset(0f, insetTop),
+                        end = Offset(size.width, insetTop),
+                        strokeWidth = stroke,
+                    )
+                },
         tonalElevation = dimens.elevationLow,
         containerColor = colorScheme.surface,
     ) {
         destinations.forEach { destination ->
-            val badge = when (destination.route) {
-                AppRoute.NotificationsGraph -> if (BadgeFeatureFlags.SHOW_NOTIFICATIONS_BADGE) {
-                    unreadNotificationCount.toBadgeText()
-                } else {
-                    null
-                }
+            val badge =
+                when (destination.route) {
+                    AppRoute.NotificationsGraph ->
+                        if (BadgeFeatureFlags.SHOW_NOTIFICATIONS_BADGE) {
+                            unreadNotificationCount.toBadgeText()
+                        } else {
+                            null
+                        }
 
-                AppRoute.OtherApps -> if (BadgeFeatureFlags.SHOW_OTHER_APPS_BADGE) {
-                    newOtherAppsCount.toBadgeText()
-                } else {
-                    null
-                }
+                    AppRoute.OtherApps ->
+                        if (BadgeFeatureFlags.SHOW_OTHER_APPS_BADGE) {
+                            newOtherAppsCount.toBadgeText()
+                        } else {
+                            null
+                        }
 
-                AppRoute.MessagesGraph -> if (BadgeFeatureFlags.SHOW_MESSAGES_BADGE) {
-                    unreadMessageCount.toBadgeText()
-                } else {
-                    null
-                }
+                    AppRoute.MessagesGraph ->
+                        if (BadgeFeatureFlags.SHOW_MESSAGES_BADGE) {
+                            unreadMessageCount.toBadgeText()
+                        } else {
+                            null
+                        }
 
-                AppRoute.Subscription -> if (
-                    BadgeFeatureFlags.SHOW_SUBSCRIPTION_BADGE && shouldShowSubscriptionBadge
-                ) {
-                    "!"
-                } else {
-                    null
-                }
+                    AppRoute.Subscription ->
+                        if (
+                            BadgeFeatureFlags.SHOW_SUBSCRIPTION_BADGE && shouldShowSubscriptionBadge
+                        ) {
+                            "!"
+                        } else {
+                            null
+                        }
 
-                else -> null
-            }
+                    else -> null
+                }
 
             val selected = destination.id == selectedId
             NavigationBarItem(
@@ -134,13 +170,14 @@ fun AppBottomBarWithFab(
                     )
                 },
                 alwaysShowLabel = true,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = colorScheme.onSecondaryContainer,
-                    selectedTextColor = colorScheme.onSecondaryContainer,
-                    indicatorColor = colorScheme.secondaryContainer,
-                    unselectedIconColor = colorScheme.onSurfaceVariant,
-                    unselectedTextColor = colorScheme.onSurfaceVariant,
-                ),
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        selectedIconColor = colorScheme.onSecondaryContainer,
+                        selectedTextColor = colorScheme.onSecondaryContainer,
+                        indicatorColor = colorScheme.secondaryContainer,
+                        unselectedIconColor = colorScheme.onSurfaceVariant,
+                        unselectedTextColor = colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -153,10 +190,9 @@ private data class BottomDestination(
     val icon: Int,
 )
 
-private fun Int.toBadgeText(): String? {
-    return when {
+private fun Int.toBadgeText(): String? =
+    when {
         this <= 0 -> null
         this > 9 -> "9+"
         else -> toString()
     }
-}

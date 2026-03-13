@@ -17,10 +17,10 @@ import com.parsfilo.contentapp.feature.ads.AdsPlacementPolicyEvaluator
 import com.parsfilo.contentapp.feature.ads.AdsPolicyProvider
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager
 import com.parsfilo.contentapp.feature.ads.AppOpenAdManager.ShowCompletionReason
-import com.parsfilo.contentapp.feature.ads.AppOpenTriggerReason
 import com.parsfilo.contentapp.feature.ads.AppOpenEligibilityTracker
-import com.parsfilo.contentapp.feature.ads.InterstitialTriggerKind
+import com.parsfilo.contentapp.feature.ads.AppOpenTriggerReason
 import com.parsfilo.contentapp.feature.ads.InterstitialAdManager
+import com.parsfilo.contentapp.feature.ads.InterstitialTriggerKind
 import com.parsfilo.contentapp.feature.ads.NativeAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialAdManager
@@ -48,604 +48,711 @@ data class AdSessionContext(
 )
 
 @Singleton
-class AdOrchestrator @Inject constructor(
-    private val adManager: AdManager,
-    private val appOpenAdManager: AppOpenAdManager,
-    private val interstitialAdManager: InterstitialAdManager,
-    val nativeAdManager: NativeAdManager,
-    private val rewardedAdManager: RewardedAdManager,
-    internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
-    private val adRevenueLogger: AdRevenueLogger,
-    private val adGateChecker: AdGateChecker,
-    private val adsPolicyProvider: AdsPolicyProvider,
-    private val preferencesDataSource: PreferencesDataSource,
-    private val placementPolicyEvaluator: AdsPlacementPolicyEvaluator,
-    private val rewardedInterstitialCoordinator: RewardedInterstitialCoordinator,
-    private val appOpenEligibilityTracker: AppOpenEligibilityTracker,
-    private val adsConfigValidator: AdsConfigValidator,
-) {
+class AdOrchestrator
+    @Inject
+    constructor(
+        private val adManager: AdManager,
+        private val appOpenAdManager: AppOpenAdManager,
+        private val interstitialAdManager: InterstitialAdManager,
+        val nativeAdManager: NativeAdManager,
+        private val rewardedAdManager: RewardedAdManager,
+        internal val rewardedInterstitialAdManager: RewardedInterstitialAdManager,
+        private val adRevenueLogger: AdRevenueLogger,
+        private val adGateChecker: AdGateChecker,
+        private val adsPolicyProvider: AdsPolicyProvider,
+        private val preferencesDataSource: PreferencesDataSource,
+        private val placementPolicyEvaluator: AdsPlacementPolicyEvaluator,
+        private val rewardedInterstitialCoordinator: RewardedInterstitialCoordinator,
+        private val appOpenEligibilityTracker: AppOpenEligibilityTracker,
+        private val adsConfigValidator: AdsConfigValidator,
+    ) {
+        private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
+        private var rewardedInterstitialShownThisSession: Int = 0
+        private var interstitialShownThisSession: Int = 0
 
-    private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
-    private var rewardedInterstitialShownThisSession: Int = 0
-    private var interstitialShownThisSession: Int = 0
-    @Volatile
-    private var adSessionContext: AdSessionContext = AdSessionContext()
-    @Volatile
-    private var adGateObserverStarted: Boolean = false
-    @Volatile
-    private var appOpenWarmupRequested: Boolean = false
-    @Volatile
-    private var lastInterstitialIntentAtMs: Long = 0L
-    @Volatile
-    private var lastInterstitialIntentKey: String? = null
+        @Volatile
+        private var adSessionContext: AdSessionContext = AdSessionContext()
 
-    fun initialize(activity: Activity, scope: CoroutineScope) {
-        Timber.d("AdOrchestrator initialize package=%s testAds=%s", activity.packageName, BuildConfig.USE_TEST_ADS)
-        adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
-        startAdGateObserver(activity.applicationContext)
-        adManager.initialize(activity) {
-            scope.launch(Main.immediate) {
-                if (!adGateChecker.shouldShowAds.first()) {
-                    Timber.d("AdOrchestrator initialize: ad gate closed, preload skipped")
-                    return@launch
+        @Volatile
+        private var adGateObserverStarted: Boolean = false
+
+        @Volatile
+        private var appOpenWarmupRequested: Boolean = false
+
+        @Volatile
+        private var lastInterstitialIntentAtMs: Long = 0L
+
+        @Volatile
+        private var lastInterstitialIntentKey: String? = null
+
+        fun initialize(
+            activity: Activity,
+            scope: CoroutineScope,
+        ) {
+            Timber.d(
+                "AdOrchestrator initialize package=%s testAds=%s",
+                activity.packageName,
+                BuildConfig.USE_TEST_ADS,
+            )
+            adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
+            startAdGateObserver(activity.applicationContext)
+            adManager.initialize(activity) {
+                scope.launch(Main.immediate) {
+                    if (!adGateChecker.shouldShowAds.first()) {
+                        Timber.d("AdOrchestrator initialize: ad gate closed, preload skipped")
+                        return@launch
+                    }
+                    requestAdBootstrap(
+                        context = activity.applicationContext,
+                        reason = "initialize",
+                        includeAppOpenWarmup = true,
+                    )
                 }
-                requestAdBootstrap(
-                    context = activity.applicationContext,
-                    reason = "initialize",
-                    includeAppOpenWarmup = true,
-                )
             }
         }
-    }
 
-    fun destroy() {
-        Timber.d("AdOrchestrator destroy")
-        nativeAdManager.destroyAds()
-    }
-
-    fun onAppPaused(context: Context? = null) {
-        Timber.d("AdOrchestrator onAppPaused")
-        appOpenEligibilityTracker.onPause()
-        if (context == null) {
-            Timber.d("AppOpen preload skipped on pause: context unavailable")
-            return
+        fun destroy() {
+            Timber.d("AdOrchestrator destroy")
+            nativeAdManager.destroyAds()
         }
-        if (appOpenAdManager.isAdReady()) {
-            Timber.d("AppOpen preload skipped on pause: ready ad already cached")
-            return
+
+        fun onAppPaused(context: Context? = null) {
+            Timber.d("AdOrchestrator onAppPaused")
+            appOpenEligibilityTracker.onPause()
+            if (context == null) {
+                Timber.d("AppOpen preload skipped on pause: context unavailable")
+                return
+            }
+            if (appOpenAdManager.isAdReady()) {
+                Timber.d("AppOpen preload skipped on pause: ready ad already cached")
+                return
+            }
+            Timber.d("AppOpen preload requested on pause route=%s", adSessionContext.activeRoute)
+            appOpenAdManager.loadAd(
+                AppAdUnitIds.resolvePlacement(
+                    context,
+                    AdPlacement.APP_OPEN_RESUME,
+                    BuildConfig.USE_TEST_ADS,
+                ),
+                AdPlacement.APP_OPEN_RESUME,
+            )
         }
-        Timber.d("AppOpen preload requested on pause route=%s", adSessionContext.activeRoute)
-        appOpenAdManager.loadAd(
-            AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-            AdPlacement.APP_OPEN_RESUME,
-        )
-    }
 
-    fun isAppOpenAdShowing(): Boolean = appOpenAdManager.isShowingAdNow()
+        fun isAppOpenAdShowing(): Boolean = appOpenAdManager.isShowingAdNow()
 
-    fun updateSessionContext(
-        activeRoute: String? = null,
-        contentType: String? = null,
-        verseReadIncrement: Int = 0,
-        audioPlayed: Boolean? = null,
-    ) {
-        val previous = adSessionContext
-        adSessionContext = previous.copy(
-            activeRoute = activeRoute ?: previous.activeRoute,
-            contentType = contentType ?: previous.contentType,
-            verseReadCount = (previous.verseReadCount + verseReadIncrement).coerceAtLeast(0),
-            audioPlayedThisSession = audioPlayed ?: previous.audioPlayedThisSession,
-        )
-        Timber.d(
-            "Ad session updated route=%s contentType=%s verseReadCount=%d audioPlayed=%s",
-            adSessionContext.activeRoute,
-            adSessionContext.contentType,
-            adSessionContext.verseReadCount,
-            adSessionContext.audioPlayedThisSession,
-        )
-    }
+        fun updateSessionContext(
+            activeRoute: String? = null,
+            contentType: String? = null,
+            verseReadIncrement: Int = 0,
+            audioPlayed: Boolean? = null,
+        ) {
+            val previous = adSessionContext
+            adSessionContext =
+                previous.copy(
+                    activeRoute = activeRoute ?: previous.activeRoute,
+                    contentType = contentType ?: previous.contentType,
+                    verseReadCount =
+                        (previous.verseReadCount + verseReadIncrement).coerceAtLeast(
+                            0,
+                        ),
+                    audioPlayedThisSession = audioPlayed ?: previous.audioPlayedThisSession,
+                )
+            Timber.d(
+                "Ad session updated route=%s contentType=%s verseReadCount=%d audioPlayed=%s",
+                adSessionContext.activeRoute,
+                adSessionContext.contentType,
+                adSessionContext.verseReadCount,
+                adSessionContext.audioPlayedThisSession,
+            )
+        }
 
-    fun buildRewardedInterstitialIntro(placement: AdPlacement): RewardedInterstitialIntroSpec =
-        rewardedInterstitialCoordinator.buildIntroSpec(placement)
+        fun buildRewardedInterstitialIntro(placement: AdPlacement): RewardedInterstitialIntroSpec =
+            rewardedInterstitialCoordinator.buildIntroSpec(placement)
 
-    fun onRewardedInterstitialIntroShown(
-        placement: AdPlacement,
-        route: String?,
-        adUnitId: String,
-    ) {
-        rewardedInterstitialCoordinator.onIntroShown(placement, adUnitId, route)
-    }
+        fun onRewardedInterstitialIntroShown(
+            placement: AdPlacement,
+            route: String?,
+            adUnitId: String,
+        ) {
+            rewardedInterstitialCoordinator.onIntroShown(placement, adUnitId, route)
+        }
 
-    fun onRewardedInterstitialIntroSkipped(
-        placement: AdPlacement,
-        route: String?,
-        adUnitId: String,
-    ) {
-        rewardedInterstitialCoordinator.onIntroSkipped(placement, adUnitId, route)
-        adRevenueLogger.logSuppressed(
-            adFormat = AdFormat.REWARDED_INTERSTITIAL,
-            placement = placement,
-            adUnitId = adUnitId,
-            suppressReason = AdSuppressReason.INTRO_SKIPPED,
-            route = route,
-        )
-    }
+        fun onRewardedInterstitialIntroSkipped(
+            placement: AdPlacement,
+            route: String?,
+            adUnitId: String,
+        ) {
+            rewardedInterstitialCoordinator.onIntroSkipped(placement, adUnitId, route)
+            adRevenueLogger.logSuppressed(
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                placement = placement,
+                adUnitId = adUnitId,
+                suppressReason = AdSuppressReason.INTRO_SKIPPED,
+                route = route,
+            )
+        }
 
-    fun confirmRewardedInterstitialIntro(
-        placement: AdPlacement,
-        route: String?,
-        adUnitId: String,
-    ): RewardedInterstitialLaunchToken =
-        rewardedInterstitialCoordinator.confirmIntro(placement, adUnitId, route)
+        fun confirmRewardedInterstitialIntro(
+            placement: AdPlacement,
+            route: String?,
+            adUnitId: String,
+        ): RewardedInterstitialLaunchToken = rewardedInterstitialCoordinator.confirmIntro(placement, adUnitId, route)
 
-    suspend fun showInterstitialIfEligible(
-        activity: Activity,
-        placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
-        route: String? = null,
-        triggerKind: InterstitialTriggerKind = InterstitialTriggerKind.NAV_BREAK,
-        onAdDismissed: () -> Unit = {},
-    ) {
-        val contextRoute = route ?: adSessionContext.activeRoute
-        val screenRoute = adSessionContext.activeRoute
-        adRevenueLogger.logShowIntent(
-            adFormat = AdFormat.INTERSTITIAL,
-            placement = placement,
-            route = contextRoute,
-            trigger = triggerKind.analyticsValue,
-            adReady = interstitialAdManager.isAdReady(),
-        )
-        Timber.d(
-            "Interstitial show requested placement=%s route=%s screenRoute=%s trigger=%s sessionCount=%d",
-            placement.analyticsValue,
-            contextRoute,
-            screenRoute,
-            triggerKind.analyticsValue,
-            interstitialShownThisSession,
-        )
-        if (shouldCollapseInterstitialOpportunity(triggerKind, contextRoute)) {
-            adRevenueLogger.logShowBlocked(
+        suspend fun showInterstitialIfEligible(
+            activity: Activity,
+            placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
+            route: String? = null,
+            triggerKind: InterstitialTriggerKind = InterstitialTriggerKind.NAV_BREAK,
+            onAdDismissed: () -> Unit = {},
+        ) {
+            val contextRoute = route ?: adSessionContext.activeRoute
+            val screenRoute = adSessionContext.activeRoute
+            adRevenueLogger.logShowIntent(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
-                suppressReason = AdSuppressReason.RAPID_REPEAT,
                 route = contextRoute,
                 trigger = triggerKind.analyticsValue,
+                adReady = interstitialAdManager.isAdReady(),
             )
-            onAdDismissed()
-            return
-        }
-        val prefs = preferencesDataSource.userData.first()
-        when (
-            val eligibility = placementPolicyEvaluator.evaluateInterstitial(
-                AdRequestContext(
-                    format = AdFormat.INTERSTITIAL,
-                    placement = placement,
-                    route = contextRoute,
-                    screenRoute = screenRoute,
-                    privacyState = AdsConsentRuntimeState.state.value,
-                    isPremium = prefs.isPremium,
-                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
-                    sessionCount = interstitialShownThisSession,
-                    lastShownAtMs = prefs.lastInterstitialShown,
-                    resumeGapMs = null,
-                    contentInProgress = isContentInProgress(screenRoute, triggerKind),
-                    interstitialTriggerKind = triggerKind,
-                ),
+            Timber.d(
+                "Interstitial show requested placement=%s route=%s screenRoute=%s trigger=%s sessionCount=%d",
+                placement.analyticsValue,
+                contextRoute,
+                screenRoute,
+                triggerKind.analyticsValue,
+                interstitialShownThisSession,
             )
-        ) {
-            is AdEligibility.Blocked -> {
-                Timber.d(
-                    "Interstitial blocked placement=%s route=%s reason=%s",
-                    placement.analyticsValue,
-                    contextRoute,
-                    eligibility.reason.analyticsValue,
-                )
-                adRevenueLogger.logSuppressed(
-                    adFormat = AdFormat.INTERSTITIAL,
-                    placement = placement,
-                    adUnitId = AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
-                    suppressReason = eligibility.reason,
-                    route = contextRoute,
-                )
+            if (shouldCollapseInterstitialOpportunity(triggerKind, contextRoute)) {
                 adRevenueLogger.logShowBlocked(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
-                    suppressReason = eligibility.reason,
+                    suppressReason = AdSuppressReason.RAPID_REPEAT,
                     route = contextRoute,
                     trigger = triggerKind.analyticsValue,
                 )
                 onAdDismissed()
                 return
             }
-            AdEligibility.Allowed -> Unit
-        }
-        Timber.d("Interstitial allowed placement=%s route=%s", placement.analyticsValue, contextRoute)
-        interstitialAdManager.showAd(
-            activity = activity,
-            placement = placement,
-            route = contextRoute,
-            triggerKind = triggerKind,
-            onAdImpression = { adUnitId ->
-                interstitialShownThisSession += 1
-                Timber.d(
-                    "Interstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
-                    placement.analyticsValue,
-                    contextRoute,
-                    interstitialShownThisSession,
-                    adUnitId,
-                )
-                logAdAfterEngagement(
-                    adFormat = AdFormat.INTERSTITIAL,
-                    placement = placement,
-                    adUnitId = adUnitId,
-                    route = contextRoute,
-                )
-            },
-        ) {
-            onAdDismissed()
-        }
-    }
-
-    suspend fun showAppOpenAdIfEligible(activity: Activity) {
-        showAppOpenAdIfEligible(activity, AppOpenTriggerReason.RESUME)
-    }
-
-    suspend fun showAppOpenAdIfEligible(
-        activity: Activity,
-        triggerReason: AppOpenTriggerReason,
-    ) {
-        Timber.d("AppOpen show requested route=%s trigger=%s", adSessionContext.activeRoute, triggerReason.analyticsValue)
-        val prefs = preferencesDataSource.userData.first()
-        val resumeSnapshot = appOpenEligibilityTracker.onResume()
-        val route = adSessionContext.activeRoute
-        adRevenueLogger.logShowIntent(
-            adFormat = AdFormat.APP_OPEN,
-            placement = AdPlacement.APP_OPEN_RESUME,
-            route = route,
-            trigger = triggerReason.analyticsValue,
-            adReady = appOpenAdManager.isAdReady(),
-        )
-        when (
-            val eligibility = placementPolicyEvaluator.evaluateAppOpen(
-                AdRequestContext(
-                    format = AdFormat.APP_OPEN,
-                    placement = AdPlacement.APP_OPEN_RESUME,
-                    route = route,
-                    screenRoute = route,
-                    privacyState = AdsConsentRuntimeState.state.value,
-                    isPremium = prefs.isPremium,
-                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
-                    sessionCount = resumeSnapshot.sessionCount,
-                    lastShownAtMs = prefs.lastAppOpenAdShown,
-                    resumeGapMs = if (resumeSnapshot.isColdStart) Long.MAX_VALUE else resumeSnapshot.resumeGapMs,
-                    contentInProgress = isContentInProgress(route),
-                    appOpenTriggerReason = triggerReason,
-                ),
-            )
-        ) {
-            is AdEligibility.Blocked -> {
-                Timber.d(
-                    "AppOpen blocked route=%s reason=%s",
-                    route,
-                    eligibility.reason.analyticsValue,
-                )
-                adRevenueLogger.logSuppressed(
-                    adFormat = AdFormat.APP_OPEN,
-                    placement = AdPlacement.APP_OPEN_RESUME,
-                    adUnitId = AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-                    suppressReason = eligibility.reason,
-                    route = route,
-                )
-                adRevenueLogger.logShowBlocked(
-                    adFormat = AdFormat.APP_OPEN,
-                    placement = AdPlacement.APP_OPEN_RESUME,
-                    suppressReason = eligibility.reason,
-                    route = route,
-                    trigger = triggerReason.analyticsValue,
-                )
-                return
-            }
-            AdEligibility.Allowed -> Unit
-        }
-        Timber.d(
-            "AppOpen allowed route=%s coldStart=%s sessionCount=%d",
-            route,
-            resumeSnapshot.isColdStart,
-            resumeSnapshot.sessionCount,
-        )
-        appOpenAdManager.showAdIfAvailable(
-            activity = activity,
-            route = route,
-            triggerReason = triggerReason,
-            onAdImpression = { adUnitId ->
-                appOpenEligibilityTracker.onShown()
-                Timber.d("AppOpen impression route=%s adUnit=%s", route, adUnitId)
-                logAdAfterEngagement(
-                    adFormat = AdFormat.APP_OPEN,
-                    placement = AdPlacement.APP_OPEN_RESUME,
-                    adUnitId = adUnitId,
-                    route = route,
-                )
-            },
-        ) { completionReason ->
-            when (completionReason) {
-                ShowCompletionReason.ATTEMPTED -> {
-                    Timber.d("AppOpen show completed after attempt; requesting reload")
-                    appOpenAdManager.loadAd(
-                        AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-                        AdPlacement.APP_OPEN_RESUME,
+            val prefs = preferencesDataSource.userData.first()
+            when (
+                val eligibility =
+                    placementPolicyEvaluator.evaluateInterstitial(
+                        AdRequestContext(
+                            format = AdFormat.INTERSTITIAL,
+                            placement = placement,
+                            route = contextRoute,
+                            screenRoute = screenRoute,
+                            privacyState = AdsConsentRuntimeState.state.value,
+                            isPremium = prefs.isPremium,
+                            isRewardedAdFree =
+                                prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                            sessionCount = interstitialShownThisSession,
+                            lastShownAtMs = prefs.lastInterstitialShown,
+                            resumeGapMs = null,
+                            contentInProgress = isContentInProgress(screenRoute, triggerKind),
+                            interstitialTriggerKind = triggerKind,
+                        ),
                     )
-                }
-                ShowCompletionReason.NOT_LOADED -> {
-                    Timber.d("AppOpen show completed without loaded ad; requesting top-up preload")
-                    appOpenAdManager.loadAd(
-                        AppAdUnitIds.resolvePlacement(activity, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-                        AdPlacement.APP_OPEN_RESUME,
+            ) {
+                is AdEligibility.Blocked -> {
+                    Timber.d(
+                        "Interstitial blocked placement=%s route=%s reason=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                        eligibility.reason.analyticsValue,
                     )
+                    adRevenueLogger.logSuppressed(
+                        adFormat = AdFormat.INTERSTITIAL,
+                        placement = placement,
+                        adUnitId =
+                            AppAdUnitIds.resolvePlacement(
+                                activity,
+                                placement,
+                                BuildConfig.USE_TEST_ADS,
+                            ),
+                        suppressReason = eligibility.reason,
+                        route = contextRoute,
+                    )
+                    adRevenueLogger.logShowBlocked(
+                        adFormat = AdFormat.INTERSTITIAL,
+                        placement = placement,
+                        suppressReason = eligibility.reason,
+                        route = contextRoute,
+                        trigger = triggerKind.analyticsValue,
+                    )
+                    onAdDismissed()
+                    return
                 }
-                ShowCompletionReason.BLOCKED -> {
-                    Timber.d("AppOpen show completed while blocked; reload skipped")
-                }
+                AdEligibility.Allowed -> Unit
             }
-        }
-    }
-
-    suspend fun showRewardedInterstitialIfEligible(
-        activity: Activity,
-        launchToken: RewardedInterstitialLaunchToken,
-        placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
-        route: String? = null,
-        onUserEarnedReward: () -> Unit = {},
-        onAdDismissed: () -> Unit = {},
-    ) {
-        Timber.d(
-            "RewardedInterstitial show requested placement=%s route=%s sessionCount=%d",
-            placement.analyticsValue,
-            route ?: adSessionContext.activeRoute,
-            rewardedInterstitialShownThisSession,
-        )
-        val prefs = preferencesDataSource.userData.first()
-        val contextRoute = route ?: adSessionContext.activeRoute
-        when (
-            val eligibility = placementPolicyEvaluator.evaluateRewardedInterstitial(
-                AdRequestContext(
-                    format = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = placement,
-                    route = contextRoute,
-                    privacyState = AdsConsentRuntimeState.state.value,
-                    isPremium = prefs.isPremium,
-                    isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
-                    sessionCount = rewardedInterstitialShownThisSession,
-                    lastShownAtMs = prefs.lastRewardedInterstitialShown,
-                    resumeGapMs = null,
-                    contentInProgress = false,
-                ),
+            Timber.d(
+                "Interstitial allowed placement=%s route=%s",
+                placement.analyticsValue,
+                contextRoute,
             )
-        ) {
-            is AdEligibility.Blocked -> {
-                Timber.d(
-                    "RewardedInterstitial blocked placement=%s route=%s reason=%s",
-                    placement.analyticsValue,
-                    contextRoute,
-                    eligibility.reason.analyticsValue,
-                )
-                adRevenueLogger.logSuppressed(
-                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = placement,
-                    adUnitId = AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
-                    suppressReason = eligibility.reason,
-                    route = contextRoute,
-                )
+            interstitialAdManager.showAd(
+                activity = activity,
+                placement = placement,
+                route = contextRoute,
+                triggerKind = triggerKind,
+                onAdImpression = { adUnitId ->
+                    interstitialShownThisSession += 1
+                    Timber.d(
+                        "Interstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                        interstitialShownThisSession,
+                        adUnitId,
+                    )
+                    logAdAfterEngagement(
+                        adFormat = AdFormat.INTERSTITIAL,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        route = contextRoute,
+                    )
+                },
+            ) {
                 onAdDismissed()
-                return
             }
-            AdEligibility.Allowed -> Unit
         }
-        Timber.d("RewardedInterstitial allowed placement=%s route=%s", placement.analyticsValue, contextRoute)
-        rewardedInterstitialAdManager.showAfterConfirmedIntro(
-            launchToken = launchToken,
-            activity = activity,
-            placement = placement,
-            route = contextRoute,
-            onAdImpression = { adUnitId ->
-                orchestratorScope.launch {
-                    rewardedInterstitialShownThisSession += 1
-                    preferencesDataSource.setLastRewardedInterstitialShown(System.currentTimeMillis())
-                }
-                Timber.d(
-                    "RewardedInterstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
-                    placement.analyticsValue,
-                    contextRoute,
-                    rewardedInterstitialShownThisSession,
-                    adUnitId,
-                )
-                logAdAfterEngagement(
-                    adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = placement,
-                    adUnitId = adUnitId,
-                    route = contextRoute,
-                )
-            },
-            onUserEarnedReward = { _, _ ->
-                orchestratorScope.launch {
-                    Timber.d("RewardedInterstitial reward earned placement=%s route=%s", placement.analyticsValue, contextRoute)
-                    adGateChecker.onRewardEarned()
-                    onUserEarnedReward()
-                }
-            },
-            onAdDismissed = {
-                Timber.d("RewardedInterstitial dismissed; requesting reload placement=%s route=%s", placement.analyticsValue, contextRoute)
-                val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
-                rewardedInterstitialAdManager.loadAd(ids.rewardedInterstitial, placement, contextRoute)
-                onAdDismissed()
-            },
-        )
-    }
 
-    private fun startAdGateObserver(context: Context) {
-        if (adGateObserverStarted) return
-        adGateObserverStarted = true
-        Timber.d("AdOrchestrator startAdGateObserver")
-        orchestratorScope.launch {
-            combine(
-                AdsConsentRuntimeState.canRequestAds,
-                adGateChecker.shouldShowAds,
-            ) { consentGranted, adsAllowedByGate ->
-                consentGranted && adsAllowedByGate
+        suspend fun showAppOpenAdIfEligible(activity: Activity) {
+            showAppOpenAdIfEligible(activity, AppOpenTriggerReason.RESUME)
+        }
+
+        suspend fun showAppOpenAdIfEligible(
+            activity: Activity,
+            triggerReason: AppOpenTriggerReason,
+        ) {
+            Timber.d(
+                "AppOpen show requested route=%s trigger=%s",
+                adSessionContext.activeRoute,
+                triggerReason.analyticsValue,
+            )
+            val prefs = preferencesDataSource.userData.first()
+            val resumeSnapshot = appOpenEligibilityTracker.onResume()
+            val route = adSessionContext.activeRoute
+            adRevenueLogger.logShowIntent(
+                adFormat = AdFormat.APP_OPEN,
+                placement = AdPlacement.APP_OPEN_RESUME,
+                route = route,
+                trigger = triggerReason.analyticsValue,
+                adReady = appOpenAdManager.isAdReady(),
+            )
+            when (
+                val eligibility =
+                    placementPolicyEvaluator.evaluateAppOpen(
+                        AdRequestContext(
+                            format = AdFormat.APP_OPEN,
+                            placement = AdPlacement.APP_OPEN_RESUME,
+                            route = route,
+                            screenRoute = route,
+                            privacyState = AdsConsentRuntimeState.state.value,
+                            isPremium = prefs.isPremium,
+                            isRewardedAdFree =
+                                prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                            sessionCount = resumeSnapshot.sessionCount,
+                            lastShownAtMs = prefs.lastAppOpenAdShown,
+                            resumeGapMs =
+                                if (resumeSnapshot.isColdStart) {
+                                    Long.MAX_VALUE
+                                } else {
+                                    resumeSnapshot.resumeGapMs
+                                },
+                            contentInProgress = isContentInProgress(route),
+                            appOpenTriggerReason = triggerReason,
+                        ),
+                    )
+            ) {
+                is AdEligibility.Blocked -> {
+                    Timber.d(
+                        "AppOpen blocked route=%s reason=%s",
+                        route,
+                        eligibility.reason.analyticsValue,
+                    )
+                    adRevenueLogger.logSuppressed(
+                        adFormat = AdFormat.APP_OPEN,
+                        placement = AdPlacement.APP_OPEN_RESUME,
+                        adUnitId =
+                            AppAdUnitIds.resolvePlacement(
+                                activity,
+                                AdPlacement.APP_OPEN_RESUME,
+                                BuildConfig.USE_TEST_ADS,
+                            ),
+                        suppressReason = eligibility.reason,
+                        route = route,
+                    )
+                    adRevenueLogger.logShowBlocked(
+                        adFormat = AdFormat.APP_OPEN,
+                        placement = AdPlacement.APP_OPEN_RESUME,
+                        suppressReason = eligibility.reason,
+                        route = route,
+                        trigger = triggerReason.analyticsValue,
+                    )
+                    return
+                }
+                AdEligibility.Allowed -> Unit
             }
-                .distinctUntilChanged()
-                .collect { canPreload ->
-                    Timber.d("Ad gate observer changed canPreload=%s", canPreload)
-                    if (canPreload) {
-                        requestAdBootstrap(
-                            context = context,
-                            reason = "gate_opened",
-                            includeAppOpenWarmup = true,
+            Timber.d(
+                "AppOpen allowed route=%s coldStart=%s sessionCount=%d",
+                route,
+                resumeSnapshot.isColdStart,
+                resumeSnapshot.sessionCount,
+            )
+            appOpenAdManager.showAdIfAvailable(
+                activity = activity,
+                route = route,
+                triggerReason = triggerReason,
+                onAdImpression = { adUnitId ->
+                    appOpenEligibilityTracker.onShown()
+                    Timber.d("AppOpen impression route=%s adUnit=%s", route, adUnitId)
+                    logAdAfterEngagement(
+                        adFormat = AdFormat.APP_OPEN,
+                        placement = AdPlacement.APP_OPEN_RESUME,
+                        adUnitId = adUnitId,
+                        route = route,
+                    )
+                },
+            ) { completionReason ->
+                when (completionReason) {
+                    ShowCompletionReason.ATTEMPTED -> {
+                        Timber.d("AppOpen show completed after attempt; requesting reload")
+                        appOpenAdManager.loadAd(
+                            AppAdUnitIds.resolvePlacement(
+                                activity,
+                                AdPlacement.APP_OPEN_RESUME,
+                                BuildConfig.USE_TEST_ADS,
+                            ),
+                            AdPlacement.APP_OPEN_RESUME,
                         )
-                    } else {
-                        clearPreloadedAds()
+                    }
+                    ShowCompletionReason.NOT_LOADED -> {
+                        Timber.d(
+                            "AppOpen show completed without loaded ad; requesting top-up preload",
+                        )
+                        appOpenAdManager.loadAd(
+                            AppAdUnitIds.resolvePlacement(
+                                activity,
+                                AdPlacement.APP_OPEN_RESUME,
+                                BuildConfig.USE_TEST_ADS,
+                            ),
+                            AdPlacement.APP_OPEN_RESUME,
+                        )
+                    }
+                    ShowCompletionReason.BLOCKED -> {
+                        Timber.d("AppOpen show completed while blocked; reload skipped")
                     }
                 }
-        }
-    }
-
-    fun refreshConsent(activity: Activity, scope: CoroutineScope) {
-        Timber.d("AdOrchestrator refreshConsent requested")
-        adManager.refreshConsent(activity) { canRequestAds ->
-            scope.launch(Main.immediate) {
-                Timber.d("AdOrchestrator refreshConsent result canRequestAds=%s", canRequestAds)
-                if (!canRequestAds) {
-                    clearPreloadedAds()
-                    return@launch
-                }
-                if (!adGateChecker.shouldShowAds.first()) {
-                    Timber.d("AdOrchestrator refreshConsent: ad gate closed, clear preloads")
-                    clearPreloadedAds()
-                    return@launch
-                }
-                requestAdBootstrap(
-                    context = activity.applicationContext,
-                    reason = "refresh_consent",
-                    includeAppOpenWarmup = true,
-                )
             }
         }
-    }
 
-    private fun preloadAds(context: Context, includeAppOpenWarmup: Boolean) {
-        val policy = adsPolicyProvider.getPolicy()
-        Timber.d(
-            "Preload ads route=%s nativePoolMax=%d warmAppOpen=%s",
-            adSessionContext.activeRoute,
-            policy.nativePoolMax,
-            includeAppOpenWarmup,
-        )
-        interstitialAdManager.loadAd(
-            context,
-            AppAdUnitIds.resolvePlacement(
+        suspend fun showRewardedInterstitialIfEligible(
+            activity: Activity,
+            launchToken: RewardedInterstitialLaunchToken,
+            placement: AdPlacement = AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+            route: String? = null,
+            onUserEarnedReward: () -> Unit = {},
+            onAdDismissed: () -> Unit = {},
+        ) {
+            Timber.d(
+                "RewardedInterstitial show requested placement=%s route=%s sessionCount=%d",
+                placement.analyticsValue,
+                route ?: adSessionContext.activeRoute,
+                rewardedInterstitialShownThisSession,
+            )
+            val prefs = preferencesDataSource.userData.first()
+            val contextRoute = route ?: adSessionContext.activeRoute
+            when (
+                val eligibility =
+                    placementPolicyEvaluator.evaluateRewardedInterstitial(
+                        AdRequestContext(
+                            format = AdFormat.REWARDED_INTERSTITIAL,
+                            placement = placement,
+                            route = contextRoute,
+                            privacyState = AdsConsentRuntimeState.state.value,
+                            isPremium = prefs.isPremium,
+                            isRewardedAdFree =
+                                prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                            sessionCount = rewardedInterstitialShownThisSession,
+                            lastShownAtMs = prefs.lastRewardedInterstitialShown,
+                            resumeGapMs = null,
+                            contentInProgress = false,
+                        ),
+                    )
+            ) {
+                is AdEligibility.Blocked -> {
+                    Timber.d(
+                        "RewardedInterstitial blocked placement=%s route=%s reason=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                        eligibility.reason.analyticsValue,
+                    )
+                    adRevenueLogger.logSuppressed(
+                        adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                        placement = placement,
+                        adUnitId =
+                            AppAdUnitIds.resolvePlacement(
+                                activity,
+                                placement,
+                                BuildConfig.USE_TEST_ADS,
+                            ),
+                        suppressReason = eligibility.reason,
+                        route = contextRoute,
+                    )
+                    onAdDismissed()
+                    return
+                }
+                AdEligibility.Allowed -> Unit
+            }
+            Timber.d(
+                "RewardedInterstitial allowed placement=%s route=%s",
+                placement.analyticsValue,
+                contextRoute,
+            )
+            rewardedInterstitialAdManager.showAfterConfirmedIntro(
+                launchToken = launchToken,
+                activity = activity,
+                placement = placement,
+                route = contextRoute,
+                onAdImpression = { adUnitId ->
+                    orchestratorScope.launch {
+                        rewardedInterstitialShownThisSession += 1
+                        preferencesDataSource.setLastRewardedInterstitialShown(
+                            System.currentTimeMillis(),
+                        )
+                    }
+                    Timber.d(
+                        "RewardedInterstitial impression placement=%s route=%s sessionCount=%d adUnit=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                        rewardedInterstitialShownThisSession,
+                        adUnitId,
+                    )
+                    logAdAfterEngagement(
+                        adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        route = contextRoute,
+                    )
+                },
+                onUserEarnedReward = { _, _ ->
+                    orchestratorScope.launch {
+                        Timber.d(
+                            "RewardedInterstitial reward earned placement=%s route=%s",
+                            placement.analyticsValue,
+                            contextRoute,
+                        )
+                        adGateChecker.onRewardEarned()
+                        onUserEarnedReward()
+                    }
+                },
+                onAdDismissed = {
+                    Timber.d(
+                        "RewardedInterstitial dismissed; requesting reload placement=%s route=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                    )
+                    val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
+                    rewardedInterstitialAdManager.loadAd(
+                        ids.rewardedInterstitial,
+                        placement,
+                        contextRoute,
+                    )
+                    onAdDismissed()
+                },
+            )
+        }
+
+        private fun startAdGateObserver(context: Context) {
+            if (adGateObserverStarted) return
+            adGateObserverStarted = true
+            Timber.d("AdOrchestrator startAdGateObserver")
+            orchestratorScope.launch {
+                combine(
+                    AdsConsentRuntimeState.canRequestAds,
+                    adGateChecker.shouldShowAds,
+                ) { consentGranted, adsAllowedByGate ->
+                    consentGranted && adsAllowedByGate
+                }.distinctUntilChanged()
+                    .collect { canPreload ->
+                        Timber.d("Ad gate observer changed canPreload=%s", canPreload)
+                        if (canPreload) {
+                            requestAdBootstrap(
+                                context = context,
+                                reason = "gate_opened",
+                                includeAppOpenWarmup = true,
+                            )
+                        } else {
+                            clearPreloadedAds()
+                        }
+                    }
+            }
+        }
+
+        fun refreshConsent(
+            activity: Activity,
+            scope: CoroutineScope,
+        ) {
+            Timber.d("AdOrchestrator refreshConsent requested")
+            adManager.refreshConsent(activity) { canRequestAds ->
+                scope.launch(Main.immediate) {
+                    Timber.d("AdOrchestrator refreshConsent result canRequestAds=%s", canRequestAds)
+                    if (!canRequestAds) {
+                        clearPreloadedAds()
+                        return@launch
+                    }
+                    if (!adGateChecker.shouldShowAds.first()) {
+                        Timber.d("AdOrchestrator refreshConsent: ad gate closed, clear preloads")
+                        clearPreloadedAds()
+                        return@launch
+                    }
+                    requestAdBootstrap(
+                        context = activity.applicationContext,
+                        reason = "refresh_consent",
+                        includeAppOpenWarmup = true,
+                    )
+                }
+            }
+        }
+
+        private fun preloadAds(
+            context: Context,
+            includeAppOpenWarmup: Boolean,
+        ) {
+            val policy = adsPolicyProvider.getPolicy()
+            Timber.d(
+                "Preload ads route=%s nativePoolMax=%d warmAppOpen=%s",
+                adSessionContext.activeRoute,
+                policy.nativePoolMax,
+                includeAppOpenWarmup,
+            )
+            interstitialAdManager.loadAd(
                 context,
+                AppAdUnitIds.resolvePlacement(
+                    context,
+                    AdPlacement.INTERSTITIAL_NAV_BREAK,
+                    BuildConfig.USE_TEST_ADS,
+                ),
                 AdPlacement.INTERSTITIAL_NAV_BREAK,
-                BuildConfig.USE_TEST_ADS,
-            ),
-            AdPlacement.INTERSTITIAL_NAV_BREAK,
-        )
-        nativeAdManager.loadAds(
-            context,
-            AppAdUnitIds.resolvePlacement(context, AdPlacement.NATIVE_FEED_HOME, BuildConfig.USE_TEST_ADS),
-            AdPlacement.NATIVE_FEED_HOME,
-            1,
-        )
-        rewardedInterstitialAdManager.loadAd(
-            AppAdUnitIds.resolvePlacement(
+            )
+            nativeAdManager.loadAds(
                 context,
+                AppAdUnitIds.resolvePlacement(
+                    context,
+                    AdPlacement.NATIVE_FEED_HOME,
+                    BuildConfig.USE_TEST_ADS,
+                ),
+                AdPlacement.NATIVE_FEED_HOME,
+                1,
+            )
+            rewardedInterstitialAdManager.loadAd(
+                AppAdUnitIds.resolvePlacement(
+                    context,
+                    AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
+                    BuildConfig.USE_TEST_ADS,
+                ),
                 AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
-                BuildConfig.USE_TEST_ADS,
-            ),
-            AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
-        )
-        if (includeAppOpenWarmup && !appOpenWarmupRequested) {
-            appOpenWarmupRequested = true
-            Timber.d("AppOpen warm preload requested during bootstrap")
-            appOpenAdManager.loadAd(
-                AppAdUnitIds.resolvePlacement(context, AdPlacement.APP_OPEN_RESUME, BuildConfig.USE_TEST_ADS),
-                AdPlacement.APP_OPEN_RESUME,
             )
-        } else {
-            Timber.d("AppOpen warm preload skipped include=%s alreadyRequested=%s", includeAppOpenWarmup, appOpenWarmupRequested)
-        }
-        Timber.d(
-            "Rewarded startup preload skipped: rewarded loads on-demand from Rewards screen",
-        )
-    }
-
-    private fun clearPreloadedAds() {
-        Timber.d("Clear preloaded ads")
-        appOpenWarmupRequested = false
-        appOpenAdManager.clearAd()
-        interstitialAdManager.clearAd()
-        rewardedAdManager.clearAd()
-        rewardedInterstitialAdManager.clearAd()
-        nativeAdManager.destroyAds()
-    }
-
-    private fun requestAdBootstrap(
-        context: Context,
-        reason: String,
-        includeAppOpenWarmup: Boolean,
-    ) {
-        Timber.d(
-            "Ad bootstrap requested reason=%s includeAppOpenWarmup=%s route=%s",
-            reason,
-            includeAppOpenWarmup,
-            adSessionContext.activeRoute,
-        )
-        preloadAds(context, includeAppOpenWarmup)
-    }
-
-    private fun logAdAfterEngagement(
-        adFormat: AdFormat,
-        placement: AdPlacement,
-        adUnitId: String,
-        route: String?,
-    ) {
-        val context = adSessionContext
-        val now = System.currentTimeMillis()
-        val sessionDurationSeconds = ((now - context.sessionStartedAtMs).coerceAtLeast(0L) / 1000L)
-        adRevenueLogger.logAdAfterEngagement(
-            adFormat = adFormat,
-            placement = placement,
-            adUnitId = adUnitId,
-            route = route ?: context.activeRoute,
-            sessionDurationSeconds = sessionDurationSeconds,
-            verseCountBeforeAd = context.verseReadCount,
-            sessionAudioPlayed = context.audioPlayedThisSession,
-            sessionContentType = context.contentType,
-        )
-    }
-
-    private fun isContentInProgress(
-        route: String?,
-        triggerKind: InterstitialTriggerKind? = null,
-    ): Boolean {
-        if (triggerKind == InterstitialTriggerKind.AUDIO_PAUSE || triggerKind == InterstitialTriggerKind.AUDIO_STOP) {
-            return false
-        }
-        val normalizedRoute = route?.lowercase().orEmpty()
-        return adSessionContext.audioPlayedThisSession && (
-            normalizedRoute.startsWith("content") ||
-                normalizedRoute.startsWith("quran_sura_detail") ||
-                normalizedRoute.startsWith("prayer_detail")
+            if (includeAppOpenWarmup && !appOpenWarmupRequested) {
+                appOpenWarmupRequested = true
+                Timber.d("AppOpen warm preload requested during bootstrap")
+                appOpenAdManager.loadAd(
+                    AppAdUnitIds.resolvePlacement(
+                        context,
+                        AdPlacement.APP_OPEN_RESUME,
+                        BuildConfig.USE_TEST_ADS,
+                    ),
+                    AdPlacement.APP_OPEN_RESUME,
+                )
+            } else {
+                Timber.d(
+                    "AppOpen warm preload skipped include=%s alreadyRequested=%s",
+                    includeAppOpenWarmup,
+                    appOpenWarmupRequested,
+                )
+            }
+            Timber.d(
+                "Rewarded startup preload skipped: rewarded loads on-demand from Rewards screen",
             )
-    }
+        }
 
-    private fun shouldCollapseInterstitialOpportunity(
-        triggerKind: InterstitialTriggerKind,
-        route: String?,
-    ): Boolean {
-        val now = SystemTimeProvider.nowMillis()
-        val key = "${triggerKind.analyticsValue}::${route ?: adSessionContext.activeRoute ?: "unknown"}"
-        val shouldCollapse = lastInterstitialIntentKey == key && (now - lastInterstitialIntentAtMs) < 1_500L
-        lastInterstitialIntentKey = key
-        lastInterstitialIntentAtMs = now
-        return shouldCollapse
+        private fun clearPreloadedAds() {
+            Timber.d("Clear preloaded ads")
+            appOpenWarmupRequested = false
+            appOpenAdManager.clearAd()
+            interstitialAdManager.clearAd()
+            rewardedAdManager.clearAd()
+            rewardedInterstitialAdManager.clearAd()
+            nativeAdManager.destroyAds()
+        }
+
+        private fun requestAdBootstrap(
+            context: Context,
+            reason: String,
+            includeAppOpenWarmup: Boolean,
+        ) {
+            Timber.d(
+                "Ad bootstrap requested reason=%s includeAppOpenWarmup=%s route=%s",
+                reason,
+                includeAppOpenWarmup,
+                adSessionContext.activeRoute,
+            )
+            preloadAds(context, includeAppOpenWarmup)
+        }
+
+        private fun logAdAfterEngagement(
+            adFormat: AdFormat,
+            placement: AdPlacement,
+            adUnitId: String,
+            route: String?,
+        ) {
+            val context = adSessionContext
+            val now = System.currentTimeMillis()
+            val sessionDurationSeconds = (
+                (now - context.sessionStartedAtMs).coerceAtLeast(0L) /
+                    1000L
+            )
+            adRevenueLogger.logAdAfterEngagement(
+                adFormat = adFormat,
+                placement = placement,
+                adUnitId = adUnitId,
+                route = route ?: context.activeRoute,
+                sessionDurationSeconds = sessionDurationSeconds,
+                verseCountBeforeAd = context.verseReadCount,
+                sessionAudioPlayed = context.audioPlayedThisSession,
+                sessionContentType = context.contentType,
+            )
+        }
+
+        private fun isContentInProgress(
+            route: String?,
+            triggerKind: InterstitialTriggerKind? = null,
+        ): Boolean {
+            if (triggerKind == InterstitialTriggerKind.AUDIO_PAUSE ||
+                triggerKind == InterstitialTriggerKind.AUDIO_STOP
+            ) {
+                return false
+            }
+            val normalizedRoute = route?.lowercase().orEmpty()
+            return adSessionContext.audioPlayedThisSession &&
+                (
+                    normalizedRoute.startsWith("content") ||
+                        normalizedRoute.startsWith("quran_sura_detail") ||
+                        normalizedRoute.startsWith("prayer_detail")
+                )
+        }
+
+        private fun shouldCollapseInterstitialOpportunity(
+            triggerKind: InterstitialTriggerKind,
+            route: String?,
+        ): Boolean {
+            val now = SystemTimeProvider.nowMillis()
+            val resolvedRoute = route ?: adSessionContext.activeRoute ?: "unknown"
+            val key = "${triggerKind.analyticsValue}::$resolvedRoute"
+            val shouldCollapse =
+                lastInterstitialIntentKey == key && (now - lastInterstitialIntentAtMs) < 1_500L
+            lastInterstitialIntentKey = key
+            lastInterstitialIntentAtMs = now
+            return shouldCollapse
+        }
     }
-}
