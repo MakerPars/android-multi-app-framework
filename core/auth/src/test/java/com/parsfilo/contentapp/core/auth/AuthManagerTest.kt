@@ -10,7 +10,6 @@ import io.mockk.slot
 import org.junit.Test
 
 class AuthManagerTest {
-
     private val context = mockk<Context>(relaxed = true)
 
     @Test
@@ -20,10 +19,11 @@ class AuthManagerTest {
         every { firebaseAuth.currentUser } returns null
         every { firebaseAuth.addAuthStateListener(capture(listenerSlot)) } answers {}
 
-        val manager = AuthManager(
-            context = context,
-            firebaseAuth = firebaseAuth,
-        )
+        val manager =
+            AuthManager(
+                context = context,
+                firebaseAuth = firebaseAuth,
+            )
 
         assertThat(manager.isUserSignedIn()).isFalse()
         assertThat(manager.authState.value).isFalse()
@@ -37,10 +37,11 @@ class AuthManagerTest {
         every { firebaseAuth.currentUser } returns null andThen user
         every { firebaseAuth.addAuthStateListener(capture(listenerSlot)) } answers {}
 
-        val manager = AuthManager(
-            context = context,
-            firebaseAuth = firebaseAuth,
-        )
+        val manager =
+            AuthManager(
+                context = context,
+                firebaseAuth = firebaseAuth,
+            )
 
         listenerSlot.captured.onAuthStateChanged(firebaseAuth)
 
