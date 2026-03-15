@@ -52,6 +52,12 @@ class SettingsViewModel
             }
         }
 
+        fun setDeveloperModeEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                preferencesDataSource.setDeveloperModeEnabled(enabled)
+            }
+        }
+
         fun setNotificationsEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 preferencesDataSource.setNotificationsEnabled(enabled)

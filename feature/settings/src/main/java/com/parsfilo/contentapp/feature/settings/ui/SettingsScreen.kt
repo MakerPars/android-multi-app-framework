@@ -85,6 +85,10 @@ import com.parsfilo.contentapp.feature.settings.R
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+private const val DEVELOPER_DEVICE_MODEL_PREFIX = "SM-A346E"
+private const val DEVELOPER_MODE_REQUIRED_TAPS = 5
+private const val DEVELOPER_MODE_MIN_FONT_SIZE = 14
+
 @Composable
 fun SettingsRoute(
     onBackClick: () -> Unit = {},
@@ -103,6 +107,7 @@ fun SettingsRoute(
         onBackClick = onBackClick,
         onDarkModeChanged = viewModel::setDarkMode,
         onFontSizeChanged = viewModel::setFontSize,
+        onDeveloperModeChanged = viewModel::setDeveloperModeEnabled,
         onNotificationsChanged = viewModel::setNotificationsEnabled,
         onPrivacyOptionsUpdated = onPrivacyOptionsUpdated,
         onAdsAgeGateChanged = viewModel::setAdsAgeGateStatus,
@@ -125,6 +130,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit = {},
     onDarkModeChanged: (Boolean) -> Unit,
     onFontSizeChanged: (Int) -> Unit,
+    onDeveloperModeChanged: (Boolean) -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onPrivacyOptionsUpdated: () -> Unit = {},
     onAdsAgeGateChanged: (AdAgeGateStatus) -> Unit,
@@ -178,6 +184,7 @@ fun SettingsScreen(
     val colorScheme = MaterialTheme.colorScheme
     val languageChangedText = stringResource(R.string.settings_language_changed)
     val deviceIdCopiedText = stringResource(R.string.settings_device_id_copied)
+    val developerModeEnabledText = stringResource(R.string.settings_developer_mode_enabled)
     val fcmDebugRefreshedText = stringResource(R.string.settings_fcm_debug_refreshed)
     val fcmDebugErrorText = stringResource(R.string.settings_fcm_debug_error)
     val fcmDebugCopiedText = stringResource(R.string.settings_fcm_debug_copied)
@@ -202,6 +209,17 @@ fun SettingsScreen(
     val updateDebugResetSoftText = stringResource(R.string.settings_update_debug_reset_soft_session)
     var languageMenuExpanded by remember { mutableStateOf(false) }
     var ageGateMenuExpanded by remember { mutableStateOf(false) }
+    var developerTapCount by remember { mutableStateOf(0) }
+    val currentPreferences = (uiState as? SettingsUiState.Success)?.preferences
+    val isDeveloperDevice =
+        remember {
+            listOf(Build.MODEL, Build.DEVICE, Build.PRODUCT).any { candidate ->
+                candidate.contains(
+                    DEVELOPER_DEVICE_MODEL_PREFIX,
+                    ignoreCase = true,
+                )
+            }
+        }
 
     val languageOptions =
         remember {
@@ -242,6 +260,26 @@ fun SettingsScreen(
                 navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 navigationIconContentDescription = stringResource(R.string.settings_back),
                 onNavigationClick = onBackClick,
+                onTitleClick = {
+                    if (
+                        !isDeveloperDevice ||
+                        currentPreferences == null ||
+                        currentPreferences.fontSize > DEVELOPER_MODE_MIN_FONT_SIZE
+                    ) {
+                        developerTapCount = 0
+                        return@AppTopBar
+                    }
+                    val nextTapCount = developerTapCount + 1
+                    if (nextTapCount >= DEVELOPER_MODE_REQUIRED_TAPS) {
+                        developerTapCount = 0
+                        if (!currentPreferences.developerModeEnabled) {
+                            onDeveloperModeChanged(true)
+                            showMessage(developerModeEnabledText)
+                        }
+                    } else {
+                        developerTapCount = nextTapCount
+                    }
+                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = app_transparent,
@@ -352,6 +390,7 @@ fun SettingsScreen(
                         remember(context) {
                             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
                         }
+                    val canShowDeveloperTools = isDebugBuild || preferences.developerModeEnabled
                     val debugGeography by adManager.debugGeography.collectAsStateWithLifecycle()
                     val lastRequestDebugGeography by adManager.lastRequestDebugGeography.collectAsStateWithLifecycle()
                     var debugFcmToken by remember(preferences.lastPushToken) {
@@ -586,7 +625,7 @@ fun SettingsScreen(
                                 Slider(
                                     value = preferences.fontSize.toFloat(),
                                     onValueChange = { onFontSizeChanged(it.toInt()) },
-                                    valueRange = 14f..40f,
+                                    valueRange = DEVELOPER_MODE_MIN_FONT_SIZE.toFloat()..40f,
                                     colors =
                                         SliderDefaults.colors(
                                             thumbColor = colorScheme.primary,
@@ -646,62 +685,62 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(dimens.space8))
 
-                        AppCard(
-                            modifier = Modifier.padding(horizontal = dimens.space8),
-                            shape = MaterialTheme.shapes.large,
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                    contentColor = colorScheme.onSurfaceVariant,
-                                ),
-                        ) {
-                            Column(modifier = Modifier.padding(dimens.space16)) {
-                                Text(
-                                    text = stringResource(R.string.settings_device_id_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = colorScheme.onSurface,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Spacer(modifier = Modifier.height(dimens.space4))
-                                Text(
-                                    text = stringResource(R.string.settings_device_id_desc),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(modifier = Modifier.height(dimens.space10))
-                                Text(
-                                    text = preferences.installationId.ifBlank { "..." },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = colorScheme.onSurface,
-                                )
-                                Spacer(modifier = Modifier.height(dimens.space12))
-                                AppButton(
-                                    text = stringResource(R.string.settings_device_id_copy),
-                                    onClick = {
-                                        if (preferences.installationId.isBlank()) return@AppButton
-                                        coroutineScope.launch {
-                                            clipboard.setClipEntry(
-                                                ClipEntry(
-                                                    ClipData.newPlainText(
-                                                        "installation_id",
-                                                        preferences.installationId,
+                        if (canShowDeveloperTools) {
+                            AppCard(
+                                modifier = Modifier.padding(horizontal = dimens.space8),
+                                shape = MaterialTheme.shapes.large,
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        contentColor = colorScheme.onSurfaceVariant,
+                                    ),
+                            ) {
+                                Column(modifier = Modifier.padding(dimens.space16)) {
+                                    Text(
+                                        text = stringResource(R.string.settings_device_id_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = colorScheme.onSurface,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space4))
+                                    Text(
+                                        text = stringResource(R.string.settings_device_id_desc),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space10))
+                                    Text(
+                                        text = preferences.installationId.ifBlank { "..." },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurface,
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space12))
+                                    AppButton(
+                                        text = stringResource(R.string.settings_device_id_copy),
+                                        onClick = {
+                                            if (preferences.installationId.isBlank()) return@AppButton
+                                            coroutineScope.launch {
+                                                clipboard.setClipEntry(
+                                                    ClipEntry(
+                                                        ClipData.newPlainText(
+                                                            "installation_id",
+                                                            preferences.installationId,
+                                                        ),
                                                     ),
-                                                ),
-                                            )
-                                        }
-                                        showMessage(deviceIdCopiedText)
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors =
-                                        androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = colorScheme.secondary,
-                                            contentColor = colorScheme.onSecondary,
-                                        ),
-                                )
+                                                )
+                                            }
+                                            showMessage(deviceIdCopiedText)
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.secondary,
+                                                contentColor = colorScheme.onSecondary,
+                                            ),
+                                    )
+                                }
                             }
-                        }
 
-                        if (isDebugBuild) {
                             Spacer(modifier = Modifier.height(dimens.space8))
 
                             AppCard(

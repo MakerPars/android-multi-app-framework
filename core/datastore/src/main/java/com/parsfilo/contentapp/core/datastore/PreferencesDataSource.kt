@@ -96,6 +96,7 @@ class PreferencesDataSource @Inject constructor(
             darkMode = preferences[PreferencesKeys.DARK_MODE] ?: false,
             displayMode = preferences[PreferencesKeys.DISPLAY_MODE] ?: "ARABIC",
             fontSize = preferences[PreferencesKeys.FONT_SIZE] ?: 20,
+            developerModeEnabled = preferences[PreferencesKeys.DEVELOPER_MODE_ENABLED] ?: false,
             isPremium = preferences[PreferencesKeys.IS_PREMIUM] ?: false,
             lastAppOpenAdShown = preferences[PreferencesKeys.LAST_APP_OPEN_AD] ?: 0L,
             rewardedAdFreeUntil = preferences[PreferencesKeys.REWARDED_AD_FREE_UNTIL] ?: 0L,
@@ -132,6 +133,12 @@ class PreferencesDataSource @Inject constructor(
     suspend fun setFontSize(size: Int) {
         userPreferences.edit { preferences ->
             preferences[PreferencesKeys.FONT_SIZE] = size
+        }
+    }
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        userPreferences.edit { preferences ->
+            preferences[PreferencesKeys.DEVELOPER_MODE_ENABLED] = enabled
         }
     }
 
@@ -300,6 +307,7 @@ class PreferencesDataSource @Inject constructor(
         val LAST_PUSH_TOKEN = stringPreferencesKey("last_push_token")
         val ADS_AGE_GATE_STATUS = stringPreferencesKey("ads_age_gate_status")
         val ADS_AGE_GATE_PROMPT_COMPLETED = booleanPreferencesKey("ads_age_gate_prompt_completed")
+        val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
         val OTHER_APPS_BADGE_SEEN_SIGNATURE = stringPreferencesKey("other_apps_badge_seen_signature")
 
         val ZIKIR_HAPTIC = booleanPreferencesKey("zikir_haptic")
@@ -327,6 +335,7 @@ data class UserPreferencesData(
     val darkMode: Boolean,
     val displayMode: String,
     val fontSize: Int,
+    val developerModeEnabled: Boolean,
     val isPremium: Boolean,
     val lastAppOpenAdShown: Long,
     val rewardedAdFreeUntil: Long,

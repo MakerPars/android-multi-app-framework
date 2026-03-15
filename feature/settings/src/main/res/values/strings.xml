@@ -15,6 +15,7 @@
     <string name="settings_device_id_desc">Test bildirimi için bu kimliği kullanın</string>
     <string name="settings_device_id_copy">Kimliği Kopyala</string>
     <string name="settings_device_id_copied">Cihaz kimliği kopyalandı</string>
+    <string name="settings_developer_mode_enabled">Developer modu açıldı</string>
     <string name="settings_fcm_debug_title">Debug FCM Token</string>
     <string name="settings_fcm_debug_desc">Sadece debug derlemelerde görünür. Test bildirimi için token alın.</string>
     <string name="settings_fcm_debug_empty">Henüz token alınmadı.</string>

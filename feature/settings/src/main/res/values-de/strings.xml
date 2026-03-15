@@ -15,6 +15,7 @@
     <string name="settings_device_id_desc">Nutze diese Kennung für Test-Benachrichtigungen</string>
     <string name="settings_device_id_copy">Geräte-ID kopieren</string>
     <string name="settings_device_id_copied">Geräte-ID kopiert</string>
+    <string name="settings_developer_mode_enabled">Entwicklermodus aktiviert</string>
     <string name="settings_fcm_debug_title">Debug FCM-Token</string>
     <string name="settings_fcm_debug_desc">Nur in Debug-Builds sichtbar. Token für Test-Benachrichtigungen abrufen.</string>
     <string name="settings_fcm_debug_empty">Token wurde noch nicht abgerufen.</string>

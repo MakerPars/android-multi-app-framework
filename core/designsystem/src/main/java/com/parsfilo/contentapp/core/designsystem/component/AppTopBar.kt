@@ -1,5 +1,6 @@
 package com.parsfilo.contentapp.core.designsystem.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -28,11 +29,23 @@ fun AppTopBar(
     colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(),
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
     titleStyle: TextStyle = MaterialTheme.typography.titleLarge,
+    onTitleClick: (() -> Unit)? = null,
     onNavigationClick: () -> Unit = {},
-    onActionClick: () -> Unit = {}
+    onActionClick: () -> Unit = {},
 ) {
     CenterAlignedTopAppBar(
-        title = { Text(text = title, style = titleStyle) },
+        title = {
+            Text(
+                text = title,
+                style = titleStyle,
+                modifier =
+                    if (onTitleClick == null) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(onClick = onTitleClick)
+                    },
+            )
+        },
         navigationIcon = {
             if (navigationIcon != null) {
                 IconButton(onClick = onNavigationClick) {

@@ -46,7 +46,11 @@ class PushRegistrationManager @Inject constructor(
         }
     }
 
-    suspend fun syncRegistration(reason: String, tokenOverride: String? = null): Boolean =
+    suspend fun syncRegistration(
+        reason: String,
+        tokenOverride: String? = null,
+        scheduleRetryOnFailure: Boolean = true,
+    ): Boolean =
         withContext(ioDispatcher) {
             runCatching {
                 val installationId = preferencesDataSource.getOrCreateInstallationId()
@@ -55,6 +59,10 @@ class PushRegistrationManager @Inject constructor(
                     val message = "Push registration skipped: could not fetch FCM token (reason=$reason)"
                     Timber.w(message)
                     crashlytics.log(message)
+                    scheduleRetryIfNeeded(
+                        reason = reason,
+                        scheduleRetryOnFailure = scheduleRetryOnFailure,
+                    )
                     return@runCatching false
                 }
                 val payload = PushRegistrationPayload(
@@ -80,15 +88,36 @@ class PushRegistrationManager @Inject constructor(
                     val message = "Push registration send returned false (reason=$reason)"
                     Timber.w(message)
                     crashlytics.log(message)
+                    scheduleRetryIfNeeded(
+                        reason = reason,
+                        scheduleRetryOnFailure = scheduleRetryOnFailure,
+                    )
                 }
                 sent
             }.getOrElse { throwable ->
                 Timber.w(throwable, "Push registration sync failed.")
                 crashlytics.log("Push registration sync failed (reason=$reason): ${throwable::class.simpleName}")
                 crashlytics.recordException(throwable)
+                scheduleRetryIfNeeded(
+                    reason = reason,
+                    scheduleRetryOnFailure = scheduleRetryOnFailure,
+                )
                 false
             }
         }
+
+    private fun scheduleRetryIfNeeded(
+        reason: String,
+        scheduleRetryOnFailure: Boolean,
+    ) {
+        if (!scheduleRetryOnFailure) return
+        val retryReason = "retry_after_$reason"
+        Timber.w("Push registration scheduling immediate retry reason=%s", retryReason)
+        PushRegistrationSyncWorker.scheduleImmediate(
+            context = context,
+            reason = retryReason,
+        )
+    }
 
     private suspend fun fetchFcmTokenWithRetry(): String? {
         TOKEN_FETCH_RETRY_DELAYS_MS.forEachIndexed { index, retryDelayMs ->
