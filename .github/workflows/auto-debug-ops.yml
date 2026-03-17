@@ -68,8 +68,8 @@ jobs:
         with:
           target_flavors: all
 
-  static-analysis:
-    name: Static analysis
+  prepare-shared-config:
+    name: Prepare shared config
     needs: resolve-flavors
     runs-on: ubuntu-latest
     env:
@@ -78,37 +78,6 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
-
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: false
-          log-accepted-android-sdk-licenses: false
-
-      - name: Install Android SDK packages
-        run: |
-          set -euo pipefail
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          sdkmanager --sdk_root="$SDK_ROOT" \
-            "platform-tools" \
-            "platforms;android-${ANDROID_API_LEVEL}" \
-            "build-tools;36.0.0"
-
-      - name: Accept Android SDK licenses (non-interactive)
-        run: |
-          set -euo pipefail
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          set +o pipefail
-          yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
-          set -o pipefail
-
-      - uses: gradle/actions/setup-gradle@v5
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Load Doppler CLI
         uses: dopplerhq/cli-action@v3
@@ -133,28 +102,30 @@ jobs:
         with:
           flavors: ${{ needs.resolve-flavors.outputs.resolved_flavors_csv }}
 
-      - name: Run detekt / ktlint
-        run: |
-          set -euo pipefail
-          chmod +x ./gradlew
-          ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
+      - name: Upload firebase config artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: auto-debug-firebase-config-${{ github.run_id }}
+          path: app/src/*/google-services.json
+          if-no-files-found: error
+          retention-days: 1
 
-  lint-flavor:
-    name: Lint ${{ matrix.flavor }} Debug
-    needs: resolve-flavors
+  static-analysis:
+    name: Static analysis
+    needs:
+      - resolve-flavors
+      - prepare-shared-config
     runs-on: ubuntu-latest
-    env:
-      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-      FLAVOR: ${{ matrix.flavor }}
-    strategy:
-      fail-fast: false
-      max-parallel: 6
-      matrix:
-        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+
+      - name: Restore firebase config artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: auto-debug-firebase-config-${{ github.run_id }}
+          path: .
 
       - uses: actions/setup-java@v5
         with:
@@ -187,28 +158,66 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: Load Doppler CLI
-        uses: dopplerhq/cli-action@v3
+      - name: Run detekt / ktlint
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew detekt ktlintCheck --stacktrace --no-daemon --max-workers=2
 
-      - name: Verify env contract (Doppler -> templates)
-        uses: ./.github/actions/verify-env-contract
-
-      - name: Export firebase override + web client from Doppler
-        uses: ./.github/actions/export-firebase-override-env
-
-      - name: Firebase Config Override (R2 preferred, Base64 fallback)
-        uses: ./.github/actions/firebase-config
+  lint-flavor:
+    name: Lint ${{ matrix.flavor }} Debug
+    needs:
+      - resolve-flavors
+      - prepare-shared-config
+    runs-on: ubuntu-latest
+    env:
+      FLAVOR: ${{ matrix.flavor }}
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        flavor: ${{ fromJSON(needs.resolve-flavors.outputs.resolved_flavors_json) }}
+    steps:
+      - uses: actions/checkout@v6
         with:
-          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
-          cf_api_token: ${{ env.CF_API_TOKEN }}
-          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
-          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
+          fetch-depth: 1
 
-      - name: Validate Google Sign-In Config
-        uses: ./.github/actions/verify-google-signin-config
+      - name: Restore firebase config artifact
+        uses: actions/download-artifact@v6
         with:
-          flavors: ${{ env.FLAVOR }}
+          name: auto-debug-firebase-config-${{ github.run_id }}
+          path: .
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: false
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          sdkmanager --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;36.0.0"
+
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          set +o pipefail
+          yes | sdkmanager --licenses --sdk_root="$SDK_ROOT" >/dev/null
+          set -o pipefail
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Run Android lint for flavor
         run: |
@@ -219,10 +228,11 @@ jobs:
 
   build-debug-flavor:
     name: Build ${{ matrix.flavor }} Debug
-    needs: resolve-flavors
+    needs:
+      - resolve-flavors
+      - prepare-shared-config
     runs-on: ubuntu-latest
     env:
-      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
       FLAVOR: ${{ matrix.flavor }}
     strategy:
       fail-fast: false
@@ -233,6 +243,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+
+      - name: Restore firebase config artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: auto-debug-firebase-config-${{ github.run_id }}
+          path: .
 
       - uses: actions/setup-java@v5
         with:
@@ -264,29 +280,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
-
-      - name: Load Doppler CLI
-        uses: dopplerhq/cli-action@v3
-
-      - name: Verify env contract (Doppler -> templates)
-        uses: ./.github/actions/verify-env-contract
-
-      - name: Export firebase override + web client from Doppler
-        uses: ./.github/actions/export-firebase-override-env
-
-      - name: Firebase Config Override (R2 preferred, Base64 fallback)
-        uses: ./.github/actions/firebase-config
-        with:
-          firebase_configs_zip_base64: ${{ env.FIREBASE_CONFIGS_ZIP_BASE64 }}
-          cf_r2_account_id: ${{ env.CF_R2_ACCOUNT_ID }}
-          cf_api_token: ${{ env.CF_API_TOKEN }}
-          cf_r2_bucket: ${{ env.CF_R2_BUCKET }}
-          cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
-
-      - name: Validate Google Sign-In Config
-        uses: ./.github/actions/verify-google-signin-config
-        with:
-          flavors: ${{ env.FLAVOR }}
 
       - name: Build Debug APK for flavor
         run: |

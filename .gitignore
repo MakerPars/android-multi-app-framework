@@ -40,6 +40,8 @@ Thumbs.db
 
 # Secrets / credentials (commit ETME)
 app/src/*/google-services.json
+!app/src/bereketduasi/google-services.json
+!app/src/imsakiye/google-services.json
 .env
 *.keystore
 *.jks
