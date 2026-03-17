@@ -45,6 +45,7 @@ import com.parsfilo.contentapp.core.firebase.logTabSelected
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.navigation.AppRoute
 import com.parsfilo.contentapp.navigation.NotificationOpenRequest
+import com.parsfilo.contentapp.product.AppProductDefinition
 import com.parsfilo.contentapp.ui.update.HardUpdateRequiredOverlay
 import com.parsfilo.contentapp.ui.update.SoftUpdateDialog
 import com.parsfilo.contentapp.update.UpdateGateViewModel
@@ -61,6 +62,7 @@ fun ContentApp(
     viewModel: MainViewModel = hiltViewModel(),
     audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel(),
 ) {
+    val productDefinition = AppProductDefinition.current
     val dimens = LocalDimens.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -203,7 +205,7 @@ fun ContentApp(
 
     AppTheme(
         darkTheme = darkModeEnabled,
-        flavorName = com.parsfilo.contentapp.BuildConfig.FLAVOR_NAME,
+        flavorName = productDefinition.themeTokenKey,
     ) {
         Box(
             modifier =

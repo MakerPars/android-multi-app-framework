@@ -248,7 +248,18 @@ android {
                 dimension = "app"
                 applicationId = config.packageName
                 resValue("string", "app_name", config.displayName)
-                buildConfigField("String", "FLAVOR_NAME", "\"${config.name}\"")
+                buildConfigField("String", "FLAVOR_NAME", asBuildConfigString(config.name))
+                buildConfigField("String", "PRODUCT_DISPLAY_NAME", asBuildConfigString(config.displayName))
+                buildConfigField("String", "CONTENT_FAMILY", asBuildConfigString(config.contentFamily))
+                buildConfigField("String", "MONETIZATION_PROFILE", asBuildConfigString(config.monetizationProfile))
+                buildConfigField("String", "NOTIFICATION_PROFILE", asBuildConfigString(config.notificationProfile))
+                buildConfigField("String", "BILLING_PROFILE", asBuildConfigString(config.billingProfile))
+                buildConfigField("String", "THEME_TOKEN_KEY", asBuildConfigString(config.themeTokenKey))
+                buildConfigField(
+                    "String",
+                    "PRODUCT_CAPABILITIES_CSV",
+                    asBuildConfigString(config.capabilityFlags.joinToString(",")),
+                )
 
                 val resolved = resolvedFlavorVersion(config.name)
                 versionCode = resolved.versionCode
@@ -256,7 +267,7 @@ android {
 
                 // Audio dosya adı (varsa)
                 val audioFile = config.audioFileName ?: "content_audio.mp3"
-                buildConfigField("String", "AUDIO_FILE_NAME", "\"$audioFile\"")
+                buildConfigField("String", "AUDIO_FILE_NAME", asBuildConfigString(audioFile))
                 buildConfigField("boolean", "IS_PRAYER_TIMES_FLAVOR", "${config.isPrayerTimesFlavor}")
             }
         }

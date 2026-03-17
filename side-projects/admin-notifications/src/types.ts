@@ -267,7 +267,52 @@ export type AnalyticsSummary = {
   totalDevices: number;
   activeDevices30d: number;
   notificationsEnabled30d: number;
+  devicesWithToken: number;
+  devicesWithoutToken: number;
+  recentlySynced24h: number;
+  staleRegistration7d: number;
   devicesByPackage: Array<{ packageName: string; count: number }>;
+  registrationHealthByPackage: Array<{
+    packageName: string;
+    totalDevices: number;
+    withToken: number;
+    withoutToken: number;
+    recentlySynced24h: number;
+    stale7d: number;
+  }>;
+  runtimeFunnelByFormat: Array<{
+    format: string;
+    showIntent: number;
+    showBlocked: number;
+    showNotLoaded: number;
+    showStarted: number;
+    showImpression: number;
+    showDismissed: number;
+    showFailed: number;
+  }>;
+  runtimeSuppressReasonCounts: Record<string, number>;
+  runtimeSuppressByPackage: Array<{
+    packageName: string;
+    totalSuppressions: number;
+    topReason: string;
+    topReasonCount: number;
+  }>;
+  runtimeHealthByPackage: Array<{
+    packageName: string;
+    totalDevices: number;
+    withToken: number;
+    withoutToken: number;
+    tokenCoveragePct: number;
+    recentlySynced24h: number;
+    syncCoveragePct: number;
+    stale7d: number;
+    stalePct: number;
+    totalSuppressions: number;
+    topReason: string;
+    topReasonCount: number;
+    healthStatus: "healthy" | "warning" | "critical";
+    healthNotes: string[];
+  }>;
   recentCoverageReports: Array<{
     id: string;
     days: number;

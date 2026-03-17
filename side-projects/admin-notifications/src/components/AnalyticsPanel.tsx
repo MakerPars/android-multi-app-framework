@@ -103,9 +103,70 @@ export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
                     <div className="health-card-value">
                       {summary.activeDevices30d > 0
                         ? `${((summary.notificationsEnabled30d / summary.activeDevices30d) * 100).toFixed(1)}%`
-                        : "-"}
+                      : "-"}
                     </div>
                   </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">With token</div>
+                    <div className="health-card-value">{summary.devicesWithToken}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Without token</div>
+                    <div className="health-card-value">{summary.devicesWithoutToken}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Synced 24h</div>
+                    <div className="health-card-value">{summary.recentlySynced24h}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Stale 7d</div>
+                    <div className="health-card-value">{summary.staleRegistration7d}</div>
+                  </div>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Status</th>
+                        <th>Token coverage</th>
+                        <th>Synced 24h</th>
+                        <th>Stale 7d</th>
+                        <th>Suppressions</th>
+                        <th>Top reason</th>
+                        <th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.runtimeHealthByPackage.length > 0 ? (
+                        summary.runtimeHealthByPackage.map((item) => (
+                          <tr key={item.packageName}>
+                            <td><code>{item.packageName}</code></td>
+                            <td>
+                              <strong>{item.healthStatus}</strong>
+                            </td>
+                            <td>
+                              {item.withToken}/{item.totalDevices} ({item.tokenCoveragePct.toFixed(1)}%)
+                            </td>
+                            <td>
+                              {item.recentlySynced24h}/{item.totalDevices} ({item.syncCoveragePct.toFixed(1)}%)
+                            </td>
+                            <td>
+                              {item.stale7d}/{item.totalDevices} ({item.stalePct.toFixed(1)}%)
+                            </td>
+                            <td>{item.totalSuppressions}</td>
+                            <td><code>{item.topReason || "-"}</code></td>
+                            <td>{item.healthNotes.join(" ")}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="muted">No package-level runtime health data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
                 <div className="analytics-table-wrap">
@@ -123,6 +184,130 @@ export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
                           <td>{item.count}</td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Format</th>
+                        <th>Intent</th>
+                        <th>Blocked</th>
+                        <th>Not loaded</th>
+                        <th>Started</th>
+                        <th>Impression</th>
+                        <th>Dismissed</th>
+                        <th>Failed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.runtimeFunnelByFormat.length > 0 ? (
+                        summary.runtimeFunnelByFormat.map((item) => (
+                          <tr key={item.format}>
+                            <td><code>{item.format}</code></td>
+                            <td>{item.showIntent}</td>
+                            <td>{item.showBlocked}</td>
+                            <td>{item.showNotLoaded}</td>
+                            <td>{item.showStarted}</td>
+                            <td>{item.showImpression}</td>
+                            <td>{item.showDismissed}</td>
+                            <td>{item.showFailed}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="muted">No runtime ad funnel data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Suppress reason</th>
+                        <th>Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.keys(summary.runtimeSuppressReasonCounts).length > 0 ? (
+                        Object.entries(summary.runtimeSuppressReasonCounts).map(([reason, count]) => (
+                          <tr key={reason}>
+                            <td><code>{reason}</code></td>
+                            <td>{count}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={2} className="muted">No suppress reason data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Total suppressions</th>
+                        <th>Top reason</th>
+                        <th>Top reason count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.runtimeSuppressByPackage.length > 0 ? (
+                        summary.runtimeSuppressByPackage.map((item) => (
+                          <tr key={item.packageName}>
+                            <td><code>{item.packageName}</code></td>
+                            <td>{item.totalSuppressions}</td>
+                            <td><code>{item.topReason || "-"}</code></td>
+                            <td>{item.topReasonCount}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="muted">No package-level suppress data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Total</th>
+                        <th>With token</th>
+                        <th>Without token</th>
+                        <th>Synced 24h</th>
+                        <th>Stale 7d</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.registrationHealthByPackage.length > 0 ? (
+                        summary.registrationHealthByPackage.map((item) => (
+                          <tr key={item.packageName}>
+                            <td><code>{item.packageName}</code></td>
+                            <td>{item.totalDevices}</td>
+                            <td>{item.withToken}</td>
+                            <td>{item.withoutToken}</td>
+                            <td>{item.recentlySynced24h}</td>
+                            <td>{item.stale7d}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="muted">No registration health data found.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

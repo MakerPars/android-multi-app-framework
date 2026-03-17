@@ -3,9 +3,14 @@ package com.parsfilo.contentapp.feature.ads
 import android.os.Bundle
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.ResponseInfo
+import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.firebase.AnalyticsEventName
 import com.parsfilo.contentapp.core.firebase.AnalyticsParamKey
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,7 +34,10 @@ data class AdPaidEventContext(
 @Singleton
 class AdRevenueLogger @Inject constructor(
     private val appAnalytics: AppAnalytics,
+    private val preferencesDataSource: PreferencesDataSource,
 ) {
+    private val telemetryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     fun logShowIntent(
         adFormat: AdFormat,
         placement: AdPlacement,
@@ -46,6 +54,7 @@ class AdRevenueLogger @Inject constructor(
             adReady?.toString() ?: "n/a",
             AdsConsentRuntimeState.canRequestAds.value,
         )
+        recordRuntimeTelemetry(adFormat, "show_intent")
     }
 
     fun logShowBlocked(
@@ -63,6 +72,7 @@ class AdRevenueLogger @Inject constructor(
             trigger ?: "unknown",
             suppressReason.analyticsValue,
         )
+        recordRuntimeTelemetry(adFormat, "show_blocked", suppressReason.analyticsValue)
     }
 
     fun logShowNotLoaded(
@@ -78,6 +88,7 @@ class AdRevenueLogger @Inject constructor(
             route ?: "unknown",
             trigger ?: "unknown",
         )
+        recordRuntimeTelemetry(adFormat, "show_not_loaded", AdSuppressReason.NOT_LOADED.analyticsValue)
     }
 
     fun logShowStarted(
@@ -95,6 +106,7 @@ class AdRevenueLogger @Inject constructor(
             trigger ?: "unknown",
             adUnitId,
         )
+        recordRuntimeTelemetry(adFormat, "show_started")
     }
 
     fun logShowImpression(
@@ -112,6 +124,7 @@ class AdRevenueLogger @Inject constructor(
             trigger ?: "unknown",
             adUnitId,
         )
+        recordRuntimeTelemetry(adFormat, "show_impression")
     }
 
     fun logShowDismissed(
@@ -129,6 +142,7 @@ class AdRevenueLogger @Inject constructor(
             trigger ?: "unknown",
             adUnitId,
         )
+        recordRuntimeTelemetry(adFormat, "show_dismissed")
     }
 
     fun logShowFailed(
@@ -150,6 +164,7 @@ class AdRevenueLogger @Inject constructor(
             errorCode?.toString() ?: "n/a",
             errorMessage ?: "n/a",
         )
+        recordRuntimeTelemetry(adFormat, "show_failed")
     }
 
     fun logRequest(
@@ -415,4 +430,18 @@ class AdRevenueLogger @Inject constructor(
             putString(AnalyticsParamKey.AD_UNIT_ID, adUnitId)
             putString(AnalyticsParamKey.ROUTE, route ?: "unknown")
         }
+
+    private fun recordRuntimeTelemetry(
+        adFormat: AdFormat,
+        event: String,
+        suppressReason: String? = null,
+    ) {
+        telemetryScope.launch {
+            preferencesDataSource.recordAdRuntimeEvent(
+                format = adFormat.analyticsValue,
+                event = event,
+                suppressReason = suppressReason,
+            )
+        }
+    }
 }

@@ -14,6 +14,9 @@ const MAX_GENERIC_FIELD_LENGTH = 160;
  * Mevcut PushRegistrationPayload ile birebir uyumlu:
  * - installationId, fcmToken, packageName, locale, timezone
  * - notificationsEnabled, appVersion, deviceModel, reason
+ * - tokenHash, hasToken, lastAttemptAtEpochMs, lastSuccessAtEpochMs, lastFailureReason
+ * - adRuntimeWindowStartAtEpochMs, adRuntimeLastUpdatedAtEpochMs
+ * - adRuntimeFunnelCounts, adRuntimeSuppressReasonCounts
  *
  * Bu URL, mobil uygulamadaki PUSH_REGISTRATION_URL olarak ayarlanır.
  */
@@ -64,6 +67,15 @@ export const registerDevice = onRequest(
             const deviceModel = sanitizeText(body.deviceModel, "unknown");
             const reason = sanitizeText(body.reason, "unknown");
             const syncedAtEpochMs = sanitizeSyncedAtEpochMs(body.syncedAtEpochMs);
+            const tokenHash = sanitizeText(body.tokenHash, "");
+            const hasToken = typeof body.hasToken === "boolean" ? body.hasToken : fcmToken.length > 0;
+            const lastRegistrationAttemptAt = sanitizeSyncedAtEpochMs(body.lastAttemptAtEpochMs);
+            const lastRegistrationSuccessAt = sanitizeSyncedAtEpochMs(body.lastSuccessAtEpochMs);
+            const lastRegistrationFailureReason = sanitizeText(body.lastFailureReason, "");
+            const adRuntimeWindowStartAt = sanitizeSyncedAtEpochMs(body.adRuntimeWindowStartAtEpochMs);
+            const adRuntimeLastUpdatedAt = sanitizeSyncedAtEpochMs(body.adRuntimeLastUpdatedAtEpochMs);
+            const adRuntimeFunnelCounts = sanitizeNestedNumberMap(body.adRuntimeFunnelCounts);
+            const adRuntimeSuppressReasonCounts = sanitizeFlatNumberMap(body.adRuntimeSuppressReasonCounts);
 
             const deviceData = {
                 fcmToken,
@@ -74,7 +86,16 @@ export const registerDevice = onRequest(
                 appVersion,
                 deviceModel,
                 reason,
+                tokenHash,
+                hasToken,
                 ...(syncedAtEpochMs != null ? { syncedAtEpochMs } : {}),
+                ...(lastRegistrationAttemptAt != null ? { lastRegistrationAttemptAt } : {}),
+                ...(lastRegistrationSuccessAt != null ? { lastRegistrationSuccessAt } : {}),
+                ...(lastRegistrationFailureReason ? { lastRegistrationFailureReason } : {}),
+                ...(adRuntimeWindowStartAt != null ? { adRuntimeWindowStartAt } : {}),
+                ...(adRuntimeLastUpdatedAt != null ? { adRuntimeLastUpdatedAt } : {}),
+                ...(Object.keys(adRuntimeFunnelCounts).length > 0 ? { adRuntimeFunnelCounts } : {}),
+                ...(Object.keys(adRuntimeSuppressReasonCounts).length > 0 ? { adRuntimeSuppressReasonCounts } : {}),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             };
 
@@ -164,6 +185,36 @@ function sanitizeSyncedAtEpochMs(value: unknown): number | null {
         return null;
     }
     return Math.floor(value);
+}
+
+function sanitizeFlatNumberMap(value: unknown): Record<string, number> {
+    if (!isPlainObject(value)) return {};
+    const result: Record<string, number> = {};
+    for (const [key, raw] of Object.entries(value)) {
+        const safeKey = sanitizeMapKey(key);
+        if (!safeKey) continue;
+        const safeValue = typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : null;
+        if (safeValue == null || safeValue === 0) continue;
+        result[safeKey] = safeValue;
+    }
+    return result;
+}
+
+function sanitizeNestedNumberMap(value: unknown): Record<string, Record<string, number>> {
+    if (!isPlainObject(value)) return {};
+    const result: Record<string, Record<string, number>> = {};
+    for (const [outerKey, rawNested] of Object.entries(value)) {
+        const safeOuterKey = sanitizeMapKey(outerKey);
+        if (!safeOuterKey || !isPlainObject(rawNested)) continue;
+        const nested = sanitizeFlatNumberMap(rawNested);
+        if (Object.keys(nested).length === 0) continue;
+        result[safeOuterKey] = nested;
+    }
+    return result;
+}
+
+function sanitizeMapKey(value: string): string {
+    return value.trim().slice(0, 64);
 }
 
 async function verifyAppCheckIfConfigured(appCheckHeader: string | undefined): Promise<{

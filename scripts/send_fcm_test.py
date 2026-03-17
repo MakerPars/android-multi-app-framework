@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """
-Send a test FCM push notification to a single device token using HTTP v1 API.
+Send an FCM push notification using HTTP v1 API.
+
+Targets:
+  - single device token
+  - FCM topic broadcast
 
 Usage:
   python scripts/send_fcm_test.py --token "<FCM_TOKEN>" --title "Test" --body "Hello"
+  python scripts/send_fcm_test.py --topic "dini-bildirim" --title "Cuma" --body "Hayirli cumalar"
+  python scripts/send_fcm_test.py --all-apps --title "Cuma" --body "Hayirli cumalar"
 
 Examples:
-  # Data-only (recommended for reliable in-app persistence):
+  # Data-only single-device test (recommended for reliable in-app persistence):
   #   python scripts/send_fcm_test.py --token "<FCM_TOKEN>" --title "Test" --body "Merhaba" --data type=test
   #
-  # Notification+data (system-handled behavior test):
-  #   python scripts/send_fcm_test.py --token "<FCM_TOKEN>" --use-notification-payload --title "Test" --body "Merhaba"
+  # Notification+data topic broadcast:
+  #   python scripts/send_fcm_test.py --topic "dini-bildirim" --use-notification-payload --title "Test" --body "Merhaba"
+  #
+  # All apps that subscribe to the shared default topic:
+  #   python scripts/send_fcm_test.py --all-apps --title "Cuma" --body "Hayirli cumalar"
 
 Credential resolution order:
   1) --service-account
@@ -97,7 +106,8 @@ def fetch_access_token(service_account_path: Path) -> str:
 def send_message(
     project_id: str,
     access_token: str,
-    token: str,
+    token: str | None,
+    topic: str | None,
     title: str,
     body: str,
     data: dict[str, str],
@@ -105,8 +115,19 @@ def send_message(
 ) -> dict:
     endpoint = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
     message_data = {"title": title, "body": body, **data}
-    message: dict = {"token": token, "data": message_data,
-                     "android": {"priority": "HIGH"}}
+    target: dict[str, str]
+    if token:
+        target = {"token": token}
+    elif topic:
+        target = {"topic": topic}
+    else:
+        raise SystemExit("Either token or topic is required.")
+
+    message: dict = {
+        **target,
+        "data": message_data,
+        "android": {"priority": "HIGH"},
+    }
     if use_notification_payload:
         # NOTE: Including notification payload means Android may show it without delivering to
         # FirebaseMessagingService.onMessageReceived when the app is background/terminated.
@@ -156,9 +177,15 @@ def parse_data_values(raw_values: list[str]) -> dict[str, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Send test FCM notification to one token.")
-    parser.add_argument("--token", required=True,
-                        help="Target FCM registration token")
+        description="Send FCM notification to one token or one topic.")
+    target_group = parser.add_mutually_exclusive_group(required=True)
+    target_group.add_argument("--token", help="Target FCM registration token")
+    target_group.add_argument("--topic", help="Target FCM topic name")
+    target_group.add_argument(
+        "--all-apps",
+        action="store_true",
+        help="Shortcut for the shared default topic used by all apps (dini-bildirim)",
+    )
     parser.add_argument("--title", default="Test Bildirim",
                         help="Notification title")
     parser.add_argument(
@@ -181,9 +208,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    token = args.token.strip()
-    if not token:
+    token = args.token.strip() if args.token else None
+    topic = args.topic.strip() if args.topic else None
+    if args.all_apps:
+        topic = "dini-bildirim"
+
+    if token is not None and not token:
         raise SystemExit("FCM token is empty.")
+    if topic is not None and not topic:
+        raise SystemExit("FCM topic is empty.")
 
     repo_root = Path(__file__).resolve().parent.parent
     load_dotenv_if_present(repo_root / ".env")
@@ -194,14 +227,17 @@ def main() -> int:
     data = parse_data_values(args.data)
 
     mode = "notification+data" if args.use_notification_payload else "data-only"
-    token_hint = f"...{token[-8:]}" if len(token) > 8 else token
-    print(
-        f"[send_fcm_test] project_id={project_id} mode={mode} token={token_hint}")
+    if token:
+        target_hint = f"token=...{token[-8:]}" if len(token) > 8 else f"token={token}"
+    else:
+        target_hint = f"topic={topic}"
+    print(f"[send_fcm_test] project_id={project_id} mode={mode} {target_hint}")
 
     result = send_message(
         project_id=project_id,
         access_token=access_token,
         token=token,
+        topic=topic,
         title=args.title,
         body=args.body,
         data=data,

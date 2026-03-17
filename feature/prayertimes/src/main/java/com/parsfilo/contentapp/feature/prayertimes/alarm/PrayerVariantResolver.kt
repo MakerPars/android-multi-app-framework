@@ -21,16 +21,7 @@ internal object PrayerVariantResolver {
         return when (metaVariant) {
             VARIANT_IMSAKIYE -> PrayerAppVariant.IMSAKIYE
             VARIANT_NAMAZ -> PrayerAppVariant.NAMAZ_VAKITLERI
-            else -> fallbackFromPackageName(context.packageName)
-        }
-    }
-
-    private fun fallbackFromPackageName(packageName: String): PrayerAppVariant {
-        return if (packageName.contains(VARIANT_IMSAKIYE, ignoreCase = true)) {
-            PrayerAppVariant.IMSAKIYE
-        } else {
-            PrayerAppVariant.NAMAZ_VAKITLERI
+            else -> PrayerAppVariant.NAMAZ_VAKITLERI
         }
     }
 }
-

@@ -11,5 +11,13 @@ data class PushRegistrationPayload(
     val deviceModel: String,
     val reason: String,
     val syncedAtEpochMs: Long,
+    val tokenHash: String,
+    val hasToken: Boolean,
+    val lastAttemptAtEpochMs: Long,
+    val lastSuccessAtEpochMs: Long? = null,
+    val lastFailureReason: String? = null,
+    val adRuntimeWindowStartAtEpochMs: Long? = null,
+    val adRuntimeLastUpdatedAtEpochMs: Long? = null,
+    val adRuntimeFunnelCounts: Map<String, Map<String, Int>> = emptyMap(),
+    val adRuntimeSuppressReasonCounts: Map<String, Int> = emptyMap(),
 )
-

@@ -6,6 +6,7 @@ import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.datastore.UserPreferencesData
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logAppShared
+import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.feature.ads.AdAgeGateStatus
 import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.UmpDebugGeography
@@ -24,6 +25,7 @@ class SettingsViewModel
         private val preferencesDataSource: PreferencesDataSource,
         private val appAnalytics: AppAnalytics,
         private val adManager: AdManager,
+        private val pushRegistrationManager: PushRegistrationManager,
     ) : ViewModel() {
         init {
             viewModelScope.launch {
@@ -61,6 +63,15 @@ class SettingsViewModel
         fun setNotificationsEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 preferencesDataSource.setNotificationsEnabled(enabled)
+            }
+        }
+
+        fun retryPushRegistrationNow() {
+            viewModelScope.launch {
+                pushRegistrationManager.syncRegistration(
+                    reason = "developer_manual_retry",
+                    scheduleRetryOnFailure = true,
+                )
             }
         }
 

@@ -342,40 +342,7 @@ jobs:
         uses: ./.github/actions/verify-env-contract
 
       - name: Export firebase override + web client from Doppler
-        run: |
-          set -euo pipefail
-          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
-          export DOPPLER_PROJECT="android-multi-app-framework"
-          export DOPPLER_CONFIG="prod"
-          map_secret() {
-            local src="$1"
-            local dst="$2"
-            local val
-            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val" ]; then
-              echo "::add-mask::$val"
-              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
-              export "$dst=$val"
-            fi
-          }
-
-          map_secret_if_missing() {
-            local src="$1"
-            local dst="$2"
-            if [ -n "${!dst:-}" ]; then
-              return 0
-            fi
-            map_secret "$src" "$dst"
-          }
-
-          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
-          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
-          map_secret CF_R2_BUCKET CF_R2_BUCKET
-          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
-          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
-          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
-          map_secret CF_API_TOKEN CF_API_TOKEN
-          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
+        uses: ./.github/actions/export-firebase-override-env
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
@@ -387,13 +354,20 @@ jobs:
           cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
 
       - name: Validate Google Sign-In Config
+        shell: bash
         env:
-          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
           FLAVOURS_JSON: ${{ needs.analyze-impact.outputs.flavours_json }}
         run: |
           set -euo pipefail
-          FLAVOURS_CSV="$(echo "$FLAVOURS_JSON" | tr -d '[]\"' | tr ',' ',' | sed 's/[[:space:]]//g')"
-          python3 ./scripts/ci/verify_google_signin_config.py --flavors "${FLAVOURS_CSV:-all}"
+          FLAVOURS_CSV="$(echo "$FLAVOURS_JSON" | tr -d '[]\"' | sed 's/[[:space:]]//g')"
+          if [ -z "$FLAVOURS_CSV" ]; then
+            FLAVOURS_CSV="all"
+          fi
+          echo "FLAVOURS_CSV=$FLAVOURS_CSV" >> "$GITHUB_ENV"
+      - name: Run Google Sign-In validation
+        uses: ./.github/actions/verify-google-signin-config
+        with:
+          flavors: ${{ env.FLAVOURS_CSV }}
 
       - name: Run Dynamic Lint Tasks
         env:

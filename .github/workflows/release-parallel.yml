@@ -120,41 +120,7 @@ jobs:
         uses: ./.github/actions/verify-env-contract
 
       - name: Export firebase override + web client from Doppler
-        run: |
-          set -euo pipefail
-          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
-          export DOPPLER_PROJECT="android-multi-app-framework"
-          export DOPPLER_CONFIG="prod"
-
-          map_secret() {
-            local src="$1"
-            local dst="$2"
-            local val
-            val="$(doppler secrets get "$src" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val" ]; then
-              echo "::add-mask::$val"
-              printf '%s=%s\n' "$dst" "$val" >> "$GITHUB_ENV"
-              export "$dst=$val"
-            fi
-          }
-
-          map_secret_if_missing() {
-            local src="$1"
-            local dst="$2"
-            if [ -n "${!dst:-}" ]; then
-              return 0
-            fi
-            map_secret "$src" "$dst"
-          }
-
-          map_secret FIREBASE_CONFIGS_ZIP_BASE64 FIREBASE_CONFIGS_ZIP_BASE64
-          map_secret FIREBASE_WEB_CLIENT_ID FIREBASE_WEB_CLIENT_ID
-          map_secret CF_R2_BUCKET CF_R2_BUCKET
-          map_secret CF_R2_FIREBASE_OBJECT CF_R2_FIREBASE_OBJECT
-          map_secret CF_R2_ACCOUNT_ID CF_R2_ACCOUNT_ID
-          map_secret_if_missing CLOUDFLARE_ACCOUNT_ID CF_R2_ACCOUNT_ID
-          map_secret CF_API_TOKEN CF_API_TOKEN
-          map_secret_if_missing CLOUDFLARE_API_TOKEN CF_API_TOKEN
+        uses: ./.github/actions/export-firebase-override-env
 
       - name: Firebase Config Override (R2 preferred, Base64 fallback)
         uses: ./.github/actions/firebase-config
@@ -166,77 +132,24 @@ jobs:
           cf_r2_firebase_object: ${{ env.CF_R2_FIREBASE_OBJECT }}
 
       - name: Validate Google Sign-In Config (strict)
-        env:
-          WEB_CLIENT_ID: ${{ env.FIREBASE_WEB_CLIENT_ID }}
-        run: |
-          python3 ./scripts/ci/verify_google_signin_config.py \
-            --flavors "$FLAVOR" \
-            --require-web-client-id
+        uses: ./.github/actions/verify-google-signin-config
+        with:
+          flavors: ${{ env.FLAVOR }}
+          require_web_client_id: 'true'
 
       - name: Resolve release secrets (Doppler-only)
-        run: |
-          set -euo pipefail
-          [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
-          export DOPPLER_PROJECT="android-multi-app-framework"
-          export DOPPLER_CONFIG="prod"
-
-          load_from_doppler() {
-            local key="$1"
-            local val
-            val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
-            if [ -n "$val" ]; then
-              echo "::add-mask::$val"
-              printf -v "$key" '%s' "$val"
-              export "$key"
-              printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
-            fi
-          }
-
-          load_from_doppler KEYSTORE_BASE64
-          load_from_doppler KEYSTORE_PASSWORD
-          load_from_doppler KEY_ALIAS
-          load_from_doppler KEY_PASSWORD
-          load_from_doppler PUSH_REGISTRATION_URL
-          load_from_doppler PURCHASE_VERIFICATION_URL
-          load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
-          PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" | tr -d '\r\n\t ')"
-          if [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            echo "::add-mask::$PLAY_SERVICE_ACCOUNT_JSON_BASE64"
-            printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
-          fi
-
-          for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL PURCHASE_VERIFICATION_URL; do
-            [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
-          done
-          [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] || { echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
-          if [ "${#PLAY_SERVICE_ACCOUNT_JSON_BASE64}" -lt 500 ]; then
-            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 is too short to be valid (len=${#PLAY_SERVICE_ACCOUNT_JSON_BASE64})"
-            exit 1
-          fi
+        uses: ./.github/actions/resolve-release-secrets
 
       - name: Decode secrets
         run: |
           set -euo pipefail
           echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/release.jks"
-          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
-          [ -s "${{ runner.temp }}/service-account.json" ] || { echo "::error::Decoded Play service account is empty."; exit 1; }
-          python3 - <<'PY'
-          import json, os, sys
-          p = os.path.join(os.environ["RUNNER_TEMP"], "service-account.json")
-          try:
-              with open(p, "r", encoding="utf-8") as f:
-                  data = json.load(f)
-          except Exception as e:
-              print(f"::error::Decoded Play service account is not valid JSON: {e}")
-              sys.exit(1)
-          missing = [k for k in ("project_id", "client_email", "private_key") if not data.get(k)]
-          if missing:
-              print(f"::error::Decoded Play service account missing keys: {', '.join(missing)}")
-              sys.exit(1)
-          print("::notice::Decoded Play service account JSON structure looks valid.")
-          PY
           echo "KEYSTORE_FILE=${{ runner.temp }}/release.jks" >> "$GITHUB_ENV"
-          echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+
+      - name: Decode Play Service Account
+        uses: ./.github/actions/decode-play-service-account
+        with:
+          output_path: ${{ runner.temp }}/service-account.json
 
       - name: Verify Play service account project
         env:

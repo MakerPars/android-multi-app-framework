@@ -1224,6 +1224,12 @@ function asBoolean(value: unknown): boolean {
   return value === true;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function sanitizeText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
@@ -1799,11 +1805,37 @@ async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promi
   const devicesDocs = await listCollectionDocuments(env, "devices", 1000);
   const devices = devicesDocs.map((doc) => parseFirestoreDocument(doc));
   const activeSinceMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const recentlySyncedSinceMs = Date.now() - 24 * 60 * 60 * 1000;
+  const staleSyncSinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   const packageCounts = new Map<string, number>();
+  const registrationHealthByPackage = new Map<string, {
+    packageName: string;
+    totalDevices: number;
+    withToken: number;
+    withoutToken: number;
+    recentlySynced24h: number;
+    stale7d: number;
+  }>();
+  const runtimeFunnelByFormat = new Map<string, {
+    format: string;
+    showIntent: number;
+    showBlocked: number;
+    showNotLoaded: number;
+    showStarted: number;
+    showImpression: number;
+    showDismissed: number;
+    showFailed: number;
+  }>();
+  const runtimeSuppressReasonCounts = new Map<string, number>();
+  const runtimeSuppressReasonByPackage = new Map<string, Map<string, number>>();
   let totalDevices = 0;
   let activeDevices30d = 0;
   let notificationsEnabled30d = 0;
+  let devicesWithToken = 0;
+  let devicesWithoutToken = 0;
+  let recentlySynced24h = 0;
+  let staleRegistration7d = 0;
 
   for (const device of devices) {
     totalDevices += 1;
@@ -1812,6 +1844,88 @@ async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promi
       packageCounts.set(packageName, (packageCounts.get(packageName) ?? 0) + 1);
     }
     const updatedAtMs = parseMillis(device.updatedAt) ?? 0;
+    const hasToken =
+      asBoolean(device.hasToken) ||
+      asString(device.fcmToken).trim().length >= 80;
+    const syncReferenceMs =
+      parseMillis(device.lastRegistrationSuccessAt) ??
+      parseMillis(device.syncedAtEpochMs) ??
+      updatedAtMs;
+
+    if (hasToken) {
+      devicesWithToken += 1;
+    } else {
+      devicesWithoutToken += 1;
+    }
+    if (syncReferenceMs >= recentlySyncedSinceMs) {
+      recentlySynced24h += 1;
+    }
+    if (syncReferenceMs > 0 && syncReferenceMs < staleSyncSinceMs) {
+      staleRegistration7d += 1;
+    }
+
+    if (packageName) {
+      const current = registrationHealthByPackage.get(packageName) ?? {
+        packageName,
+        totalDevices: 0,
+        withToken: 0,
+        withoutToken: 0,
+        recentlySynced24h: 0,
+        stale7d: 0,
+      };
+      current.totalDevices += 1;
+      if (hasToken) {
+        current.withToken += 1;
+      } else {
+        current.withoutToken += 1;
+      }
+      if (syncReferenceMs >= recentlySyncedSinceMs) {
+        current.recentlySynced24h += 1;
+      }
+      if (syncReferenceMs > 0 && syncReferenceMs < staleSyncSinceMs) {
+        current.stale7d += 1;
+      }
+      registrationHealthByPackage.set(packageName, current);
+    }
+
+    const deviceFunnel = asRecord(device.adRuntimeFunnelCounts);
+    for (const [format, rawCounts] of Object.entries(deviceFunnel)) {
+      const counts = asRecord(rawCounts);
+      const current = runtimeFunnelByFormat.get(format) ?? {
+        format,
+        showIntent: 0,
+        showBlocked: 0,
+        showNotLoaded: 0,
+        showStarted: 0,
+        showImpression: 0,
+        showDismissed: 0,
+        showFailed: 0,
+      };
+      current.showIntent += asNumber(counts.show_intent);
+      current.showBlocked += asNumber(counts.show_blocked);
+      current.showNotLoaded += asNumber(counts.show_not_loaded);
+      current.showStarted += asNumber(counts.show_started);
+      current.showImpression += asNumber(counts.show_impression);
+      current.showDismissed += asNumber(counts.show_dismissed);
+      current.showFailed += asNumber(counts.show_failed);
+      runtimeFunnelByFormat.set(format, current);
+    }
+
+    const deviceSuppressCounts = asRecord(device.adRuntimeSuppressReasonCounts);
+    for (const [reason, rawCount] of Object.entries(deviceSuppressCounts)) {
+      const count = asNumber(rawCount);
+      if (count <= 0) continue;
+      runtimeSuppressReasonCounts.set(
+        reason,
+        (runtimeSuppressReasonCounts.get(reason) ?? 0) + count,
+      );
+      if (packageName) {
+        const packageReasonCounts = runtimeSuppressReasonByPackage.get(packageName) ?? new Map<string, number>();
+        packageReasonCounts.set(reason, (packageReasonCounts.get(reason) ?? 0) + count);
+        runtimeSuppressReasonByPackage.set(packageName, packageReasonCounts);
+      }
+    }
+
     if (updatedAtMs >= activeSinceMs) {
       activeDevices30d += 1;
       if (asBoolean(device.notificationsEnabled)) notificationsEnabled30d += 1;
@@ -1826,12 +1940,142 @@ async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promi
     .filter((item) => item.count > 0)
     .sort((left, right) => right.count - left.count);
 
+  const runtimeSuppressByPackage = packages
+    .map((packageName) => {
+      const reasonCounts = runtimeSuppressReasonByPackage.get(packageName) ?? new Map<string, number>();
+      let totalSuppressions = 0;
+      let topReason = "";
+      let topReasonCount = 0;
+      for (const [reason, count] of reasonCounts.entries()) {
+        totalSuppressions += count;
+        if (count > topReasonCount) {
+          topReason = reason;
+          topReasonCount = count;
+        }
+      }
+      if (totalSuppressions <= 0) return null;
+      return {
+        packageName,
+        totalSuppressions,
+        topReason,
+        topReasonCount,
+      };
+    })
+    .filter((value): value is NonNullable<typeof value> => Boolean(value))
+    .sort((left, right) => right.totalSuppressions - left.totalSuppressions);
+
+  const runtimeHealthByPackage = packages
+    .map((packageName) => {
+      const registration = registrationHealthByPackage.get(packageName);
+      if (!registration) return null;
+
+      const suppressions = runtimeSuppressByPackage.find((item) => item.packageName === packageName);
+      const tokenCoveragePct = registration.totalDevices > 0
+        ? (registration.withToken / registration.totalDevices) * 100
+        : 0;
+      const syncCoveragePct = registration.totalDevices > 0
+        ? (registration.recentlySynced24h / registration.totalDevices) * 100
+        : 0;
+      const stalePct = registration.totalDevices > 0
+        ? (registration.stale7d / registration.totalDevices) * 100
+        : 0;
+      const totalSuppressions = suppressions?.totalSuppressions ?? 0;
+      const topReason = suppressions?.topReason ?? "";
+      const topReasonCount = suppressions?.topReasonCount ?? 0;
+      const notes: string[] = [];
+      let healthStatus: "healthy" | "warning" | "critical" = "healthy";
+      const applyHealthStatus = (candidate: "warning" | "critical") => {
+        if (candidate === "critical" || healthStatus === "healthy") {
+          healthStatus = candidate;
+        }
+      };
+
+      if (tokenCoveragePct < 60) {
+        applyHealthStatus("critical");
+        notes.push(`Low token coverage (${tokenCoveragePct.toFixed(1)}%)`);
+      } else if (tokenCoveragePct < 85) {
+        applyHealthStatus("warning");
+        notes.push(`Token coverage below target (${tokenCoveragePct.toFixed(1)}%)`);
+      }
+
+      if (stalePct >= 40) {
+        applyHealthStatus("critical");
+        notes.push(`Many stale registrations (${stalePct.toFixed(1)}%)`);
+      } else if (stalePct >= 20) {
+        applyHealthStatus("warning");
+        notes.push(`Stale registrations need attention (${stalePct.toFixed(1)}%)`);
+      }
+
+      if (syncCoveragePct < 40 && registration.totalDevices >= 5) {
+        applyHealthStatus("warning");
+        notes.push(`Low recent sync coverage (${syncCoveragePct.toFixed(1)}%)`);
+      }
+
+      if (totalSuppressions > 0) {
+        const normalizedReason = topReason.toLowerCase();
+        if ((normalizedReason === "not_loaded" || normalizedReason === "content_in_progress") &&
+          totalSuppressions >= Math.max(10, registration.totalDevices * 2)) {
+          applyHealthStatus("warning");
+          notes.push(`Top suppress reason is ${topReason} (${topReasonCount})`);
+        } else if (topReason) {
+          notes.push(`Top suppress reason: ${topReason} (${topReasonCount})`);
+        }
+      }
+
+      if (notes.length === 0) {
+        notes.push("No immediate runtime health concern detected.");
+      }
+
+      return {
+        packageName,
+        totalDevices: registration.totalDevices,
+        withToken: registration.withToken,
+        withoutToken: registration.withoutToken,
+        tokenCoveragePct: Number(tokenCoveragePct.toFixed(1)),
+        recentlySynced24h: registration.recentlySynced24h,
+        syncCoveragePct: Number(syncCoveragePct.toFixed(1)),
+        stale7d: registration.stale7d,
+        stalePct: Number(stalePct.toFixed(1)),
+        totalSuppressions,
+        topReason,
+        topReasonCount,
+        healthStatus,
+        healthNotes: notes,
+      };
+    })
+    .filter((value): value is NonNullable<typeof value> => Boolean(value))
+    .sort((left, right) => {
+      const severityRank = { critical: 0, warning: 1, healthy: 2 } as const;
+      return severityRank[left.healthStatus] - severityRank[right.healthStatus] ||
+        right.totalSuppressions - left.totalSuppressions ||
+        right.totalDevices - left.totalDevices;
+    });
+
   const recentCoverageReports = await loadRecentCoverageReportsFromFirestore(env);
   return jsonResponse({
     totalDevices,
     activeDevices30d,
     notificationsEnabled30d,
+    devicesWithToken,
+    devicesWithoutToken,
+    recentlySynced24h,
+    staleRegistration7d,
     devicesByPackage,
+    registrationHealthByPackage:
+      packages
+        .map((packageName) => registrationHealthByPackage.get(packageName))
+        .filter((value): value is NonNullable<typeof value> => Boolean(value))
+        .sort((left, right) => right.totalDevices - left.totalDevices),
+    runtimeFunnelByFormat:
+      Array.from(runtimeFunnelByFormat.values())
+        .sort((left, right) => right.showIntent - left.showIntent),
+    runtimeSuppressReasonCounts:
+      Object.fromEntries(
+        Array.from(runtimeSuppressReasonCounts.entries())
+          .sort((left, right) => right[1] - left[1]),
+      ),
+    runtimeSuppressByPackage,
+    runtimeHealthByPackage,
     recentCoverageReports,
     loadedAt: new Date().toISOString(),
   });

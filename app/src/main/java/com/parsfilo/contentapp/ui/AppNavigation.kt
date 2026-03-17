@@ -58,6 +58,8 @@ import com.parsfilo.contentapp.feature.quran.ui.surelist.QuranSuraListRoute
 import com.parsfilo.contentapp.feature.settings.ui.SettingsRoute
 import com.parsfilo.contentapp.monetization.AppAdUnitIds
 import com.parsfilo.contentapp.navigation.AppRoute
+import com.parsfilo.contentapp.product.AppProductDefinition
+import com.parsfilo.contentapp.product.ContentFamily
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -83,19 +85,17 @@ fun AppNavHost(
     val nativeAd by nativeAdViewModel.nativeAdState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val hostActivity = context as? MainActivity
-    val flavorName = remember { BuildConfig.FLAVOR_NAME }
+    val productDefinition = remember { AppProductDefinition.current }
     val useTestAds = remember { BuildConfig.USE_TEST_ADS }
-    val isPrayerTimesFlavor = remember { BuildConfig.IS_PRAYER_TIMES_FLAVOR }
-    val isImsakiyeFlavor = remember(flavorName) { flavorName == "imsakiye" }
-    val isQuranFlavor = remember(flavorName) { flavorName == "kuran_kerim" }
-    val isEsmaFlavor = remember(flavorName) { flavorName == "esmaulhusna" }
-    val showVerseCount = remember(flavorName) { flavorName != "namazsurelerivedualarsesli" }
+    val isPrayerTimesFlavor = remember(productDefinition) { productDefinition.isPrayerTimesFlavor }
+    val isImsakiyeFlavor =
+        remember(productDefinition) { productDefinition.hasCapability("prayer_variant_imsakiye") }
+    val isQuranFlavor = remember(productDefinition) { productDefinition.contentFamily == ContentFamily.QURAN }
+    val isEsmaFlavor = remember(productDefinition) { productDefinition.contentFamily == ContentFamily.ESMA }
+    val showVerseCount = remember(productDefinition) { !productDefinition.hasCapability("hide_verse_count") }
     val homeStartDestination =
-        remember(flavorName, isPrayerTimesFlavor) {
-            resolveHomeStartDestination(
-                flavorName = flavorName,
-                isPrayerTimesFlavor = isPrayerTimesFlavor,
-            )
+        remember(productDefinition) {
+            resolveHomeStartDestination(productDefinition)
         }
     val coroutineScope = rememberCoroutineScope()
     var rewardedInterstitialIntroRequest by remember {
@@ -803,17 +803,15 @@ fun AppNavHost(
     }
 }
 
-private fun resolveHomeStartDestination(
-    flavorName: String,
-    isPrayerTimesFlavor: Boolean,
-): String =
+private fun resolveHomeStartDestination(productDefinition: AppProductDefinition): String =
     when {
-        isPrayerTimesFlavor -> AppRoute.PrayerTimesHome.route
-        flavorName == "kible" -> AppRoute.Qibla.route
-        flavorName == "namazsurelerivedualarsesli" -> AppRoute.PrayerList.route
-        flavorName == "mucizedualar" || flavorName == "esmaulhusna" -> AppRoute.MiraclesList.route
-        flavorName == "zikirmatik" -> AppRoute.ZikirCounter.route
-        flavorName == "kuran_kerim" -> AppRoute.QuranSuraList.route
+        productDefinition.isPrayerTimesFlavor -> AppRoute.PrayerTimesHome.route
+        productDefinition.contentFamily == ContentFamily.QIBLA -> AppRoute.Qibla.route
+        productDefinition.contentFamily == ContentFamily.PRAYER_LIBRARY -> AppRoute.PrayerList.route
+        productDefinition.contentFamily == ContentFamily.MIRACLES ||
+            productDefinition.contentFamily == ContentFamily.ESMA -> AppRoute.MiraclesList.route
+        productDefinition.contentFamily == ContentFamily.ZIKIR_COUNTER -> AppRoute.ZikirCounter.route
+        productDefinition.contentFamily == ContentFamily.QURAN -> AppRoute.QuranSuraList.route
         else -> AppRoute.Content.route
     }
 

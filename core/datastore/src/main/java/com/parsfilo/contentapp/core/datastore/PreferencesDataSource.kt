@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.UUID
 import javax.inject.Inject
 
@@ -108,8 +110,15 @@ class PreferencesDataSource @Inject constructor(
             installationId = preferences[PreferencesKeys.INSTALLATION_ID] ?: "",
             lastPushSyncAt = preferences[PreferencesKeys.LAST_PUSH_SYNC_AT] ?: 0L,
             lastPushToken = preferences[PreferencesKeys.LAST_PUSH_TOKEN] ?: "",
+            lastPushSyncAttemptAt = preferences[PreferencesKeys.LAST_PUSH_SYNC_ATTEMPT_AT] ?: 0L,
+            lastPushSyncSuccessAt = preferences[PreferencesKeys.LAST_PUSH_SYNC_SUCCESS_AT] ?: 0L,
+            lastPushSyncFailureReason =
+                preferences[PreferencesKeys.LAST_PUSH_SYNC_FAILURE_REASON] ?: "",
+            lastPushTokenHash = preferences[PreferencesKeys.LAST_PUSH_TOKEN_HASH] ?: "",
+            hasPushToken = preferences[PreferencesKeys.HAS_PUSH_TOKEN] ?: false,
             adsAgeGateStatus = preferences[PreferencesKeys.ADS_AGE_GATE_STATUS] ?: "UNKNOWN",
             adsAgeGatePromptCompleted = preferences[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] ?: false,
+            adRuntimeTelemetry = readAdRuntimeTelemetrySnapshot(preferences),
         )
     }
 
@@ -209,6 +218,80 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { preferences ->
             preferences[PreferencesKeys.LAST_PUSH_TOKEN] = token
             preferences[PreferencesKeys.LAST_PUSH_SYNC_AT] = timestamp
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_ATTEMPT_AT] = timestamp
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_SUCCESS_AT] = timestamp
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_FAILURE_REASON] = ""
+            preferences[PreferencesKeys.LAST_PUSH_TOKEN_HASH] = token.sha256()
+            preferences[PreferencesKeys.HAS_PUSH_TOKEN] = token.isNotBlank()
+        }
+    }
+
+    suspend fun markPushSyncAttempt(token: String, timestamp: Long = System.currentTimeMillis()) {
+        userPreferences.edit { preferences ->
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_ATTEMPT_AT] = timestamp
+            preferences[PreferencesKeys.LAST_PUSH_TOKEN] = token
+            preferences[PreferencesKeys.LAST_PUSH_TOKEN_HASH] = token.sha256()
+            preferences[PreferencesKeys.HAS_PUSH_TOKEN] = token.isNotBlank()
+        }
+    }
+
+    suspend fun markPushSyncFailure(
+        reason: String,
+        token: String,
+        timestamp: Long = System.currentTimeMillis(),
+    ) {
+        userPreferences.edit { preferences ->
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_ATTEMPT_AT] = timestamp
+            preferences[PreferencesKeys.LAST_PUSH_SYNC_FAILURE_REASON] = reason
+            preferences[PreferencesKeys.LAST_PUSH_TOKEN] = token
+            preferences[PreferencesKeys.LAST_PUSH_TOKEN_HASH] = token.sha256()
+            preferences[PreferencesKeys.HAS_PUSH_TOKEN] = token.isNotBlank()
+        }
+    }
+
+    suspend fun recordAdRuntimeEvent(
+        format: String,
+        event: String,
+        suppressReason: String? = null,
+        timestamp: Long = System.currentTimeMillis(),
+    ) {
+        userPreferences.edit { preferences ->
+            val snapshot = readAdRuntimeTelemetrySnapshot(preferences)
+            val shouldResetWindow =
+                snapshot.windowStartAt == 0L ||
+                    timestamp - snapshot.windowStartAt > AD_RUNTIME_TELEMETRY_WINDOW_MS
+
+            val funnelCounts =
+                if (shouldResetWindow) {
+                    mutableMapOf()
+                } else {
+                    snapshot.funnelCountsByFormat
+                        .mapValues { (_, counts) -> counts.toMutableMap() }
+                        .toMutableMap()
+                }
+
+            val suppressReasonCounts =
+                if (shouldResetWindow) {
+                    mutableMapOf()
+                } else {
+                    snapshot.suppressReasonCounts.toMutableMap()
+                }
+
+            val formatBucket = funnelCounts.getOrPut(format) { mutableMapOf() }
+            formatBucket[event] = (formatBucket[event] ?: 0) + 1
+
+            if (!suppressReason.isNullOrBlank()) {
+                suppressReasonCounts[suppressReason] =
+                    (suppressReasonCounts[suppressReason] ?: 0) + 1
+            }
+
+            val windowStartAt = if (shouldResetWindow) timestamp else snapshot.windowStartAt
+            preferences[PreferencesKeys.AD_RUNTIME_TELEMETRY_WINDOW_START_AT] = windowStartAt
+            preferences[PreferencesKeys.AD_RUNTIME_TELEMETRY_LAST_UPDATED_AT] = timestamp
+            preferences[PreferencesKeys.AD_RUNTIME_FUNNEL_COUNTS_JSON] =
+                funnelCounts.toNestedJsonString()
+            preferences[PreferencesKeys.AD_RUNTIME_SUPPRESS_REASON_COUNTS_JSON] =
+                suppressReasonCounts.toFlatJsonString()
         }
     }
 
@@ -290,7 +373,7 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { it[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] = completed }
     }
 
-    private object PreferencesKeys {
+    internal object PreferencesKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val DISPLAY_MODE = stringPreferencesKey("display_mode")
         val FONT_SIZE = intPreferencesKey("font_size")
@@ -305,6 +388,19 @@ class PreferencesDataSource @Inject constructor(
         val INSTALLATION_ID = stringPreferencesKey("installation_id")
         val LAST_PUSH_SYNC_AT = longPreferencesKey("last_push_sync_at")
         val LAST_PUSH_TOKEN = stringPreferencesKey("last_push_token")
+        val LAST_PUSH_SYNC_ATTEMPT_AT = longPreferencesKey("last_push_sync_attempt_at")
+        val LAST_PUSH_SYNC_SUCCESS_AT = longPreferencesKey("last_push_sync_success_at")
+        val LAST_PUSH_SYNC_FAILURE_REASON = stringPreferencesKey("last_push_sync_failure_reason")
+        val LAST_PUSH_TOKEN_HASH = stringPreferencesKey("last_push_token_hash")
+        val HAS_PUSH_TOKEN = booleanPreferencesKey("has_push_token")
+        val AD_RUNTIME_TELEMETRY_WINDOW_START_AT =
+            longPreferencesKey("ad_runtime_telemetry_window_start_at")
+        val AD_RUNTIME_TELEMETRY_LAST_UPDATED_AT =
+            longPreferencesKey("ad_runtime_telemetry_last_updated_at")
+        val AD_RUNTIME_FUNNEL_COUNTS_JSON =
+            stringPreferencesKey("ad_runtime_funnel_counts_json")
+        val AD_RUNTIME_SUPPRESS_REASON_COUNTS_JSON =
+            stringPreferencesKey("ad_runtime_suppress_reason_counts_json")
         val ADS_AGE_GATE_STATUS = stringPreferencesKey("ads_age_gate_status")
         val ADS_AGE_GATE_PROMPT_COMPLETED = booleanPreferencesKey("ads_age_gate_prompt_completed")
         val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
@@ -347,6 +443,91 @@ data class UserPreferencesData(
     val installationId: String = "",
     val lastPushSyncAt: Long = 0L,
     val lastPushToken: String = "",
+    val lastPushSyncAttemptAt: Long = 0L,
+    val lastPushSyncSuccessAt: Long = 0L,
+    val lastPushSyncFailureReason: String = "",
+    val lastPushTokenHash: String = "",
+    val hasPushToken: Boolean = false,
     val adsAgeGateStatus: String = "UNKNOWN",
     val adsAgeGatePromptCompleted: Boolean = false,
+    val adRuntimeTelemetry: AdRuntimeTelemetrySnapshot = AdRuntimeTelemetrySnapshot(),
 )
+
+data class AdRuntimeTelemetrySnapshot(
+    val windowStartAt: Long = 0L,
+    val lastUpdatedAt: Long = 0L,
+    val funnelCountsByFormat: Map<String, Map<String, Int>> = emptyMap(),
+    val suppressReasonCounts: Map<String, Int> = emptyMap(),
+)
+
+private fun String.sha256(): String {
+    if (isBlank()) return ""
+    return MessageDigest.getInstance("SHA-256")
+        .digest(toByteArray())
+        .joinToString("") { "%02x".format(it) }
+}
+
+private fun readAdRuntimeTelemetrySnapshot(
+    preferences: Preferences,
+): AdRuntimeTelemetrySnapshot =
+    AdRuntimeTelemetrySnapshot(
+        windowStartAt =
+            preferences[PreferencesDataSource.PreferencesKeys.AD_RUNTIME_TELEMETRY_WINDOW_START_AT]
+                ?: 0L,
+        lastUpdatedAt =
+            preferences[PreferencesDataSource.PreferencesKeys.AD_RUNTIME_TELEMETRY_LAST_UPDATED_AT]
+                ?: 0L,
+        funnelCountsByFormat =
+            parseNestedCountsJson(
+                preferences[PreferencesDataSource.PreferencesKeys.AD_RUNTIME_FUNNEL_COUNTS_JSON]
+                    ?: "{}",
+            ),
+        suppressReasonCounts =
+            parseFlatCountsJson(
+                preferences[PreferencesDataSource.PreferencesKeys.AD_RUNTIME_SUPPRESS_REASON_COUNTS_JSON]
+                    ?: "{}",
+            ),
+    )
+
+private fun parseNestedCountsJson(raw: String): Map<String, Map<String, Int>> {
+    if (raw.isBlank()) return emptyMap()
+    return runCatching {
+        val root = JSONObject(raw)
+        root.keys().asSequence().associateWith { format ->
+            val counts = root.optJSONObject(format) ?: JSONObject()
+            counts.keys().asSequence()
+                .associateWith { key -> counts.optInt(key, 0) }
+                .filterValues { value -> value > 0 }
+        }.filterValues { value -> value.isNotEmpty() }
+    }.getOrDefault(emptyMap())
+}
+
+private fun parseFlatCountsJson(raw: String): Map<String, Int> {
+    if (raw.isBlank()) return emptyMap()
+    return runCatching {
+        val root = JSONObject(raw)
+        root.keys().asSequence()
+            .associateWith { key -> root.optInt(key, 0) }
+            .filterValues { value -> value > 0 }
+    }.getOrDefault(emptyMap())
+}
+
+private fun Map<String, Map<String, Int>>.toNestedJsonString(): String =
+    JSONObject().also { root ->
+        for ((outerKey, innerMap) in this) {
+            val nested = JSONObject()
+            for ((innerKey, value) in innerMap) {
+                nested.put(innerKey, value)
+            }
+            root.put(outerKey, nested)
+        }
+    }.toString()
+
+private fun Map<String, Int>.toFlatJsonString(): String =
+    JSONObject().also { root ->
+        for ((key, value) in this) {
+            root.put(key, value)
+        }
+    }.toString()
+
+private const val AD_RUNTIME_TELEMETRY_WINDOW_MS = 7L * 24L * 60L * 60L * 1000L

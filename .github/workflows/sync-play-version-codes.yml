@@ -91,34 +91,9 @@ jobs:
           echo "::notice::Resolved Play service account from Doppler key: PLAY_SERVICE_ACCOUNT_JSON_BASE64"
 
       - name: Decode Play Service Account
-        run: |
-          set -euo pipefail
-          if [ -z "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
-            echo "::error::Missing secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64."
-            exit 1
-          fi
-          echo "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > "${{ runner.temp }}/service-account.json"
-          if [ ! -s "${{ runner.temp }}/service-account.json" ]; then
-            echo "::error::Decoded Play service account is empty. Check Doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64."
-            exit 1
-          fi
-          python3 - <<'PY'
-          import json, os, sys
-          path = os.environ.get("RUNNER_TEMP", "") + "/service-account.json"
-          try:
-              with open(path, "r", encoding="utf-8") as f:
-                  data = json.load(f)
-          except Exception as e:
-              print(f"::error::Decoded Play service account is not valid JSON: {e}")
-              sys.exit(1)
-          required = ("project_id", "client_email", "private_key")
-          missing = [k for k in required if not data.get(k)]
-          if missing:
-              print(f"::error::Decoded Play service account missing keys: {', '.join(missing)}")
-              sys.exit(1)
-          print("::notice::Decoded Play service account JSON structure looks valid.")
-          PY
-          echo "PLAY_SERVICE_ACCOUNT_JSON=${{ runner.temp }}/service-account.json" >> "$GITHUB_ENV"
+        uses: ./.github/actions/decode-play-service-account
+        with:
+          output_path: ${{ runner.temp }}/service-account.json
 
       - name: Verify Play service account project
         env:

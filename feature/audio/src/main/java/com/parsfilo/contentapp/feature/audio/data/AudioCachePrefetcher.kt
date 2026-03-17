@@ -20,7 +20,6 @@ import javax.inject.Singleton
 
 private const val AUDIO_CACHE_DIR = "audio_cache"
 private const val AUDIO_BUFFER_SIZE = 8 * 1024
-private const val NAMAZ_SURELERI_PACKAGE = "com.parsfilo.namazsurelerivedualarsesli"
 private const val PREFS_NAME = "audio_prefetch"
 private const val PREFETCH_VERSION = 1
 
@@ -48,7 +47,7 @@ class AudioCachePrefetcher @Inject constructor(
     ) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val completionKey = "prefetch_complete_${packageName}_v$PREFETCH_VERSION"
-        val fullPrefetchEnabled = prefetchAllAudioOnFirstLaunch && packageName == NAMAZ_SURELERI_PACKAGE
+        val fullPrefetchEnabled = prefetchAllAudioOnFirstLaunch
         if (fullPrefetchEnabled && prefs.getBoolean(completionKey, false)) {
             Timber.d("Audio prefetch skipped: full prefetch already completed for $packageName")
             return

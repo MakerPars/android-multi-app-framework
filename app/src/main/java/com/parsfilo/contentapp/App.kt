@@ -23,6 +23,8 @@ import com.parsfilo.contentapp.feature.prayertimes.alarm.PrayerAlarmScheduler
 import com.parsfilo.contentapp.feature.prayertimes.widget.PrayerTimesWidgetReceiver
 import com.parsfilo.contentapp.feature.prayertimes.worker.PrayerTimesRefreshWorker
 import com.parsfilo.contentapp.monetization.AppOpenLifecycleCoordinator
+import com.parsfilo.contentapp.product.AppProductDefinition
+import com.parsfilo.contentapp.product.ContentFamily
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,6 +35,8 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
+    private val productDefinition by lazy { AppProductDefinition.current }
+
     @Inject
     lateinit var billingManager: BillingManager
 
@@ -73,7 +77,7 @@ class App : Application() {
         registerDebugActivityLifecycleLogging()
         Timber.i(
             "App onCreate started flavor=%s buildType=%s package=%s debug=%s",
-            BuildConfig.FLAVOR_NAME,
+            productDefinition.flavorId,
             BuildConfig.BUILD_TYPE,
             packageName,
             BuildConfig.DEBUG,
@@ -85,7 +89,7 @@ class App : Application() {
 
         FirebaseCrashlytics.getInstance().apply {
             isCrashlyticsCollectionEnabled = !BuildConfig.DEBUG
-            setCustomKey("flavor", BuildConfig.FLAVOR_NAME)
+            setCustomKey("flavor", productDefinition.flavorId)
             setCustomKey("build_type", BuildConfig.BUILD_TYPE)
         }
 
@@ -102,15 +106,16 @@ class App : Application() {
         PushRegistrationSyncWorker.schedule(this)
 
         // Audio flavors: download once after first launch and keep local for offline playback.
-        if (shouldPrefetchFlavorAudio(BuildConfig.AUDIO_FILE_NAME)) {
+        val productAudioFileName = productDefinition.audioFileName.orEmpty()
+        if (shouldPrefetchFlavorAudio(productAudioFileName)) {
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 runCatching {
                     audioCachePrefetcher.prefetchIfNeeded(
                         packageName = packageName,
-                        fallbackAudioFileName = BuildConfig.AUDIO_FILE_NAME,
+                        fallbackAudioFileName = productAudioFileName,
                         prefetchAllAudioOnFirstLaunch =
                             shouldPrefetchAllAudioOnFirstLaunch(
-                                packageName,
+                                productDefinition,
                             ),
                     )
                 }.onFailure { error ->
@@ -122,7 +127,7 @@ class App : Application() {
         // Analytics defaults (consent-aware): collection starts disabled on cold start and is
         // re-enabled by AdManager only after consent is granted. User properties/default params
         // are still set here so runtime enablement starts with stable metadata.
-        appAnalytics.setUserProperty(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
+        appAnalytics.setUserProperty(AnalyticsUserPropertyKey.FLAVOR, productDefinition.flavorId)
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
         appAnalytics.setUserProperty(
             AnalyticsUserPropertyKey.APP_LANG,
@@ -134,7 +139,7 @@ class App : Application() {
         appAnalytics.setUserProperty(AnalyticsUserPropertyKey.IS_PREMIUM, "false")
         appAnalytics.setDefaultEventParameters(
             Bundle().apply {
-                putString(AnalyticsUserPropertyKey.FLAVOR, BuildConfig.FLAVOR_NAME)
+                putString(AnalyticsUserPropertyKey.FLAVOR, productDefinition.flavorId)
                 putString(AnalyticsUserPropertyKey.BUILD_TYPE, BuildConfig.BUILD_TYPE)
             },
         )
@@ -164,7 +169,7 @@ class App : Application() {
             },
         )
 
-        if (isPrayerTimesFlavor(packageName)) {
+        if (productDefinition.isPrayerTimesFlavor) {
             PrayerTimesRefreshWorker.schedule(this)
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 prayerAlarmScheduler.scheduleNextForCurrentFlavor()
@@ -175,7 +180,7 @@ class App : Application() {
             }
         }
 
-        if (isZikirmatikFlavor(packageName)) {
+        if (productDefinition.contentFamily == ContentFamily.ZIKIR_COUNTER) {
             ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
                 runCatching {
                     zikirReminderScheduler.scheduleOrCancelFromPreferences()
@@ -185,7 +190,7 @@ class App : Application() {
                 }
             }
         }
-        Timber.i("App onCreate completed flavor=%s", BuildConfig.FLAVOR_NAME)
+        Timber.i("App onCreate completed flavor=%s", productDefinition.flavorId)
     }
 
     private fun installGlobalExceptionLogging() {
@@ -247,14 +252,6 @@ class App : Application() {
 
     private companion object {
         private const val DEFAULT_CONTENT_AUDIO_FILE_NAME = "content_audio.mp3"
-        private const val PACKAGE_NAMAZ_SURELERI = "com.parsfilo.namazsurelerivedualarsesli"
-        private const val PACKAGE_ZIKIRMATIK = "com.parsfilo.zikirmatik"
-        private val PRAYER_TIMES_PACKAGES =
-            setOf(
-                "com.parsfilo.imsakiye",
-                "com.parsfilo.namazvakitleri",
-            )
-
         private val DEFAULT_FCM_TOPICS =
             listOf(
                 "dini-bildirim",
@@ -265,12 +262,8 @@ class App : Application() {
     private fun shouldPrefetchFlavorAudio(audioFileName: String): Boolean =
         audioFileName.trim().lowercase() != DEFAULT_CONTENT_AUDIO_FILE_NAME
 
-    private fun shouldPrefetchAllAudioOnFirstLaunch(packageName: String): Boolean =
-        packageName == PACKAGE_NAMAZ_SURELERI
-
-    private fun isPrayerTimesFlavor(packageName: String): Boolean = packageName in PRAYER_TIMES_PACKAGES
-
-    private fun isZikirmatikFlavor(packageName: String): Boolean = packageName == PACKAGE_ZIKIRMATIK
+    private fun shouldPrefetchAllAudioOnFirstLaunch(productDefinition: AppProductDefinition): Boolean =
+        productDefinition.hasCapability("prefetch_all_audio_first_launch")
 }
 
 private const val DEBUG_TIMBER_TAG = "timber_log"

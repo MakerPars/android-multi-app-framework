@@ -25,6 +25,7 @@ import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.push.PushRegistrationManager
 import com.parsfilo.contentapp.monetization.AdOrchestrator
 import com.parsfilo.contentapp.navigation.NotificationOpenRequest
+import com.parsfilo.contentapp.product.AppProductDefinition
 import com.parsfilo.contentapp.ui.ContentApp
 import com.parsfilo.contentapp.ui.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,6 +40,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val productDefinition by lazy { AppProductDefinition.current }
+
     private val viewModel: MainViewModel by viewModels()
 
     @Inject
@@ -74,7 +77,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Timber.d(
             "MainActivity onCreate flavor=%s buildType=%s savedInstance=%s",
-            BuildConfig.FLAVOR_NAME,
+            productDefinition.flavorId,
             BuildConfig.BUILD_TYPE,
             savedInstanceState != null,
         )
@@ -348,7 +351,7 @@ class MainActivity : ComponentActivity() {
 
                 launch {
                     viewModel.shouldRequestLocationPermission.collect { shouldRequest ->
-                        if (!shouldRequest || !isPrayerTimesFlavor()) {
+                        if (!shouldRequest || !productDefinition.isPrayerTimesFlavor) {
                             return@collect
                         }
 
@@ -378,8 +381,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private fun isPrayerTimesFlavor(): Boolean = packageName in PRAYER_TIMES_PACKAGES
 
     override fun onDestroy() {
         Timber.d("MainActivity onDestroy")
@@ -424,9 +425,3 @@ private fun Bundle.getValueAsString(key: String): String? {
             getLongArray(key)?.joinToString(prefix = "[", postfix = "]")
         }.getOrNull()
 }
-
-private val PRAYER_TIMES_PACKAGES =
-    setOf(
-        "com.parsfilo.imsakiye",
-        "com.parsfilo.namazvakitleri",
-    )

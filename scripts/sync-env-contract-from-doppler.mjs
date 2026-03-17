@@ -11,6 +11,7 @@ const rootDir = resolve(process.cwd());
 const rootEnvPath = resolve(rootDir, ".env");
 const templatePath = resolve(rootDir, ".env.template");
 const adminEnvPath = resolve(rootDir, "side-projects/admin-notifications/.env");
+const adminEnvExamplePath = resolve(rootDir, "side-projects/admin-notifications/.env.example");
 
 const derivedRootKeys = [
   "VITE_FIREBASE_API_KEY",
@@ -164,6 +165,7 @@ function main() {
   const dopplerMap = fetchDopplerEnvMap();
   const currentRootMap = parseEnvFile(rootEnvPath);
   const currentAdminMap = parseEnvFile(adminEnvPath);
+  const currentAdminExampleMap = parseEnvFile(adminEnvExamplePath);
   const templateMap = parseEnvFile(templatePath);
 
   const canonicalSecretKeys = toSortedList(dopplerMap.keys());
@@ -273,6 +275,26 @@ function main() {
     ],
   );
 
+  const adminExampleOut = new Map();
+  for (const key of adminEnvKeys) {
+    const existingValue = currentAdminExampleMap.get(key);
+    adminExampleOut.set(key, existingValue ?? templateDefaults.get(key) ?? "");
+  }
+
+  ensureParentDir(adminEnvExamplePath);
+  writeEnv(
+    adminEnvExamplePath,
+    adminEnvKeys,
+    adminExampleOut,
+    [
+      "# Admin panel env contract.",
+      "# Source of truth: repo root .env (canonical keys synced from Doppler).",
+      "# Quick sync command:",
+      "#   node scripts/sync-env-contract-from-doppler.mjs",
+      "",
+    ],
+  );
+
   const templateOut = new Map();
   const templateContractKeys = uniqueKeys([
     ...canonicalSecretKeys,
@@ -300,6 +322,7 @@ function main() {
 
   console.log(`Synced root .env (${rootKeyOrder.length} canonical/derived keys + preserved extras).`);
   console.log(`Synced admin .env (${adminEnvKeys.length} keys).`);
+  console.log(`Synced admin .env.example (${adminEnvKeys.length} keys).`);
   console.log(`Synced .env.template (${templateContractKeys.length} contract keys).`);
   console.log(`Doppler canonical key count: ${canonicalSecretKeys.length}`);
 

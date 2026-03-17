@@ -35,6 +35,24 @@ Opsiyonel Firebase override (CI ile ayni model):
 
 - `FIREBASE_CONFIGS_ZIP_BASE64` (zip base64) + `-OverrideFirebaseFromZipBase64`
 
+## CI Bootstrap Akisi
+
+Release ve publish workflow'lari artik tekrar eden shell bloklari yerine ortak composite action'lar kullanir:
+
+1. `resolve-release-secrets`
+   - signing env'lerini cozer
+   - publish icin gerekli temel secret'lari normalize eder
+2. `decode-play-service-account`
+   - Play service account'i decode eder
+   - JSON yapisini dogrular
+   - `PLAY_SERVICE_ACCOUNT_JSON` yolunu export eder
+3. `verify-google-signin-config`
+   - `FIREBASE_WEB_CLIENT_ID` ile flavor `google-services.json` uyumunu kontrol eder
+4. `export-firebase-override-env`
+   - gerekiyorsa Firebase Web / R2 override env'lerini standardize eder
+
+Bu sayede `release.yml` ve `release-parallel.yml` icinde ayni bootstrap mantigi paylasilir ve drift azalir.
+
 ## Fail-fast Dogrulama
 
 Release/publish akislarinda `app/build.gradle.kts` icinde `validateReleaseConfig` gorevi zorunlu preflight olarak baglidir.

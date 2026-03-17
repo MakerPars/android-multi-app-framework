@@ -3,6 +3,8 @@ package com.parsfilo.contentapp.di
 import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.core.firebase.push.PUSH_REGISTRATION_URL
 import com.parsfilo.contentapp.feature.billing.PURCHASE_VERIFICATION_URL
+import com.parsfilo.contentapp.product.AppProductDefinition
+import com.parsfilo.contentapp.product.ContentFamily
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,17 +17,15 @@ object AppModule {
     @Provides
     @Named("audioFileName")
     fun provideAudioFileName(): String =
-        if (BuildConfig.FLAVOR_NAME ==
-            "kuran_kerim"
-        ) {
+        if (AppProductDefinition.current.contentFamily == ContentFamily.QURAN) {
             ""
         } else {
-            BuildConfig.AUDIO_FILE_NAME
+            AppProductDefinition.current.audioFileName.orEmpty()
         }
 
     @Provides
     @Named("useAssetPackAudio")
-    fun provideUseAssetPackAudio(): Boolean = BuildConfig.USE_ASSET_PACK_AUDIO
+    fun provideUseAssetPackAudio(): Boolean = AppProductDefinition.current.useAssetPackAudio
 
     @Provides
     @Named(PUSH_REGISTRATION_URL)

@@ -99,6 +99,7 @@ fun SettingsRoute(
     onUpdateDebugSimulateHard: () -> Unit = {},
     onUpdateDebugClearSimulation: () -> Unit = {},
     onUpdateDebugResetSoftPrompt: () -> Unit = {},
+    onRetryPushRegistration: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -120,6 +121,7 @@ fun SettingsRoute(
         onUpdateDebugSimulateHard = onUpdateDebugSimulateHard,
         onUpdateDebugClearSimulation = onUpdateDebugClearSimulation,
         onUpdateDebugResetSoftPrompt = onUpdateDebugResetSoftPrompt,
+        onRetryPushRegistration = { viewModel.retryPushRegistrationNow() },
         onShareApp = { platform -> viewModel.logShareApp(platform) },
     )
 }
@@ -143,6 +145,7 @@ fun SettingsScreen(
     onUpdateDebugSimulateHard: () -> Unit = {},
     onUpdateDebugClearSimulation: () -> Unit = {},
     onUpdateDebugResetSoftPrompt: () -> Unit = {},
+    onRetryPushRegistration: () -> Unit = {},
     onShareApp: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -188,6 +191,7 @@ fun SettingsScreen(
     val fcmDebugRefreshedText = stringResource(R.string.settings_fcm_debug_refreshed)
     val fcmDebugErrorText = stringResource(R.string.settings_fcm_debug_error)
     val fcmDebugCopiedText = stringResource(R.string.settings_fcm_debug_copied)
+    val pushRetryStartedText = stringResource(R.string.settings_push_retry_started)
     val privacyOptionsUnavailableText =
         stringResource(R.string.settings_privacy_options_unavailable)
     val privacyOptionsErrorText = stringResource(R.string.settings_privacy_options_error)
@@ -714,6 +718,33 @@ fun SettingsScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurface,
                                     )
+                                    Spacer(modifier = Modifier.height(dimens.space6))
+                                    Text(
+                                        text =
+                                            stringResource(
+                                                R.string.settings_push_health_status,
+                                                if (preferences.hasPushToken) {
+                                                    stringResource(R.string.settings_push_health_ready)
+                                                } else {
+                                                    stringResource(R.string.settings_push_health_missing)
+                                                },
+                                                preferences.lastPushSyncSuccessAt.formatDebugTime(),
+                                            ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                    if (preferences.lastPushSyncFailureReason.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(dimens.space4))
+                                        Text(
+                                            text =
+                                                stringResource(
+                                                    R.string.settings_push_health_failure,
+                                                    preferences.lastPushSyncFailureReason,
+                                                ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = colorScheme.error,
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.height(dimens.space12))
                                     AppButton(
                                         text = stringResource(R.string.settings_device_id_copy),
@@ -736,6 +767,20 @@ fun SettingsScreen(
                                             androidx.compose.material3.ButtonDefaults.buttonColors(
                                                 containerColor = colorScheme.secondary,
                                                 contentColor = colorScheme.onSecondary,
+                                            ),
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space8))
+                                    AppButton(
+                                        text = stringResource(R.string.settings_push_retry_now),
+                                        onClick = {
+                                            onRetryPushRegistration()
+                                            showMessage(pushRetryStartedText)
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors =
+                                            androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = colorScheme.primary,
+                                                contentColor = colorScheme.onPrimary,
                                             ),
                                     )
                                 }
@@ -1300,3 +1345,10 @@ private fun shareApp(context: Context) {
         ),
     )
 }
+
+private fun Long.formatDebugTime(): String =
+    if (this <= 0L) {
+        "-"
+    } else {
+        java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(java.util.Date(this))
+    }

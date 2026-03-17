@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.security.MessageDigest
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
@@ -55,7 +56,15 @@ class PushRegistrationManager @Inject constructor(
             runCatching {
                 val installationId = preferencesDataSource.getOrCreateInstallationId()
                 val preferences = preferencesDataSource.userData.first()
-                val fcmToken = tokenOverride ?: fetchFcmTokenWithRetry() ?: run {
+                val adRuntimeTelemetry = preferences.adRuntimeTelemetry
+                val attemptTimestamp = System.currentTimeMillis()
+                val rawToken = tokenOverride ?: fetchFcmTokenWithRetry()
+                val fcmToken = rawToken ?: run {
+                    preferencesDataSource.markPushSyncFailure(
+                        reason = "token_fetch_failed:$reason",
+                        token = "",
+                        timestamp = attemptTimestamp,
+                    )
                     val message = "Push registration skipped: could not fetch FCM token (reason=$reason)"
                     Timber.w(message)
                     crashlytics.log(message)
@@ -65,6 +74,10 @@ class PushRegistrationManager @Inject constructor(
                     )
                     return@runCatching false
                 }
+                preferencesDataSource.markPushSyncAttempt(
+                    token = fcmToken,
+                    timestamp = attemptTimestamp,
+                )
                 val payload = PushRegistrationPayload(
                     installationId = installationId,
                     fcmToken = fcmToken,
@@ -75,7 +88,15 @@ class PushRegistrationManager @Inject constructor(
                     appVersion = readAppVersion(context),
                     deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
                     reason = reason,
-                    syncedAtEpochMs = System.currentTimeMillis(),
+                    syncedAtEpochMs = attemptTimestamp,
+                    tokenHash = fcmToken.sha256(),
+                    hasToken = fcmToken.isNotBlank(),
+                    lastAttemptAtEpochMs = attemptTimestamp,
+                    lastSuccessAtEpochMs = attemptTimestamp,
+                    adRuntimeWindowStartAtEpochMs = adRuntimeTelemetry.windowStartAt,
+                    adRuntimeLastUpdatedAtEpochMs = adRuntimeTelemetry.lastUpdatedAt,
+                    adRuntimeFunnelCounts = adRuntimeTelemetry.funnelCountsByFormat,
+                    adRuntimeSuppressReasonCounts = adRuntimeTelemetry.suppressReasonCounts,
                 )
                 val sent = pushRegistrationSender.send(payload)
                 if (sent) {
@@ -85,6 +106,11 @@ class PushRegistrationManager @Inject constructor(
                     )
                 }
                 if (!sent) {
+                    preferencesDataSource.markPushSyncFailure(
+                        reason = "send_failed:$reason",
+                        token = fcmToken,
+                        timestamp = attemptTimestamp,
+                    )
                     val message = "Push registration send returned false (reason=$reason)"
                     Timber.w(message)
                     crashlytics.log(message)
@@ -96,6 +122,11 @@ class PushRegistrationManager @Inject constructor(
                 sent
             }.getOrElse { throwable ->
                 Timber.w(throwable, "Push registration sync failed.")
+                preferencesDataSource.markPushSyncFailure(
+                    reason = "exception:${throwable::class.simpleName}:$reason",
+                    token = tokenOverride.orEmpty(),
+                    timestamp = System.currentTimeMillis(),
+                )
                 crashlytics.log("Push registration sync failed (reason=$reason): ${throwable::class.simpleName}")
                 crashlytics.recordException(throwable)
                 scheduleRetryIfNeeded(
@@ -140,6 +171,13 @@ class PushRegistrationManager @Inject constructor(
         }
         return null
     }
+}
+
+private fun String.sha256(): String {
+    if (isBlank()) return ""
+    return MessageDigest.getInstance("SHA-256")
+        .digest(toByteArray())
+        .joinToString("") { "%02x".format(it) }
 }
 
 private fun readAppVersion(context: Context): String {

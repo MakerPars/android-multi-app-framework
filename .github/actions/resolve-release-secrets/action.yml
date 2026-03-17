@@ -1,0 +1,66 @@
+name: Resolve Release Secrets
+description: Export release signing and Play publish secrets from Doppler
+
+inputs:
+  doppler_project:
+    description: Doppler project name
+    required: false
+    default: android-multi-app-framework
+  doppler_config:
+    description: Doppler config/environment name
+    required: false
+    default: prod
+  require_play_service_account:
+    description: Require PLAY_SERVICE_ACCOUNT_JSON_BASE64
+    required: false
+    default: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        DOPPLER_PROJECT: ${{ inputs.doppler_project }}
+        DOPPLER_CONFIG: ${{ inputs.doppler_config }}
+        REQUIRE_PLAY_SERVICE_ACCOUNT: ${{ inputs.require_play_service_account }}
+      run: |
+        set -euo pipefail
+        [ -n "${DOPPLER_TOKEN:-}" ] || { echo "::error::Missing DOPPLER_TOKEN"; exit 1; }
+
+        load_from_doppler() {
+          local key="$1"
+          local val
+          val="$(doppler secrets get "$key" --plain --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" 2>/dev/null || true)"
+          if [ -n "$val" ]; then
+            echo "::add-mask::$val"
+            printf -v "$key" '%s' "$val"
+            export "$key"
+            printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+          fi
+        }
+
+        load_from_doppler KEYSTORE_BASE64
+        load_from_doppler KEYSTORE_PASSWORD
+        load_from_doppler KEY_ALIAS
+        load_from_doppler KEY_PASSWORD
+        load_from_doppler PUSH_REGISTRATION_URL
+        load_from_doppler PURCHASE_VERIFICATION_URL
+        load_from_doppler PLAY_SERVICE_ACCOUNT_JSON_BASE64
+
+        PLAY_SERVICE_ACCOUNT_JSON_BASE64="$(printf '%s' "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" | tr -d '\r\n\t ')"
+        if [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ]; then
+          echo "::add-mask::$PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          printf 'PLAY_SERVICE_ACCOUNT_JSON_BASE64=%s\n' "$PLAY_SERVICE_ACCOUNT_JSON_BASE64" >> "$GITHUB_ENV"
+        fi
+
+        for required_key in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD PUSH_REGISTRATION_URL PURCHASE_VERIFICATION_URL; do
+          [ -n "${!required_key:-}" ] || { echo "::error::Missing Doppler secret: ${required_key}"; exit 1; }
+        done
+
+        if [ "$REQUIRE_PLAY_SERVICE_ACCOUNT" = "true" ]; then
+          [ -n "${PLAY_SERVICE_ACCOUNT_JSON_BASE64:-}" ] || { echo "::error::Missing Doppler secret: PLAY_SERVICE_ACCOUNT_JSON_BASE64"; exit 1; }
+          if [ "${#PLAY_SERVICE_ACCOUNT_JSON_BASE64}" -lt 500 ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON_BASE64 is too short to be valid (len=${#PLAY_SERVICE_ACCOUNT_JSON_BASE64})"
+            exit 1
+          fi
+        fi

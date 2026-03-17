@@ -37,6 +37,15 @@ class FirestorePushRegistrationSender @Inject constructor(
                 "deviceModel" to payload.deviceModel,
                 "reason" to payload.reason,
                 "syncedAtEpochMs" to payload.syncedAtEpochMs,
+                "tokenHash" to payload.tokenHash,
+                "hasToken" to payload.hasToken,
+                "lastRegistrationAttemptAt" to payload.lastAttemptAtEpochMs,
+                "lastRegistrationSuccessAt" to payload.lastSuccessAtEpochMs,
+                "lastRegistrationFailureReason" to payload.lastFailureReason,
+                "adRuntimeWindowStartAt" to payload.adRuntimeWindowStartAtEpochMs,
+                "adRuntimeLastUpdatedAt" to payload.adRuntimeLastUpdatedAtEpochMs,
+                "adRuntimeFunnelCounts" to payload.adRuntimeFunnelCounts,
+                "adRuntimeSuppressReasonCounts" to payload.adRuntimeSuppressReasonCounts,
                 "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
             )
 
