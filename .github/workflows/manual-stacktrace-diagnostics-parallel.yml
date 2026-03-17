@@ -106,11 +106,17 @@ jobs:
         with:
           flavors: ${{ needs.resolve-flavors.outputs.resolved_flavors_csv }}
 
-      - name: Upload firebase config artifact
+      - name: Create firebase config archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf firebase-config-artifact.tar.gz app/src/*/google-services.json
+
+      - name: Upload firebase config archive
         uses: actions/upload-artifact@v6
         with:
           name: manual-diagnostics-firebase-config-${{ github.run_id }}
-          path: app/src/*/google-services.json
+          path: firebase-config-artifact.tar.gz
           if-no-files-found: error
           retention-days: 1
 
@@ -131,6 +137,12 @@ jobs:
         with:
           name: manual-diagnostics-firebase-config-${{ github.run_id }}
           path: .
+
+      - name: Extract firebase config artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf firebase-config-artifact.tar.gz
 
       - uses: actions/setup-java@v5
         with:
@@ -191,6 +203,12 @@ jobs:
         with:
           name: manual-diagnostics-firebase-config-${{ github.run_id }}
           path: .
+
+      - name: Extract firebase config artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf firebase-config-artifact.tar.gz
 
       - uses: actions/setup-java@v5
         with:
@@ -253,6 +271,12 @@ jobs:
           name: manual-diagnostics-firebase-config-${{ github.run_id }}
           path: .
 
+      - name: Extract firebase config artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf firebase-config-artifact.tar.gz
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -314,6 +338,12 @@ jobs:
         with:
           name: manual-diagnostics-firebase-config-${{ github.run_id }}
           path: .
+
+      - name: Extract firebase config artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf firebase-config-artifact.tar.gz
 
       - uses: actions/setup-java@v5
         with:
