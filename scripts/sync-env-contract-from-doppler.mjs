@@ -46,6 +46,19 @@ const adminEnvKeys = [
   "VITE_ADMIN_ALLOWED_EMAILS",
 ];
 
+const ignoredCanonicalKeys = new Set([
+  "UNITY_ADS_LEVELPLAY_SERVICE_ACCOUNT_API_KEY_ID",
+  "UNITY_ADS_LEVELPLAY_SERVICE_ACCOUNT_API_KEY_SECRET_KEY",
+  "UNITY_ADS_MONETIZATION_STATS_API_KEY",
+  "UNITY_ADS_ORGANIZATION_ID",
+  "UNITY_IRONSRC_ACCESS_KEY",
+  "UNITY_IRONSRC_ADVERTISER_ID",
+  "UNITY_IRONSRC_ADVERTISER_PASSWORD",
+  "UNITY_IRONSRC_PUBLISHER_ID",
+  "UNITY_IRONSRC_REFRESH_TOKEN",
+  "UNITY_IRONSRC_SECRET_KEY",
+]);
+
 const templateDefaults = new Map([
   ["DOPPLER_PROJECT", "android-multi-app-framework"],
   ["DOPPLER_CONFIG", "prod"],
@@ -168,7 +181,9 @@ function main() {
   const currentAdminExampleMap = parseEnvFile(adminEnvExamplePath);
   const templateMap = parseEnvFile(templatePath);
 
-  const canonicalSecretKeys = toSortedList(dopplerMap.keys());
+  const canonicalSecretKeys = toSortedList(
+    [...dopplerMap.keys()].filter((key) => !ignoredCanonicalKeys.has(key)),
+  );
   const rootOut = new Map();
 
   for (const key of canonicalSecretKeys) {
