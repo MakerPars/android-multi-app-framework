@@ -191,7 +191,7 @@ export default function RevenuePanel({ user }: RevenuePanelProps) {
               <div className="flavor-card-header">
                 <div>
                   <strong>AdMob</strong>
-                  <div className="muted">Global mediation and app revenue dashboard</div>
+                  <div className="muted">Global AdMob and app revenue dashboard</div>
                 </div>
               </div>
               <div className="flavor-links">

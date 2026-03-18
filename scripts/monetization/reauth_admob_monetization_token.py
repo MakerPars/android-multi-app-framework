@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Re-authorize an AdMob OAuth token with mediation-management scope.
+Re-authorize an AdMob OAuth token with monetization scope.
 
 This script is intentionally separate from the reporting helpers because
-mediation inventory/mapping APIs need an additional scope:
+some AdMob monetization APIs need an additional scope:
 
 - https://www.googleapis.com/auth/admob.monetization
 

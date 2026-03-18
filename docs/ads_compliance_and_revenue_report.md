@@ -114,9 +114,9 @@ Primary outcomes:
 - Publish `app-ads.txt` on your verified domain.
 - Confirm AdMob shows “Authorized” / verified status.
 
-### Mediation
-- This patch remains **AdMob-only compatible**.
-- Mediation is optional and not required for this compliance patch.
+### Ad Network Scope
+- This patch is **AdMob-only**.
+- No third-party mediation adapter is required for this setup.
 
 ## Manual Checklist (Google Play Console)
 - Data safety form matches current ad usage (ads + identifiers + consent behavior).

@@ -4,7 +4,6 @@
 - Advertising SDK:
   - Google Mobile Ads SDK
   - User Messaging Platform
-  - mediation adapters, including Unity Ads mediation
 - Analytics:
   - Firebase Analytics custom ad and consent events
 - Identifiers:
@@ -24,6 +23,6 @@
   - premium / ad-free behavior
 
 ## OPS-CRITICAL Notes
-- If a new mediation SDK or privacy SDK is added, re-run the Data Safety review.
+- If a new ad SDK or privacy SDK is added, re-run the Data Safety review.
 - If child-directed or TFUA behavior changes, review store disclosures again.
 - If server-side rewarded verification is introduced later, update disclosures for the new backend data flow.

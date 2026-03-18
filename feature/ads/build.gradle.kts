@@ -51,8 +51,6 @@ dependencies {
     implementation(project(":core:datastore"))
 
     implementation(libs.play.services.ads)
-    implementation(libs.ads.mediation.unity)
-    implementation(libs.unity.ads.sdk)
     implementation(libs.play.services.appset)
     implementation(libs.user.messaging.platform)
     implementation(libs.kotlinx.coroutines.play.services)

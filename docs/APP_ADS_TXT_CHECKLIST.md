@@ -7,12 +7,10 @@ The app-ads.txt chain is operational, not code-only. Treat a broken setup as a r
 - The public domain serving `app-ads.txt` is live and reachable.
 - The Play Store listing domain matches the hosted `app-ads.txt` domain.
 - The seller entry for AdMob is present and correct.
-- Mediation seller entries are present for all active mediated networks.
-- Unity mediation seller information is verified after any Unity account change.
 
 ## Verification Steps
 1. Open the hosted `app-ads.txt` URL directly.
-2. Validate the file contents against the current AdMob and mediation accounts.
+2. Validate the file contents against the current AdMob account and current seller list.
 3. Confirm Play Console lists the same domain.
 4. Re-check after DNS, hosting, or seller changes.
 
