@@ -1,0 +1,12 @@
+<resources>
+    <!-- Pin Turkish copy explicitly to avoid bad auto-generated tr overrides in Play-delivered builds. -->
+    <string name="settings_share_app">Bu uygulamayı paylaş</string>
+    <string name="settings_share_app_desc">Uygulamayı sistem paylaşım menüsü ile paylaşın</string>
+    <string name="settings_share_app_button">Uygulamayı paylaş</string>
+    <string name="settings_share_app_message">Bu uygulamayı dene: %1$s</string>
+    <string name="settings_update_debug_title">Güncelleme Hata Ayıklama (Remote Config)</string>
+    <string name="settings_update_debug_simulate_soft">Yumuşak Simüle Et</string>
+    <string name="settings_update_debug_simulate_hard">Zorlu Simüle Et</string>
+    <string name="settings_update_debug_clear_simulation">Simülasyonu Temizle</string>
+    <string name="settings_update_debug_reset_soft_session">Yumuşak İstemi Sıfırla</string>
+</resources>

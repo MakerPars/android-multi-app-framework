@@ -1,0 +1,10 @@
+<resources>
+    <!-- Pin Turkish copy explicitly to override incorrect generated tr resources in release bundles. -->
+    <string name="nav_premium">Abonelik</string>
+    <string name="subscription_title">Abonelik</string>
+    <string name="subscription_description">Reklamsız deneyim için bir plan seçin.</string>
+    <string name="subscription_coming_soon">Yakında aktif olacak</string>
+    <string name="billing_unavailable">Satın alma hizmeti kullanılamıyor</string>
+    <string name="rewards_title">Ödüllü Reklam</string>
+    <string name="rewards_description">Reklam izleyerek geçici olarak reklamsız kullanım kazanın.</string>
+</resources>
