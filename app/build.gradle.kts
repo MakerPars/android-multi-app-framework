@@ -240,6 +240,13 @@ android {
     namespace = "com.parsfilo.contentapp"
     compileSdk = 36
 
+    bundle {
+        language {
+            // Avoid Play-generated locale split anomalies by shipping app strings in the base APK.
+            enableSplit = false
+        }
+    }
+
     flavorDimensions += "app"
 
     productFlavors {
