@@ -221,7 +221,7 @@ jobs:
           done
 
           echo "Running: ${TASKS[*]}"
-          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
+          ./gradlew clean "${TASKS[@]}" --stacktrace --no-daemon --max-workers=2
 
       - name: Upload AAB Artifacts
         uses: actions/upload-artifact@v6
@@ -378,7 +378,7 @@ jobs:
           while true; do
             log_file="$(mktemp)"
             set +e
-            ./gradlew "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
+            ./gradlew clean "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
             status=${PIPESTATUS[0]}
             set -e
             if [ "$status" -eq 0 ]; then

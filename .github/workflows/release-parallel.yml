@@ -175,7 +175,7 @@ jobs:
         run: |
           set -euo pipefail
           cap="$(tr '[:lower:]' '[:upper:]' <<< "${FLAVOR:0:1}")${FLAVOR:1}"
-          bash ./gradlew "bundle${cap}Release" --stacktrace --no-daemon --max-workers=2
+          bash ./gradlew clean "bundle${cap}Release" --stacktrace --no-daemon --max-workers=2
 
       - name: Publish flavor to Play Console
         run: |
@@ -197,7 +197,7 @@ jobs:
           while true; do
             log_file="$(mktemp)"
             set +e
-            bash ./gradlew "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
+            bash ./gradlew clean "${TASKS[@]}" -PPLAY_TRACK=${{ github.event.inputs.publish_track }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$log_file"
             status=${PIPESTATUS[0]}
             set -e
             if [ "$status" -eq 0 ]; then
