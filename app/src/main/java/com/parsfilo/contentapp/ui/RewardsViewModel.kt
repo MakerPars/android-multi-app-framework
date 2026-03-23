@@ -9,9 +9,9 @@ import com.parsfilo.contentapp.core.firebase.AnalyticsParamKey
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.model.SubscriptionState
 import com.parsfilo.contentapp.feature.ads.AdGateChecker
-import com.parsfilo.contentapp.feature.ads.RewardedAdManager
 import com.parsfilo.contentapp.feature.billing.BillingManager
 import com.parsfilo.contentapp.feature.billing.model.BillingProduct
+import com.parsfilo.contentapp.monetization.AdOrchestrator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
@@ -33,8 +33,7 @@ import javax.inject.Inject
 class RewardsViewModel
     @Inject
     constructor(
-        private val rewardedAdManager: RewardedAdManager,
-        private val adGateChecker: AdGateChecker,
+        private val adOrchestrator: AdOrchestrator,
         private val billingManager: BillingManager,
         private val preferencesDataSource: PreferencesDataSource,
         private val appAnalytics: AppAnalytics,
@@ -99,142 +98,125 @@ class RewardsViewModel
             }
         }
 
-        fun watchRewardedAd(
-            activity: Activity,
-            adUnitId: String,
-        ) {
+        fun watchRewardedAd(activity: Activity) {
             logDebug(
                 "Rewarded funnel: watch tapped adReadyNow=%s",
-                rewardedAdManager.isAdReadyNow(),
+                adOrchestrator.rewardedAdIsReadyNow(),
             )
-            if (rewardedAdManager.isAdReadyNow()) {
+            if (adOrchestrator.rewardedAdIsReadyNow()) {
                 _isAdLoading.value = false
                 logDebug("Rewarded funnel: showing immediately")
-                showRewardedAd(activity, adUnitId)
+                showRewardedAd(activity)
                 return
             }
 
             _isAdLoading.value = true
-            logDebug("Rewarded funnel: load requested from watch action")
-            rewardedAdManager.loadAd(adUnitId)
+            logDebug("Rewarded funnel: waiting for preloaded ad")
             viewModelScope.launch {
                 val adReady =
                     withTimeoutOrNull(10_000L) {
-                        rewardedAdManager.isAdReady
+                        adOrchestrator.rewardedAdIsReady
                             .filter { it }
                             .first()
                     } != null
                 _isAdLoading.value = false
 
                 if (adReady) {
-                    logDebug("Rewarded funnel: load completed within timeout, showing ad")
-                    showRewardedAd(activity, adUnitId)
+                    logDebug("Rewarded funnel: ad ready within timeout, showing")
+                    showRewardedAd(activity)
                 } else {
-                    // İlk yükleme başarısızsa sonraki deneme için tekrar tetikleyelim.
-                    logWarn("Rewarded funnel: load timeout after 10s, queueing retry preload")
-                    rewardedAdManager.loadAd(adUnitId)
+                    logWarn("Rewarded funnel: ad not ready after 10s wait")
                 }
             }
         }
 
-        fun showRewardedAd(
-            activity: Activity,
-            adUnitId: String,
-        ) {
+        private fun showRewardedAd(activity: Activity) {
             data class RewardOutcome(
                 val rewardMinutesEarned: Int,
                 val totalWatchCount: Int,
             )
             val watchStartedAtMs = System.currentTimeMillis()
             val rewardOutcomeDeferred = CompletableDeferred<RewardOutcome?>()
-            logDebug("Rewarded funnel: showAd invoked")
-            rewardedAdManager.showAd(
-                activity = activity,
-                onUserEarnedReward = {
-                    viewModelScope.launch {
-                        val currentPrefs = preferencesDataSource.userData.first()
-                        val rewardMinutesEarned =
-                            AdGateChecker.calculateRewardMinutes(
-                                currentPrefs.rewardWatchCount + 1,
-                            )
-                        adGateChecker.onRewardEarned()
-                        val latestPrefs = preferencesDataSource.userData.first()
-                        if (!rewardOutcomeDeferred.isCompleted) {
-                            logDebug(
-                                "Rewarded funnel: reward earned minutes=%d watchCount=%d",
-                                rewardMinutesEarned,
-                                latestPrefs.rewardWatchCount,
-                            )
-                            rewardOutcomeDeferred.complete(
-                                RewardOutcome(
-                                    rewardMinutesEarned = rewardMinutesEarned,
-                                    totalWatchCount = latestPrefs.rewardWatchCount,
-                                ),
-                            )
-                        }
-                    }
-                },
-                onAdDismissed = {
-                    val watchDurationSeconds =
-                        ((System.currentTimeMillis() - watchStartedAtMs).coerceAtLeast(0L) / 1000L)
-                    viewModelScope.launch {
-                        val rewardOutcome =
-                            withTimeoutOrNull(1500L) {
-                                rewardOutcomeDeferred.await()
+            logDebug("Rewarded funnel: showRewardedIfEligible invoked")
+            viewModelScope.launch {
+                adOrchestrator.showRewardedIfEligible(
+                    activity = activity,
+                    onUserEarnedReward = {
+                        viewModelScope.launch {
+                            val currentPrefs = preferencesDataSource.userData.first()
+                            val rewardMinutesEarned =
+                                AdGateChecker.calculateRewardMinutes(
+                                    currentPrefs.rewardWatchCount + 1,
+                                )
+                            // adGateChecker.onRewardEarned() is handled by AdOrchestrator
+                            val latestPrefs = preferencesDataSource.userData.first()
+                            if (!rewardOutcomeDeferred.isCompleted) {
+                                logDebug(
+                                    "Rewarded funnel: reward earned minutes=%d watchCount=%d",
+                                    rewardMinutesEarned,
+                                    latestPrefs.rewardWatchCount,
+                                )
+                                rewardOutcomeDeferred.complete(
+                                    RewardOutcome(
+                                        rewardMinutesEarned = rewardMinutesEarned,
+                                        totalWatchCount = latestPrefs.rewardWatchCount,
+                                    ),
+                                )
                             }
-                        val latestPrefs = preferencesDataSource.userData.first()
-                        if (rewardOutcome != null) {
-                            appAnalytics.logEvent(
-                                AnalyticsEventName.REWARDED_WATCH_COMPLETE,
-                                android.os.Bundle().apply {
-                                    putLong(
-                                        AnalyticsParamKey.WATCH_DURATION_S,
-                                        watchDurationSeconds,
-                                    )
-                                    putLong(
-                                        AnalyticsParamKey.REWARD_MINUTES_EARNED,
-                                        rewardOutcome.rewardMinutesEarned.toLong(),
-                                    )
-                                    putLong(
-                                        AnalyticsParamKey.TOTAL_WATCH_COUNT,
-                                        rewardOutcome.totalWatchCount.toLong(),
-                                    )
-                                },
-                            )
-                        } else {
-                            appAnalytics.logEvent(
-                                AnalyticsEventName.REWARDED_WATCH_SKIPPED,
-                                android.os.Bundle().apply {
-                                    putLong(
-                                        AnalyticsParamKey.WATCH_DURATION_S,
-                                        watchDurationSeconds,
-                                    )
-                                    putLong(
-                                        AnalyticsParamKey.TOTAL_WATCH_COUNT,
-                                        latestPrefs.rewardWatchCount.toLong(),
-                                    )
-                                },
-                            )
                         }
-                        val rewardWindowActive =
-                            latestPrefs.rewardedAdFreeUntil > System.currentTimeMillis()
-                        logDebug(
-                            "Rewarded funnel: ad dismissed rewarded=%s rewardWindowActive=%s premium=%s",
-                            rewardOutcome != null,
-                            rewardWindowActive,
-                            latestPrefs.isPremium,
-                        )
-                        if (!latestPrefs.isPremium && !rewardWindowActive) {
-                            logDebug("Rewarded funnel: preloading next rewarded ad after dismiss")
-                            rewardedAdManager.loadAd(adUnitId)
+                    },
+                    onAdDismissed = {
+                        val watchDurationSeconds =
+                            ((System.currentTimeMillis() - watchStartedAtMs).coerceAtLeast(0L) / 1000L)
+                        viewModelScope.launch {
+                            val rewardOutcome =
+                                withTimeoutOrNull(1500L) {
+                                    rewardOutcomeDeferred.await()
+                                }
+                            val latestPrefs = preferencesDataSource.userData.first()
+                            if (rewardOutcome != null) {
+                                appAnalytics.logEvent(
+                                    AnalyticsEventName.REWARDED_WATCH_COMPLETE,
+                                    android.os.Bundle().apply {
+                                        putLong(
+                                            AnalyticsParamKey.WATCH_DURATION_S,
+                                            watchDurationSeconds,
+                                        )
+                                        putLong(
+                                            AnalyticsParamKey.REWARD_MINUTES_EARNED,
+                                            rewardOutcome.rewardMinutesEarned.toLong(),
+                                        )
+                                        putLong(
+                                            AnalyticsParamKey.TOTAL_WATCH_COUNT,
+                                            rewardOutcome.totalWatchCount.toLong(),
+                                        )
+                                    },
+                                )
+                            } else {
+                                appAnalytics.logEvent(
+                                    AnalyticsEventName.REWARDED_WATCH_SKIPPED,
+                                    android.os.Bundle().apply {
+                                        putLong(
+                                            AnalyticsParamKey.WATCH_DURATION_S,
+                                            watchDurationSeconds,
+                                        )
+                                        putLong(
+                                            AnalyticsParamKey.TOTAL_WATCH_COUNT,
+                                            latestPrefs.rewardWatchCount.toLong(),
+                                        )
+                                    },
+                                )
+                            }
+                            logDebug(
+                                "Rewarded funnel: ad dismissed rewarded=%s premium=%s",
+                                rewardOutcome != null,
+                                latestPrefs.isPremium,
+                            )
+                            // Post-dismiss reload is handled by AdOrchestrator.showRewardedIfEligible
                         }
-                    }
-                },
-            )
-        }
-
-        fun loadRewardedAd(adUnitId: String) {
-            rewardedAdManager.loadAd(adUnitId)
+                    },
+                )
+            }
         }
 
         fun launchBillingFlow(

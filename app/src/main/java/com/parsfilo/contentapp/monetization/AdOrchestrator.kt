@@ -141,6 +141,11 @@ class AdOrchestrator
 
         fun isAppOpenAdShowing(): Boolean = appOpenAdManager.isShowingAdNow()
 
+        val rewardedAdIsReady: kotlinx.coroutines.flow.StateFlow<Boolean>
+            get() = rewardedAdManager.isAdReady
+
+        fun rewardedAdIsReadyNow(): Boolean = rewardedAdManager.isAdReadyNow()
+
         fun updateSessionContext(
             activeRoute: String? = null,
             contentType: String? = null,

@@ -44,7 +44,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -52,14 +51,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.parsfilo.contentapp.BuildConfig
 import com.parsfilo.contentapp.R
 import com.parsfilo.contentapp.core.designsystem.component.AppButton
 import com.parsfilo.contentapp.core.designsystem.component.AppCard
 import com.parsfilo.contentapp.core.designsystem.component.AppTopBar
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.core.model.SubscriptionState
-import com.parsfilo.contentapp.monetization.AppAdUnitIds
 
 @Composable
 fun RewardsRoute(
@@ -70,11 +67,6 @@ fun RewardsRoute(
     val remainingSeconds by viewModel.remainingSeconds.collectAsStateWithLifecycle()
     val isAdLoading by viewModel.isAdLoading.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val context = LocalContext.current
-    val adUnitIds =
-        remember(context, BuildConfig.USE_TEST_ADS) {
-            AppAdUnitIds.resolve(context, BuildConfig.USE_TEST_ADS)
-        }
 
     RewardsScreen(
         uiState = uiState,
@@ -82,9 +74,7 @@ fun RewardsRoute(
         isAdLoading = isAdLoading,
         onBackClick = onBackClick,
         onWatchAd = {
-            activity?.let {
-                viewModel.watchRewardedAd(it, adUnitIds.rewarded)
-            }
+            activity?.let { viewModel.watchRewardedAd(it) }
         },
     )
 }
