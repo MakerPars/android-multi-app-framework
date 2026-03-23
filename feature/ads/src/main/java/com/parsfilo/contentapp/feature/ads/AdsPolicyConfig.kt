@@ -8,6 +8,7 @@ data class AdsPolicyConfig(
     val appOpenResumeGapMs: Long,
     val appOpenMaxPerSession: Int,
     val interstitialMaxPerSession: Int,
+    val rewardedMaxPerSession: Int,
     val rewardedInterstitialMinIntervalMs: Long,
     val rewardedInterstitialMaxPerSession: Int,
     val rewardedInterstitialIntroRequired: Boolean,

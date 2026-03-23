@@ -56,6 +56,13 @@ class AdsPolicyProvider @Inject constructor(
             max = 60 * 60 * 1000L,
             fallback = DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
         )
+        val rewardedMaxPerSession = sanitizeInt(
+            (remoteConfigManager.getLongOrNull(KEY_REWARDED_MAX_PER_SESSION)
+                ?: DEFAULT_REWARDED_MAX_PER_SESSION.toLong()).toInt(),
+            min = 0,
+            max = 20,
+            fallback = DEFAULT_REWARDED_MAX_PER_SESSION,
+        )
         val rewardedInterstitialMinIntervalMs = sanitizeLong(
             remoteConfigManager.getLongOrNull(KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS)
                 ?: DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
@@ -143,6 +150,7 @@ class AdsPolicyProvider @Inject constructor(
         )
 
         return AdsPolicyConfig(
+            rewardedMaxPerSession = rewardedMaxPerSession,
             interstitialFrequencyCapMs = interstitialFrequencyCapMs,
             interstitialRelaxedFrequencyCapMs = interstitialRelaxedFrequencyCapMs,
             interstitialRelaxedPackages = interstitialRelaxedPackages,
@@ -239,6 +247,7 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_APP_OPEN_RESUME_GAP_MS = "ads_app_open_resume_gap_ms"
         const val KEY_APP_OPEN_MAX_PER_SESSION = "ads_app_open_max_per_session"
         const val KEY_INTERSTITIAL_MAX_PER_SESSION = "ads_interstitial_max_per_session"
+        const val KEY_REWARDED_MAX_PER_SESSION = "ads_rewarded_max_per_session"
         const val KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS =
             "ads_rewarded_interstitial_min_interval_ms"
         const val KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION =
@@ -270,6 +279,7 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_APP_OPEN_RESUME_GAP_MS = 15_000L
         const val DEFAULT_APP_OPEN_MAX_PER_SESSION = 2
         const val DEFAULT_INTERSTITIAL_MAX_PER_SESSION = 5
+        const val DEFAULT_REWARDED_MAX_PER_SESSION = 10
         const val DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS = 900_000L
         const val DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION = 2
         const val DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED = true
@@ -295,6 +305,7 @@ class AdsPolicyProvider @Inject constructor(
             KEY_APP_OPEN_MAX_PER_SESSION to DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong(),
             KEY_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_INTERSTITIAL_MAX_PER_SESSION.toLong(),
             KEY_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS to DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
+            KEY_REWARDED_MAX_PER_SESSION to DEFAULT_REWARDED_MAX_PER_SESSION.toLong(),
             KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION to DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong(),
             KEY_REWARDED_INTERSTITIAL_INTRO_REQUIRED to DEFAULT_REWARDED_INTERSTITIAL_INTRO_REQUIRED,
             KEY_NATIVE_POOL_MAX to DEFAULT_NATIVE_POOL_MAX.toLong(),

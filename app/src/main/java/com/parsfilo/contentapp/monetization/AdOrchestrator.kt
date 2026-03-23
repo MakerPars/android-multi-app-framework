@@ -67,6 +67,7 @@ class AdOrchestrator
         private val adsConfigValidator: AdsConfigValidator,
     ) {
         private val orchestratorScope = CoroutineScope(SupervisorJob() + Main.immediate)
+        private var rewardedShownThisSession: Int = 0
         private var rewardedInterstitialShownThisSession: Int = 0
         private var interstitialShownThisSession: Int = 0
 
@@ -446,6 +447,98 @@ class AdOrchestrator
             }
         }
 
+        suspend fun showRewardedIfEligible(
+            activity: Activity,
+            placement: AdPlacement = AdPlacement.REWARDED_REWARDS_SCREEN,
+            route: String? = null,
+            onUserEarnedReward: () -> Unit = {},
+            onAdDismissed: () -> Unit = {},
+        ) {
+            val contextRoute = route ?: adSessionContext.activeRoute
+            Timber.d(
+                "Rewarded show requested placement=%s route=%s sessionCount=%d adReady=%s",
+                placement.analyticsValue,
+                contextRoute,
+                rewardedShownThisSession,
+                rewardedAdManager.isAdReadyNow(),
+            )
+            adRevenueLogger.logShowIntent(
+                adFormat = AdFormat.REWARDED,
+                placement = placement,
+                route = contextRoute,
+                trigger = "user_action",
+                adReady = rewardedAdManager.isAdReadyNow(),
+            )
+            val prefs = preferencesDataSource.userData.first()
+            when (
+                val eligibility = placementPolicyEvaluator.evaluateRewarded(
+                    AdRequestContext(
+                        format = AdFormat.REWARDED,
+                        placement = placement,
+                        route = contextRoute,
+                        privacyState = AdsConsentRuntimeState.state.value,
+                        isPremium = prefs.isPremium,
+                        isRewardedAdFree = prefs.rewardedAdFreeUntil > System.currentTimeMillis(),
+                        sessionCount = rewardedShownThisSession,
+                        lastShownAtMs = null,
+                        resumeGapMs = null,
+                        contentInProgress = false,
+                    ),
+                )
+            ) {
+                is AdEligibility.Blocked -> {
+                    Timber.d(
+                        "Rewarded blocked placement=%s route=%s reason=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                        eligibility.reason.analyticsValue,
+                    )
+                    adRevenueLogger.logSuppressed(
+                        adFormat = AdFormat.REWARDED,
+                        placement = placement,
+                        adUnitId = AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
+                        suppressReason = eligibility.reason,
+                        route = contextRoute,
+                    )
+                    adRevenueLogger.logShowBlocked(
+                        adFormat = AdFormat.REWARDED,
+                        placement = placement,
+                        suppressReason = eligibility.reason,
+                        route = contextRoute,
+                        trigger = "user_action",
+                    )
+                    onAdDismissed()
+                    return
+                }
+                AdEligibility.Allowed -> Unit
+            }
+            rewardedAdManager.showAd(
+                activity = activity,
+                onUserEarnedReward = {
+                    orchestratorScope.launch {
+                        rewardedShownThisSession += 1
+                        Timber.d(
+                            "Rewarded reward earned placement=%s route=%s sessionCount=%d",
+                            placement.analyticsValue,
+                            contextRoute,
+                            rewardedShownThisSession,
+                        )
+                        adGateChecker.onRewardEarned()
+                        onUserEarnedReward()
+                    }
+                },
+                onAdDismissed = {
+                    Timber.d("Rewarded dismissed; requesting reload placement=%s", placement.analyticsValue)
+                    rewardedAdManager.loadAd(
+                        AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
+                        placement,
+                        contextRoute,
+                    )
+                    onAdDismissed()
+                },
+            )
+        }
+
         suspend fun showRewardedInterstitialIfEligible(
             activity: Activity,
             launchToken: RewardedInterstitialLaunchToken,
@@ -671,8 +764,13 @@ class AdOrchestrator
                     appOpenWarmupRequested,
                 )
             }
-            Timber.d(
-                "Rewarded startup preload skipped: rewarded loads on-demand from Rewards screen",
+            rewardedAdManager.loadAd(
+                AppAdUnitIds.resolvePlacement(
+                    context,
+                    AdPlacement.REWARDED_REWARDS_SCREEN,
+                    BuildConfig.USE_TEST_ADS,
+                ),
+                AdPlacement.REWARDED_REWARDS_SCREEN,
             )
         }
 

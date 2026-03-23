@@ -104,6 +104,30 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         return allowed("app_open", context)
     }
 
+    fun evaluateRewarded(context: AdRequestContext): AdEligibility {
+        val policy = adsPolicyProvider.getPolicy()
+        if (!policy.isRewardedPlacementEnabled(context.placement)) {
+            return blocked("rewarded", AdSuppressReason.PLACEMENT_DISABLED, context)
+        }
+        if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
+            return blocked(
+                "rewarded",
+                if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
+                    AdSuppressReason.PRIVACY_LIMITED
+                } else {
+                    AdSuppressReason.NO_CONSENT
+                },
+                context,
+            )
+        }
+        if (context.isPremium) return blocked("rewarded", AdSuppressReason.PREMIUM, context)
+        if (context.isRewardedAdFree) return blocked("rewarded", AdSuppressReason.REWARDED_FREE, context)
+        if (context.sessionCount >= policy.rewardedMaxPerSession) {
+            return blocked("rewarded", AdSuppressReason.SESSION_CAP, context)
+        }
+        return allowed("rewarded", context)
+    }
+
     fun evaluateRewardedInterstitial(context: AdRequestContext): AdEligibility {
         val policy = adsPolicyProvider.getPolicy()
         if (!policy.isRewardedInterstitialPlacementEnabled(context.placement)) {
