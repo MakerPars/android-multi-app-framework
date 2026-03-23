@@ -741,7 +741,7 @@ class AdOrchestrator
                     BuildConfig.USE_TEST_ADS,
                 ),
                 AdPlacement.NATIVE_FEED_HOME,
-                1,
+                policy.nativePoolMax,
             )
             rewardedInterstitialAdManager.loadAd(
                 AppAdUnitIds.resolvePlacement(

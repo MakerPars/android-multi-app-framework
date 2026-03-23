@@ -52,7 +52,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
             )
             clearAd()
@@ -63,7 +63,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
             )
             clearAd()
@@ -167,7 +167,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "placement_disabled",
+                suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = currentRoute,
             )
             clearAd()
@@ -179,7 +179,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "no_consent",
+                suppressReason = AdSuppressReason.NO_CONSENT,
                 route = currentRoute,
             )
             clearAd()
@@ -255,7 +255,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = "not_loaded",
+                suppressReason = AdSuppressReason.NOT_LOADED,
                 route = currentRoute,
             )
             onAdDismissed()
