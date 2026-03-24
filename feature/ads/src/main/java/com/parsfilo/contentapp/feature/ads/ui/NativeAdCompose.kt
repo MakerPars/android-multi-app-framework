@@ -11,10 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -50,7 +47,8 @@ fun NativeAdViewCompose(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val nativeAdViewRef = remember { mutableStateOf<NativeAdView?>(null) }
+    val currentContent by rememberUpdatedState(content)
+    val currentNativeAd by rememberUpdatedState(nativeAd)
     AndroidView(
         factory = { context ->
             val composeView = ComposeView(context).apply {
@@ -67,7 +65,6 @@ fun NativeAdViewCompose(
                 clipToPadding = true
                 clipChildren = true
                 addView(composeView)
-                nativeAdViewRef.value = this
             }
         },
         modifier = modifier,
@@ -75,14 +72,14 @@ fun NativeAdViewCompose(
             val composeView = view.getChildAt(0) as? ComposeView
             composeView?.setContent {
                 CompositionLocalProvider(LocalNativeAdView provides view) {
-                    content()
+                    currentContent()
                 }
             }
+            // setNativeAd() triggers requestLayout() internally; posting to next frame
+            // avoids "performMeasureAndLayout called during measure layout" crash.
+            view.post { view.setNativeAd(currentNativeAd) }
         },
     )
-
-    val currentNativeAd by rememberUpdatedState(nativeAd)
-    SideEffect { nativeAdViewRef.value?.setNativeAd(currentNativeAd) }
 }
 
 /** Headline asset sarmalayıcısı */
