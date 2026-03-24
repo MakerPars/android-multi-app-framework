@@ -35,6 +35,7 @@ import javax.inject.Singleton
 object BillingErrorKeys {
     const val CONNECTING = "BILLING_CONNECTING"
     const val RECONNECTING = "BILLING_RECONNECTING"
+    const val UNSUPPORTED = "BILLING_UNSUPPORTED"
 }
 
 @Singleton
@@ -132,6 +133,15 @@ class BillingManager @Inject constructor(
         if (!billingClient.isReady) {
             startConnection()
             _subscriptionState.value = SubscriptionState.Error(BillingErrorKeys.CONNECTING)
+            return
+        }
+
+        // ProxyBillingActivity crashes with NPE on some devices when Play Store returns
+        // a null PendingIntent for subscriptions. Guard upfront so we surface a clean error.
+        val subsSupported = billingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        if (subsSupported.responseCode != BillingClient.BillingResponseCode.OK) {
+            Timber.w("Subscriptions not supported on this device: %s", subsSupported.debugMessage)
+            _subscriptionState.value = SubscriptionState.Error(BillingErrorKeys.UNSUPPORTED)
             return
         }
 

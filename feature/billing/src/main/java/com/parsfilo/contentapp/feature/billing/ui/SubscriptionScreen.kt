@@ -189,6 +189,7 @@ fun SubscriptionScreen(
                 val resolvedMessage = when (uiState.subscriptionState.message) {
                     BillingErrorKeys.CONNECTING -> stringResource(R.string.billing_error_connecting)
                     BillingErrorKeys.RECONNECTING -> stringResource(R.string.billing_error_reconnecting)
+                    BillingErrorKeys.UNSUPPORTED -> stringResource(R.string.billing_error_unsupported)
                     else -> uiState.subscriptionState.message.orEmpty()
                 }
                 Text(
