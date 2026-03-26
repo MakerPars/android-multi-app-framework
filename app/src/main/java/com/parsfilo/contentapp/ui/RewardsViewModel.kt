@@ -122,8 +122,12 @@ class RewardsViewModel
                 _isAdLoading.value = false
 
                 if (adReady) {
-                    logDebug("Rewarded funnel: ad ready within timeout, showing")
-                    showRewardedAd(activity)
+                    if (activity.isFinishing || activity.isDestroyed) {
+                        logWarn("Rewarded funnel: activity invalid after timeout, aborting show")
+                    } else {
+                        logDebug("Rewarded funnel: ad ready within timeout, showing")
+                        showRewardedAd(activity)
+                    }
                 } else {
                     logWarn("Rewarded funnel: ad not ready after 10s wait")
                 }

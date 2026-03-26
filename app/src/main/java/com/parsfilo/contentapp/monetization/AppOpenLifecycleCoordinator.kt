@@ -111,7 +111,12 @@ class AppOpenLifecycleCoordinator
             ProcessLifecycleOwner.get().lifecycleScope.launch {
                 runCatching {
                     delay(350L)
-                    adOrchestrator.showAppOpenAdIfEligible(activity, triggerReason)
+                    val targetActivity = currentActivity
+                    if (targetActivity != null && !targetActivity.isFinishing && !targetActivity.isDestroyed) {
+                        adOrchestrator.showAppOpenAdIfEligible(targetActivity, triggerReason)
+                    } else {
+                        Timber.w("AppOpen aborted in coordinator: Activity changed or invalid")
+                    }
                 }.onFailure { error ->
                     Timber.w(error, "Failed to show app open ad source=%s", source)
                 }

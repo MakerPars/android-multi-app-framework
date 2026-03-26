@@ -405,6 +405,10 @@ class AdOrchestrator
                 resumeSnapshot.isColdStart,
                 resumeSnapshot.sessionCount,
             )
+            if (activity.isFinishing || activity.isDestroyed) {
+                Timber.w("AppOpen show aborted: activity is invalid route=%s", route)
+                return
+            }
             appOpenAdManager.showAdIfAvailable(
                 activity = activity,
                 route = route,
@@ -516,6 +520,11 @@ class AdOrchestrator
                     return
                 }
                 AdEligibility.Allowed -> Unit
+            }
+            if (activity.isFinishing || activity.isDestroyed) {
+                Timber.w("Rewarded show aborted: activity is invalid placement=%s", placement.analyticsValue)
+                onAdDismissed()
+                return
             }
             rewardedAdManager.showAd(
                 activity = activity,
