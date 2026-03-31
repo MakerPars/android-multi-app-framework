@@ -83,6 +83,28 @@ fun AppAnalytics.logPrivacyOptionsOpened(required: Boolean) {
     )
 }
 
+fun AppAnalytics.logConsentDebugResult(
+    packageName: String,
+    result: String,
+    requestGeography: String,
+    canRequestAds: Boolean,
+    privacyOptionsRequired: Boolean,
+) {
+    logEvent(
+        AnalyticsEventName.CONSENT_DEBUG_RESULT,
+        Bundle().apply {
+            putString(AnalyticsParamKey.PACKAGE_NAME, packageName)
+            putString(AnalyticsParamKey.UMP_RESULT, result)
+            putString(AnalyticsParamKey.REQUEST_GEO, requestGeography)
+            putLong(AnalyticsParamKey.CAN_REQUEST_ADS, if (canRequestAds) 1L else 0L)
+            putLong(
+                AnalyticsParamKey.PRIVACY_OPTIONS_REQUIRED,
+                if (privacyOptionsRequired) 1L else 0L,
+            )
+        },
+    )
+}
+
 fun AppAnalytics.logAgeGateCompleted(result: String) {
     setUserProperty(AnalyticsUserPropertyKey.AGE_GATE_STATUS, result)
     logEvent(

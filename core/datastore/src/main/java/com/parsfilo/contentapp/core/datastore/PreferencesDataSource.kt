@@ -453,13 +453,6 @@ data class UserPreferencesData(
     val adRuntimeTelemetry: AdRuntimeTelemetrySnapshot = AdRuntimeTelemetrySnapshot(),
 )
 
-data class AdRuntimeTelemetrySnapshot(
-    val windowStartAt: Long = 0L,
-    val lastUpdatedAt: Long = 0L,
-    val funnelCountsByFormat: Map<String, Map<String, Int>> = emptyMap(),
-    val suppressReasonCounts: Map<String, Int> = emptyMap(),
-)
-
 private fun String.sha256(): String {
     if (isBlank()) return ""
     return MessageDigest.getInstance("SHA-256")

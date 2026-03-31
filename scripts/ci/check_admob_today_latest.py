@@ -106,6 +106,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fail if an AdMob app label cannot be mapped to catalog or has no latest version mapping.",
     )
+    parser.add_argument(
+        "--ignore-app-label",
+        action="append",
+        default=[],
+        help=(
+            "AdMob app label to ignore during latest-only filtering. "
+            "Can be repeated for multiple labels."
+        ),
+    )
+    parser.add_argument(
+        "--runtime-health-json",
+        default="TEMP_OUT/admin_health_report.json",
+        help=(
+            "Optional runtime/admin health JSON path. When present, package-level recent sync, stale, "
+            "and suppress-reason signals are merged into the latest-only report."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -228,6 +245,33 @@ def parse_play_version_codes(path: Path) -> dict[str, int]:
     return out
 
 
+def parse_runtime_health(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    runtime_health = payload.get("runtimeHealthByPackage")
+    if not isinstance(runtime_health, list):
+        return {}
+
+    out: dict[str, dict[str, Any]] = {}
+    for item in runtime_health:
+        if not isinstance(item, dict):
+            continue
+        package_name = str(item.get("packageName") or item.get("package") or "").strip()
+        if not package_name:
+            continue
+        out[package_name] = {
+            "status": item.get("status"),
+            "recentSync24h": item.get("recentSync24h") or item.get("recent_sync_24h"),
+            "recentSyncPct": item.get("recentSyncPct") or item.get("recent_sync_pct"),
+            "stale7d": item.get("stale7d") or item.get("stale_7d"),
+            "stalePct": item.get("stalePct") or item.get("stale_pct"),
+            "topSuppressReason": item.get("topSuppressReason") or item.get("top_suppress_reason"),
+            "topSuppressCount": item.get("topSuppressCount") or item.get("top_suppress_count"),
+        }
+    return out
+
+
 def build_latest_map(
     apps: list[dict[str, str]],
     versions: dict[str, str],
@@ -291,10 +335,13 @@ def main() -> None:
 
     versions = parse_versions(Path(args.versions_file))
     play_version_codes = parse_play_version_codes(Path(args.play_version_codes_json))
+    runtime_health_by_package = parse_runtime_health(Path(args.runtime_health_json))
     apps = parse_apps_catalog(Path(args.apps_catalog))
     latest_map = build_latest_map(apps, versions, play_version_codes)
     if not latest_map:
         raise SystemExit("Latest app version map is empty (apps catalog / versions mismatch).")
+    ignored_labels = {label.strip() for label in args.ignore_app_label if str(label).strip()}
+    ignored_apps: dict[str, int] = {}
 
     report_body = {
         "reportSpec": {
@@ -356,6 +403,9 @@ def main() -> None:
             or app_dim.get("value")
             or "unknown"
         )
+        if str(app_label) in ignored_labels:
+            ignored_apps[str(app_label)] = ignored_apps.get(str(app_label), 0) + int_metric(metrics, "AD_REQUESTS")
+            continue
         app_key = normalize_label(str(app_label))
         app_meta = latest_map.get(app_key)
         if not app_meta:
@@ -417,6 +467,10 @@ def main() -> None:
                 "app": item["app"],
                 "package": item["package"],
                 "latest_version": item["latest_version"],
+                "configured_version": versions.get(item["flavor"], ""),
+                "play_live_version": (
+                    f"1.0.{play_version_codes[item['flavor']]}" if item["flavor"] in play_version_codes else ""
+                ),
                 "ad_requests": req,
                 "impressions": int(item["impressions"]),
                 "clicks": int(item["clicks"]),
@@ -425,6 +479,11 @@ def main() -> None:
                 "show_rate": round(weighted_show, 6),
             }
         )
+
+    for app in apps_out:
+        runtime_health = runtime_health_by_package.get(app["package"], {})
+        if runtime_health:
+            app["runtime_health"] = runtime_health
 
     apps_out.sort(key=lambda x: x["estimated_earnings"], reverse=True)
 
@@ -461,8 +520,10 @@ def main() -> None:
             "latest_rows_included": latest_rows,
             "legacy_rows_excluded": legacy_rows,
             "unmapped_apps": unmapped_apps,
+            "ignored_apps": ignored_apps,
             "apps_with_latest_mapping": len(latest_map),
         },
+        "runtime_health_available": bool(runtime_health_by_package),
         "totals_from_latest_rows": {
             "ad_requests": total_requests,
             "impressions": total_impressions,
@@ -472,6 +533,11 @@ def main() -> None:
             "weighted_show_rate": round(weighted_show, 6),
         },
         "top_apps": apps_out[: max(0, args.top)],
+        "rollout_watch": {
+            app["flavor"]: app
+            for app in apps_out
+            if app["flavor"] in {"amenerrasulu"}
+        },
         "low_performing_apps": low_performing,
         "zero_impressions_apps": zero_impressions,
         "all_apps_count": len(apps_out),
@@ -484,7 +550,15 @@ def main() -> None:
     print(f"account={account_name}")
     print(f"range={now.date()}..{now.date()} (today-to-now)")
     print("latest_only=true")
-    print(f"included_rows={latest_rows} excluded_legacy_rows={legacy_rows} unmapped_apps={len(unmapped_apps)}")
+    print(
+        "included_rows={} excluded_legacy_rows={} unmapped_apps={} ignored_apps={} runtime_health_available={}".format(
+            latest_rows,
+            legacy_rows,
+            len(unmapped_apps),
+            len(ignored_apps),
+            bool(runtime_health_by_package),
+        )
+    )
     print("totals_from_latest_rows:", json.dumps(result["totals_from_latest_rows"], ensure_ascii=False))
     print(
         f"top_apps={len(result['top_apps'])} "

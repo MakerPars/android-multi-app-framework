@@ -81,6 +81,7 @@ import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.ads.AdAgeGateStatus
 import com.parsfilo.contentapp.feature.ads.AdManager
 import com.parsfilo.contentapp.feature.ads.UmpDebugGeography
+import com.parsfilo.contentapp.feature.ads.UmpConsentDebugResult
 import com.parsfilo.contentapp.feature.settings.R
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -196,13 +197,15 @@ fun SettingsScreen(
         stringResource(R.string.settings_privacy_options_unavailable)
     val privacyOptionsErrorText = stringResource(R.string.settings_privacy_options_error)
     val privacyOptionsSavedText = stringResource(R.string.settings_privacy_options_saved)
-    val privacyOptionsNotRequiredNowText =
-        stringResource(R.string.settings_privacy_options_not_required_now)
     val adInspectorOpenedText = stringResource(R.string.settings_ads_debug_ad_inspector_opened)
     val adInspectorErrorText = stringResource(R.string.settings_ads_debug_ad_inspector_error)
     val consentResetText = stringResource(R.string.settings_ads_debug_consent_reset)
     val consentFormShownText = stringResource(R.string.settings_ads_debug_consent_form_done)
     val consentFormErrorText = stringResource(R.string.settings_ads_debug_consent_form_error)
+    val consentFormNotRequiredText =
+        stringResource(R.string.settings_ads_debug_consent_form_not_required)
+    val consentFormActuallyShownText =
+        stringResource(R.string.settings_ads_debug_consent_form_shown)
     val adsConfigUpdatedText = stringResource(R.string.settings_ads_debug_ads_config_updated)
     val debugGeoSetResetHintText = stringResource(R.string.settings_ads_debug_geo_set_reset_hint)
     val updateDebugFetchText = stringResource(R.string.settings_update_debug_fetch_now)
@@ -397,6 +400,8 @@ fun SettingsScreen(
                     val canShowDeveloperTools = isDebugBuild || preferences.developerModeEnabled
                     val debugGeography by adManager.debugGeography.collectAsStateWithLifecycle()
                     val lastRequestDebugGeography by adManager.lastRequestDebugGeography.collectAsStateWithLifecycle()
+                    val canRequestAds by adManager.canRequestAds.collectAsStateWithLifecycle()
+                    val lastConsentDebugResult by adManager.lastConsentDebugResult.collectAsStateWithLifecycle()
                     var debugFcmToken by remember(preferences.lastPushToken) {
                         mutableStateOf(preferences.lastPushToken)
                     }
@@ -488,57 +493,49 @@ fun SettingsScreen(
                             colors = listItemColors,
                         )
 
-                        HorizontalDivider(
-                            color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16),
-                        )
+                        if (isPrivacyOptionsRequired) {
+                            HorizontalDivider(
+                                color = colorScheme.outline.copy(alpha = 0.3f),
+                                modifier = Modifier.padding(horizontal = dimens.space16),
+                            )
 
-                        ListItem(
-                            headlineContent = {
-                                Text(stringResource(R.string.settings_privacy_options))
-                            },
-                            supportingContent = {
-                                Text(
-                                    if (isPrivacyOptionsRequired) {
-                                        stringResource(R.string.settings_privacy_options_desc_required)
-                                    } else {
-                                        stringResource(R.string.settings_privacy_options_desc_optional)
-                                    },
-                                )
-                            },
-                            trailingContent = {
-                                TextButton(
-                                    onClick = {
-                                        if (activity == null) {
-                                            showMessage(privacyOptionsUnavailableText)
-                                            return@TextButton
-                                        }
-                                        if (!isPrivacyOptionsRequired) {
-                                            showMessage(privacyOptionsNotRequiredNowText)
-                                            return@TextButton
-                                        }
-                                        adManager.showPrivacyOptions(activity) { success ->
-                                            if (success) {
-                                                onPrivacyOptionsUpdated()
-                                                showMessage(privacyOptionsSavedText)
-                                            } else {
-                                                showMessage(privacyOptionsErrorText)
+                            ListItem(
+                                headlineContent = {
+                                    Text(stringResource(R.string.settings_privacy_options))
+                                },
+                                supportingContent = {
+                                    Text(stringResource(R.string.settings_privacy_options_desc_required))
+                                },
+                                trailingContent = {
+                                    TextButton(
+                                        onClick = {
+                                            if (activity == null) {
+                                                showMessage(privacyOptionsUnavailableText)
+                                                return@TextButton
                                             }
-                                            isPrivacyOptionsRequired =
-                                                adManager.privacyOptionsRequired.value
-                                        }
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.settings_privacy_options_button))
-                                }
-                            },
-                            colors = listItemColors,
-                        )
+                                            adManager.showPrivacyOptions(activity) { success ->
+                                                if (success) {
+                                                    onPrivacyOptionsUpdated()
+                                                    showMessage(privacyOptionsSavedText)
+                                                } else {
+                                                    showMessage(privacyOptionsErrorText)
+                                                }
+                                                isPrivacyOptionsRequired =
+                                                    adManager.privacyOptionsRequired.value
+                                            }
+                                        },
+                                    ) {
+                                        Text(stringResource(R.string.settings_privacy_options_button))
+                                    }
+                                },
+                                colors = listItemColors,
+                            )
 
-                        HorizontalDivider(
-                            color = colorScheme.outline.copy(alpha = 0.3f),
-                            modifier = Modifier.padding(horizontal = dimens.space16),
-                        )
+                            HorizontalDivider(
+                                color = colorScheme.outline.copy(alpha = 0.3f),
+                                modifier = Modifier.padding(horizontal = dimens.space16),
+                            )
+                        }
 
                         ListItem(
                             headlineContent = {
@@ -855,6 +852,61 @@ fun SettingsScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colorScheme.onSurfaceVariant,
                                     )
+                                    Spacer(modifier = Modifier.height(dimens.space4))
+                                    Text(
+                                        text =
+                                            stringResource(
+                                                R.string.settings_ads_debug_can_request_ads,
+                                                if (canRequestAds) {
+                                                    stringResource(R.string.settings_ads_debug_yes)
+                                                } else {
+                                                    stringResource(R.string.settings_ads_debug_no)
+                                                },
+                                            ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space4))
+                                    Text(
+                                        text =
+                                            stringResource(
+                                                R.string.settings_ads_debug_privacy_options_status,
+                                                if (isPrivacyOptionsRequired) {
+                                                    stringResource(R.string.settings_ads_debug_yes)
+                                                } else {
+                                                    stringResource(R.string.settings_ads_debug_no)
+                                                },
+                                            ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(modifier = Modifier.height(dimens.space4))
+                                    val lastConsentResultText =
+                                        when (val result = lastConsentDebugResult) {
+                                            UmpConsentDebugResult.Idle ->
+                                                stringResource(R.string.settings_ads_debug_last_result_idle)
+
+                                            UmpConsentDebugResult.Shown ->
+                                                stringResource(R.string.settings_ads_debug_last_result_shown)
+
+                                            UmpConsentDebugResult.NotRequired ->
+                                                stringResource(R.string.settings_ads_debug_last_result_not_required)
+
+                                            is UmpConsentDebugResult.Error ->
+                                                stringResource(
+                                                    R.string.settings_ads_debug_last_result_error,
+                                                    result.message,
+                                                )
+                                        }
+                                    Text(
+                                        text =
+                                            stringResource(
+                                                R.string.settings_ads_debug_last_result,
+                                                lastConsentResultText,
+                                            ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
                                     Spacer(modifier = Modifier.height(dimens.space12))
                                     AppButton(
                                         text = stringResource(R.string.settings_ads_debug_open_inspector),
@@ -906,10 +958,22 @@ fun SettingsScreen(
                                         text = stringResource(R.string.settings_ads_debug_show_consent_form),
                                         onClick = {
                                             val hostActivity = activity ?: return@AppButton
-                                            adManager.showConsentFormIfRequired(hostActivity) { success ->
+                                            adManager.showConsentFormIfRequired(hostActivity) { result ->
                                                 onPrivacyOptionsUpdated()
                                                 showMessage(
-                                                    if (success) consentFormShownText else consentFormErrorText,
+                                                    when (result) {
+                                                        UmpConsentDebugResult.Shown ->
+                                                            consentFormActuallyShownText
+
+                                                        UmpConsentDebugResult.NotRequired ->
+                                                            consentFormNotRequiredText
+
+                                                        is UmpConsentDebugResult.Error ->
+                                                            "$consentFormErrorText: ${result.message}"
+
+                                                        UmpConsentDebugResult.Idle ->
+                                                            consentFormShownText
+                                                    },
                                                 )
                                                 isPrivacyOptionsRequired =
                                                     adManager.privacyOptionsRequired.value

@@ -13,6 +13,10 @@
     "ads_interstitial_frequency_cap_ms": "120000",
     "ads_interstitial_relaxed_frequency_cap_ms": "90000",
     "ads_interstitial_relaxed_packages_csv": "",
+    "ads_interstitial_aggressive_preload_packages_csv": "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar",
+    "ads_app_open_aggressive_preload_packages_csv": "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar",
+    "ads_interstitial_hot_routes_csv": "content,prayer_list,prayer_detail,miracles_list,miracles_detail",
+    "ads_interstitial_not_loaded_recovery_enabled": "true",
 
     "ads_rewarded_interstitial_min_interval_ms": "600000",
     "ads_rewarded_interstitial_max_per_session": "3",

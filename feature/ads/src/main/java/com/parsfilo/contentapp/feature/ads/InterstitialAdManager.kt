@@ -43,12 +43,14 @@ class InterstitialAdManager @Inject constructor(
         adUnitId: String,
         placement: AdPlacement = AdPlacement.INTERSTITIAL_DEFAULT,
         route: String? = null,
+        loadReason: String = "unspecified",
     ) {
         Timber.d(
-            "Interstitial load requested placement=%s route=%s adUnit=%s canRequestAds=%s",
+            "Interstitial load requested placement=%s route=%s adUnit=%s reason=%s canRequestAds=%s",
             placement.analyticsValue,
             route,
             adUnitId,
+            loadReason,
             AdsConsentRuntimeState.canRequestAds.value,
         )
         val policy = adsPolicyProvider.getPolicy()
@@ -99,6 +101,13 @@ class InterstitialAdManager @Inject constructor(
         currentLoadContext = loadContext.findActivity() ?: loadContext
         lastLoadStartedAtMillis = now
         isLoading = true
+        adRevenueLogger.logPreloadRequested(
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = placement,
+            adUnitId = adUnitId,
+            route = route,
+            reason = loadReason,
+        )
         adRevenueLogger.logRequest(
             adFormat = AdFormat.INTERSTITIAL,
             placement = placement,
@@ -211,6 +220,7 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
                 trigger = triggerKind.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             clearAd()
             onAdDismissed()
@@ -236,6 +246,7 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = reason,
                 route = route,
                 trigger = triggerKind.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onAdDismissed()
             return
@@ -257,6 +268,7 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
                 trigger = triggerKind.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onAdDismissed()
             return
@@ -291,6 +303,7 @@ class InterstitialAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
                 trigger = triggerKind.analyticsValue,
+                diagnostics = currentDiagnostics(now),
             )
             onAdDismissed()
             return
@@ -311,9 +324,10 @@ class InterstitialAdManager @Inject constructor(
                 placement = placement,
                 route = route,
                 trigger = triggerKind.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onAdDismissed()
-            maybeReload()
+            maybeReload(reason = "not_loaded_recovery")
             return
         }
 
@@ -346,7 +360,7 @@ class InterstitialAdManager @Inject constructor(
                 )
                 interstitialAd = null
                 onAdDismissed()
-                maybeReload()
+                maybeReload(reason = "post_show")
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
@@ -370,7 +384,7 @@ class InterstitialAdManager @Inject constructor(
                 )
                 interstitialAd = null
                 onAdDismissed()
-                maybeReload()
+                maybeReload(reason = "show_failed")
             }
 
             override fun onAdShowedFullScreenContent() {
@@ -421,12 +435,36 @@ class InterstitialAdManager @Inject constructor(
         ad.show(activity)
     }
 
-    private fun maybeReload() {
+    private fun maybeReload(reason: String) {
         val adUnitId = currentAdUnitId ?: return
         if (interstitialAd == null && AdsConsentRuntimeState.canRequestAds.value) {
-            loadAd(currentLoadContext ?: appContext, adUnitId, currentPlacement, currentRoute)
+            Timber.d(
+                "Interstitial reload requested reason=%s placement=%s route=%s",
+                reason,
+                currentPlacement.analyticsValue,
+                currentRoute,
+            )
+            loadAd(
+                currentLoadContext ?: appContext,
+                adUnitId,
+                currentPlacement,
+                currentRoute,
+                loadReason = reason,
+            )
         }
     }
+
+    private fun currentDiagnostics(nowMillis: Long = SystemTimeProvider.nowMillis()): AdShowDiagnosticContext =
+        AdShowDiagnosticContext(
+            isLoading = isLoading,
+            currentAdUnitId = currentAdUnitId,
+            timeSinceLastLoadStartMs =
+                lastLoadStartedAtMillis.takeIf { it > 0L }?.let { startedAt ->
+                    (nowMillis - startedAt).coerceAtLeast(0L)
+                },
+            backoffNextAllowedAtMs =
+                loadBackoffState.nextLoadAllowedAtMillis.takeIf { it > 0L },
+        )
 
     fun clearAd() {
         Timber.d(

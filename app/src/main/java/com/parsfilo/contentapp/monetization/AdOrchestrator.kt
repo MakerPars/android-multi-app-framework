@@ -47,6 +47,16 @@ data class AdSessionContext(
     val sessionStartedAtMs: Long = System.currentTimeMillis(),
 )
 
+private enum class PreloadReason(val analyticsValue: String) {
+    INITIALIZE("initialize"),
+    GATE_OPENED("gate_opened"),
+    PAUSE("pause"),
+    POST_SHOW("post_show"),
+    NOT_LOADED_RECOVERY("not_loaded_recovery"),
+    ROUTE_HINT("route_hint"),
+    REFRESH_CONSENT("refresh_consent"),
+}
+
 @Singleton
 class AdOrchestrator
     @Inject
@@ -81,6 +91,9 @@ class AdOrchestrator
         private var appOpenWarmupRequested: Boolean = false
 
         @Volatile
+        private var applicationContextRef: Context? = null
+
+        @Volatile
         private var lastInterstitialIntentAtMs: Long = 0L
 
         @Volatile
@@ -95,6 +108,7 @@ class AdOrchestrator
                 activity.packageName,
                 BuildConfig.USE_TEST_ADS,
             )
+            applicationContextRef = activity.applicationContext
             adsConfigValidator.validateOrThrow(activity, BuildConfig.USE_TEST_ADS)
             startAdGateObserver(activity.applicationContext)
             adManager.initialize(activity) {
@@ -105,7 +119,7 @@ class AdOrchestrator
                     }
                     requestAdBootstrap(
                         context = activity.applicationContext,
-                        reason = "initialize",
+                        reason = PreloadReason.INITIALIZE,
                         includeAppOpenWarmup = true,
                     )
                 }
@@ -136,6 +150,7 @@ class AdOrchestrator
                     BuildConfig.USE_TEST_ADS,
                 ),
                 AdPlacement.APP_OPEN_RESUME,
+                loadReason = PreloadReason.PAUSE.analyticsValue,
             )
         }
 
@@ -170,6 +185,9 @@ class AdOrchestrator
                 adSessionContext.verseReadCount,
                 adSessionContext.audioPlayedThisSession,
             )
+            if (activeRoute != null && activeRoute != previous.activeRoute) {
+                maybeRequestOpportunisticPreload(activeRoute)
+            }
         }
 
         fun buildRewardedInterstitialIntro(placement: AdPlacement): RewardedInterstitialIntroSpec =
@@ -434,6 +452,7 @@ class AdOrchestrator
                                 BuildConfig.USE_TEST_ADS,
                             ),
                             AdPlacement.APP_OPEN_RESUME,
+                            loadReason = PreloadReason.POST_SHOW.analyticsValue,
                         )
                     }
                     ShowCompletionReason.NOT_LOADED -> {
@@ -447,6 +466,7 @@ class AdOrchestrator
                                 BuildConfig.USE_TEST_ADS,
                             ),
                             AdPlacement.APP_OPEN_RESUME,
+                            loadReason = PreloadReason.NOT_LOADED_RECOVERY.analyticsValue,
                         )
                     }
                     ShowCompletionReason.BLOCKED -> {
@@ -686,7 +706,7 @@ class AdOrchestrator
                         if (canPreload) {
                             requestAdBootstrap(
                                 context = context,
-                                reason = "gate_opened",
+                                reason = PreloadReason.GATE_OPENED,
                                 includeAppOpenWarmup = true,
                             )
                         } else {
@@ -715,7 +735,7 @@ class AdOrchestrator
                     }
                     requestAdBootstrap(
                         context = activity.applicationContext,
-                        reason = "refresh_consent",
+                        reason = PreloadReason.REFRESH_CONSENT,
                         includeAppOpenWarmup = true,
                     )
                 }
@@ -725,13 +745,15 @@ class AdOrchestrator
         private fun preloadAds(
             context: Context,
             includeAppOpenWarmup: Boolean,
+            reason: PreloadReason,
         ) {
             val policy = adsPolicyProvider.getPolicy()
             Timber.d(
-                "Preload ads route=%s nativePoolMax=%d warmAppOpen=%s",
+                "Preload ads route=%s nativePoolMax=%d warmAppOpen=%s reason=%s",
                 adSessionContext.activeRoute,
                 policy.nativePoolMax,
                 includeAppOpenWarmup,
+                reason.analyticsValue,
             )
             interstitialAdManager.loadAd(
                 context,
@@ -741,6 +763,8 @@ class AdOrchestrator
                     BuildConfig.USE_TEST_ADS,
                 ),
                 AdPlacement.INTERSTITIAL_NAV_BREAK,
+                adSessionContext.activeRoute,
+                loadReason = reason.analyticsValue,
             )
             nativeAdManager.loadAds(
                 context,
@@ -770,6 +794,7 @@ class AdOrchestrator
                         BuildConfig.USE_TEST_ADS,
                     ),
                     AdPlacement.APP_OPEN_RESUME,
+                    loadReason = reason.analyticsValue,
                 )
             } else {
                 Timber.d(
@@ -800,16 +825,57 @@ class AdOrchestrator
 
         private fun requestAdBootstrap(
             context: Context,
-            reason: String,
+            reason: PreloadReason,
             includeAppOpenWarmup: Boolean,
         ) {
             Timber.d(
                 "Ad bootstrap requested reason=%s includeAppOpenWarmup=%s route=%s",
-                reason,
+                reason.analyticsValue,
                 includeAppOpenWarmup,
                 adSessionContext.activeRoute,
             )
-            preloadAds(context, includeAppOpenWarmup)
+            preloadAds(context, includeAppOpenWarmup, reason)
+        }
+
+        private fun maybeRequestOpportunisticPreload(route: String) {
+            val context = applicationContextRef ?: return
+            if (!AdsConsentRuntimeState.canRequestAds.value) return
+            val policy = adsPolicyProvider.getPolicy()
+            if (!policy.isHotInterstitialRoute(route)) return
+
+            val interstitialPlacement = AdPlacement.INTERSTITIAL_NAV_BREAK
+            if (policy.shouldUseAggressiveInterstitialPreload(context.packageName) &&
+                policy.isInterstitialPlacementEnabled(interstitialPlacement) &&
+                !policy.isBlockedContext(route)
+            ) {
+                interstitialAdManager.loadAd(
+                    context,
+                    AppAdUnitIds.resolvePlacement(
+                        context,
+                        interstitialPlacement,
+                        BuildConfig.USE_TEST_ADS,
+                    ),
+                    interstitialPlacement,
+                    route = route,
+                    loadReason = PreloadReason.ROUTE_HINT.analyticsValue,
+                )
+            }
+
+            val appOpenPlacement = AdPlacement.APP_OPEN_RESUME
+            if (policy.shouldUseAggressiveAppOpenPreload(context.packageName) &&
+                policy.isAppOpenPlacementEnabled(appOpenPlacement) &&
+                !policy.isBlockedContext(route)
+            ) {
+                appOpenAdManager.loadAd(
+                    AppAdUnitIds.resolvePlacement(
+                        context,
+                        appOpenPlacement,
+                        BuildConfig.USE_TEST_ADS,
+                    ),
+                    appOpenPlacement,
+                    loadReason = PreloadReason.ROUTE_HINT.analyticsValue,
+                )
+            }
         }
 
         private fun logAdAfterEngagement(

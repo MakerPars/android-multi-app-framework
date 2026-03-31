@@ -14,6 +14,7 @@ import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logAgeGateCompleted
 import com.parsfilo.contentapp.core.firebase.logConsentDenied
+import com.parsfilo.contentapp.core.firebase.logConsentDebugResult
 import com.parsfilo.contentapp.core.firebase.logConsentError
 import com.parsfilo.contentapp.core.firebase.logConsentFlowStarted
 import com.parsfilo.contentapp.core.firebase.logConsentGranted
@@ -51,6 +52,13 @@ enum class UmpDebugGeography(val umpValue: Int) {
     US_STATES(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_REGULATED_US_STATE),
 }
 
+sealed interface UmpConsentDebugResult {
+    data object Idle : UmpConsentDebugResult
+    data object Shown : UmpConsentDebugResult
+    data object NotRequired : UmpConsentDebugResult
+    data class Error(val message: String) : UmpConsentDebugResult
+}
+
 @Singleton
 class AdManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -74,11 +82,15 @@ class AdManager @Inject constructor(
 
     private val _privacyOptionsRequired = MutableStateFlow(false)
     val privacyOptionsRequired: StateFlow<Boolean> = _privacyOptionsRequired.asStateFlow()
+    private val _canRequestAds = MutableStateFlow(false)
+    val canRequestAds: StateFlow<Boolean> = _canRequestAds.asStateFlow()
 
     private val _debugGeography = MutableStateFlow(UmpDebugGeography.NONE)
     val debugGeography: StateFlow<UmpDebugGeography> = _debugGeography.asStateFlow()
     private val _lastRequestDebugGeography = MutableStateFlow(UmpDebugGeography.NONE)
     val lastRequestDebugGeography: StateFlow<UmpDebugGeography> = _lastRequestDebugGeography.asStateFlow()
+    private val _lastConsentDebugResult = MutableStateFlow<UmpConsentDebugResult>(UmpConsentDebugResult.Idle)
+    val lastConsentDebugResult: StateFlow<UmpConsentDebugResult> = _lastConsentDebugResult.asStateFlow()
     private var lastFirebaseConsentFlags: FirebaseConsentGrantedFlags? = null
 
     fun initialize(activity: Activity, onReady: () -> Unit = {}) {
@@ -275,7 +287,10 @@ class AdManager @Inject constructor(
         }
     }
 
-    fun showConsentFormIfRequired(activity: Activity, onCompleted: (Boolean) -> Unit = {}) {
+    fun showConsentFormIfRequired(
+        activity: Activity,
+        onCompleted: (UmpConsentDebugResult) -> Unit = {},
+    ) {
         Timber.d("AdManager showConsentFormIfRequired requested")
         launchWithResolvedAgeGateStatus("showConsentFormIfRequired") { ageGateStatus ->
             AdsConsentRuntimeState.update(AdsPrivacyState.Gathering(ageGateStatus))
@@ -292,6 +307,10 @@ class AdManager @Inject constructor(
                     UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
                         if (formError != null) {
                             Timber.w("Debug consent form error: %s", formError.message)
+                            val result = UmpConsentDebugResult.Error(
+                                formError.message ?: "Debug consent form error",
+                            )
+                            updateConsentDebugResult(result, consentInformation)
                             appAnalytics.logConsentError(
                                 trigger = "debug_menu",
                                 message = formError.message ?: "Debug consent form error",
@@ -301,20 +320,31 @@ class AdManager @Inject constructor(
                                 granted = consentInformation.canRequestAds(),
                                 trigger = "debug_menu_error",
                             )
-                            refreshConsent(activity) { onCompleted(false) }
+                            refreshConsent(activity) { onCompleted(result) }
                         } else {
+                            val result =
+                                if (expectedFormShown) {
+                                    UmpConsentDebugResult.Shown
+                                } else {
+                                    UmpConsentDebugResult.NotRequired
+                                }
                             applyConsentOutcome(
                                 consentInformation = consentInformation,
                                 ageGateStatus = ageGateStatus,
                                 trigger = "debug_menu",
                                 umpFormShown = expectedFormShown,
                             )
-                            refreshConsent(activity) { onCompleted(true) }
+                            updateConsentDebugResult(result, consentInformation)
+                            refreshConsent(activity) { onCompleted(result) }
                         }
                     }
                 },
                 { requestError ->
                     Timber.w("Debug consent request update error: %s", requestError.message)
+                    val result = UmpConsentDebugResult.Error(
+                        requestError.message ?: "Debug consent request update error",
+                    )
+                    updateConsentDebugResult(result, consentInformation)
                     appAnalytics.logConsentError(
                         trigger = "debug_menu",
                         message = requestError.message ?: "Debug consent request update error",
@@ -324,7 +354,7 @@ class AdManager @Inject constructor(
                         granted = consentInformation.canRequestAds(),
                         trigger = "debug_menu_request_error",
                     )
-                    refreshConsent(activity) { onCompleted(false) }
+                    refreshConsent(activity) { onCompleted(result) }
                 },
             )
         }
@@ -337,6 +367,8 @@ class AdManager @Inject constructor(
         applyFirebaseConsent(false)
         _consentStatus.value = ConsentStatus.Unknown
         _privacyOptionsRequired.value = false
+        _canRequestAds.value = false
+        _lastConsentDebugResult.value = UmpConsentDebugResult.Idle
     }
 
     fun setConsentDebugGeography(geography: UmpDebugGeography) {
@@ -493,7 +525,22 @@ class AdManager @Inject constructor(
             },
         )
         applyFirebaseConsent(canRequestAds)
+        _canRequestAds.value = canRequestAds
         _consentStatus.value = consentStatus
+    }
+
+    private fun updateConsentDebugResult(
+        result: UmpConsentDebugResult,
+        consentInformation: ConsentInformation,
+    ) {
+        _lastConsentDebugResult.value = result
+        appAnalytics.logConsentDebugResult(
+            packageName = context.packageName,
+            result = result.analyticsValue(),
+            requestGeography = _lastRequestDebugGeography.value.name,
+            canRequestAds = consentInformation.canRequestAds(),
+            privacyOptionsRequired = _privacyOptionsRequired.value,
+        )
     }
 
     private fun applyFirebaseConsent(consentGranted: Boolean) {
@@ -667,6 +714,14 @@ internal fun mapToFirebaseConsentGrantedFlags(
 }
 
 private fun Boolean.analyticsConsentStatus(): String = if (this) "granted" else "denied"
+
+private fun UmpConsentDebugResult.analyticsValue(): String =
+    when (this) {
+        UmpConsentDebugResult.Idle -> "idle"
+        UmpConsentDebugResult.Shown -> "shown"
+        UmpConsentDebugResult.NotRequired -> "not_required"
+        is UmpConsentDebugResult.Error -> "error"
+    }
 
 private fun hasConsentBit(bits: String?, purposeIndex: Int): Boolean? {
     if (bits.isNullOrBlank() || purposeIndex <= 0 || bits.length < purposeIndex) return null

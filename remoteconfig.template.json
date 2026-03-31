@@ -46,6 +46,26 @@
         "value": ""
       }
     },
+    "ads_interstitial_aggressive_preload_packages_csv": {
+      "defaultValue": {
+        "value": "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+      }
+    },
+    "ads_app_open_aggressive_preload_packages_csv": {
+      "defaultValue": {
+        "value": "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+      }
+    },
+    "ads_interstitial_hot_routes_csv": {
+      "defaultValue": {
+        "value": "content,prayer_list,prayer_detail,miracles_list,miracles_detail"
+      }
+    },
+    "ads_interstitial_not_loaded_recovery_enabled": {
+      "defaultValue": {
+        "value": "true"
+      }
+    },
     "ads_app_open_cooldown_ms": {
       "defaultValue": {
         "value": "120000"

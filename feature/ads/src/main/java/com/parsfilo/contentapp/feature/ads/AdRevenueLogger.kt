@@ -31,6 +31,13 @@ data class AdPaidEventContext(
     val responseMeta: AdResponseMeta,
 )
 
+data class AdShowDiagnosticContext(
+    val isLoading: Boolean? = null,
+    val currentAdUnitId: String? = null,
+    val timeSinceLastLoadStartMs: Long? = null,
+    val backoffNextAllowedAtMs: Long? = null,
+)
+
 @Singleton
 class AdRevenueLogger @Inject constructor(
     private val appAnalytics: AppAnalytics,
@@ -63,14 +70,38 @@ class AdRevenueLogger @Inject constructor(
         suppressReason: AdSuppressReason,
         route: String? = null,
         trigger: String? = null,
+        diagnostics: AdShowDiagnosticContext = AdShowDiagnosticContext(),
     ) {
         Timber.tag("timber_log").d(
-            "show_blocked format=%s placement=%s route=%s trigger=%s reason=%s",
+            "show_blocked format=%s placement=%s route=%s trigger=%s reason=%s isLoading=%s adUnit=%s timeSinceLoadMs=%s nextBackoffMs=%s",
             adFormat.analyticsValue,
             placement.analyticsValue,
             route ?: "unknown",
             trigger ?: "unknown",
             suppressReason.analyticsValue,
+            diagnostics.isLoading?.toString() ?: "n/a",
+            diagnostics.currentAdUnitId ?: "unknown",
+            diagnostics.timeSinceLastLoadStartMs?.toString() ?: "n/a",
+            diagnostics.backoffNextAllowedAtMs?.toString() ?: "n/a",
+        )
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_SHOW_BLOCKED,
+            adEventBundle(
+                adFormat = adFormat,
+                placement = placement,
+                adUnitId = diagnostics.currentAdUnitId ?: "unknown",
+                route = route,
+            ).apply {
+                putString(AnalyticsParamKey.SUPPRESS_REASON, suppressReason.analyticsValue)
+                if (!trigger.isNullOrBlank()) putString(AnalyticsParamKey.SHOW_TRIGGER, trigger)
+                diagnostics.isLoading?.let { putLong(AnalyticsParamKey.IS_LOADING, if (it) 1L else 0L) }
+                diagnostics.timeSinceLastLoadStartMs?.let {
+                    putLong(AnalyticsParamKey.TIME_SINCE_LOAD_MS, it)
+                }
+                diagnostics.backoffNextAllowedAtMs?.let {
+                    putLong(AnalyticsParamKey.BACKOFF_NEXT_MS, it)
+                }
+            },
         )
         recordRuntimeTelemetry(adFormat, "show_blocked", suppressReason.analyticsValue)
     }
@@ -80,15 +111,61 @@ class AdRevenueLogger @Inject constructor(
         placement: AdPlacement,
         route: String? = null,
         trigger: String? = null,
+        diagnostics: AdShowDiagnosticContext = AdShowDiagnosticContext(),
     ) {
         Timber.tag("timber_log").d(
-            "show_not_loaded format=%s placement=%s route=%s trigger=%s",
+            "show_not_loaded format=%s placement=%s route=%s trigger=%s isLoading=%s adUnit=%s timeSinceLoadMs=%s nextBackoffMs=%s",
             adFormat.analyticsValue,
             placement.analyticsValue,
             route ?: "unknown",
             trigger ?: "unknown",
+            diagnostics.isLoading?.toString() ?: "n/a",
+            diagnostics.currentAdUnitId ?: "unknown",
+            diagnostics.timeSinceLastLoadStartMs?.toString() ?: "n/a",
+            diagnostics.backoffNextAllowedAtMs?.toString() ?: "n/a",
+        )
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_SHOW_NOT_LOADED,
+            adEventBundle(
+                adFormat = adFormat,
+                placement = placement,
+                adUnitId = diagnostics.currentAdUnitId ?: "unknown",
+                route = route,
+            ).apply {
+                if (!trigger.isNullOrBlank()) putString(AnalyticsParamKey.SHOW_TRIGGER, trigger)
+                diagnostics.isLoading?.let { putLong(AnalyticsParamKey.IS_LOADING, if (it) 1L else 0L) }
+                diagnostics.timeSinceLastLoadStartMs?.let {
+                    putLong(AnalyticsParamKey.TIME_SINCE_LOAD_MS, it)
+                }
+                diagnostics.backoffNextAllowedAtMs?.let {
+                    putLong(AnalyticsParamKey.BACKOFF_NEXT_MS, it)
+                }
+            },
         )
         recordRuntimeTelemetry(adFormat, "show_not_loaded", AdSuppressReason.NOT_LOADED.analyticsValue)
+    }
+
+    fun logPreloadRequested(
+        adFormat: AdFormat,
+        placement: AdPlacement,
+        adUnitId: String,
+        route: String? = null,
+        reason: String,
+    ) {
+        Timber.tag("timber_log").d(
+            "preload_requested format=%s placement=%s route=%s reason=%s adUnit=%s",
+            adFormat.analyticsValue,
+            placement.analyticsValue,
+            route ?: "unknown",
+            reason,
+            adUnitId,
+        )
+        appAnalytics.logEvent(
+            AnalyticsEventName.AD_PRELOAD_REQUESTED,
+            adEventBundle(adFormat, placement, adUnitId, route).apply {
+                putString(AnalyticsParamKey.PRELOAD_REASON, reason)
+            },
+        )
     }
 
     fun logShowStarted(

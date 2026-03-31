@@ -148,6 +148,18 @@ class AdsPolicyProvider @Inject constructor(
         val interstitialRelaxedPackages = parsePackageCsv(
             remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV),
         )
+        val interstitialAggressivePreloadPackages = parsePackageCsv(
+            remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES_CSV),
+        )
+        val appOpenAggressivePreloadPackages = parsePackageCsv(
+            remoteConfigManager.getStringOrNull(KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV),
+        )
+        val interstitialHotRoutes = parseStringCsv(
+            remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_HOT_ROUTES_CSV),
+        )
+        val interstitialNotLoadedRecoveryEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED)
+                ?: DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED
 
         return AdsPolicyConfig(
             rewardedMaxPerSession = rewardedMaxPerSession,
@@ -175,6 +187,10 @@ class AdsPolicyProvider @Inject constructor(
             rewardedInterstitialPlacementsDisabled = rewardedInterstitialPlacementsDisabled,
             appOpenRouteBlocklist = appOpenRouteBlocklist,
             interstitialRouteBlocklist = interstitialRouteBlocklist,
+            interstitialAggressivePreloadPackages = interstitialAggressivePreloadPackages,
+            appOpenAggressivePreloadPackages = appOpenAggressivePreloadPackages,
+            interstitialHotRoutes = interstitialHotRoutes,
+            interstitialNotLoadedRecoveryEnabled = interstitialNotLoadedRecoveryEnabled,
             nativePoolMax = nativePoolMax,
             nativeTtlMs = nativeTtlMs,
             nativeExactPlacementOnly = nativeExactPlacementOnly,
@@ -243,6 +259,13 @@ class AdsPolicyProvider @Inject constructor(
             "ads_interstitial_relaxed_frequency_cap_ms"
         const val KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV =
             "ads_interstitial_relaxed_packages_csv"
+        const val KEY_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES_CSV =
+            "ads_interstitial_aggressive_preload_packages_csv"
+        const val KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV =
+            "ads_app_open_aggressive_preload_packages_csv"
+        const val KEY_INTERSTITIAL_HOT_ROUTES_CSV = "ads_interstitial_hot_routes_csv"
+        const val KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED =
+            "ads_interstitial_not_loaded_recovery_enabled"
         const val KEY_APP_OPEN_COOLDOWN_MS = "ads_app_open_cooldown_ms"
         const val KEY_APP_OPEN_RESUME_GAP_MS = "ads_app_open_resume_gap_ms"
         const val KEY_APP_OPEN_MAX_PER_SESSION = "ads_app_open_max_per_session"
@@ -275,6 +298,13 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_REWARDED_INTERSTITIAL_ENABLED = true
         const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 90_000L
         const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 240_000L
+        const val DEFAULT_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES =
+            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+        const val DEFAULT_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES =
+            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+        const val DEFAULT_INTERSTITIAL_HOT_ROUTES =
+            "content,prayer_list,prayer_detail,miracles_list,miracles_detail"
+        const val DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED = true
         const val DEFAULT_APP_OPEN_COOLDOWN_MS = 120_000L
         const val DEFAULT_APP_OPEN_RESUME_GAP_MS = 15_000L
         const val DEFAULT_APP_OPEN_MAX_PER_SESSION = 2
@@ -300,6 +330,13 @@ class AdsPolicyProvider @Inject constructor(
             KEY_INTERSTITIAL_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS,
             KEY_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS to DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
             KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "",
+            KEY_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES_CSV to
+                DEFAULT_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES,
+            KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV to
+                DEFAULT_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES,
+            KEY_INTERSTITIAL_HOT_ROUTES_CSV to DEFAULT_INTERSTITIAL_HOT_ROUTES,
+            KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED to
+                DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED,
             KEY_APP_OPEN_COOLDOWN_MS to DEFAULT_APP_OPEN_COOLDOWN_MS,
             KEY_APP_OPEN_RESUME_GAP_MS to DEFAULT_APP_OPEN_RESUME_GAP_MS,
             KEY_APP_OPEN_MAX_PER_SESSION to DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong(),

@@ -26,6 +26,10 @@ data class AdsPolicyConfig(
     val rewardedInterstitialPlacementsDisabled: Set<String>,
     val appOpenRouteBlocklist: Set<String>,
     val interstitialRouteBlocklist: Set<String>,
+    val interstitialAggressivePreloadPackages: Set<String> = emptySet(),
+    val appOpenAggressivePreloadPackages: Set<String> = emptySet(),
+    val interstitialHotRoutes: Set<String> = emptySet(),
+    val interstitialNotLoadedRecoveryEnabled: Boolean = false,
     val nativePoolMax: Int,
     val nativeTtlMs: Long,
     val nativeExactPlacementOnly: Boolean,
@@ -84,4 +88,18 @@ data class AdsPolicyConfig(
             .any { candidate ->
                 appOpenRouteBlocklist.contains(candidate) || interstitialRouteBlocklist.contains(candidate)
             }
+
+    fun shouldUseAggressiveInterstitialPreload(packageName: String): Boolean =
+        packageName in interstitialAggressivePreloadPackages
+
+    fun shouldUseAggressiveAppOpenPreload(packageName: String): Boolean =
+        packageName in appOpenAggressivePreloadPackages
+
+    fun isHotInterstitialRoute(route: String?): Boolean {
+        val normalized = route?.trim()?.lowercase().orEmpty()
+        if (normalized.isBlank()) return false
+        return interstitialHotRoutes.any { hotRoute ->
+            normalized == hotRoute || normalized.startsWith("$hotRoute/")
+        }
+    }
 }

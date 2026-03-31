@@ -147,6 +147,7 @@ class AdsPlacementPolicyEvaluatorTest {
         appOpenResumeGapMs = 45_000L,
         appOpenMaxPerSession = 1,
         interstitialMaxPerSession = 2,
+        rewardedMaxPerSession = 2,
         rewardedInterstitialMinIntervalMs = 300_000L,
         rewardedInterstitialMaxPerSession = 1,
         rewardedInterstitialIntroRequired = true,

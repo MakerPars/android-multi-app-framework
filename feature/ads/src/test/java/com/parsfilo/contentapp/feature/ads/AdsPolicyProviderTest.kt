@@ -30,6 +30,13 @@ class AdsPolicyProviderTest {
                 AdsPolicyProvider.KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "NATIVE_FEED_HOME",
                 AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to
                     "com.parsfilo.yasinsuresi, com.parsfilo.mucizedualar",
+                AdsPolicyProvider.KEY_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES_CSV to
+                    "com.parsfilo.namazsurelerivedualarsesli, com.parsfilo.mucizedualar",
+                AdsPolicyProvider.KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV to
+                    "com.parsfilo.namazsurelerivedualarsesli",
+                AdsPolicyProvider.KEY_INTERSTITIAL_HOT_ROUTES_CSV to
+                    "prayer_list, prayer_detail, miracles_detail",
+                AdsPolicyProvider.KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED to "true",
             ),
         )
 
@@ -61,6 +68,16 @@ class AdsPolicyProviderTest {
             .containsExactly(AdPlacement.NATIVE_FEED_HOME.analyticsValue)
         assertThat(policy.interstitialRelaxedPackages)
             .containsExactly("com.parsfilo.yasinsuresi", "com.parsfilo.mucizedualar")
+        assertThat(policy.interstitialAggressivePreloadPackages)
+            .containsExactly(
+                "com.parsfilo.namazsurelerivedualarsesli",
+                "com.parsfilo.mucizedualar",
+            )
+        assertThat(policy.appOpenAggressivePreloadPackages)
+            .containsExactly("com.parsfilo.namazsurelerivedualarsesli")
+        assertThat(policy.interstitialHotRoutes)
+            .containsExactly("prayer_list", "prayer_detail", "miracles_detail")
+        assertThat(policy.interstitialNotLoadedRecoveryEnabled).isTrue()
     }
 
     @Test
@@ -81,6 +98,10 @@ class AdsPolicyProviderTest {
                 AdsPolicyProvider.KEY_BANNER_PLACEMENTS_DISABLED_CSV to "",
                 AdsPolicyProvider.KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "native_feed_zikir",
                 AdsPolicyProvider.KEY_INTERSTITIAL_RELAXED_PACKAGES_CSV to "com.parsfilo.zikirmatik",
+                AdsPolicyProvider.KEY_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES_CSV to "",
+                AdsPolicyProvider.KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV to "",
+                AdsPolicyProvider.KEY_INTERSTITIAL_HOT_ROUTES_CSV to "",
+                AdsPolicyProvider.KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED to "false",
             ),
         )
 
@@ -102,6 +123,10 @@ class AdsPolicyProviderTest {
         assertThat(policy.interstitialFrequencyCapForPackage("com.parsfilo.kible"))
             .isEqualTo(180_000L)
         assertThat(policy.nativeExactPlacementOnly).isFalse()
+        assertThat(policy.interstitialAggressivePreloadPackages).isEmpty()
+        assertThat(policy.appOpenAggressivePreloadPackages).isEmpty()
+        assertThat(policy.interstitialHotRoutes).isEmpty()
+        assertThat(policy.interstitialNotLoadedRecoveryEnabled).isFalse()
     }
 
     private fun mockRemoteConfig(

@@ -50,11 +50,13 @@ class AppOpenAdManager @Inject constructor(
     fun loadAd(
         adUnitId: String,
         placement: AdPlacement = AdPlacement.APP_OPEN_DEFAULT,
+        loadReason: String = "unspecified",
     ) {
         Timber.d(
-            "AppOpen load requested placement=%s adUnit=%s canRequestAds=%s",
+            "AppOpen load requested placement=%s adUnit=%s reason=%s canRequestAds=%s",
             placement.analyticsValue,
             adUnitId,
+            loadReason,
             AdsConsentRuntimeState.canRequestAds.value,
         )
         val policy = adsPolicyProvider.getPolicy()
@@ -102,6 +104,13 @@ class AppOpenAdManager @Inject constructor(
         currentAdUnitId = adUnitId
         currentPlacement = placement
         lastLoadStartedAtMillis = now
+        adRevenueLogger.logPreloadRequested(
+            adFormat = AdFormat.APP_OPEN,
+            placement = placement,
+            adUnitId = adUnitId,
+            route = null,
+            reason = loadReason,
+        )
         adRevenueLogger.logRequest(
             adFormat = AdFormat.APP_OPEN,
             placement = placement,
@@ -192,6 +201,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.RAPID_REPEAT,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
@@ -211,6 +221,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.NO_CONSENT,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             clearAd()
             onShowComplete(ShowCompletionReason.BLOCKED)
@@ -239,6 +250,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.PLACEMENT_DISABLED,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
@@ -264,6 +276,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = reason,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
@@ -289,6 +302,7 @@ class AppOpenAdManager @Inject constructor(
                 suppressReason = AdSuppressReason.COOLDOWN,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(now),
             )
             onShowComplete(ShowCompletionReason.BLOCKED)
             return
@@ -314,6 +328,7 @@ class AppOpenAdManager @Inject constructor(
                 placement = currentPlacement,
                 route = route,
                 trigger = triggerReason.analyticsValue,
+                diagnostics = currentDiagnostics(),
             )
             onShowComplete(ShowCompletionReason.NOT_LOADED)
             return
@@ -468,6 +483,18 @@ class AppOpenAdManager @Inject constructor(
     }
 
     private fun isAdAvailable(): Boolean = appOpenAd != null && wasLoadTimeLessThanNHoursAgo(4)
+
+    private fun currentDiagnostics(nowMillis: Long = SystemTimeProvider.nowMillis()): AdShowDiagnosticContext =
+        AdShowDiagnosticContext(
+            isLoading = isLoadingAd,
+            currentAdUnitId = currentAdUnitId,
+            timeSinceLastLoadStartMs =
+                lastLoadStartedAtMillis.takeIf { it > 0L }?.let { startedAt ->
+                    (nowMillis - startedAt).coerceAtLeast(0L)
+                },
+            backoffNextAllowedAtMs =
+                loadBackoffState.nextLoadAllowedAtMillis.takeIf { it > 0L },
+        )
 
     private fun wasLoadTimeLessThanNHoursAgo(numHours: Long): Boolean {
         val dateDifference = Date().time - loadTime

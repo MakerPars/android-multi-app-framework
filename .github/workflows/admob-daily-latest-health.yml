@@ -90,6 +90,8 @@ jobs:
             --publisher "${ADMOB_PUBLISHER_ID}" \
             --apps-catalog ".ci/apps.json" \
             --versions-file "app-versions.properties" \
+            --ignore-app-label "Son Depremler" \
+            --ignore-app-label "Astroloji: Günlük Burç Yorumu" \
             --top 20 \
             --min-requests 50 \
             --show-rate-threshold 0.20 \
@@ -119,6 +121,8 @@ jobs:
           low = data.get("low_performing_apps", [])
           zero = data.get("zero_impressions_apps", [])
           top_apps = data.get("top_apps", [])
+          rollout_watch = data.get("rollout_watch", {})
+          runtime_health_available = data.get("runtime_health_available", False)
 
           lines = [
               "## AdMob Daily Latest-Version Health",
@@ -127,6 +131,8 @@ jobs:
               f"- Included latest rows: `{filtering.get('latest_rows_included', 0)}`",
               f"- Excluded legacy rows: `{filtering.get('legacy_rows_excluded', 0)}`",
               f"- Unmapped apps: `{len(filtering.get('unmapped_apps', {}))}`",
+              f"- Ignored labels: `{len(filtering.get('ignored_apps', {}))}`",
+              f"- Runtime health merged: `{runtime_health_available}`",
               f"- Requests (latest): `{totals.get('ad_requests', 0)}`",
               f"- Impressions (latest): `{totals.get('impressions', 0)}`",
               f"- Earnings (latest): `{totals.get('estimated_earnings', 0)}`",
@@ -138,11 +144,41 @@ jobs:
               "### Top latest-version apps (by earnings)",
           ]
           for app in top_apps[:10]:
+              runtime = app.get('runtime_health') or {}
+              rollout_bits = []
+              if app.get('play_live_version'):
+                  rollout_bits.append(f"play={app.get('play_live_version')}")
+              if runtime:
+                  rollout_bits.append(
+                      f"recentSyncPct={runtime.get('recentSyncPct', '-')}"
+                  )
+                  rollout_bits.append(f"stalePct={runtime.get('stalePct', '-')}")
+                  rollout_bits.append(
+                      f"topSuppress={runtime.get('topSuppressReason', '-')}"
+                  )
               lines.append(
                   f"- `{app.get('app', 'unknown')}` v`{app.get('latest_version', '-')}` "
                   f"| req={app.get('ad_requests', 0)} imp={app.get('impressions', 0)} "
                   f"show={app.get('show_rate', 0)} match={app.get('match_rate', 0)} "
                   f"earn={app.get('estimated_earnings', 0)}"
+                  + (f" | {' '.join(rollout_bits)}" if rollout_bits else "")
+              )
+
+          amen = rollout_watch.get("amenerrasulu")
+          if amen:
+              runtime = amen.get("runtime_health") or {}
+              lines.extend(
+                  [
+                      "",
+                      "### Amenerrasulu rollout watch",
+                      f"- Latest version: `{amen.get('latest_version', '-')}`",
+                      f"- Play live version: `{amen.get('play_live_version', '-')}`",
+                      f"- Requests: `{amen.get('ad_requests', 0)}` impressions: `{amen.get('impressions', 0)}`",
+                      f"- Match/show: `{amen.get('match_rate', 0)}` / `{amen.get('show_rate', 0)}`",
+                      f"- Recent sync pct: `{runtime.get('recentSyncPct', '-')}`",
+                      f"- Stale pct: `{runtime.get('stalePct', '-')}`",
+                      f"- Top suppress: `{runtime.get('topSuppressReason', '-')}`",
+                  ]
               )
 
           Path(".github_admob_latest_summary.md").write_text("\n".join(lines), encoding="utf-8")
