@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.parsfilo.contentapp.feature.ads
 
 /**

@@ -410,7 +410,7 @@ play {
         logger.warn("⚠️ Play Console service account not configured")
     }
 
-    // Default to production; pipelines can still override with -PPLAY_TRACK=internal/beta/etc.
+    // Default to internal; pipelines can still override with -PPLAY_TRACK=production/beta/etc.
     val resolvedTrack =
         providers
             .gradleProperty("PLAY_TRACK")
@@ -462,7 +462,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.play.services.ads)
 
     implementation(libs.hilt.android)

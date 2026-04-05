@@ -254,10 +254,13 @@ Kanonik secret sözleşmesi şu kaynak sırasıyla düşünülmelidir:
 1. Varsayılan kaynak: Repo içindeki `app/src/*/google-services.json` dosyaları
 2. Opsiyonel CI override: `FIREBASE_CONFIGS_ZIP_BASE64` secret'ı varsa dosyalar CI sırasında üzerine yazılır
 
-### Varsayılan Akış (Repo Default)
+### Varsayılan Akış (Git-Tracked Secrets Yok)
 
-- Lokal ve CI build'ler, ek secret olmadan repodaki `google-services.json` dosyalarıyla çalışır.
-- Bu model onboarding sürecini basitleştirir.
+- `google-services.json` dosyaları repo'ya commit edilmez; `.gitignore` bunu engeller.
+- Secrets gerektirmeyen lokal doğrulama için modül seviyesinde görevleri çalıştırın:
+  - `./gradlew qualityCheck -PdisableTests=true`
+  - `./gradlew :feature:notifications:compileDebugKotlin`
+- Tam `:app` derlemesi gerektiğinde flavor config'lerini lokal olarak indirip git dışı tutun.
 
 ### Opsiyonel Override (CI)
 
@@ -283,6 +286,5 @@ Workflow adımı:
 
 ### Firebase'den Güncelleme (Lokal Yardımcı Script)
 
-`scripts/download-firebase-configs.sh` script'i, Firebase CLI ile flavor dosyalarını yeniden çekmek için kullanılabilir.
-Bu script zorunlu CI adımı değildir; repo default + opsiyonel override modeli esas alınır.
-
+`scripts/download-firebase-configs.sh` script'i, Firebase CLI ile flavor dosyalarını lokal ortama indirmek için kullanılabilir.
+Bu script zorunlu CI adımı değildir; tam uygulama derlemesi gerektiğinde geçici lokal bootstrap adımı olarak düşünülmelidir.

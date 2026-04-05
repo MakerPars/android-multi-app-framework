@@ -1,6 +1,7 @@
 package com.parsfilo.contentapp.feature.notifications.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -92,14 +93,15 @@ fun NotificationsRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val notificationManager = remember(context) { NotificationManagerCompat.from(context) }
-        NotificationsScreen(
-            uiState = uiState,
-            onNotificationOpen = { id, notificationId ->
-                viewModel.logNotificationOpen()
-                viewModel.markAsRead(id)
-                // Clears system tray item + app icon badge (badge derives from active notifications).
-                notificationManager.cancel(notificationId.hashCode())
-            },
+
+    NotificationsScreen(
+        uiState = uiState,
+        onNotificationOpen = { id, notificationId ->
+            viewModel.logNotificationOpen()
+            viewModel.markAsRead(id)
+            // Clears system tray item + app icon badge (badge derives from active notifications).
+            notificationManager.cancel(notificationId.hashCode())
+        },
         onNotificationMarkUnread = { id ->
             viewModel.markAsUnread(id)
         },
@@ -115,7 +117,7 @@ fun NotificationsRoute(
         onDeleteAll = {
             viewModel.deleteAllNotifications()
             notificationManager.cancelAll()
-        }
+        },
     )
 }
 
@@ -208,11 +210,10 @@ fun NotificationsScreen(
                                 AppButton(
                                     text = stringResource(R.string.notifications_empty_cta),
                                     onClick = {
-                                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        buildNotificationSettingsIntent(context)?.let { intent ->
+                                            context.startActivity(intent)
                                         }
-                                        context.startActivity(intent)
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -300,6 +301,18 @@ private fun NotificationsTopBar(
             actionIconContentColor = colorScheme.onBackground
         ),
     )
+}
+
+private fun buildNotificationSettingsIntent(context: Context): Intent? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", context.packageName, null)
+        }
+    }
 }
 
 private fun isNotificationPermissionEnabled(context: android.content.Context): Boolean {

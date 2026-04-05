@@ -1,9 +1,9 @@
 # ContentApp
 
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.3.10-blue.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-blue.svg)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/android-SDK%2036-green.svg)](https://developer.android.com)
-[![Gradle](https://img.shields.io/badge/gradle-8.10-blue.svg)](https://gradle.org)
+[![Gradle](https://img.shields.io/badge/gradle-9.4.1-blue.svg)](https://gradle.org)
 
 > Professional multi-flavour Android framework for managing 18 apps from a single codebase. Built with Kotlin, Jetpack Compose, and modern Android best practices.
 
@@ -32,8 +32,9 @@ A multi-flavour Android application for delivering rich content experiences. Thi
 - JDK 21+
 - Android Studio Ladybug or newer
 - CMake (for NDK support if needed)
-- Kotlin 2.3.10
-- Android Gradle Plugin 9.0.1
+- Kotlin 2.3.20
+- Android Gradle Plugin 9.1.0
+- Gradle 9.4.1 (via wrapper)
 
 ### Environment Variables
 
@@ -61,6 +62,22 @@ PLAY_SERVICE_ACCOUNT_JSON=C:/path/to/play-service-account.json
 ```
 
 ### Building the Project
+
+**Code-only local verification (no Firebase secrets/config files required):**
+
+```bash
+./gradlew qualityCheck -PdisableTests=true
+./gradlew :feature:notifications:compileDebugKotlin
+```
+
+**Full app compile locally (requires Firebase config files per flavor):**
+
+```bash
+./scripts/download-firebase-configs.sh
+./gradlew :app:compileAmenerrasuluDebugKotlin
+```
+
+`google-services.json` files remain untracked. Use the downloader above or CI-side override flow instead of committing placeholders.
 
 **Build all flavours (Debug):**
 
@@ -116,6 +133,9 @@ Aktif pipeline/workflow dosyaları:
 Standards / ops docs:
 - `docs/play-publish-standards.md`
 - `docs/ci-apps-catalog-policy.md`
+
+Archive note:
+- `docs/legacy/` is archival reference only. Active workflow truth lives under `.github/workflows/`.
 
 ## Play Store Management (Listing/Metadata/Screenshots/Release Notes)
 

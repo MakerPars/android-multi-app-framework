@@ -77,6 +77,10 @@ Android tarafı sinyali üretiyor. Bunun backend ingestion tarafı hâlâ geniş
 
 `verify-env-contract` drift yakalıyor, ama daha okunur bir summary çıktısı üretmesi ileride faydalı olabilir.
 
+### 4. Gradle 10 readiness, plugin-side blocker
+
+`./gradlew help --warning-mode all --no-configuration-cache` çıktısında görülen Gradle 10 uyarısı şu an repo DSL'den değil, Detekt plugin'inin `ReportingExtension.file(String)` kullanımından geliyor. Wrapper'ı Gradle 10 hattına taşımadan önce plugin tarafındaki uyumluluk tekrar doğrulanmalı.
+
 ## Remaining Migration Checklist
 
 ### Runtime / Android
