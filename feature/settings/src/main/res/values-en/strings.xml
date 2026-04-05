@@ -66,6 +66,15 @@
     <string name="settings_ads_debug_desc">Visible only in debug builds. Test consent and ad tools.</string>
     <string name="settings_ads_debug_geo_status">UMP debug geography: %1$s</string>
     <string name="settings_ads_debug_geo_last_request_status">Geography used in last UMP request: %1$s</string>
+    <string name="settings_ads_debug_can_request_ads">Can request ads: %1$s</string>
+    <string name="settings_ads_debug_yes">yes</string>
+    <string name="settings_ads_debug_no">no</string>
+    <string name="settings_ads_debug_privacy_options_status">Privacy options required: %1$s</string>
+    <string name="settings_ads_debug_last_result">Last UMP result: %1$s</string>
+    <string name="settings_ads_debug_last_result_idle">not run yet</string>
+    <string name="settings_ads_debug_last_result_shown">form shown</string>
+    <string name="settings_ads_debug_last_result_not_required">form not required</string>
+    <string name="settings_ads_debug_last_result_error">error: %1$s</string>
     <string name="settings_ads_debug_geo_effective_none">Debug geography is disabled. Normal geography detection will be used.</string>
     <string name="settings_ads_debug_geo_effective_applied">Selected geography has been applied to the UMP request: %1$s</string>
     <string name="settings_ads_debug_geo_effective_pending">Selected geography has not been applied to a UMP request yet: %1$s. Tap Show Consent Form or refresh consent.</string>
@@ -81,6 +90,8 @@
     <string name="settings_ads_debug_consent_reset">Consent info reset</string>
     <string name="settings_ads_debug_consent_form_done">Consent flow completed</string>
     <string name="settings_ads_debug_consent_form_error">Consent flow could not be completed</string>
+    <string name="settings_ads_debug_consent_form_not_required">Consent form was not required</string>
+    <string name="settings_ads_debug_consent_form_shown">Consent form shown</string>
     <string name="settings_ads_debug_ads_config_updated">Ad settings updated</string>
 
     <string name="settings_update_debug_title">Update Debug (Remote Config)</string>

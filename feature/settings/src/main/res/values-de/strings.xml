@@ -66,6 +66,15 @@
     <string name="settings_ads_debug_desc">Nur in Debug-Builds sichtbar. Einwilligung und Werbetools testen.</string>
     <string name="settings_ads_debug_geo_status">UMP-Debug-Geografie: %1$s</string>
     <string name="settings_ads_debug_geo_last_request_status">In der letzten UMP-Anfrage verwendete Geografie: %1$s</string>
+    <string name="settings_ads_debug_can_request_ads">Kann Werbung anfordern: %1$s</string>
+    <string name="settings_ads_debug_yes">ja</string>
+    <string name="settings_ads_debug_no">nein</string>
+    <string name="settings_ads_debug_privacy_options_status">Datenschutzoptionen erforderlich: %1$s</string>
+    <string name="settings_ads_debug_last_result">Letztes UMP-Ergebnis: %1$s</string>
+    <string name="settings_ads_debug_last_result_idle">noch nicht ausgeführt</string>
+    <string name="settings_ads_debug_last_result_shown">Formular angezeigt</string>
+    <string name="settings_ads_debug_last_result_not_required">Formular war nicht erforderlich</string>
+    <string name="settings_ads_debug_last_result_error">Fehler: %1$s</string>
     <string name="settings_ads_debug_geo_effective_none">Debug-Geografie ist deaktiviert. Die normale Geografieerkennung wird verwendet.</string>
     <string name="settings_ads_debug_geo_effective_applied">Die ausgewählte Geografie wurde auf die UMP-Anfrage angewendet: %1$s</string>
     <string name="settings_ads_debug_geo_effective_pending">Die ausgewählte Geografie wurde noch nicht auf eine UMP-Anfrage angewendet: %1$s. Tippen Sie auf „Consent-Formular anzeigen“ oder aktualisieren Sie die Einwilligung.</string>
@@ -81,6 +90,8 @@
     <string name="settings_ads_debug_consent_reset">Einwilligungsdaten zurückgesetzt</string>
     <string name="settings_ads_debug_consent_form_done">Consent-Ablauf abgeschlossen</string>
     <string name="settings_ads_debug_consent_form_error">Consent-Ablauf konnte nicht abgeschlossen werden</string>
+    <string name="settings_ads_debug_consent_form_not_required">Consent-Formular war nicht erforderlich</string>
+    <string name="settings_ads_debug_consent_form_shown">Consent-Formular wurde angezeigt</string>
     <string name="settings_ads_debug_ads_config_updated">Werbeeinstellungen aktualisiert</string>
 
     <string name="settings_update_debug_title">Update-Debug (Remote Config)</string>
