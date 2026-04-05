@@ -82,12 +82,16 @@ fun NativeAdItem(
                     .border(dimens.stroke, borderColor, RoundedCornerShape(dimens.radiusLarge))
                     .padding(dimens.space12),
             ) {
-                // Keep only AdChoices to avoid extra label row text.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    NativeAdAttribution(
+                        text = "Reklam",
+                        containerColor = accentColor.copy(alpha = 0.12f),
+                        contentColor = accentColor,
+                    )
                     NativeAdChoicesView(modifier = Modifier.size(dimens.iconMd))
                 }
 

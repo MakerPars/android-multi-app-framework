@@ -15,6 +15,7 @@ data class AdRequestContext(
     val sessionCount: Int,
     val lastShownAtMs: Long?,
     val resumeGapMs: Long?,
+    val isColdStart: Boolean = false,
     val contentInProgress: Boolean,
     val appOpenTriggerReason: AppOpenTriggerReason? = null,
     val interstitialTriggerKind: InterstitialTriggerKind? = null,
@@ -87,6 +88,9 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         if (context.contentInProgress) return blocked("app_open", AdSuppressReason.CONTENT_IN_PROGRESS, context)
         if (matchesContext(policy.appOpenRouteBlocklist, context.screenRoute, context.route, context.appOpenTriggerReason?.analyticsValue)) {
             return blocked("app_open", AdSuppressReason.ROUTE_BLOCKED, context)
+        }
+        if (context.isColdStart) {
+            return blocked("app_open", AdSuppressReason.COLD_START, context)
         }
         val resumeGapMs = effectiveCooldownMs(policy.appOpenResumeGapMs)
         if ((context.resumeGapMs ?: Long.MAX_VALUE) < resumeGapMs) {

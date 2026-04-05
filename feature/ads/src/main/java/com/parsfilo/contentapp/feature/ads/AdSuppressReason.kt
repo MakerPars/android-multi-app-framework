@@ -10,6 +10,7 @@ enum class AdSuppressReason(val analyticsValue: String) {
     ROUTE_BLOCKED("route_blocked"),
     RAPID_REPEAT("rapid_repeat"),
     RESUME_SPAM("resume_spam"),
+    COLD_START("cold_start"),
     CONTENT_IN_PROGRESS("content_in_progress"),
     PLACEMENT_DISABLED("placement_disabled"),
     INTRO_SKIPPED("intro_skipped"),

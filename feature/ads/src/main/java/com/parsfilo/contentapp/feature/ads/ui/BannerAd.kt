@@ -89,9 +89,10 @@ fun BannerAd(
             .padding(horizontal = dimens.space6),
     ) {
         val adWidthDp = max(1, maxWidth.value.toInt())
-        // Force standard banner height to keep layout stable across devices.
-        val adSize = remember { AdSize.BANNER }
-        val adView = remember(adUnitId, adWidthDp, showPlacementLabels) {
+        val adSize = remember(adContext, placement, adWidthDp) {
+            placement.adaptiveBannerSize(adContext, adWidthDp)
+        }
+        val adView = remember(adUnitId, adWidthDp, showPlacementLabels, adSize) {
             val loadStartedAtMillis = SystemTimeProvider.nowMillis()
             AdView(adContext).apply {
                 this.adUnitId = adUnitId
@@ -217,3 +218,15 @@ fun BannerAd(
         )
     }
 }
+
+private fun AdPlacement.adaptiveBannerSize(
+    context: android.content.Context,
+    adWidthDp: Int,
+): AdSize =
+    when (this) {
+        AdPlacement.BANNER_CONTENT_LIST,
+        AdPlacement.BANNER_CONTENT_DETAIL,
+        -> AdSize.getCurrentOrientationInlineAdaptiveBannerAdSize(context, adWidthDp)
+
+        else -> AdSize.getLargeAnchoredAdaptiveBannerAdSize(context, adWidthDp)
+    }

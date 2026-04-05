@@ -78,6 +78,20 @@ class AdsPlacementPolicyEvaluatorTest {
     }
 
     @Test
+    fun `app open blocks cold start`() {
+        val result = evaluator.evaluateAppOpen(
+            baseContext(
+                format = AdFormat.APP_OPEN,
+                placement = AdPlacement.APP_OPEN_RESUME,
+                isColdStart = true,
+                resumeGapMs = 120_000L,
+            ),
+        )
+
+        assertThat(result).isEqualTo(AdEligibility.Blocked(AdSuppressReason.COLD_START))
+    }
+
+    @Test
     fun `rewarded interstitial blocks session cap`() {
         val result = evaluator.evaluateRewardedInterstitial(
             baseContext(
@@ -118,6 +132,7 @@ class AdsPlacementPolicyEvaluatorTest {
         sessionCount: Int = 0,
         lastShownAtMs: Long? = null,
         resumeGapMs: Long? = null,
+        isColdStart: Boolean = false,
         contentInProgress: Boolean = false,
         appOpenTriggerReason: AppOpenTriggerReason? = null,
         interstitialTriggerKind: InterstitialTriggerKind? = null,
@@ -132,6 +147,7 @@ class AdsPlacementPolicyEvaluatorTest {
         sessionCount = sessionCount,
         lastShownAtMs = lastShownAtMs,
         resumeGapMs = resumeGapMs,
+        isColdStart = isColdStart,
         contentInProgress = contentInProgress,
         appOpenTriggerReason = appOpenTriggerReason,
         interstitialTriggerKind = interstitialTriggerKind,

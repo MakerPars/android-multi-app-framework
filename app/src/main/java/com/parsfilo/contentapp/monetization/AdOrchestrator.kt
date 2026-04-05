@@ -383,6 +383,7 @@ class AdOrchestrator
                                 } else {
                                     resumeSnapshot.resumeGapMs
                                 },
+                            isColdStart = resumeSnapshot.isColdStart,
                             contentInProgress = isContentInProgress(route),
                             appOpenTriggerReason = triggerReason,
                         ),
