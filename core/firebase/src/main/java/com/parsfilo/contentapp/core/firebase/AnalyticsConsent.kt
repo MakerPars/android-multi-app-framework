@@ -62,6 +62,18 @@ fun AppAnalytics.logConsentError(trigger: String, message: String, ageGateResult
     )
 }
 
+fun AppAnalytics.logConsentMissing(trigger: String, ageGateResult: String) {
+    setUserProperty(AnalyticsUserPropertyKey.CONSENT_STATUS, "missing")
+    logEvent(
+        AnalyticsEventName.CONSENT_REFRESHED,
+        Bundle().apply {
+            putString(AnalyticsParamKey.CONSENT_STATUS, "missing")
+            putString(AnalyticsParamKey.CONSENT_TRIGGER, trigger)
+            putString(AnalyticsParamKey.AGE_GATE_RESULT, ageGateResult)
+        },
+    )
+}
+
 fun AppAnalytics.logConsentRefreshed(trigger: String, consentStatus: String, ageGateResult: String) {
     setUserProperty(AnalyticsUserPropertyKey.CONSENT_STATUS, consentStatus)
     logEvent(
@@ -72,6 +84,10 @@ fun AppAnalytics.logConsentRefreshed(trigger: String, consentStatus: String, age
             putString(AnalyticsParamKey.AGE_GATE_RESULT, ageGateResult)
         },
     )
+}
+
+fun AppAnalytics.setConsentStatusProperty(status: String) {
+    setUserProperty(AnalyticsUserPropertyKey.CONSENT_STATUS, status)
 }
 
 fun AppAnalytics.logPrivacyOptionsOpened(required: Boolean) {

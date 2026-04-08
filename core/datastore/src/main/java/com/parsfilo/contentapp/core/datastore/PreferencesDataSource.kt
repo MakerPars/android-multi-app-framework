@@ -53,6 +53,22 @@ class PreferencesDataSource @Inject constructor(
         it[PreferencesKeys.ADS_AGE_GATE_STATUS] ?: "UNKNOWN"
     }
 
+    val adsConsentStatus: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_CONSENT_STATUS] ?: "unknown"
+    }
+
+    val adsConsentUpdatedAt: Flow<Long> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_CONSENT_UPDATED_AT] ?: 0L
+    }
+
+    val adsLastSuccessfulConsentStatus: Flow<String> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_LAST_SUCCESSFUL_CONSENT_STATUS] ?: "unknown"
+    }
+
+    val adsLastSuccessfulConsentUpdatedAt: Flow<Long> = userPreferences.data.map {
+        it[PreferencesKeys.ADS_LAST_SUCCESSFUL_CONSENT_UPDATED_AT] ?: 0L
+    }
+
     val adsAgeGatePromptCompleted: Flow<Boolean> = userPreferences.data.map {
         it[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] ?: false
     }
@@ -373,6 +389,26 @@ class PreferencesDataSource @Inject constructor(
         userPreferences.edit { it[PreferencesKeys.ADS_AGE_GATE_PROMPT_COMPLETED] = completed }
     }
 
+    suspend fun setAdsConsentSnapshot(
+        status: String,
+        updatedAt: Long = System.currentTimeMillis(),
+    ) {
+        userPreferences.edit {
+            it[PreferencesKeys.ADS_CONSENT_STATUS] = status
+            it[PreferencesKeys.ADS_CONSENT_UPDATED_AT] = updatedAt
+        }
+    }
+
+    suspend fun setAdsLastSuccessfulConsentSnapshot(
+        status: String,
+        updatedAt: Long = System.currentTimeMillis(),
+    ) {
+        userPreferences.edit {
+            it[PreferencesKeys.ADS_LAST_SUCCESSFUL_CONSENT_STATUS] = status
+            it[PreferencesKeys.ADS_LAST_SUCCESSFUL_CONSENT_UPDATED_AT] = updatedAt
+        }
+    }
+
     internal object PreferencesKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val DISPLAY_MODE = stringPreferencesKey("display_mode")
@@ -402,6 +438,12 @@ class PreferencesDataSource @Inject constructor(
         val AD_RUNTIME_SUPPRESS_REASON_COUNTS_JSON =
             stringPreferencesKey("ad_runtime_suppress_reason_counts_json")
         val ADS_AGE_GATE_STATUS = stringPreferencesKey("ads_age_gate_status")
+        val ADS_CONSENT_STATUS = stringPreferencesKey("ads_consent_status")
+        val ADS_CONSENT_UPDATED_AT = longPreferencesKey("ads_consent_updated_at")
+        val ADS_LAST_SUCCESSFUL_CONSENT_STATUS =
+            stringPreferencesKey("ads_last_successful_consent_status")
+        val ADS_LAST_SUCCESSFUL_CONSENT_UPDATED_AT =
+            longPreferencesKey("ads_last_successful_consent_updated_at")
         val ADS_AGE_GATE_PROMPT_COMPLETED = booleanPreferencesKey("ads_age_gate_prompt_completed")
         val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
         val OTHER_APPS_BADGE_SEEN_SIGNATURE = stringPreferencesKey("other_apps_badge_seen_signature")

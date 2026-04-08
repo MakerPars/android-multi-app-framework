@@ -27,6 +27,30 @@ sealed interface AdsPrivacyState {
 
 fun AdsPrivacyState.canRequestAds(): Boolean = this is AdsPrivacyState.CanRequestAds
 
+fun AdsPrivacyState.suppressReasonWhenBlocked(nowMillis: Long = SystemTimeProvider.nowMillis()): AdSuppressReason =
+    when (this) {
+        is AdsPrivacyState.DeniedOrLimited ->
+            when (val status = consentStatus) {
+                is ConsentStatus.Error ->
+                    if (status.retryEligibleAtMillis > nowMillis) {
+                        AdSuppressReason.CONSENT_RETRY_BACKOFF
+                    } else {
+                        AdSuppressReason.CONSENT_ERROR
+                    }
+                ConsentStatus.Missing -> AdSuppressReason.CONSENT_MISSING
+                ConsentStatus.Denied,
+                ConsentStatus.Required,
+                -> AdSuppressReason.NO_CONSENT
+                else -> AdSuppressReason.PRIVACY_LIMITED
+            }
+
+        AdsPrivacyState.Unknown,
+        is AdsPrivacyState.Gathering,
+        -> AdSuppressReason.NO_CONSENT
+
+        is AdsPrivacyState.CanRequestAds -> AdSuppressReason.NO_CONSENT
+    }
+
 /**
  * Process-level ad serving gate.
  *
@@ -55,7 +79,7 @@ object AdsConsentRuntimeState {
                 )
             } else {
                 AdsPrivacyState.DeniedOrLimited(
-                    consentStatus = ConsentStatus.Required,
+                    consentStatus = ConsentStatus.Denied,
                     privacyOptionsRequired = false,
                     ageGateStatus = AdAgeGateStatus.UNKNOWN,
                 )

@@ -38,19 +38,6 @@ object FlavorColors {
 
         // ── Ramazan / Vakitler ───────────────────────────────────────────────
 
-        "imsakiye" -> FlavorColorTokens(
-            // Sıcak lacivert + zengin kehribar — Ramazan gecesi ateşi
-            primary = Color(0xFF1C1A58),
-            primaryDark = Color(0xFF120E3E),
-            primaryDeep = Color(0xFF080626),
-            secondary = Color(0xFFC49028),
-            background = Color(0xFFEDE8DC),
-            surface = Color(0xFFF5F0E6),
-            surfaceVariant = Color(0xFFDDD4C0),
-            outline = Color(0xFFB0A08A),
-            gold = Color(0xFFC49028),
-        )
-
         "namazvakitleri" -> FlavorColorTokens(
             // Zengin sıcak orman yeşili + koyu kehribar — namaz huzuru
             primary = Color(0xFF1C3E22),

@@ -5,7 +5,7 @@ Bu belge, yeni flavor ekleme kararlarını ve mevcut flavor portföyünü büyü
 ## 1) Yeni Flavor Adayları (Yüksek Potansiyel)
 
 1. `Ramazan Asistanı`
-- İçerik: imsakiye, hatim takibi, fitre/zekat hesaplayıcı, günlük hatırlatma.
+- İçerik: ramazan takvimi, hatim takibi, fitre/zekat hesaplayıcı, günlük hatırlatma.
 - Beklenen etki: sezonluk yüksek indirme + güçlü geri dönüş.
 
 2. `Cuma Asistanı`

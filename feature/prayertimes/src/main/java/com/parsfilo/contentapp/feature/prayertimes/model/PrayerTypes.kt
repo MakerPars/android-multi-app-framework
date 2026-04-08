@@ -1,7 +1,6 @@
 package com.parsfilo.contentapp.feature.prayertimes.model
 
 enum class PrayerAppVariant {
-    IMSAKIYE,
     NAMAZ_VAKITLERI,
 }
 

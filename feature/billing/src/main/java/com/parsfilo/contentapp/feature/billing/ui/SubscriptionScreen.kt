@@ -516,7 +516,7 @@ private fun planLabelFor(product: BillingProduct): String {
 @Preview(showBackground = true, name = "Subscription Loading")
 @Composable
 private fun SubscriptionScreenLoadingPreview() {
-    AppTheme(flavorName = "imsakiye") {
+    AppTheme(flavorName = "namazvakitleri") {
         SubscriptionScreen(
             uiState = SubscriptionUiState(subscriptionState = SubscriptionState.Loading),
             onPlanSelected = {}
@@ -527,7 +527,7 @@ private fun SubscriptionScreenLoadingPreview() {
 @Preview(showBackground = true, name = "Subscription Active")
 @Composable
 private fun SubscriptionScreenActivePreview() {
-    AppTheme(flavorName = "imsakiye") {
+    AppTheme(flavorName = "namazvakitleri") {
         SubscriptionScreen(
             uiState = SubscriptionUiState(
                 subscriptionState = SubscriptionState.Active(

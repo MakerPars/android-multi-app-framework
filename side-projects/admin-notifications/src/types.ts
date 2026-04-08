@@ -321,6 +321,51 @@ export type AnalyticsSummary = {
     totalActiveDevices: number;
     totalDevices: number;
   }>;
+  consentHealth: {
+    totalSuppressions: number;
+    consentBlockedTotal: number;
+    noConsent: number;
+    consentError: number;
+    consentMissing: number;
+    consentRetryBackoff: number;
+    errorOrMissing: number;
+    consentBlockedPct: number;
+    errorOrMissingPct: number;
+  };
+  suppressMix: Array<{
+    reason: string;
+    count: number;
+    sharePct: number;
+  }>;
+  rewardedFunnel: Array<{
+    format: string;
+    showIntent: number;
+    showBlocked: number;
+    showNotLoaded: number;
+    showStarted: number;
+    showImpression: number;
+    showDismissed: number;
+    showFailed: number;
+    impressionRatePct: number;
+    blockedRatePct: number;
+    notLoadedRatePct: number;
+  }>;
+  stalePackages: Array<{
+    packageName: string;
+    totalDevices: number;
+    withToken: number;
+    withoutToken: number;
+    tokenCoveragePct: number;
+    recentlySynced24h: number;
+    syncCoveragePct: number;
+    stale7d: number;
+    stalePct: number;
+    totalSuppressions: number;
+    topReason: string;
+    topReasonCount: number;
+    healthStatus: "healthy" | "warning" | "critical";
+    healthNotes: string[];
+  }>;
   loadedAt: string;
 };
 
@@ -341,6 +386,30 @@ export type RevenueSummary = {
   adAlerts: AdPerformanceReport["alerts"];
   reportGeneratedAt?: string;
   reportRangeLabel?: string;
+  revenueSource?: string;
+  latestAdmobTodayDate?: string;
+  deliveryRatiosByPackage: Array<{
+    packageName: string;
+    appLabel: string;
+    liveVersionName: string;
+    adRequests: number;
+    matchedRequests: number;
+    impressions: number;
+    earningsTry: number;
+    ecpmTry?: number;
+    fillRatePct: number;
+    showRatePct: number;
+  }>;
+  sourceFreshness: {
+    status: "live" | "stale" | "diagnostics_only";
+    liveTodayGeneratedAt?: string;
+    liveTodayStatus?: "ok" | "misconfigured" | "error";
+    liveTodayAgeHours?: number | null;
+    liveTodayFreshWithinHours?: boolean;
+    weeklyReportGeneratedAt?: string;
+    weeklyRangeLabel?: string;
+    issues: string[];
+  };
   loadedAt: string;
 };
 

@@ -37,6 +37,11 @@ class AdsPolicyProviderTest {
                 AdsPolicyProvider.KEY_INTERSTITIAL_HOT_ROUTES_CSV to
                     "prayer_list, prayer_detail, miracles_detail",
                 AdsPolicyProvider.KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED to "true",
+                AdsPolicyProvider.KEY_REWARD_OFFER_ROUTES_CSV to
+                    "home, content, prayer_list",
+                AdsPolicyProvider.KEY_NATIVE_BANNER_FALLBACK_ENABLED to "true",
+                AdsPolicyProvider.KEY_NATIVE_BANNER_FALLBACK_PACKAGES_CSV to
+                    "com.parsfilo.mucizedualar, com.parsfilo.yasinsuresi",
             ),
         )
 
@@ -75,9 +80,14 @@ class AdsPolicyProviderTest {
             )
         assertThat(policy.appOpenAggressivePreloadPackages)
             .containsExactly("com.parsfilo.namazsurelerivedualarsesli")
+        assertThat(policy.rewardOfferRoutes)
+            .containsExactly("home", "content", "prayer_list")
         assertThat(policy.interstitialHotRoutes)
             .containsExactly("prayer_list", "prayer_detail", "miracles_detail")
         assertThat(policy.interstitialNotLoadedRecoveryEnabled).isTrue()
+        assertThat(policy.nativeBannerFallbackEnabled).isTrue()
+        assertThat(policy.nativeBannerFallbackPackages)
+            .containsExactly("com.parsfilo.mucizedualar", "com.parsfilo.yasinsuresi")
     }
 
     @Test

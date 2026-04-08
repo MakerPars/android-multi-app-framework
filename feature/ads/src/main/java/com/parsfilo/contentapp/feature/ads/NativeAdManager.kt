@@ -362,7 +362,8 @@ class NativeAdManager @Inject constructor(
         policy: AdsPolicyConfig = adsPolicyProvider.getPolicy(),
     ): AdSuppressReason =
         when {
-            !AdsConsentRuntimeState.canRequestAds.value -> AdSuppressReason.NO_CONSENT
+            !AdsConsentRuntimeState.canRequestAds.value ->
+                AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked()
             !policy.isNativePlacementEnabled(placement) -> AdSuppressReason.PLACEMENT_DISABLED
             !canShowAdsByGate -> AdSuppressReason.AD_GATE
             else -> AdSuppressReason.NOT_LOADED

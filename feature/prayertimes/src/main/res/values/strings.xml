@@ -1,6 +1,5 @@
 <resources>
     <string name="prayertimes_title">Namaz Vakitleri</string>
-    <string name="imsakiye_title">İmsakiye</string>
     <string name="prayertimes_next_prayer">Sıradaki vakit: %1$s (%2$s)</string>
     <string name="prayertimes_next_prayer_title">Bir Sonraki Vakit</string>
     <string name="prayertimes_countdown_label">Kalan:</string>

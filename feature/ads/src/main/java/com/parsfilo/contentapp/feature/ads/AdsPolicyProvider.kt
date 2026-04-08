@@ -98,6 +98,9 @@ class AdsPolicyProvider @Inject constructor(
         val rewardedInterstitialEnabled =
             remoteConfigManager.getBooleanOrNull(KEY_REWARDED_INTERSTITIAL_ENABLED)
                 ?: DEFAULT_REWARDED_INTERSTITIAL_ENABLED
+        val nativeBannerFallbackEnabled =
+            remoteConfigManager.getBooleanOrNull(KEY_NATIVE_BANNER_FALLBACK_ENABLED)
+                ?: DEFAULT_NATIVE_BANNER_FALLBACK_ENABLED
         val nativePoolMax = sanitizeInt(
             (remoteConfigManager.getLongOrNull(KEY_NATIVE_POOL_MAX)
                 ?: DEFAULT_NATIVE_POOL_MAX.toLong()).toInt(),
@@ -114,6 +117,20 @@ class AdsPolicyProvider @Inject constructor(
         val nativeExactPlacementOnly =
             remoteConfigManager.getBooleanOrNull(KEY_NATIVE_EXACT_PLACEMENT_ONLY)
                 ?: DEFAULT_NATIVE_EXACT_PLACEMENT_ONLY
+        val reportFreshnessMaxHours = sanitizeInt(
+            (remoteConfigManager.getLongOrNull(KEY_REPORT_FRESHNESS_MAX_HOURS)
+                ?: DEFAULT_REPORT_FRESHNESS_MAX_HOURS.toLong()).toInt(),
+            min = 1,
+            max = 168,
+            fallback = DEFAULT_REPORT_FRESHNESS_MAX_HOURS,
+        )
+        val consentRetryBackoffMinutes = sanitizeInt(
+            (remoteConfigManager.getLongOrNull(KEY_CONSENT_RETRY_BACKOFF_MINUTES)
+                ?: DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES.toLong()).toInt(),
+            min = 1,
+            max = 180,
+            fallback = DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES,
+        )
 
         val bannerPlacementsDisabled = parsePlacementCsv(
             remoteConfigManager.getStringOrNull(KEY_BANNER_PLACEMENTS_DISABLED_CSV),
@@ -154,12 +171,18 @@ class AdsPolicyProvider @Inject constructor(
         val appOpenAggressivePreloadPackages = parsePackageCsv(
             remoteConfigManager.getStringOrNull(KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV),
         )
+        val rewardOfferRoutes = parseStringCsv(
+            remoteConfigManager.getStringOrNull(KEY_REWARD_OFFER_ROUTES_CSV),
+        )
         val interstitialHotRoutes = parseStringCsv(
             remoteConfigManager.getStringOrNull(KEY_INTERSTITIAL_HOT_ROUTES_CSV),
         )
         val interstitialNotLoadedRecoveryEnabled =
             remoteConfigManager.getBooleanOrNull(KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED)
                 ?: DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED
+        val nativeBannerFallbackPackages = parsePackageCsv(
+            remoteConfigManager.getStringOrNull(KEY_NATIVE_BANNER_FALLBACK_PACKAGES_CSV),
+        )
 
         return AdsPolicyConfig(
             rewardedMaxPerSession = rewardedMaxPerSession,
@@ -189,8 +212,13 @@ class AdsPolicyProvider @Inject constructor(
             interstitialRouteBlocklist = interstitialRouteBlocklist,
             interstitialAggressivePreloadPackages = interstitialAggressivePreloadPackages,
             appOpenAggressivePreloadPackages = appOpenAggressivePreloadPackages,
+            rewardOfferRoutes = rewardOfferRoutes,
             interstitialHotRoutes = interstitialHotRoutes,
             interstitialNotLoadedRecoveryEnabled = interstitialNotLoadedRecoveryEnabled,
+            nativeBannerFallbackEnabled = nativeBannerFallbackEnabled,
+            nativeBannerFallbackPackages = nativeBannerFallbackPackages,
+            reportFreshnessMaxHours = reportFreshnessMaxHours,
+            consentRetryBackoffMinutes = consentRetryBackoffMinutes,
             nativePoolMax = nativePoolMax,
             nativeTtlMs = nativeTtlMs,
             nativeExactPlacementOnly = nativeExactPlacementOnly,
@@ -263,6 +291,7 @@ class AdsPolicyProvider @Inject constructor(
             "ads_interstitial_aggressive_preload_packages_csv"
         const val KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV =
             "ads_app_open_aggressive_preload_packages_csv"
+        const val KEY_REWARD_OFFER_ROUTES_CSV = "ads_reward_offer_routes_csv"
         const val KEY_INTERSTITIAL_HOT_ROUTES_CSV = "ads_interstitial_hot_routes_csv"
         const val KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED =
             "ads_interstitial_not_loaded_recovery_enabled"
@@ -280,6 +309,11 @@ class AdsPolicyProvider @Inject constructor(
         const val KEY_NATIVE_POOL_MAX = "ads_native_pool_max"
         const val KEY_NATIVE_TTL_MS = "ads_native_ttl_ms"
         const val KEY_NATIVE_EXACT_PLACEMENT_ONLY = "ads_native_exact_placement_only"
+        const val KEY_NATIVE_BANNER_FALLBACK_ENABLED = "ads_native_banner_fallback_enabled"
+        const val KEY_NATIVE_BANNER_FALLBACK_PACKAGES_CSV =
+            "ads_native_banner_fallback_packages_csv"
+        const val KEY_REPORT_FRESHNESS_MAX_HOURS = "ads_report_freshness_max_hours"
+        const val KEY_CONSENT_RETRY_BACKOFF_MINUTES = "ads_consent_retry_backoff_minutes"
         const val KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV = "ads_interstitial_placements_disabled_csv"
         const val KEY_BANNER_PLACEMENTS_DISABLED_CSV = "ads_banner_placements_disabled_csv"
         const val KEY_NATIVE_PLACEMENTS_DISABLED_CSV = "ads_native_placements_disabled_csv"
@@ -296,19 +330,21 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_INTERSTITIAL_ENABLED = true
         const val DEFAULT_REWARDED_ENABLED = true
         const val DEFAULT_REWARDED_INTERSTITIAL_ENABLED = true
-        const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 90_000L
-        const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 240_000L
+        const val DEFAULT_INTERSTITIAL_FREQUENCY_CAP_MS = 60_000L
+        const val DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS = 120_000L
         const val DEFAULT_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES =
-            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.ismiazamduasi,com.parsfilo.mucizedualar,com.parsfilo.ayetelkursi,com.parsfilo.yasinsuresi,com.parsfilo.kenzularsduasi,com.parsfilo.insirahsuresi"
         const val DEFAULT_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES =
-            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar"
+            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.ismiazamduasi,com.parsfilo.mucizedualar,com.parsfilo.ayetelkursi,com.parsfilo.yasinsuresi,com.parsfilo.kenzularsduasi,com.parsfilo.insirahsuresi"
+        const val DEFAULT_REWARD_OFFER_ROUTES =
+            "home,content,prayer_list,prayer_detail,quran_sura_list,quran_sura_detail,counter,settings"
         const val DEFAULT_INTERSTITIAL_HOT_ROUTES =
             "content,prayer_list,prayer_detail,miracles_list,miracles_detail"
         const val DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED = true
-        const val DEFAULT_APP_OPEN_COOLDOWN_MS = 120_000L
+        const val DEFAULT_APP_OPEN_COOLDOWN_MS = 90_000L
         const val DEFAULT_APP_OPEN_RESUME_GAP_MS = 15_000L
-        const val DEFAULT_APP_OPEN_MAX_PER_SESSION = 2
-        const val DEFAULT_INTERSTITIAL_MAX_PER_SESSION = 5
+        const val DEFAULT_APP_OPEN_MAX_PER_SESSION = 3
+        const val DEFAULT_INTERSTITIAL_MAX_PER_SESSION = 6
         const val DEFAULT_REWARDED_MAX_PER_SESSION = 10
         const val DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS = 900_000L
         const val DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION = 2
@@ -316,6 +352,11 @@ class AdsPolicyProvider @Inject constructor(
         const val DEFAULT_NATIVE_POOL_MAX = 2
         const val DEFAULT_NATIVE_TTL_MS = 1_800_000L
         const val DEFAULT_NATIVE_EXACT_PLACEMENT_ONLY = false
+        const val DEFAULT_NATIVE_BANNER_FALLBACK_ENABLED = true
+        const val DEFAULT_NATIVE_BANNER_FALLBACK_PACKAGES =
+            "com.parsfilo.namazsurelerivedualarsesli,com.parsfilo.mucizedualar,com.parsfilo.yasinsuresi"
+        const val DEFAULT_REPORT_FRESHNESS_MAX_HOURS = 24
+        const val DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES = 30
         const val DEFAULT_APP_OPEN_ROUTE_BLOCKLIST =
             "subscription,rewards,settings"
         const val DEFAULT_INTERSTITIAL_ROUTE_BLOCKLIST = "subscription,rewards,settings"
@@ -334,6 +375,7 @@ class AdsPolicyProvider @Inject constructor(
                 DEFAULT_INTERSTITIAL_AGGRESSIVE_PRELOAD_PACKAGES,
             KEY_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES_CSV to
                 DEFAULT_APP_OPEN_AGGRESSIVE_PRELOAD_PACKAGES,
+            KEY_REWARD_OFFER_ROUTES_CSV to DEFAULT_REWARD_OFFER_ROUTES,
             KEY_INTERSTITIAL_HOT_ROUTES_CSV to DEFAULT_INTERSTITIAL_HOT_ROUTES,
             KEY_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED to
                 DEFAULT_INTERSTITIAL_NOT_LOADED_RECOVERY_ENABLED,
@@ -348,6 +390,10 @@ class AdsPolicyProvider @Inject constructor(
             KEY_NATIVE_POOL_MAX to DEFAULT_NATIVE_POOL_MAX.toLong(),
             KEY_NATIVE_TTL_MS to DEFAULT_NATIVE_TTL_MS,
             KEY_NATIVE_EXACT_PLACEMENT_ONLY to DEFAULT_NATIVE_EXACT_PLACEMENT_ONLY,
+            KEY_NATIVE_BANNER_FALLBACK_ENABLED to DEFAULT_NATIVE_BANNER_FALLBACK_ENABLED,
+            KEY_NATIVE_BANNER_FALLBACK_PACKAGES_CSV to DEFAULT_NATIVE_BANNER_FALLBACK_PACKAGES,
+            KEY_REPORT_FRESHNESS_MAX_HOURS to DEFAULT_REPORT_FRESHNESS_MAX_HOURS.toLong(),
+            KEY_CONSENT_RETRY_BACKOFF_MINUTES to DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES.toLong(),
             KEY_INTERSTITIAL_PLACEMENTS_DISABLED_CSV to "",
             KEY_BANNER_PLACEMENTS_DISABLED_CSV to "",
             KEY_NATIVE_PLACEMENTS_DISABLED_CSV to "",

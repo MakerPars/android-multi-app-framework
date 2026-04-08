@@ -38,15 +38,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
             return blocked("interstitial", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return blocked(
-                "interstitial",
-                if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
-                    AdSuppressReason.PRIVACY_LIMITED
-                } else {
-                    AdSuppressReason.NO_CONSENT
-                },
-                context,
-            )
+            return blocked("interstitial", context.privacyState.suppressReasonWhenBlocked(), context)
         }
         if (context.isPremium) return blocked("interstitial", AdSuppressReason.PREMIUM, context)
         if (context.isRewardedAdFree) return blocked("interstitial", AdSuppressReason.REWARDED_FREE, context)
@@ -73,15 +65,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
             return blocked("app_open", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return blocked(
-                "app_open",
-                if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
-                    AdSuppressReason.PRIVACY_LIMITED
-                } else {
-                    AdSuppressReason.NO_CONSENT
-                },
-                context,
-            )
+            return blocked("app_open", context.privacyState.suppressReasonWhenBlocked(), context)
         }
         if (context.isPremium) return blocked("app_open", AdSuppressReason.PREMIUM, context)
         if (context.isRewardedAdFree) return blocked("app_open", AdSuppressReason.REWARDED_FREE, context)
@@ -114,15 +98,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
             return blocked("rewarded", AdSuppressReason.PLACEMENT_DISABLED, context)
         }
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
-            return blocked(
-                "rewarded",
-                if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
-                    AdSuppressReason.PRIVACY_LIMITED
-                } else {
-                    AdSuppressReason.NO_CONSENT
-                },
-                context,
-            )
+            return blocked("rewarded", context.privacyState.suppressReasonWhenBlocked(), context)
         }
         if (context.isPremium) return blocked("rewarded", AdSuppressReason.PREMIUM, context)
         if (context.isRewardedAdFree) return blocked("rewarded", AdSuppressReason.REWARDED_FREE, context)
@@ -140,11 +116,7 @@ class AdsPlacementPolicyEvaluator @Inject constructor(
         if (context.privacyState !is AdsPrivacyState.CanRequestAds) {
             return blocked(
                 "rewarded_interstitial",
-                if (context.privacyState is AdsPrivacyState.DeniedOrLimited) {
-                    AdSuppressReason.PRIVACY_LIMITED
-                } else {
-                    AdSuppressReason.NO_CONSENT
-                },
+                context.privacyState.suppressReasonWhenBlocked(),
                 context,
             )
         }

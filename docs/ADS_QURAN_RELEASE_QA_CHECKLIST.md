@@ -32,7 +32,7 @@ Asagidaki matris minimum kapsami saglar:
 | Form factor | Telefon | Tablet opsiyonel |
 | Network | Wi-Fi + kesme senaryosu | Quran sync recovery icin gerekli |
 | Build | `Debug` | Ads/consent davranisi gozlemi icin |
-| Flavor | `imsakiye` veya `namazvakitleri` + 1 diger | Quran/ads davranisi kapsami icin |
+| Flavor | `namazvakitleri` + 1 diger | Quran/ads davranisi kapsami icin |
 
 ## Ads Regresyon Checklist (Rewarded + Consent)
 
@@ -199,7 +199,7 @@ Her senaryo icin tek satir kayit tutun:
 Ornek:
 
 ```text
-Scenario=Rewarded rotate; Device/OS=Pixel 7 / Android 14; Build=imsakiyeDebug 1.2.3(45); Result=PASS; Evidence=TEMP_OUT/logcat_rewarded_rotate.txt; Notes=Reward earned + preload observed
+Scenario=Rewarded rotate; Device/OS=Pixel 7 / Android 14; Build=namazvakitleriDebug 1.2.3(45); Result=PASS; Evidence=TEMP_OUT/logcat_rewarded_rotate.txt; Notes=Reward earned + preload observed
 ```
 
 ## Exit Criteria (Go / No-Go)

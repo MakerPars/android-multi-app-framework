@@ -13,7 +13,6 @@ const DEFAULT_PACKAGES = [
     "com.parsfilo.bereketduasi",
     "com.parsfilo.esmaulhusna",
     "com.parsfilo.fetihsuresi",
-    "com.parsfilo.imsakiye",
     "com.parsfilo.insirahsuresi",
     "com.parsfilo.ismiazamduasi",
     "com.parsfilo.kenzularsduasi",

@@ -14,11 +14,6 @@ internal data class PrayerUiItem(
 
 internal fun prayerItemsForVariant(variant: PrayerAppVariant): List<PrayerUiItem> {
     return when (variant) {
-        PrayerAppVariant.IMSAKIYE -> listOf(
-            PrayerUiItem(PrayerAlarmScheduler.PRAYER_IMSAK, R.string.prayertimes_sahur_imsak, R.drawable.ic_prayer_imsak),
-            PrayerUiItem(PrayerAlarmScheduler.PRAYER_AKSAM, R.string.prayertimes_iftar, R.drawable.ic_prayer_aksam),
-        )
-
         PrayerAppVariant.NAMAZ_VAKITLERI -> listOf(
             PrayerUiItem(PrayerAlarmScheduler.PRAYER_IMSAK, R.string.prayertimes_sahur_imsak, R.drawable.ic_prayer_imsak),
             PrayerUiItem(PrayerAlarmScheduler.PRAYER_GUNES, R.string.prayertimes_sabah_gunes, R.drawable.ic_prayer_gunes),
@@ -29,4 +24,3 @@ internal fun prayerItemsForVariant(variant: PrayerAppVariant): List<PrayerUiItem
         )
     }
 }
-

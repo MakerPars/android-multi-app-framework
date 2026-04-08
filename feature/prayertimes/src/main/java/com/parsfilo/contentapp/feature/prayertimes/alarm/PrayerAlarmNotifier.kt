@@ -127,23 +127,6 @@ class PrayerAlarmNotifier @Inject constructor(
         val timeText = payload.timeHm.ifBlank { timeFromMillis(payload.triggerAtMillis) }
 
         return when (variant) {
-            PrayerAppVariant.IMSAKIYE -> when (payload.prayerKey) {
-                PrayerAlarmScheduler.PRAYER_IMSAK -> {
-                    context.getString(R.string.prayer_alarm_imsak_title) to
-                        context.getString(R.string.prayer_alarm_imsak_body, timeText)
-                }
-
-                PrayerAlarmScheduler.PRAYER_AKSAM -> {
-                    context.getString(R.string.prayer_alarm_iftar_title) to
-                        context.getString(R.string.prayer_alarm_iftar_body, timeText)
-                }
-
-                else -> {
-                    context.getString(R.string.prayer_alarm_generic_title, prayerLabel) to
-                        context.getString(R.string.prayer_alarm_generic_body, prayerLabel, timeText)
-                }
-            }
-
             PrayerAppVariant.NAMAZ_VAKITLERI -> {
                 context.getString(R.string.prayer_alarm_generic_title, prayerLabel) to
                     context.getString(R.string.prayer_alarm_generic_body, prayerLabel, timeText)

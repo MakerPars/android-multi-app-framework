@@ -285,7 +285,6 @@ const DEFAULT_PACKAGES = [
   "com.parsfilo.bereketduasi",
   "com.parsfilo.esmaulhusna",
   "com.parsfilo.fetihsuresi",
-  "com.parsfilo.imsakiye",
   "com.parsfilo.insirahsuresi",
   "com.parsfilo.ismiazamduasi",
   "com.parsfilo.kenzularsduasi",
@@ -1783,6 +1782,13 @@ async function loadRecentCoverageReportsFromFirestore(
   return parsed.slice(0, 5);
 }
 
+function computeAgeHours(isoValue: string | undefined | null): number | null {
+  if (!isoValue) return null;
+  const parsed = Date.parse(isoValue);
+  if (!Number.isFinite(parsed)) return null;
+  return round2((Date.now() - parsed) / (60 * 60 * 1000));
+}
+
 async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
   if (!looksLikeJson(request.headers.get("content-type"))) {
@@ -2051,6 +2057,58 @@ async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promi
         right.totalDevices - left.totalDevices;
     });
 
+  const totalSuppressionsAll = Array.from(runtimeSuppressReasonCounts.values())
+    .reduce((sum, count) => sum + count, 0);
+  const noConsent = runtimeSuppressReasonCounts.get("no_consent") ?? 0;
+  const consentError = runtimeSuppressReasonCounts.get("consent_error") ?? 0;
+  const consentMissing = runtimeSuppressReasonCounts.get("consent_missing") ?? 0;
+  const consentRetryBackoff = runtimeSuppressReasonCounts.get("consent_retry_backoff") ?? 0;
+  const consentBlockedTotal = noConsent + consentError + consentMissing + consentRetryBackoff;
+  const consentHealth = {
+    totalSuppressions: totalSuppressionsAll,
+    consentBlockedTotal,
+    noConsent,
+    consentError,
+    consentMissing,
+    consentRetryBackoff,
+    errorOrMissing: consentError + consentMissing,
+    consentBlockedPct: totalSuppressionsAll > 0
+      ? round2((consentBlockedTotal / totalSuppressionsAll) * 100)
+      : 0,
+    errorOrMissingPct: totalSuppressionsAll > 0
+      ? round2(((consentError + consentMissing) / totalSuppressionsAll) * 100)
+      : 0,
+  };
+  const suppressMix = Array.from(runtimeSuppressReasonCounts.entries())
+    .sort((left, right) => right[1] - left[1])
+    .map(([reason, count]) => ({
+      reason,
+      count,
+      sharePct: totalSuppressionsAll > 0 ? round2((count / totalSuppressionsAll) * 100) : 0,
+    }));
+  const rewardedFunnel = Array.from(runtimeFunnelByFormat.values())
+    .filter((item) => item.format === "rewarded" || item.format === "rewarded_interstitial")
+    .map((item) => ({
+      ...item,
+      impressionRatePct: item.showIntent > 0
+        ? round2((item.showImpression / item.showIntent) * 100)
+        : 0,
+      blockedRatePct: item.showIntent > 0
+        ? round2((item.showBlocked / item.showIntent) * 100)
+        : 0,
+      notLoadedRatePct: item.showIntent > 0
+        ? round2((item.showNotLoaded / item.showIntent) * 100)
+        : 0,
+    }))
+    .sort((left, right) => right.showIntent - left.showIntent);
+  const stalePackages = runtimeHealthByPackage
+    .filter((item) =>
+      item.healthStatus !== "healthy" ||
+      item.stalePct >= 20 ||
+      item.syncCoveragePct < 60 ||
+      item.totalSuppressions > 0
+    )
+    .slice(0, 12);
   const recentCoverageReports = await loadRecentCoverageReportsFromFirestore(env);
   return jsonResponse({
     totalDevices,
@@ -2076,6 +2134,10 @@ async function handleAdminGetAnalyticsSummary(request: Request, env: Env): Promi
       ),
     runtimeSuppressByPackage,
     runtimeHealthByPackage,
+    consentHealth,
+    suppressMix,
+    rewardedFunnel,
+    stalePackages,
     recentCoverageReports,
     loadedAt: new Date().toISOString(),
   });
@@ -2903,11 +2965,14 @@ async function handleAdminGetRevenueSummary(request: Request, env: Env): Promise
   if (!admin) return jsonResponse({ error: "Missing Bearer token" }, 401);
   if (!admin.authorized) return jsonResponse({ error: "User is not in admins whitelist" }, 403);
 
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const catalog = parseAdHealthCatalog(body);
   const purchaseDocs = await listCollectionDocuments(env, "purchase_verifications", 1000);
   const verifiedRecords = purchaseDocs
     .map((doc) => parseFirestoreDocument(doc))
     .filter((item) => asBoolean(item.verified));
   const latestReportData = await getLatestAdPerformanceReport(env);
+  const liveTodayLatestReport = await generateTodayLatestLiveReport(env, catalog);
 
   const monthStart = new Date();
   monthStart.setDate(1);
@@ -2951,12 +3016,24 @@ async function handleAdminGetRevenueSummary(request: Request, env: Env): Promise
   const totals = latestReportData && typeof latestReportData.totals === "object"
     ? (latestReportData.totals as Record<string, unknown>)
     : null;
-  const today = latestReportData && typeof latestReportData.today === "object"
-    ? (latestReportData.today as Record<string, unknown>)
-    : null;
   const alerts = Array.isArray(latestReportData?.alerts) ? latestReportData.alerts : [];
   const adRevenueRangeTry = totals ? asNumber(totals.earningsTry) : 0;
-  const adRevenueTodayTry = today ? asNumber(today.earningsTry) : 0;
+  const adRevenueTodayTry = asNumber(liveTodayLatestReport.totals.earningsTry);
+  const weeklyGeneratedAt = asString(latestReportData?.generatedAt) || undefined;
+  const liveTodayGeneratedAt = liveTodayLatestReport.generatedAt;
+  const liveTodayAgeHours = computeAgeHours(liveTodayGeneratedAt);
+  const liveTodayFreshWithinHours = liveTodayAgeHours !== null && liveTodayAgeHours <= 24;
+  const sourceFreshnessStatus =
+    liveTodayLatestReport.status === "ok"
+      ? (liveTodayFreshWithinHours ? "live" : "stale")
+      : "diagnostics_only";
+  const sourceFreshnessIssues: string[] = [];
+  if (liveTodayLatestReport.status !== "ok" && liveTodayLatestReport.issue) {
+    sourceFreshnessIssues.push(liveTodayLatestReport.issue);
+  }
+  if (!weeklyGeneratedAt) {
+    sourceFreshnessIssues.push("Weekly AdMob rollup document missing.");
+  }
 
   return jsonResponse({
     activeSubscriptions,
@@ -2981,6 +3058,22 @@ async function handleAdminGetRevenueSummary(request: Request, env: Env): Promise
       asString(latestReportData?.rangeStart) && asString(latestReportData?.rangeEnd)
         ? `${asString(latestReportData?.rangeStart)} → ${asString(latestReportData?.rangeEnd)}`
         : undefined,
+    revenueSource: "admob_network_report",
+    latestAdmobTodayDate: liveTodayLatestReport.date,
+    deliveryRatiosByPackage: liveTodayLatestReport.apps,
+    sourceFreshness: {
+      status: sourceFreshnessStatus,
+      liveTodayGeneratedAt,
+      liveTodayStatus: liveTodayLatestReport.status,
+      liveTodayAgeHours,
+      liveTodayFreshWithinHours,
+      weeklyReportGeneratedAt: weeklyGeneratedAt,
+      weeklyRangeLabel:
+        asString(latestReportData?.rangeStart) && asString(latestReportData?.rangeEnd)
+          ? `${asString(latestReportData?.rangeStart)} → ${asString(latestReportData?.rangeEnd)}`
+          : undefined,
+      issues: sourceFreshnessIssues,
+    },
     loadedAt: new Date().toISOString(),
   });
 }

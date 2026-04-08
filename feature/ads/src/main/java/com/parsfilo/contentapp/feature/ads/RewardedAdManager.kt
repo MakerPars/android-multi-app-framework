@@ -63,7 +63,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = route,
             )
             clearAd()
@@ -179,7 +179,7 @@ class RewardedAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = currentRoute,
             )
             clearAd()

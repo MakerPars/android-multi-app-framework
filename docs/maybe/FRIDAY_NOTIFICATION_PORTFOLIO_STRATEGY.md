@@ -210,8 +210,7 @@ When multiple apps exist for the same recipient, choose one installation.
 
 1. `com.parsfilo.namazvakitleri`
 2. `com.parsfilo.kuran_kerim`
-3. `com.parsfilo.imsakiye`
-4. Other apps
+3. Other apps
 
 Reasoning:
 

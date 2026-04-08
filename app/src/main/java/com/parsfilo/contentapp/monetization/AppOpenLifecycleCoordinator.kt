@@ -113,7 +113,27 @@ class AppOpenLifecycleCoordinator
                     delay(350L)
                     val targetActivity = currentActivity
                     if (targetActivity != null && !targetActivity.isFinishing && !targetActivity.isDestroyed) {
-                        adOrchestrator.showAppOpenAdIfEligible(targetActivity, triggerReason)
+                        adOrchestrator.refreshConsent(
+                            activity = targetActivity,
+                            scope = ProcessLifecycleOwner.get().lifecycleScope,
+                        ) { canRequestAds ->
+                            if (!canRequestAds) {
+                                Timber.d("AppOpen aborted after foreground consent refresh: ads unavailable")
+                                return@refreshConsent
+                            }
+                            ProcessLifecycleOwner.get().lifecycleScope.launch {
+                                val refreshedActivity = currentActivity
+                                if (
+                                    refreshedActivity != null &&
+                                    !refreshedActivity.isFinishing &&
+                                    !refreshedActivity.isDestroyed
+                                ) {
+                                    adOrchestrator.showAppOpenAdIfEligible(refreshedActivity, triggerReason)
+                                } else {
+                                    Timber.w("AppOpen aborted after consent refresh: Activity changed or invalid")
+                                }
+                            }
+                        }
                     } else {
                         Timber.w("AppOpen aborted in coordinator: Activity changed or invalid")
                     }

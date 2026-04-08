@@ -18,9 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +34,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,7 +62,6 @@ import com.parsfilo.contentapp.feature.prayertimes.model.PrayerAppVariant
 import com.parsfilo.contentapp.feature.prayertimes.model.PrayerTimesDay
 import com.parsfilo.contentapp.feature.prayertimes.model.PrayerTimesMode
 import com.parsfilo.contentapp.feature.prayertimes.ui.components.AlarmSettingsBottomSheet
-import com.parsfilo.contentapp.feature.prayertimes.ui.components.ImsakiyeTimeCard
 import com.parsfilo.contentapp.feature.prayertimes.ui.components.NextPrayerCountdownCard
 import com.parsfilo.contentapp.feature.prayertimes.ui.components.PrayerTimesAppHeader
 import com.parsfilo.contentapp.feature.prayertimes.ui.components.PrayerTimesBackground
@@ -193,7 +188,6 @@ fun PrayerTimesScreen(
     nativeAdContent: (@Composable () -> Unit)? = null,
 ) {
     val showAlarmSheetState = remember { mutableStateOf(false) }
-    var imsakiyeDayIndex by remember(uiState.days) { mutableIntStateOf(0) }
 
     PrayerTimesBackground {
         Scaffold(
@@ -236,109 +230,6 @@ fun PrayerTimesScreen(
                         }
                     } else {
                         when (variant) {
-                            PrayerAppVariant.IMSAKIYE -> {
-                                val dayIndex = imsakiyeDayIndex.coerceIn(0, uiState.days.lastIndex)
-                                val selectedDay = uiState.days[dayIndex]
-                                val imsakCountdown = countdownForPrayer(
-                                    prayerKey = PRAYER_IMSAK,
-                                    days = listOf(selectedDay),
-                                    nowMillis = uiState.currentTimeMillis,
-                                )
-                                val iftarCountdown = countdownForPrayer(
-                                    prayerKey = PRAYER_AKSAM,
-                                    days = listOf(selectedDay),
-                                    nowMillis = uiState.currentTimeMillis,
-                                )
-                                val compactCards = imsakCountdown == "--:--:--" && iftarCountdown == "--:--:--"
-                                item {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                                    ) {
-                                        IconButton(
-                                            enabled = dayIndex > 0,
-                                            onClick = { imsakiyeDayIndex = (dayIndex - 1).coerceAtLeast(0) },
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                                contentDescription = stringResource(R.string.prayertimes_previous_day),
-                                            )
-                                        }
-                                        Text(
-                                            text = selectedDay.localDate,
-                                            style = MaterialTheme.typography.titleSmall.copy(fontFamily = prayerBodyFontFamily()),
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                        IconButton(
-                                            enabled = dayIndex < uiState.days.lastIndex,
-                                            onClick = {
-                                                imsakiyeDayIndex = (dayIndex + 1).coerceAtMost(uiState.days.lastIndex)
-                                            },
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                                contentDescription = stringResource(R.string.prayertimes_next_day),
-                                            )
-                                        }
-                                    }
-                                }
-                                item {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        ImsakiyeTimeCard(
-                                            title = stringResource(R.string.prayertimes_sahur_imsak),
-                                            timeHm = selectedDay.imsak,
-                                            countdown = imsakCountdown,
-                                            isIftar = false,
-                                            compact = compactCards,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        ImsakiyeTimeCard(
-                                            title = stringResource(R.string.prayertimes_iftar),
-                                            timeHm = selectedDay.aksam,
-                                            countdown = iftarCountdown,
-                                            isIftar = true,
-                                            compact = compactCards,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                    }
-                                }
-                                uiState.ramadanProgress?.let { progress ->
-                                    item {
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = PrayerTimesDesignTokens.GlassSurface.copy(alpha = 0.82f),
-                                            ),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(16.dp),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                Text(
-                                                    text = stringResource(
-                                                        R.string.prayertimes_ramadan_progress,
-                                                        progress.day,
-                                                        progress.totalDays,
-                                                    ),
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                )
-                                                LinearProgressIndicator(
-                                                    progress = { progress.day / progress.totalDays.toFloat() },
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .semantics {
-                                                            contentDescription = "Ramazan ilerleme durumu"
-                                                        },
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
                             PrayerAppVariant.NAMAZ_VAKITLERI -> {
                                 item {
                                     PrayerTimesListSection(
@@ -348,7 +239,7 @@ fun PrayerTimesScreen(
                                         onToggleAlarm = { prayerKey ->
                                             onAlarmPrayerKeysChanged(
                                                 togglePrayerKey(
-                                                    allKeys = prayerItemsForVariant(PrayerAppVariant.NAMAZ_VAKITLERI).map { it.key }.toSet(),
+                                                    allKeys = prayerItemsForVariant(variant).map { it.key }.toSet(),
                                                     selectedKeys = uiState.alarmSettings.selectedPrayerKeys,
                                                     prayerKey = prayerKey,
                                                 )

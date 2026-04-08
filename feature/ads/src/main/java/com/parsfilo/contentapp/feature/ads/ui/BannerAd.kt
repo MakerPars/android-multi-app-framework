@@ -25,9 +25,11 @@ import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdPaidEventContext
 import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
+import com.parsfilo.contentapp.feature.ads.AdSuppressReason
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
 import com.parsfilo.contentapp.feature.ads.findActivity
+import com.parsfilo.contentapp.feature.ads.suppressReasonWhenBlocked
 import dagger.hilt.android.EntryPointAccessors
 import timber.log.Timber
 import kotlin.math.max
@@ -41,6 +43,7 @@ fun BannerAd(
     modifier: Modifier = Modifier,
 ) {
     val canRequestAds by AdsConsentRuntimeState.canRequestAds.collectAsState()
+    val privacyState by AdsConsentRuntimeState.state.collectAsState()
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -55,10 +58,10 @@ fun BannerAd(
     val adsPolicyProvider = remember(entryPoint) { entryPoint.adsPolicyProvider() }
     val shouldShowAds by adGateChecker.shouldShowAds.collectAsState(initial = false)
     val policy = adsPolicyProvider.getPolicy()
-    val suppressReason = when {
-        !canRequestAds -> "no_consent"
-        !policy.isBannerPlacementEnabled(placement) -> "placement_disabled"
-        !shouldShowAds -> "ad_gate"
+    val suppressReason: AdSuppressReason? = when {
+        !canRequestAds -> privacyState.suppressReasonWhenBlocked()
+        !policy.isBannerPlacementEnabled(placement) -> AdSuppressReason.PLACEMENT_DISABLED
+        !shouldShowAds -> AdSuppressReason.AD_GATE
         else -> null
     }
     if (suppressReason != null) {

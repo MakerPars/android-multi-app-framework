@@ -2,6 +2,10 @@ package com.parsfilo.contentapp.feature.ads
 
 enum class AdSuppressReason(val analyticsValue: String) {
     NO_CONSENT("no_consent"),
+    CONSENT_ERROR("consent_error"),
+    CONSENT_MISSING("consent_missing"),
+    CONSENT_RETRY_BACKOFF("consent_retry_backoff"),
+    REPORT_STALE("report_stale"),
     PRIVACY_LIMITED("privacy_limited"),
     PREMIUM("premium"),
     REWARDED_FREE("rewarded_free"),

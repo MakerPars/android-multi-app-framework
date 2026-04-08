@@ -54,16 +54,6 @@ object AppFlavors {
             contentFamily = "content",
         ),
         FlavorConfig(
-            name = "imsakiye",
-            displayName = "İmsakiye",
-            packageName = "com.parsfilo.imsakiye",
-            isPrayerTimesFlavor = true,
-            contentFamily = "prayer_times",
-            monetizationProfile = "prayer_times",
-            notificationProfile = "prayer_times",
-            capabilityFlags = listOf("prayer_variant_imsakiye"),
-        ),
-        FlavorConfig(
             name = "insirahsuresi",
             displayName = "İnşirah Sesli",
             packageName = "com.parsfilo.insirahsuresi",

@@ -34,7 +34,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -563,12 +565,7 @@ class AdOrchestrator
                     }
                 },
                 onAdDismissed = {
-                    Timber.d("Rewarded dismissed; requesting reload placement=%s", placement.analyticsValue)
-                    rewardedAdManager.loadAd(
-                        AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
-                        placement,
-                        contextRoute,
-                    )
+                    Timber.d("Rewarded dismissed; keeping load on-demand placement=%s", placement.analyticsValue)
                     onAdDismissed()
                 },
             )
@@ -637,6 +634,28 @@ class AdOrchestrator
                 placement.analyticsValue,
                 contextRoute,
             )
+            if (!rewardedInterstitialAdManager.isAdReadyNow()) {
+                rewardedInterstitialAdManager.loadAd(
+                    AppAdUnitIds.resolvePlacement(activity, placement, BuildConfig.USE_TEST_ADS),
+                    placement,
+                    contextRoute,
+                )
+                val adReady =
+                    withTimeoutOrNull(10_000L) {
+                        rewardedInterstitialAdManager.isAdReady
+                            .filter { it }
+                            .first()
+                    } != null
+                if (!adReady) {
+                    Timber.w(
+                        "RewardedInterstitial load timed out placement=%s route=%s",
+                        placement.analyticsValue,
+                        contextRoute,
+                    )
+                    onAdDismissed()
+                    return
+                }
+            }
             rewardedInterstitialAdManager.showAfterConfirmedIntro(
                 launchToken = launchToken,
                 activity = activity,
@@ -676,14 +695,8 @@ class AdOrchestrator
                 },
                 onAdDismissed = {
                     Timber.d(
-                        "RewardedInterstitial dismissed; requesting reload placement=%s route=%s",
+                        "RewardedInterstitial dismissed; keeping load on-demand placement=%s route=%s",
                         placement.analyticsValue,
-                        contextRoute,
-                    )
-                    val ids = AppAdUnitIds.resolve(activity, BuildConfig.USE_TEST_ADS)
-                    rewardedInterstitialAdManager.loadAd(
-                        ids.rewardedInterstitial,
-                        placement,
                         contextRoute,
                     )
                     onAdDismissed()
@@ -720,6 +733,7 @@ class AdOrchestrator
         fun refreshConsent(
             activity: Activity,
             scope: CoroutineScope,
+            onUpdated: (Boolean) -> Unit = {},
         ) {
             Timber.d("AdOrchestrator refreshConsent requested")
             adManager.refreshConsent(activity) { canRequestAds ->
@@ -727,11 +741,13 @@ class AdOrchestrator
                     Timber.d("AdOrchestrator refreshConsent result canRequestAds=%s", canRequestAds)
                     if (!canRequestAds) {
                         clearPreloadedAds()
+                        onUpdated(false)
                         return@launch
                     }
                     if (!adGateChecker.shouldShowAds.first()) {
                         Timber.d("AdOrchestrator refreshConsent: ad gate closed, clear preloads")
                         clearPreloadedAds()
+                        onUpdated(false)
                         return@launch
                     }
                     requestAdBootstrap(
@@ -739,8 +755,25 @@ class AdOrchestrator
                         reason = PreloadReason.REFRESH_CONSENT,
                         includeAppOpenWarmup = true,
                     )
+                    onUpdated(true)
                 }
             }
+        }
+
+        fun requestRewardedLoad(
+            context: Context,
+            placement: AdPlacement = AdPlacement.REWARDED_REWARDS_SCREEN,
+            route: String? = adSessionContext.activeRoute,
+        ) {
+            if (!AdsConsentRuntimeState.canRequestAds.value) {
+                Timber.d("Rewarded load skipped: consent unavailable placement=%s", placement.analyticsValue)
+                return
+            }
+            rewardedAdManager.loadAd(
+                AppAdUnitIds.resolvePlacement(context, placement, BuildConfig.USE_TEST_ADS),
+                placement,
+                route,
+            )
         }
 
         private fun preloadAds(
@@ -777,14 +810,6 @@ class AdOrchestrator
                 AdPlacement.NATIVE_FEED_HOME,
                 policy.nativePoolMax,
             )
-            rewardedInterstitialAdManager.loadAd(
-                AppAdUnitIds.resolvePlacement(
-                    context,
-                    AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
-                    BuildConfig.USE_TEST_ADS,
-                ),
-                AdPlacement.REWARDED_INTERSTITIAL_DEFAULT,
-            )
             if (includeAppOpenWarmup && !appOpenWarmupRequested) {
                 appOpenWarmupRequested = true
                 Timber.d("AppOpen warm preload requested during bootstrap")
@@ -804,14 +829,6 @@ class AdOrchestrator
                     appOpenWarmupRequested,
                 )
             }
-            rewardedAdManager.loadAd(
-                AppAdUnitIds.resolvePlacement(
-                    context,
-                    AdPlacement.REWARDED_REWARDS_SCREEN,
-                    BuildConfig.USE_TEST_ADS,
-                ),
-                AdPlacement.REWARDED_REWARDS_SCREEN,
-            )
         }
 
         private fun clearPreloadedAds() {

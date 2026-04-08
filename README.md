@@ -5,9 +5,9 @@
 [![Android](https://img.shields.io/badge/android-SDK%2036-green.svg)](https://developer.android.com)
 [![Gradle](https://img.shields.io/badge/gradle-9.4.1-blue.svg)](https://gradle.org)
 
-> Professional multi-flavour Android framework for managing 18 apps from a single codebase. Built with Kotlin, Jetpack Compose, and modern Android best practices.
+> Professional multi-flavour Android framework for managing 17 apps from a single codebase. Built with Kotlin, Jetpack Compose, and modern Android best practices.
 
-A multi-flavour Android application for delivering rich content experiences. This project supports 18 distinct product flavours, each tailored for specific content delivery.
+A multi-flavour Android application for delivering rich content experiences. This project supports 17 distinct product flavours, each tailored for specific content delivery.
 
 ## Project Structure
 
@@ -89,7 +89,7 @@ PLAY_SERVICE_ACCOUNT_JSON=C:/path/to/play-service-account.json
 **Bump Version:**
 
 ```bash
-./scripts/bump-version.sh imsakiye build
+./scripts/bump-version.sh namazvakitleri build
 ```
 
 ### Per-Flavour Versions (Recommended for Play)

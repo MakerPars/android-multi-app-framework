@@ -28,7 +28,7 @@ Kaldırılan/taşınan örnekler:
 
 - audio prefetch package kontrolü
 - prayer times variant package fallback'i
-- `imsakiye` UI ayrımı için raw flavor string kontrolü
+- legacy prayer-times UI ayrımı için raw flavor string kontrolü
 
 ### 3. Runtime observability eklendi
 

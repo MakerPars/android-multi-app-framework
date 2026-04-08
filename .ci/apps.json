@@ -210,20 +210,6 @@
     }
   },
   {
-    "flavor": "imsakiye",
-    "package": "com.parsfilo.imsakiye",
-    "name": "İmsakiye",
-    "admob_app_id": "ca-app-pub-3312485084079132~7652510108",
-    "ad_units": {
-      "banner": "ca-app-pub-3312485084079132/3713265099",
-      "interstitial": "ca-app-pub-3312485084079132/6335559002",
-      "native": "ca-app-pub-3312485084079132/2560067078",
-      "rewarded": "ca-app-pub-3312485084079132/3975358588",
-      "open_app": "ca-app-pub-3312485084079132/6537054695",
-      "rewarded_interstitial": "ca-app-pub-3312485084079132/8115800600"
-    }
-  },
-  {
     "flavor": "insirahsuresi",
     "package": "com.parsfilo.insirahsuresi",
     "name": "İnşirah Suresi Sesli Dinle",

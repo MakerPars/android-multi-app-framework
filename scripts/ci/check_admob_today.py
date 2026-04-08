@@ -3,7 +3,7 @@
 Fetch AdMob "today until now" performance summary via AdMob Reporting API.
 
 Defaults:
-- token file: SECRET/token.json
+- token file: SECRET/ADMOB_KOTNROL/token.json
 - date range: today -> today (UI equivalent of "today so far")
 - dimension: APP
 
@@ -37,8 +37,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--token-file",
-        default="SECRET/token.json",
-        help="Path to OAuth token JSON (default: SECRET/token.json)",
+        default="SECRET/ADMOB_KOTNROL/token.json",
+        help="Path to OAuth token JSON (default: SECRET/ADMOB_KOTNROL/token.json)",
     )
     parser.add_argument(
         "--publisher",

@@ -36,7 +36,12 @@ export default function RevenuePanel({ user }: RevenuePanelProps) {
         const payload = await fetchAdminFunctionJson<RevenueSummary>({
           endpoint: `${functionsBaseUrl}/adminGetRevenueSummary`,
           idToken,
-          body: {},
+          body: {
+            catalog: sortedApps.map((app) => ({
+              packageName: app.package,
+              appName: app.name ?? app.flavor,
+            })),
+          },
         });
 
         if (!isRevenueSummary(payload)) {
@@ -87,7 +92,7 @@ export default function RevenuePanel({ user }: RevenuePanelProps) {
             </div>
 
             <p className="muted">
-              Subscription metrics come from the admin revenue summary endpoint. Ad metrics come from the latest ad performance snapshot.
+              Subscription metrics come from the admin revenue summary endpoint. Ad revenue source-of-truth is the AdMob network report plus the latest-version live snapshot.
             </p>
 
             {error && <p className="inline-error" role="alert">{error}</p>}
@@ -118,6 +123,14 @@ export default function RevenuePanel({ user }: RevenuePanelProps) {
                   <div className="health-card glass-card">
                     <div className="health-card-label">Ad revenue snapshot</div>
                     <div className="health-card-value">{formatTry(summary.adRevenueRangeTry)}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Live source</div>
+                    <div className="health-card-value">{summary.sourceFreshness.status}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Latest AdMob today date</div>
+                    <div className="health-card-value">{summary.latestAdmobTodayDate ?? "-"}</div>
                   </div>
                 </div>
 
@@ -169,16 +182,86 @@ export default function RevenuePanel({ user }: RevenuePanelProps) {
                   </div>
                 )}
 
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Live version</th>
+                        <th>Requests</th>
+                        <th>Matched</th>
+                        <th>Impressions</th>
+                        <th>Fill</th>
+                        <th>Show</th>
+                        <th>Earnings</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.deliveryRatiosByPackage.length > 0 ? (
+                        summary.deliveryRatiosByPackage.map((item) => (
+                          <tr key={item.packageName}>
+                            <td><code>{item.packageName}</code></td>
+                            <td>{item.liveVersionName}</td>
+                            <td>{item.adRequests}</td>
+                            <td>{item.matchedRequests}</td>
+                            <td>{item.impressions}</td>
+                            <td>{formatPercent(item.fillRatePct)}</td>
+                            <td>{formatPercent(item.showRatePct)}</td>
+                            <td>{formatTry(item.earningsTry)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="muted">No live AdMob delivery ratios found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
                 <div className="meta-list revenue-meta-list">
                   <dt>Ad snapshot generated</dt>
                   <dd>{summary.reportGeneratedAt ? formatDateTime(new Date(summary.reportGeneratedAt)) : "-"}</dd>
                   <dt>Ad snapshot range</dt>
                   <dd>{summary.reportRangeLabel ?? "-"}</dd>
+                  <dt>Revenue source</dt>
+                  <dd>{summary.revenueSource ?? "-"}</dd>
+                  <dt>Live today status</dt>
+                  <dd>{summary.sourceFreshness.liveTodayStatus ?? "-"}</dd>
+                  <dt>Live today generated</dt>
+                  <dd>
+                    {summary.sourceFreshness.liveTodayGeneratedAt
+                      ? formatDateTime(new Date(summary.sourceFreshness.liveTodayGeneratedAt))
+                      : "-"}
+                  </dd>
+                  <dt>Live today age</dt>
+                  <dd>
+                    {typeof summary.sourceFreshness.liveTodayAgeHours === "number"
+                      ? `${summary.sourceFreshness.liveTodayAgeHours.toFixed(2)}h`
+                      : "-"}
+                  </dd>
                   <dt>Today ad revenue</dt>
                   <dd>{formatTry(summary.adRevenueTodayTry)}</dd>
                   <dt>Combined tracked revenue</dt>
                   <dd>{formatTry(summary.totalTrackedRevenueTry)}</dd>
                 </div>
+
+                {summary.sourceFreshness.issues.length > 0 && (
+                  <div className="ad-alert-list revenue-alert-list">
+                    {summary.sourceFreshness.issues.map((issue) => (
+                      <article key={issue} className="ad-alert-item glass-card">
+                        <div className="ad-alert-header">
+                          <strong>Source freshness issue</strong>
+                          <span className="status-pill status-expired">
+                            <span className="status-dot" />
+                            {summary.sourceFreshness.status}
+                          </span>
+                        </div>
+                        <div className="ad-alert-metrics">{issue}</div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>

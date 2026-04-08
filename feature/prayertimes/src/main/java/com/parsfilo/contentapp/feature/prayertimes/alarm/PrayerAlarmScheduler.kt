@@ -178,11 +178,6 @@ class PrayerAlarmScheduler @Inject constructor(
         variant: PrayerAppVariant,
     ): List<Pair<String, String>> {
         return when (variant) {
-            PrayerAppVariant.IMSAKIYE -> listOf(
-                PRAYER_IMSAK to entity.imsak,
-                PRAYER_AKSAM to entity.aksam,
-            )
-
             PrayerAppVariant.NAMAZ_VAKITLERI -> listOf(
                 PRAYER_IMSAK to entity.imsak,
                 PRAYER_GUNES to entity.gunes,
@@ -196,7 +191,6 @@ class PrayerAlarmScheduler @Inject constructor(
 
     private fun defaultPrayerKeysForVariant(variant: PrayerAppVariant): Set<String> {
         return when (variant) {
-            PrayerAppVariant.IMSAKIYE -> setOf(PRAYER_IMSAK, PRAYER_AKSAM)
             PrayerAppVariant.NAMAZ_VAKITLERI -> {
                 setOf(PRAYER_IMSAK, PRAYER_GUNES, PRAYER_OGLE, PRAYER_IKINDI, PRAYER_AKSAM, PRAYER_YATSI)
             }

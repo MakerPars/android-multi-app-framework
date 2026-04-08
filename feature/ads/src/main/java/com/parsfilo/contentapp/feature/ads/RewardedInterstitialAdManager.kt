@@ -9,6 +9,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +33,8 @@ class RewardedInterstitialAdManager @Inject constructor(
     private var currentRoute: String? = null
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
+    private val _isAdReady = MutableStateFlow(false)
+    val isAdReady: StateFlow<Boolean> = _isAdReady.asStateFlow()
 
     fun loadAd(
         adUnitId: String,
@@ -60,7 +65,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = route,
             )
             clearAd()
@@ -133,12 +138,14 @@ class RewardedInterstitialAdManager @Inject constructor(
                     )
                     rewardedInterstitialAd = ad
                     isLoading = false
+                    _isAdReady.value = true
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     Timber.w("Failed to load: %s", error.message)
                     rewardedInterstitialAd = null
                     isLoading = false
+                    _isAdReady.value = false
                     loadBackoffState = AdLoadBackoffPolicy.onLoadFailure(
                         nowMillis = SystemTimeProvider.nowMillis(),
                         current = loadBackoffState,
@@ -190,7 +197,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.REWARDED_INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId.ifBlank { "unknown" },
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = route,
             )
             clearAd()
@@ -237,6 +244,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                     route = route,
                 )
                 rewardedInterstitialAd = null
+                _isAdReady.value = false
                 onAdDismissed()
             }
 
@@ -251,6 +259,7 @@ class RewardedInterstitialAdManager @Inject constructor(
                     route = route,
                 )
                 rewardedInterstitialAd = null
+                _isAdReady.value = false
                 onAdDismissed()
             }
 
@@ -291,7 +300,7 @@ class RewardedInterstitialAdManager @Inject constructor(
         }
     }
 
-    fun isAdReady(): Boolean = rewardedInterstitialAd != null
+    fun isAdReadyNow(): Boolean = rewardedInterstitialAd != null
 
     fun clearAd() {
         Timber.d(
@@ -302,5 +311,6 @@ class RewardedInterstitialAdManager @Inject constructor(
         )
         rewardedInterstitialAd = null
         isLoading = false
+        _isAdReady.value = false
     }
 }

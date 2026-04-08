@@ -30,6 +30,43 @@ class AdsPlacementPolicyEvaluatorTest {
     }
 
     @Test
+    fun `interstitial blocks missing consent separately`() {
+        val result = evaluator.evaluateInterstitial(
+            baseContext(
+                format = AdFormat.INTERSTITIAL,
+                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                privacyState = AdsPrivacyState.DeniedOrLimited(
+                    consentStatus = ConsentStatus.Missing,
+                    privacyOptionsRequired = false,
+                    ageGateStatus = AdAgeGateStatus.AGE_16_OR_OVER,
+                ),
+            ),
+        )
+
+        assertThat(result).isEqualTo(AdEligibility.Blocked(AdSuppressReason.CONSENT_MISSING))
+    }
+
+    @Test
+    fun `interstitial blocks consent retry backoff separately`() {
+        val result = evaluator.evaluateInterstitial(
+            baseContext(
+                format = AdFormat.INTERSTITIAL,
+                placement = AdPlacement.INTERSTITIAL_NAV_BREAK,
+                privacyState = AdsPrivacyState.DeniedOrLimited(
+                    consentStatus = ConsentStatus.Error(
+                        message = "timeout",
+                        retryEligibleAtMillis = Long.MAX_VALUE,
+                    ),
+                    privacyOptionsRequired = false,
+                    ageGateStatus = AdAgeGateStatus.AGE_16_OR_OVER,
+                ),
+            ),
+        )
+
+        assertThat(result).isEqualTo(AdEligibility.Blocked(AdSuppressReason.CONSENT_RETRY_BACKOFF))
+    }
+
+    @Test
     fun `interstitial blocks premium users`() {
         val result = evaluator.evaluateInterstitial(
             baseContext(

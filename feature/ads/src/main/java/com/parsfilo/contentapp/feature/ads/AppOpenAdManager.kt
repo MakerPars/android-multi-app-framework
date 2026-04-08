@@ -76,7 +76,7 @@ class AppOpenAdManager @Inject constructor(
                 adFormat = AdFormat.APP_OPEN,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = null,
             )
             clearAd()
@@ -207,18 +207,19 @@ class AppOpenAdManager @Inject constructor(
             return
         }
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            val consentReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked()
             Timber.d("AppOpen show blocked: no consent route=%s", route)
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = consentReason,
                 route = route,
             )
             adRevenueLogger.logShowBlocked(
                 adFormat = AdFormat.APP_OPEN,
                 placement = currentPlacement,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = consentReason,
                 route = route,
                 trigger = triggerReason.analyticsValue,
                 diagnostics = currentDiagnostics(),

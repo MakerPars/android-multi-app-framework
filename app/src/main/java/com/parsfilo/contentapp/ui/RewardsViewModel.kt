@@ -111,7 +111,11 @@ class RewardsViewModel
             }
 
             _isAdLoading.value = true
-            logDebug("Rewarded funnel: waiting for preloaded ad")
+            logDebug("Rewarded funnel: requesting on-demand rewarded load")
+            adOrchestrator.requestRewardedLoad(
+                context = activity,
+                route = "rewards",
+            )
             viewModelScope.launch {
                 val adReady =
                     withTimeoutOrNull(10_000L) {
@@ -125,7 +129,7 @@ class RewardsViewModel
                     if (activity.isFinishing || activity.isDestroyed) {
                         logWarn("Rewarded funnel: activity invalid after timeout, aborting show")
                     } else {
-                        logDebug("Rewarded funnel: ad ready within timeout, showing")
+                        logDebug("Rewarded funnel: ad ready after on-demand load, showing")
                         showRewardedAd(activity)
                     }
                 } else {

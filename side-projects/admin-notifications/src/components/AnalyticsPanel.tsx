@@ -124,6 +124,33 @@ export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
                   </div>
                 </div>
 
+                <div className="health-grid analytics-metric-grid">
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Consent-blocked suppressions</div>
+                    <div className="health-card-value">{summary.consentHealth.consentBlockedTotal}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Consent-blocked share</div>
+                    <div className="health-card-value">{summary.consentHealth.consentBlockedPct.toFixed(1)}%</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Consent error</div>
+                    <div className="health-card-value">{summary.consentHealth.consentError}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Consent missing</div>
+                    <div className="health-card-value">{summary.consentHealth.consentMissing}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Retry backoff</div>
+                    <div className="health-card-value">{summary.consentHealth.consentRetryBackoff}</div>
+                  </div>
+                  <div className="health-card glass-card">
+                    <div className="health-card-label">Error + missing share</div>
+                    <div className="health-card-value">{summary.consentHealth.errorOrMissingPct.toFixed(1)}%</div>
+                  </div>
+                </div>
+
                 <div className="analytics-table-wrap">
                   <table className="analytics-table">
                     <thead>
@@ -229,21 +256,60 @@ export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
                   <table className="analytics-table">
                     <thead>
                       <tr>
-                        <th>Suppress reason</th>
-                        <th>Count</th>
+                        <th>Rewarded format</th>
+                        <th>Intent</th>
+                        <th>Blocked</th>
+                        <th>Not loaded</th>
+                        <th>Impression</th>
+                        <th>Blocked rate</th>
+                        <th>Not loaded rate</th>
+                        <th>Impression rate</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.keys(summary.runtimeSuppressReasonCounts).length > 0 ? (
-                        Object.entries(summary.runtimeSuppressReasonCounts).map(([reason, count]) => (
-                          <tr key={reason}>
-                            <td><code>{reason}</code></td>
-                            <td>{count}</td>
+                      {summary.rewardedFunnel.length > 0 ? (
+                        summary.rewardedFunnel.map((item) => (
+                          <tr key={item.format}>
+                            <td><code>{item.format}</code></td>
+                            <td>{item.showIntent}</td>
+                            <td>{item.showBlocked}</td>
+                            <td>{item.showNotLoaded}</td>
+                            <td>{item.showImpression}</td>
+                            <td>{item.blockedRatePct.toFixed(1)}%</td>
+                            <td>{item.notLoadedRatePct.toFixed(1)}%</td>
+                            <td>{item.impressionRatePct.toFixed(1)}%</td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={2} className="muted">No suppress reason data found.</td>
+                          <td colSpan={8} className="muted">No rewarded funnel data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Suppress reason</th>
+                        <th>Count</th>
+                        <th>Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.suppressMix.length > 0 ? (
+                        summary.suppressMix.map((item) => (
+                          <tr key={item.reason}>
+                            <td><code>{item.reason}</code></td>
+                            <td>{item.count}</td>
+                            <td>{item.sharePct.toFixed(1)}%</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="muted">No suppress reason data found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -273,6 +339,39 @@ export default function AnalyticsPanel({ user }: AnalyticsPanelProps) {
                       ) : (
                         <tr>
                           <td colSpan={4} className="muted">No package-level suppress data found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="analytics-table-wrap">
+                  <table className="analytics-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Status</th>
+                        <th>Sync coverage</th>
+                        <th>Stale</th>
+                        <th>Suppressions</th>
+                        <th>Top reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.stalePackages.length > 0 ? (
+                        summary.stalePackages.map((item) => (
+                          <tr key={item.packageName}>
+                            <td><code>{item.packageName}</code></td>
+                            <td><strong>{item.healthStatus}</strong></td>
+                            <td>{item.syncCoveragePct.toFixed(1)}%</td>
+                            <td>{item.stalePct.toFixed(1)}%</td>
+                            <td>{item.totalSuppressions}</td>
+                            <td><code>{item.topReason || "-"}</code></td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="muted">No stale package shortlist found.</td>
                         </tr>
                       )}
                     </tbody>

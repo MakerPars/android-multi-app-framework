@@ -567,17 +567,6 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.string.imsakiye_title` appears to be unused"
-        errorLine1="    &lt;string name=&quot;imsakiye_title&quot;>İmsakiye&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="../feature/prayertimes/src/main/res/values/strings.xml"
-            line="3"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
         message="The resource `R.string.qibla_back` appears to be unused"
         errorLine1="    &lt;string name=&quot;qibla_back&quot;>Geri&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~">

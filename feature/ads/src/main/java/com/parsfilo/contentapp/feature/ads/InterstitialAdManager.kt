@@ -70,7 +70,7 @@ class InterstitialAdManager @Inject constructor(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = adUnitId,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked(),
                 route = route,
             )
             clearAd()
@@ -207,17 +207,18 @@ class InterstitialAdManager @Inject constructor(
             interstitialAd != null,
         )
         if (!AdsConsentRuntimeState.canRequestAds.value) {
+            val consentReason = AdsConsentRuntimeState.state.value.suppressReasonWhenBlocked()
             adRevenueLogger.logSuppressed(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
                 adUnitId = currentAdUnitId ?: "unknown",
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = consentReason,
                 route = route,
             )
             adRevenueLogger.logShowBlocked(
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
-                suppressReason = AdSuppressReason.NO_CONSENT,
+                suppressReason = consentReason,
                 route = route,
                 trigger = triggerKind.analyticsValue,
                 diagnostics = currentDiagnostics(),

@@ -28,8 +28,13 @@ data class AdsPolicyConfig(
     val interstitialRouteBlocklist: Set<String>,
     val interstitialAggressivePreloadPackages: Set<String> = emptySet(),
     val appOpenAggressivePreloadPackages: Set<String> = emptySet(),
+    val rewardOfferRoutes: Set<String> = emptySet(),
     val interstitialHotRoutes: Set<String> = emptySet(),
     val interstitialNotLoadedRecoveryEnabled: Boolean = false,
+    val nativeBannerFallbackEnabled: Boolean = false,
+    val nativeBannerFallbackPackages: Set<String> = emptySet(),
+    val reportFreshnessMaxHours: Int = 24,
+    val consentRetryBackoffMinutes: Int = 30,
     val nativePoolMax: Int,
     val nativeTtlMs: Long,
     val nativeExactPlacementOnly: Boolean,
@@ -94,6 +99,17 @@ data class AdsPolicyConfig(
 
     fun shouldUseAggressiveAppOpenPreload(packageName: String): Boolean =
         packageName in appOpenAggressivePreloadPackages
+
+    fun shouldOfferRewardOnRoute(route: String?): Boolean {
+        val normalized = route?.trim()?.lowercase().orEmpty()
+        if (normalized.isBlank()) return false
+        return rewardOfferRoutes.any { rewardRoute ->
+            normalized == rewardRoute || normalized.startsWith("$rewardRoute/")
+        }
+    }
+
+    fun shouldUseNativeBannerFallback(packageName: String): Boolean =
+        nativeBannerFallbackEnabled && packageName in nativeBannerFallbackPackages
 
     fun isHotInterstitialRoute(route: String?): Boolean {
         val normalized = route?.trim()?.lowercase().orEmpty()

@@ -29,7 +29,7 @@ import com.parsfilo.contentapp.feature.ads.AdPlacement
 import com.parsfilo.contentapp.feature.ads.InterstitialTriggerKind
 import com.parsfilo.contentapp.feature.ads.RewardedInterstitialIntroSpec
 import com.parsfilo.contentapp.feature.ads.ui.BannerAd
-import com.parsfilo.contentapp.feature.ads.ui.NativeAdItem
+import com.parsfilo.contentapp.feature.ads.ui.NativeFeedAdSlot
 import com.parsfilo.contentapp.feature.ads.ui.NativeAdViewModel
 import com.parsfilo.contentapp.feature.audio.ui.AudioPlayerViewModel
 import com.parsfilo.contentapp.feature.audio.ui.InlineAudioPlayer
@@ -88,8 +88,6 @@ fun AppNavHost(
     val productDefinition = remember { AppProductDefinition.current }
     val useTestAds = remember { BuildConfig.USE_TEST_ADS }
     val isPrayerTimesFlavor = remember(productDefinition) { productDefinition.isPrayerTimesFlavor }
-    val isImsakiyeFlavor =
-        remember(productDefinition) { productDefinition.hasCapability("prayer_variant_imsakiye") }
     val isQuranFlavor = remember(productDefinition) { productDefinition.contentFamily == ContentFamily.QURAN }
     val isEsmaFlavor = remember(productDefinition) { productDefinition.contentFamily == ContentFamily.ESMA }
     val showVerseCount = remember(productDefinition) { !productDefinition.hasCapability("hide_verse_count") }
@@ -165,12 +163,7 @@ fun AppNavHost(
                 }
                 PrayerTimesRoute(
                     appName = stringResource(com.parsfilo.contentapp.R.string.app_name),
-                    variant =
-                        if (isImsakiyeFlavor) {
-                            PrayerAppVariant.IMSAKIYE
-                        } else {
-                            PrayerAppVariant.NAMAZ_VAKITLERI
-                        },
+                    variant = PrayerAppVariant.NAMAZ_VAKITLERI,
                     bannerAdContent = {
                         BannerAd(
                             adUnitId = adUnitIds.banner,
@@ -179,9 +172,13 @@ fun AppNavHost(
                         )
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad ->
-                            NativeAdItem(nativeAd = ad)
-                        }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_HOME,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_HOME,
+                            route = AppRoute.PrayerTimesHome.route,
+                        )
                     },
                     onOpenQibla = {
                         navController.navigate(AppRoute.Qibla.route)
@@ -226,7 +223,13 @@ fun AppNavHost(
                         )
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_HOME,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_QIBLA,
+                            route = AppRoute.Qibla.route,
+                        )
                     },
                 )
             }
@@ -285,7 +288,13 @@ fun AppNavHost(
                         )
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_ZIKIR,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_ZIKIR,
+                            route = AppRoute.ZikirCounter.route,
+                        )
                     },
                 )
             }
@@ -331,7 +340,13 @@ fun AppNavHost(
                             )
                         },
                         nativeAdContent = {
-                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                            NativeFeedAdSlot(
+                                nativeAd = nativeAd,
+                                nativePlacement = AdPlacement.NATIVE_FEED_HOME,
+                                bannerAdUnitId = adUnitIds.banner,
+                                bannerPlacement = AdPlacement.BANNER_DEFAULT,
+                                route = AppRoute.QuranSuraList.route,
+                            )
                         },
                     )
                 }
@@ -372,7 +387,13 @@ fun AppNavHost(
                             )
                         },
                         nativeAdContent = {
-                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                            NativeFeedAdSlot(
+                                nativeAd = nativeAd,
+                                nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                                bannerAdUnitId = adUnitIds.banner,
+                                bannerPlacement = AdPlacement.BANNER_CONTENT_DETAIL,
+                                route = AppRoute.QuranSuraDetail.route.substringBefore("/{"),
+                            )
                         },
                     )
                 }
@@ -392,7 +413,13 @@ fun AppNavHost(
                             )
                         },
                         nativeAdContent = {
-                            nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                            NativeFeedAdSlot(
+                                nativeAd = nativeAd,
+                                nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                                bannerAdUnitId = adUnitIds.banner,
+                                bannerPlacement = AdPlacement.BANNER_CONTENT_DETAIL,
+                                route = AppRoute.QuranBookmarks.route,
+                            )
                         },
                     )
                 }
@@ -468,9 +495,13 @@ fun AppNavHost(
                         )
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad ->
-                            NativeAdItem(nativeAd = ad)
-                        }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_CONTENT_DETAIL,
+                            route = AppRoute.Content.route,
+                        )
                     },
                     bannerAdUnitId = adUnitIds.banner,
                 )
@@ -506,7 +537,13 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Rewards.route)
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_CONTENT_LIST,
+                            route = AppRoute.PrayerList.route,
+                        )
                     },
                     showVerseCount = showVerseCount,
                     bannerAdUnitId = adUnitIds.banner,
@@ -583,9 +620,13 @@ fun AppNavHost(
                         )
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad ->
-                            NativeAdItem(nativeAd = ad)
-                        }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_CONTENT_DETAIL,
+                            route = AppRoute.PrayerDetail.route.substringBefore("/{"),
+                        )
                     },
                     isDebug = useTestAds,
                 )
@@ -624,7 +665,13 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Rewards.route)
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_CONTENT_LIST,
+                            route = AppRoute.MiraclesList.route,
+                        )
                     },
                     audioPlayerContent =
                         if (isEsmaFlavor) {
@@ -679,7 +726,13 @@ fun AppNavHost(
                         navController.navigate(AppRoute.Rewards.route)
                     },
                     nativeAdContent = {
-                        nativeAd?.let { ad -> NativeAdItem(nativeAd = ad) }
+                        NativeFeedAdSlot(
+                            nativeAd = nativeAd,
+                            nativePlacement = AdPlacement.NATIVE_FEED_CONTENT,
+                            bannerAdUnitId = adUnitIds.banner,
+                            bannerPlacement = AdPlacement.BANNER_CONTENT_DETAIL,
+                            route = AppRoute.MiraclesDetail.route.substringBefore("/{"),
+                        )
                     },
                     bannerAdUnitId = adUnitIds.banner,
                     variant =
