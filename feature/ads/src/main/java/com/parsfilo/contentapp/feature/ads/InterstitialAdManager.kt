@@ -35,7 +35,9 @@ class InterstitialAdManager @Inject constructor(
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
+
     fun isAdReady(): Boolean = interstitialAd != null
 
     fun loadAd(

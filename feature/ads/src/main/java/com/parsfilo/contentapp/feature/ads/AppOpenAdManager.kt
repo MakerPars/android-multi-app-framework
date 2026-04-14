@@ -40,11 +40,14 @@ class AppOpenAdManager @Inject constructor(
     private var loadBackoffState = AdLoadBackoffState()
     private var lastLoadStartedAtMillis: Long = 0L
     private val callbackScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     @Volatile
     private var isShowingAd = false
+
     private fun effectiveCooldownMs(value: Long): Long = if (BuildConfig.DEBUG) 0L else value
 
     fun isShowingAdNow(): Boolean = isShowingAd
+
     fun isAdReady(): Boolean = isAdAvailable()
 
     fun loadAd(

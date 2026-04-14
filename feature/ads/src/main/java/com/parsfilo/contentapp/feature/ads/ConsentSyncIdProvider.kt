@@ -51,4 +51,3 @@ class ConsentSyncIdProvider @Inject constructor(
         }
     }
 }
-

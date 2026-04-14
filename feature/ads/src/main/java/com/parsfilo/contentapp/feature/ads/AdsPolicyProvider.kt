@@ -36,15 +36,19 @@ class AdsPolicyProvider @Inject constructor(
             fallback = DEFAULT_APP_OPEN_RESUME_GAP_MS,
         )
         val appOpenMaxPerSession = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_APP_OPEN_MAX_PER_SESSION)
-                ?: DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_APP_OPEN_MAX_PER_SESSION)
+                    ?: DEFAULT_APP_OPEN_MAX_PER_SESSION.toLong()
+            ).toInt(),
             min = 0,
             max = 10,
             fallback = DEFAULT_APP_OPEN_MAX_PER_SESSION,
         )
         val interstitialMaxPerSession = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_INTERSTITIAL_MAX_PER_SESSION)
-                ?: DEFAULT_INTERSTITIAL_MAX_PER_SESSION.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_INTERSTITIAL_MAX_PER_SESSION)
+                    ?: DEFAULT_INTERSTITIAL_MAX_PER_SESSION.toLong()
+            ).toInt(),
             min = 0,
             max = 20,
             fallback = DEFAULT_INTERSTITIAL_MAX_PER_SESSION,
@@ -57,8 +61,10 @@ class AdsPolicyProvider @Inject constructor(
             fallback = DEFAULT_INTERSTITIAL_RELAXED_FREQUENCY_CAP_MS,
         )
         val rewardedMaxPerSession = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_REWARDED_MAX_PER_SESSION)
-                ?: DEFAULT_REWARDED_MAX_PER_SESSION.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_REWARDED_MAX_PER_SESSION)
+                    ?: DEFAULT_REWARDED_MAX_PER_SESSION.toLong()
+            ).toInt(),
             min = 0,
             max = 20,
             fallback = DEFAULT_REWARDED_MAX_PER_SESSION,
@@ -71,8 +77,10 @@ class AdsPolicyProvider @Inject constructor(
             fallback = DEFAULT_REWARDED_INTERSTITIAL_MIN_INTERVAL_MS,
         )
         val rewardedInterstitialMaxPerSession = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION)
-                ?: DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_REWARDED_INTERSTITIAL_MAX_PER_SESSION)
+                    ?: DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION.toLong()
+            ).toInt(),
             min = 0,
             max = 10,
             fallback = DEFAULT_REWARDED_INTERSTITIAL_MAX_PER_SESSION,
@@ -102,8 +110,10 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getBooleanOrNull(KEY_NATIVE_BANNER_FALLBACK_ENABLED)
                 ?: DEFAULT_NATIVE_BANNER_FALLBACK_ENABLED
         val nativePoolMax = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_NATIVE_POOL_MAX)
-                ?: DEFAULT_NATIVE_POOL_MAX.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_NATIVE_POOL_MAX)
+                    ?: DEFAULT_NATIVE_POOL_MAX.toLong()
+            ).toInt(),
             min = 1,
             max = 4,
             fallback = DEFAULT_NATIVE_POOL_MAX,
@@ -118,15 +128,19 @@ class AdsPolicyProvider @Inject constructor(
             remoteConfigManager.getBooleanOrNull(KEY_NATIVE_EXACT_PLACEMENT_ONLY)
                 ?: DEFAULT_NATIVE_EXACT_PLACEMENT_ONLY
         val reportFreshnessMaxHours = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_REPORT_FRESHNESS_MAX_HOURS)
-                ?: DEFAULT_REPORT_FRESHNESS_MAX_HOURS.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_REPORT_FRESHNESS_MAX_HOURS)
+                    ?: DEFAULT_REPORT_FRESHNESS_MAX_HOURS.toLong()
+            ).toInt(),
             min = 1,
             max = 168,
             fallback = DEFAULT_REPORT_FRESHNESS_MAX_HOURS,
         )
         val consentRetryBackoffMinutes = sanitizeInt(
-            (remoteConfigManager.getLongOrNull(KEY_CONSENT_RETRY_BACKOFF_MINUTES)
-                ?: DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES.toLong()).toInt(),
+            (
+                remoteConfigManager.getLongOrNull(KEY_CONSENT_RETRY_BACKOFF_MINUTES)
+                    ?: DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES.toLong()
+            ).toInt(),
             min = 1,
             max = 180,
             fallback = DEFAULT_CONSENT_RETRY_BACKOFF_MINUTES,
@@ -235,10 +249,11 @@ class AdsPolicyProvider @Inject constructor(
             .forEach { raw ->
                 val normalized = raw.lowercase()
                 val placement = AdPlacement.entries.firstOrNull { candidate ->
-                    candidate.format == format && (
-                        candidate.analyticsValue.equals(normalized, ignoreCase = true) ||
-                            candidate.name.equals(raw, ignoreCase = true) ||
-                            candidate.resourceName.equals(raw, ignoreCase = true)
+                    candidate.format == format &&
+                        (
+                            candidate.analyticsValue.equals(normalized, ignoreCase = true) ||
+                                candidate.name.equals(raw, ignoreCase = true) ||
+                                candidate.resourceName.equals(raw, ignoreCase = true)
                         )
                 }
                 if (placement != null) {

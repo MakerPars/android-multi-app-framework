@@ -1,8 +1,8 @@
 package com.parsfilo.contentapp.feature.ads
 
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
-import timber.log.Timber
 
 data class AdRequestContext(
     val format: AdFormat,
@@ -23,6 +23,7 @@ data class AdRequestContext(
 
 sealed interface AdEligibility {
     data object Allowed : AdEligibility
+
     data class Blocked(val reason: AdSuppressReason) : AdEligibility
 }
 

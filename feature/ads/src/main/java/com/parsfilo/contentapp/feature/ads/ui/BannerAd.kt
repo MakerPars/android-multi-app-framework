@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -24,8 +23,8 @@ import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 import com.parsfilo.contentapp.feature.ads.AdFormat
 import com.parsfilo.contentapp.feature.ads.AdPaidEventContext
 import com.parsfilo.contentapp.feature.ads.AdPlacement
-import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdSuppressReason
+import com.parsfilo.contentapp.feature.ads.AdsConsentRuntimeState
 import com.parsfilo.contentapp.feature.ads.AdsUiEntryPoint
 import com.parsfilo.contentapp.feature.ads.SystemTimeProvider
 import com.parsfilo.contentapp.feature.ads.findActivity

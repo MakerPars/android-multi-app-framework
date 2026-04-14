@@ -55,11 +55,14 @@ object AdUnitIds {
      * Debug → Test ID, Release → Production ID
      */
     fun banner(isDebug: Boolean): String = if (isDebug) Test.BANNER else Production.BANNER
+
     fun interstitial(isDebug: Boolean): String =
         if (isDebug) Test.INTERSTITIAL else Production.INTERSTITIAL
 
     fun native(isDebug: Boolean): String = if (isDebug) Test.NATIVE else Production.NATIVE
+
     fun rewarded(isDebug: Boolean): String = if (isDebug) Test.REWARDED else Production.REWARDED
+
     fun rewardedInterstitial(isDebug: Boolean): String =
         if (isDebug) Test.REWARDED_INTERSTITIAL else Production.REWARDED_INTERSTITIAL
 

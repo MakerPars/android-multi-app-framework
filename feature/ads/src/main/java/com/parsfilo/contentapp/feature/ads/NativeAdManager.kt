@@ -39,8 +39,10 @@ class NativeAdManager @Inject constructor(
 ) {
     private val nativeAds = mutableListOf<PooledNativeAd>()
     private val gateScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     @Volatile
     private var isLoading = false
+
     @Volatile
     private var canShowAdsByGate = true
     private var currentAdUnitId: String = ""

@@ -13,8 +13,8 @@ import com.parsfilo.contentapp.core.common.network.Dispatcher
 import com.parsfilo.contentapp.core.datastore.PreferencesDataSource
 import com.parsfilo.contentapp.core.firebase.AppAnalytics
 import com.parsfilo.contentapp.core.firebase.logAgeGateCompleted
-import com.parsfilo.contentapp.core.firebase.logConsentDenied
 import com.parsfilo.contentapp.core.firebase.logConsentDebugResult
+import com.parsfilo.contentapp.core.firebase.logConsentDenied
 import com.parsfilo.contentapp.core.firebase.logConsentError
 import com.parsfilo.contentapp.core.firebase.logConsentFlowStarted
 import com.parsfilo.contentapp.core.firebase.logConsentGranted
@@ -42,11 +42,17 @@ import javax.inject.Singleton
 
 sealed interface ConsentStatus {
     data object Unknown : ConsentStatus
+
     data object Required : ConsentStatus
+
     data object Denied : ConsentStatus
+
     data object Obtained : ConsentStatus
+
     data object NotRequired : ConsentStatus
+
     data object Missing : ConsentStatus
+
     data class Error(
         val message: String,
         val retryEligibleAtMillis: Long = 0L,
@@ -61,8 +67,11 @@ enum class UmpDebugGeography(val umpValue: Int) {
 
 sealed interface UmpConsentDebugResult {
     data object Idle : UmpConsentDebugResult
+
     data object Shown : UmpConsentDebugResult
+
     data object NotRequired : UmpConsentDebugResult
+
     data class Error(val message: String) : UmpConsentDebugResult
 }
 
@@ -76,6 +85,7 @@ class AdManager @Inject constructor(
     @Dispatcher(AppDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val isMobileAdsInitializeCalled = AtomicBoolean(false)
+
     @Volatile
     private var onAdsInitialized: (() -> Unit)? = null
 
@@ -591,7 +601,7 @@ class AdManager @Inject constructor(
     private fun updatePrivacyOptionsState(consentInformation: ConsentInformation) {
         _privacyOptionsRequired.value =
             consentInformation.privacyOptionsRequirementStatus ==
-                ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
     }
 
     private fun applyConsentRuntimeState(

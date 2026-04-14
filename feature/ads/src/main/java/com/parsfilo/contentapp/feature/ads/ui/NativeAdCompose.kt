@@ -25,12 +25,10 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
 import com.parsfilo.contentapp.core.designsystem.tokens.LocalDimens
 
-/**
- * Google'ın resmi Jetpack Compose Demo'sundan uyarlanan
- * Native Ad Compose sarmalayıcıları.
- *
- * @see <a href="https://github.com/googleads/googleads-mobile-android-examples/tree/main/kotlin/advanced/JetpackComposeDemo">JetpackComposeDemo</a>
- */
+// Google'ın resmi Jetpack Compose Demo'sundan uyarlanan
+// Native Ad Compose sarmalayıcıları.
+//
+// @see <a href="https://github.com/googleads/googleads-mobile-android-examples/tree/main/kotlin/advanced/JetpackComposeDemo">JetpackComposeDemo</a>
 
 /**
  * NativeAdView referansını alt composable'lara ileten CompositionLocal.

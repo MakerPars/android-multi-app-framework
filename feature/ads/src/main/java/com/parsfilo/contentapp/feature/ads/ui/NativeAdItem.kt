@@ -49,7 +49,7 @@ fun NativeAdItem(
 
     // Flavor temasından gelen renkler
     // Make ad background distinctly different from ordinary surface elements
-    val cardBg = colorScheme.surfaceVariant 
+    val cardBg = colorScheme.surfaceVariant
     val accentColor = colorScheme.secondary
     val textPrimary = colorScheme.onSurfaceVariant
     val textSecondary = colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -180,7 +180,7 @@ fun NativeAdItem(
 
                 HorizontalDivider(
                     thickness = 1.dp,
-                    color = borderColor.copy(alpha=0.3f),
+                    color = borderColor.copy(alpha = 0.3f),
                     modifier = Modifier.padding(horizontal = dimens.space12, bottom = dimens.space6),
                 )
 
