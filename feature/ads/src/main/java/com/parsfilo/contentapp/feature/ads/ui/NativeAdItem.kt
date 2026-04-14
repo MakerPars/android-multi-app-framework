@@ -167,7 +167,7 @@ fun NativeAdItem(
                 Spacer(modifier = Modifier.height(dimens.space6))
 
                 nativeAd.body?.let { body ->
-                    NativeAdBodyView(modifier = Modifier.padding(horizontal = dimens.space12, bottom = dimens.space6)) {
+                    NativeAdBodyView(modifier = Modifier.padding(horizontal = dimens.space12).padding(bottom = dimens.space6)) {
                         Text(
                             text = body,
                             color = textSecondary,
@@ -181,11 +181,11 @@ fun NativeAdItem(
                 HorizontalDivider(
                     thickness = 1.dp,
                     color = borderColor.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(horizontal = dimens.space12, bottom = dimens.space6),
+                    modifier = Modifier.padding(horizontal = dimens.space12).padding(bottom = dimens.space6),
                 )
 
                 nativeAd.advertiser?.let { advertiser ->
-                    NativeAdAdvertiserView(modifier = Modifier.padding(horizontal = dimens.space12, bottom = dimens.space6)) {
+                    NativeAdAdvertiserView(modifier = Modifier.padding(horizontal = dimens.space12).padding(bottom = dimens.space6)) {
                         Text(
                             text = advertiser,
                             color = textSecondary,
@@ -198,7 +198,7 @@ fun NativeAdItem(
 
                 // ── Alt: Store / Price / CTA ──
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = dimens.space12, bottom = dimens.space12),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = dimens.space12).padding(bottom = dimens.space12),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
